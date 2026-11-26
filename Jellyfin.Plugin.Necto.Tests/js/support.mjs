@@ -150,7 +150,7 @@ export async function settle(ms) {
 }
 
 // clickDialogButton
-// Clicks the button with this text in the dialog that is open.
+// Clicks the button with this text in the dialog that is open. A sidecar is not a dialog.
 //
 // Inputs
 // dom [object]: The fake DOM helper from installPage.
@@ -159,7 +159,7 @@ export async function settle(ms) {
 // Output
 // [boolean]: Whether a button with that label was found.
 export function clickDialogButton(dom, text) {
-    var dialog = dom.document.querySelector('.stolon-dialog');
+    var dialog = dom.document.querySelector('.stolon-dialog:not(.stolon-sidecar)');
     if (!dialog) return false;
     var button = Array.from(dialog.querySelectorAll('button')).find(function (b) { return b.textContent === text; });
     if (!button) return false;
@@ -168,7 +168,7 @@ export function clickDialogButton(dom, text) {
 }
 
 // dialogText
-// Reads the title and the text under it of the dialog that is open: the description of a compact one, or the subtitle and
+// Reads the title and the text under it of the dialog that is open, never a sidecar: the description of a compact one, or the subtitle and
 // the context of a full one.
 //
 // Inputs
@@ -177,7 +177,7 @@ export function clickDialogButton(dom, text) {
 // Output
 // [object]: The title and the text under it, or null when no dialog is open.
 export function dialogText(dom) {
-    var dialog = dom.document.querySelector('.stolon-dialog');
+    var dialog = dom.document.querySelector('.stolon-dialog:not(.stolon-sidecar)');
     if (!dialog) return null;
     var title = dialog.querySelector('.stolon-modal-title');
     var parts = ['.stolon-modal-description', '.stolon-modal-subtitle', '.stolon-modal-context'].map(function (s) {
@@ -228,4 +228,50 @@ export function sidebar(view) {
         hrefs: entries.map(function (e) { return e.getAttribute('href'); }),
         current: entries.findIndex(function (e) { return e.getAttribute('aria-current') === 'page'; })
     };
+}
+
+// routeApi
+// Answers the page's API requests by method and path, and records each one on the page.
+//
+// Inputs
+// page [object]: The page from installPage.
+// answers [object]: The answer for each 'METHOD path', such as 'GET Groups'. An answer may be a function of the
+//   request, or an Error to reject with. A request with no answer gets an empty object.
+export function routeApi(page, answers) {
+    globalThis.ApiClient.fetch = function (options) {
+        page.requests.push(options);
+        var answer = answers[(options.type || 'GET') + ' ' + options.url];
+        if (typeof answer === 'function') answer = answer(options);
+        if (answer instanceof Error) return Promise.reject(answer);
+        return Promise.resolve(answer === undefined ? {} : answer);
+    };
+}
+
+// texts
+// Reads the text of every element a selector matches under a root.
+//
+// Inputs
+// root [object]: Where to look.
+// selector [string]: The selector.
+//
+// Output
+// [string[]]: Each match's text, in order.
+export function texts(root, selector) {
+    return Array.prototype.map.call(root.querySelectorAll(selector), function (e) { return e.textContent; });
+}
+
+// clickButton
+// Clicks the button with this text under a root.
+//
+// Inputs
+// root [object]: Where to look.
+// text [string]: The button's label.
+//
+// Output
+// [boolean]: Whether a button with that label was found.
+export function clickButton(root, text) {
+    var button = Array.prototype.find.call(root.querySelectorAll('button'), function (b) { return b.textContent === text; });
+    if (!button) return false;
+    button.click();
+    return true;
 }

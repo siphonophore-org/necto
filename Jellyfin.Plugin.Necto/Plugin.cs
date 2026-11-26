@@ -115,6 +115,13 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
             EmbeddedResourcePath = $"{ns}.Web.necto_shared.js"
         };
 
+        // The Groups sections of Settings and Troubleshooting, which those pages load to fill the registry.
+        yield return new PluginPageInfo
+        {
+            Name = "necto_groups_sections.js",
+            EmbeddedResourcePath = $"{ns}.Web.necto_groups_sections.js"
+        };
+
         foreach (var page in GetSharedPages("necto"))
         {
             yield return page;

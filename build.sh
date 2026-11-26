@@ -101,6 +101,7 @@ validate_resources() {
         "$PROJECT_DIR/Web/necto_invites.js"
         "$PROJECT_DIR/Web/necto_groups.html"
         "$PROJECT_DIR/Web/necto_groups.js"
+        "$PROJECT_DIR/Web/necto_groups_sections.js"
         "$PROJECT_DIR/Web/necto_proxy.html"
         "$PROJECT_DIR/Web/necto_proxy.js"
         "$PROJECT_DIR/Web/necto_ddns.html"

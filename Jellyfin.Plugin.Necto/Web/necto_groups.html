@@ -1,12 +1,24 @@
 <!-- necto_groups.html -->
-<!-- The Groups tool. It shows an empty state that says the tool is coming. -->
+<!-- The Groups tool. It lists the groups, Everyone first, and each opens a sidecar that edits it. -->
 
 <div id="NectoGroupsPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox"
      data-controller="__plugin/necto_groups.js">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+                <div class="fieldDescription" data-str="HelpGroups">Groups set what their members may do in every tool. A user in no group takes Everyone.</div>
+
+                <!-- Groups -->
+                <!-- Every group, Everyone first, each opening its editor. -->
+                <div id="groupList"></div>
+                <div class="stolon-card-list-actions">
+                    <button is="emby-button" type="button" id="btnAddGroup" class="raised stolon-button stolon-primary">
+                        <span class="material-icons" aria-hidden="true">add</span>
+                        <span data-str="ButtonAddGroup">Add group</span>
+                    </button>
+                    <span id="groupsStatus" class="stolon-status-text" role="status"></span>
+                </div>
             </div>
         </div>
     </div>

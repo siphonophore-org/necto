@@ -81,7 +81,7 @@ public class PluginTests
     {
         var names = TestPlugin.Create().GetPages().Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
 
-        var expected = new List<string> { "necto", "necto.js", "necto_shared.js", "necto_shared.css", "necto_stolon.js", "necto_stolon.css" };
+        var expected = new List<string> { "necto", "necto.js", "necto_shared.js", "necto_shared.css", "necto_groups_sections.js", "necto_stolon.js", "necto_stolon.css" };
         expected.AddRange(Tools.SelectMany(t => new[] { "necto_" + t, "necto_" + t + ".js" }));
 
         Assert.All(expected, n => Assert.Contains(n, names));
@@ -114,7 +114,7 @@ public class PluginTests
         var registered = TestPlugin.Create().GetPages().Select(p => p.EmbeddedResourcePath).ToHashSet(StringComparer.Ordinal);
         var files = Directory.EnumerateFiles(Path.Combine(ProjectFolder(), "Web")).Select(f => "Jellyfin.Plugin.Necto.Web." + Path.GetFileName(f)).ToList();
 
-        Assert.Equal(32, files.Count);
+        Assert.Equal(33, files.Count);
         Assert.All(files, f => Assert.Contains(f, embedded));
         Assert.All(files, f => Assert.Contains(f, registered));
     }

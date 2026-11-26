@@ -1,12 +1,18 @@
 <!-- necto_settings.html -->
-<!-- The Settings tool. It shows an empty state that says the tool is coming. -->
+<!-- The Settings tool. It holds one collapsible section per tool, each with its own Save. -->
 
 <div id="NectoSettingsPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox"
      data-controller="__plugin/necto_settings.js">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+                <div class="fieldDescription" data-str="HelpSettings">Sets how each tool works. Who may use a tool is set on its groups.</div>
+                <div id="settingsStatus" class="stolon-status-text" role="status"></div>
+
+                <!-- Sections -->
+                <!-- One section per tool, drawn from the registry. -->
+                <div id="settingsSections"></div>
             </div>
         </div>
     </div>

@@ -1,12 +1,17 @@
 <!-- necto_troubleshooting.html -->
-<!-- The Troubleshooting tool. It shows an empty state that says the tool is coming. -->
+<!-- The Troubleshooting tool. It holds one collapsible section per tool, with its checks and repairs. -->
 
 <div id="NectoTroubleshootingPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-button"
      data-controller="__plugin/necto_troubleshooting.js">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+                <div class="fieldDescription" data-str="HelpTroubleshooting">Holds the checks and repairs of each tool.</div>
+
+                <!-- Sections -->
+                <!-- One section per tool, drawn from the registry. -->
+                <div id="troubleshootingSections"></div>
             </div>
         </div>
     </div>
