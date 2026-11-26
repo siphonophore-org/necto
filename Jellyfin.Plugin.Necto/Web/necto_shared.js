@@ -28,12 +28,26 @@ import {
     createChipSelect,
     createCheckboxList,
     createSaveBar,
-    createCopyField
+    createCopyField,
+    createPaginatedTable,
+    openSidecar,
+    promptSidecar,
+    createMediaCard,
+    createDefinitionList,
+    createBanner,
+    createSortableCardList,
+    createTimeline,
+    escapeHtml,
+    SECRET_KEPT
 } from './configurationpage?name=necto_stolon.js';
 
 // Re-exports
 // The Stolon builders a tool page uses, so a page takes everything from this one module.
-export { openTool, confirmDialog, openEditorSidecar, createRecordList, createCollapsibleSection, createRepeater, createChipSelect, createCheckboxList, createSaveBar, createCopyField };
+export {
+    openTool, confirmDialog, openEditorSidecar, createRecordList, createCollapsibleSection, createRepeater, createChipSelect, createCheckboxList,
+    createSaveBar, createCopyField, createPaginatedTable, openSidecar, promptSidecar, createMediaCard, createDefinitionList, createBanner,
+    createSortableCardList, createTimeline, escapeHtml, SECRET_KEPT
+};
 
 var PLUGIN_ID = 'a8b5ecb0-fc00-428b-85e8-74b85820166d';
 

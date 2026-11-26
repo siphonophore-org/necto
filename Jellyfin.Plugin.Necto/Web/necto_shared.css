@@ -1,2 +1,8 @@
 /* necto_shared.css */
-/* The layout the Necto tools add to Stolon. Every class carries the necto- prefix, and no tool adds one yet. */
+/* The layout the Necto tools add to Stolon. Every class carries the necto- prefix. */
+
+/* necto-detail */
+/* The body of a request's or an issue's sidecar, its media card, notices, details, and notes spaced apart. */
+/* Example: <div class="necto-detail"><div class="stolon-media-card">...</div><dl class="stolon-defs">...</dl></div> */
+.necto-detail { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
+.necto-detail > .fieldDescription { margin: 0; }
