@@ -1,5 +1,23 @@
 [
   "Necto",
   "DDNS",
-  "WireGuard"
+  "WireGuard",
+  "APFS",
+  "Btrfs",
+  "exFAT",
+  "EXT2",
+  "EXT3",
+  "EXT4",
+  "FAT32",
+  "HFS+",
+  "NFS",
+  "NTFS",
+  "ReFS",
+  "SMART",
+  "SMB",
+  "SMBFS",
+  "SSD",
+  "XFS",
+  "ZFS",
+  "GB"
 ]

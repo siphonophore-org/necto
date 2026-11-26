@@ -64,6 +64,7 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
     {
         ArgumentNullException.ThrowIfNull(incoming);
         GroupNormalizer.Normalize(incoming);
+        Services.Storage.AlertOrder.Normalize(incoming.Storage ??= new Configuration.Storage.StorageConfiguration());
     }
 
     /// <inheritdoc />
@@ -120,6 +121,13 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
         {
             Name = "necto_groups_sections.js",
             EmbeddedResourcePath = $"{ns}.Web.necto_groups_sections.js"
+        };
+
+        // The Storage sections of Settings and Troubleshooting.
+        yield return new PluginPageInfo
+        {
+            Name = "necto_storage_sections.js",
+            EmbeddedResourcePath = $"{ns}.Web.necto_storage_sections.js"
         };
 
         foreach (var page in GetSharedPages("necto"))

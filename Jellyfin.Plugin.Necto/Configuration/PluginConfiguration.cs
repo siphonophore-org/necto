@@ -25,6 +25,9 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Gets or sets the provider each user had before password rules moved them onto Necto's.</summary>
     public List<ProviderEnrollment> ProviderEnrollments { get; set; } = new();
 
+    /// <summary>Gets or sets the Storage settings.</summary>
+    public Storage.StorageConfiguration Storage { get; set; } = new();
+
     /// <summary>
     /// Builds the Everyone group as a fresh install has it, which gives nothing.
     /// </summary>

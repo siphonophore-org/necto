@@ -29,6 +29,7 @@
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="Siphonophore.Stolon" Version="12.4.8" />
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.95.2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -45,8 +46,32 @@
     <JellyfinString Include="Save" />
     <JellyfinString Include="Settings" />
     <JellyfinString Include="TabDashboard" />
+    <JellyfinString Include="All" />
+    <JellyfinString Include="HeaderLibraries" />
+    <JellyfinString Include="LabelAvailable" />
+    <JellyfinString Include="Folders" />
+    <JellyfinString Include="LabelDevice" />
+    <JellyfinString Include="LabelFolder" />
+    <JellyfinString Include="LabelStatus" />
+    <JellyfinString Include="LabelSystem" />
+    <JellyfinString Include="LabelType" />
+    <JellyfinString Include="Refresh" />
+    <JellyfinString Include="LabelSize" />
+    <JellyfinString Include="Alerts" />
+    <JellyfinString Include="Off" />
+    <JellyfinString Include="None" />
+    <JellyfinString Include="External" />
+    <JellyfinString Include="StorageType.Network" />
+    <JellyfinString Include="Name" />
+    <JellyfinString Include="LabelWeb" />
+    <JellyfinString Include="LabelLogs" />
+    <JellyfinString Include="LabelMetadata" />
+    <JellyfinString Include="LabelCache" />
+    <JellyfinString Include="LabelTranscodes" />
     <!-- The plugin's own key keeps English Jellyfin also says, with another meaning. -->
     <JellyfinTextMatch Include="TitleNewGroup" />
+    <JellyfinTextMatch Include="StorageHeaderFormat" />
+    <JellyfinTextMatch Include="StorageLabelSpace" />
   </ItemGroup>
 
 </Project>
