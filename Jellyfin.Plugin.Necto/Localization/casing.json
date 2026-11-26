@@ -1,5 +1,14 @@
 [
   "Necto",
   "DDNS",
-  "WireGuard"
+  "WireGuard",
+  "Radarr",
+  "Sonarr",
+  "TMDb",
+  "IMDb",
+  "TVDB",
+  "Discord",
+  "JSON",
+  "POST",
+  "Quick Connect"
 ]

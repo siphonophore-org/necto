@@ -1,0 +1,31 @@
+{
+    "id": "./",
+    "name": "Jellyfin Requests",
+    "short_name": "Requests",
+    "description": "Request movies and shows for Jellyfin",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#101010",
+    "theme_color": "#101010",
+    "icons": [
+        {
+            "src": "icons/requests-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/requests-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/requests-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

@@ -153,7 +153,7 @@ public class PermissionMergerTests
         var merged = PermissionService.Resolve(config, User, isAdministrator: true);
 
         Assert.True(merged.IsAdministrator);
-        Assert.True(merged.Requests.MayRequest && merged.Requests.AutoApprove && merged.Requests.MayManage && merged.Requests.MaySeeOthers);
+        Assert.True(merged.Requests.MayRequest && merged.Requests.AutoApproveMovies && merged.Requests.AutoApproveSeries && merged.Requests.MayManage && merged.Requests.MaySeeOthers);
         Assert.True(merged.Issues.MayReport && merged.Issues.MayManage);
         Assert.True(merged.WireGuard.MayHavePeers);
         Assert.Equal(0, merged.WireGuard.MaxPeers);

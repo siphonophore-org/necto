@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Services.Groups;
+using Jellyfin.Plugin.Necto.Services.Requests;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
@@ -56,7 +57,7 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
 
     /// <summary>
     /// Normalizes the groups of a configuration before it is saved, so a save from any page keeps Everyone, every
-    /// section, and only groups that exist in the settings that name one.
+    /// section, and only groups that exist in the settings that name one. The Requests and Issues settings are cleaned too.
     /// </summary>
     /// <param name="incoming">The configuration about to be saved.</param>
     /// <param name="stored">The configuration in effect.</param>
@@ -64,6 +65,7 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
     {
         ArgumentNullException.ThrowIfNull(incoming);
         GroupNormalizer.Normalize(incoming);
+        RequestSettingsNormalizer.Normalize(incoming, stored ?? new PluginConfiguration(), RequestSecrets.Current);
     }
 
     /// <inheritdoc />
@@ -120,6 +122,13 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
         {
             Name = "necto_groups_sections.js",
             EmbeddedResourcePath = $"{ns}.Web.necto_groups_sections.js"
+        };
+
+        // The Requests and Issues sections of Settings and Troubleshooting.
+        yield return new PluginPageInfo
+        {
+            Name = "necto_requests_sections.js",
+            EmbeddedResourcePath = $"{ns}.Web.necto_requests_sections.js"
         };
 
         foreach (var page in GetSharedPages("necto"))

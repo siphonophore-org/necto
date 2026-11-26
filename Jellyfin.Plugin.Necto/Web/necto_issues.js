@@ -288,7 +288,7 @@ export default function (view) {
         bag.apiPrefix = '';
         table = nectoModule.createPaginatedTable(view, bag, {
             containerId: 'issuesTable',
-            endpoint: 'Issues',
+            endpoint: 'Issues/All',
             selection: { enabled: false, idKey: 'Id' },
             search: { enabled: true, placeholder: t.tr('RequestsSearchIssuesPlaceholder') },
             filters: [

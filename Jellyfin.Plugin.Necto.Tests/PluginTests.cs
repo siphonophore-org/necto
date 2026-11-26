@@ -114,9 +114,13 @@ public class PluginTests
         var registered = TestPlugin.Create().GetPages().Select(p => p.EmbeddedResourcePath).ToHashSet(StringComparer.Ordinal);
         var files = Directory.EnumerateFiles(Path.Combine(ProjectFolder(), "Web")).Select(f => "Jellyfin.Plugin.Necto.Web." + Path.GetFileName(f)).ToList();
 
-        Assert.Equal(33, files.Count);
+        // The request page and its files are served by the Requests controller at /requests and /issues, not as dashboard pages.
+        var userPage = new[] { "necto_requests_page.", "necto_requests_webclient.", "necto_requests_manifest.", "necto_requests_tmdb.", "necto_requests_icon_" };
+        var dashboard = files.Where(f => !userPage.Any(u => f.StartsWith("Jellyfin.Plugin.Necto.Web." + u, StringComparison.Ordinal))).ToList();
+
+        Assert.Equal(34, dashboard.Count);
         Assert.All(files, f => Assert.Contains(f, embedded));
-        Assert.All(files, f => Assert.Contains(f, registered));
+        Assert.All(dashboard, f => Assert.Contains(f, registered));
     }
 
     /// <summary>

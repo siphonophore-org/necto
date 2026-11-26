@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Jellyfin.Plugin.Necto.Configuration.Accounts;
 using Jellyfin.Plugin.Necto.Configuration.Groups;
+using Jellyfin.Plugin.Necto.Configuration.Issues;
+using Jellyfin.Plugin.Necto.Configuration.Requests;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.Necto.Configuration;
@@ -24,6 +26,12 @@ public class PluginConfiguration : BasePluginConfiguration
 
     /// <summary>Gets or sets the provider each user had before password rules moved them onto Necto's.</summary>
     public List<ProviderEnrollment> ProviderEnrollments { get; set; } = new();
+
+    /// <summary>Gets or sets the Requests settings.</summary>
+    public RequestSettings Requests { get; set; } = new();
+
+    /// <summary>Gets or sets the Issues settings.</summary>
+    public IssueSettings Issues { get; set; } = new();
 
     /// <summary>
     /// Builds the Everyone group as a fresh install has it, which gives nothing.

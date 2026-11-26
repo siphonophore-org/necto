@@ -43,7 +43,7 @@ async function openPage(config, answers, storage) {
     dom.document.documentElement.appendChild(view);
     var routes = Object.assign({
         'GET Issues/Stats': { Reported: 2, Confirmed: 1, Resolved: 4, Declined: 1, Rescinded: 0 },
-        'GET Issues': { Items: [issue()], TotalCount: 1 }
+        'GET Issues/All': { Items: [issue()], TotalCount: 1 }
     }, answers || {});
     globalThis.ApiClient.fetch = function (options) {
         page.requests.push(options);
@@ -134,7 +134,7 @@ test('while issues are on the page draws the counts and reads the list on the ke
 
     assert.equal(opened.view.querySelector('#issuesOff').classList.contains('stolon-hidden'), true);
     assert.deepEqual(texts(opened.view.querySelector('#issueStats'), '.stolon-card-count'), ['3', '2', '1', '4', '1']);
-    var list = opened.page.requests.find(function (r) { return String(r.url).indexOf('Issues?') === 0; });
+    var list = opened.page.requests.find(function (r) { return String(r.url).indexOf('Issues/All?') === 0; });
     assert.match(list.url, /filter=Confirmed/);
     assert.match(list.url, /type=Audio/);
 });
