@@ -184,7 +184,11 @@ export function createInviteEditor(invite, ctx) {
     var pin = input(t.tr('InvitesLabelPin'), 'text', '', 'Pin', t.tr('InvitesPinHelp'), '123456');
     pin.setAttribute('inputmode', 'numeric');
     pin.setAttribute('maxlength', '6');
-    if (invite.HasPin) nectoModule.bindSecretField(pin, true, { clearButton: true });
+    if (invite.HasPin) {
+        var clearPin = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'clear-pin' }, [el('span', { text: t.tr('InvitesButtonRemovePin') })]);
+        pin.parentNode.appendChild(clearPin);
+        nectoModule.bindSecretField(pin, true, { clearButton: clearPin });
+    }
 
     root.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderResources') }));
     root.appendChild(el('div', { class: 'fieldDescription', text: t.tr('InvitesResourcesHelp') }));

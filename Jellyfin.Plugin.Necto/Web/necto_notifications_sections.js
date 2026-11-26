@@ -121,6 +121,21 @@ function field(opts) {
     return { wrap: wrap, input: input };
 }
 
+// clearButton
+// Builds the button that clears a stored secret on the next save, placed under its field.
+//
+// Inputs
+// wrap [HTMLElement]: The field's container.
+// t [object]: The strings.
+//
+// Output
+// [HTMLButtonElement]: The button, for bindSecretField's clearButton.
+function clearButton(wrap, t) {
+    var button = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'clear-secret' }, [el('span', { text: t.tr('NotificationsButtonClear') })]);
+    wrap.appendChild(button);
+    return button;
+}
+
 // check
 // Builds a checkbox with its description.
 //
@@ -167,6 +182,7 @@ function buildSettings(content, ctx) {
     var tls = check({ label: t.tr('NotificationsLabelSmtpTls'), help: t.tr('NotificationsSmtpTlsHelp'), data: 'Smtp.UseTls' });
     var user = field({ label: t.tr('NotificationsLabelSmtpUser'), data: 'Smtp.Username', help: t.tr('NotificationsSmtpUserHelp') });
     var password = field({ label: t.tr('NotificationsLabelSmtpPassword'), type: 'password', data: 'Smtp.Password' });
+    var passwordClear = clearButton(password.wrap, t);
     var from = field({ label: t.tr('NotificationsLabelFromAddress'), type: 'email', placeholder: 'jellyfin@example.com', data: 'Smtp.FromAddress' });
     var fromName = field({ label: t.tr('NotificationsLabelFromName'), placeholder: 'Jellyfin', data: 'Smtp.FromName' });
     var listBox = el('div', { 'data-role': 'channels' });
@@ -264,7 +280,7 @@ function buildSettings(content, ctx) {
         user.input.value = smtp.Username || '';
         from.input.value = smtp.FromAddress || '';
         fromName.input.value = smtp.FromName || '';
-        nectoModule.bindSecretField(password.input, smtp.Password === nectoModule.SECRET_KEPT || !!smtp.Password, { clearButton: true });
+        nectoModule.bindSecretField(password.input, smtp.Password === nectoModule.SECRET_KEPT || !!smtp.Password, { clearButton: passwordClear });
         drawChannels();
     }
 
@@ -357,7 +373,7 @@ export function createChannelEditor(channel, ctx) {
         } else {
             var headers = field({ label: t.tr('NotificationsLabelHeaders'), type: 'textarea', data: 'Headers', help: t.tr('NotificationsHeadersHelp') });
             root.appendChild(headers.wrap);
-            nectoModule.bindSecretField(headers.input, channel.Headers === nectoModule.SECRET_KEPT, { clearButton: true });
+            nectoModule.bindSecretField(headers.input, channel.Headers === nectoModule.SECRET_KEPT, { clearButton: clearButton(headers.wrap, t) });
             readers.push(function (out) { out.Headers = nectoModule.readSecretField(headers.input); });
         }
         var custom = check({ label: t.tr('NotificationsLabelCustomBody'), help: t.tr('NotificationsCustomBodyHelp'), checked: channel.UseCustomBody, data: 'UseCustomBody' });
