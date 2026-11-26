@@ -42,5 +42,7 @@ markdown_extensions:
 
 nav:
   - Overview: index.md
+  - Tools:
+      - Groups: Groups.md
   - Development:
       - Plan: Plan.md

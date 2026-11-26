@@ -55,7 +55,13 @@ Groups are the only place a permission is set. A tool's own page sets how the to
   * **Invites:** may create invites, how many, into which groups.
   * **Accounts** (from User Management): password rules, password resets, expiration, inactivity, session rules.
   * **Notifications:** which events members receive, and on which channels.
-* Users outside every group take the **Everyone** group, which always exists.
+* Users outside every group take the **Everyone** group, which always exists. Everyone never adds to a real group's permissions.
+* A count or limit of 0 is no limit, so it is the largest. A limit counts only from groups that allow the action. **Review**
+* Account rules combine the other way, since any one group may keep an account. Password rules hold when any group enforces them, at their strictest, with the most generous change mode. Expiry, inactivity, and session cleanup hold only when every group has them, at the largest window, and expiry deletes only when every group asks for it. **Review**
+* User Management's default group is **Settings > Groups > Group for new users**. Existing users in no group stay in **Everyone** rather than being moved into it. **Review**
+* User Management's Jellyfin policy and preference templates (**Access and features**, **Preferences**) are not carried over yet. They write Jellyfin's own user policy, and several groups need a merge rule for each field first. **Review**
+* The request quota window is a Requests setting, and the quotas by type are permissions. **Review**
+* See [Groups](Groups.md) for what is built.
 
 ### Proxy
 
