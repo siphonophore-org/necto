@@ -301,3 +301,29 @@ export function createNectoShared(view, bag) {
 
     return shared;
 }
+
+// Re-exports for Notifications, Invites, and the group templates
+// The Stolon builders those tools use, kept apart from the list above.
+export {
+    createInheritField,
+    createAccessSchedule,
+    createTagInput,
+    createOrderedList,
+    createQrCode,
+    createNotifyPreview,
+    openSidecar,
+    bindSecretField,
+    readSecretField,
+    clearSecretField,
+    SECRET_KEPT,
+    subscribeWebPush,
+    unsubscribeWebPush,
+    webPushState,
+    webPushLabel,
+    startUserPage,
+    startWebClientShell,
+    showUserPageView,
+    setUserPageMessage,
+    loadTranslations,
+    createTranslations
+} from './configurationpage?name=necto_stolon.js';

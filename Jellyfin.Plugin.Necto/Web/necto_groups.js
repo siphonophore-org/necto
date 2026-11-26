@@ -3,6 +3,7 @@
 // members, and a collapsible section of permissions per tool, with Delete, Cancel, and Save on the shelf.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
+import * as nectoTemplates from './configurationpage?name=necto_groups_templates.js';
 
 var el = nectoModule.el;
 
@@ -177,7 +178,7 @@ export function sectionSpecs() {
             ]
         },
         {
-            key: 'invites', title: 'TabInvites', icon: 'mail', fields: [
+            key: 'invites', title: 'TabInvites', icon: 'mail', built: true, fields: [
                 { path: 'Invites.MayCreate', kind: 'check', label: 'LabelMayCreateInvites', reveals: [
                     { path: 'Invites.MaxInvites', kind: 'number', label: 'LabelMaxInvites', help: 'MaxInvitesHelp', min: 0 },
                     { path: 'Invites.AnyGroup', kind: 'check', label: 'LabelAnyGroup' },
@@ -194,7 +195,10 @@ export function sectionSpecs() {
         },
         { key: 'scripts', title: 'TabScripts', icon: 'code', fields: [{ path: 'Scripts.AllScripts', kind: 'check', label: 'LabelAllScripts' }] },
         { key: 'pages', title: 'TabPages', icon: 'web', fields: [{ path: 'CustomPages.AllPages', kind: 'check', label: 'LabelAllPages' }] },
-        { key: 'notifications', title: 'TabNotifications', icon: 'notifications', fields: [{ path: 'Notifications.AllEvents', kind: 'check', label: 'LabelAllEvents' }] }
+        { key: 'notifications', title: 'TabNotifications', icon: 'notifications', built: true, fields: [
+            { path: 'Notifications.AllEvents', kind: 'check', label: 'LabelAllEvents', help: 'NotificationsAllEventsHelp' },
+            { path: 'Notifications.EventKeys', kind: 'events', label: 'NotificationsGroupEvents', help: 'NotificationsGroupEventsHelp' }
+        ] }
     ];
 }
 
@@ -418,6 +422,17 @@ export function createGroupEditor(group, ctx) {
             readers.push(function (out) { setPath(out.Permissions, spec.path, list.getValue()); });
         } else if (spec.kind === 'sessions') {
             drawSessions(into, value || [], spec);
+        } else if (spec.kind === 'events') {
+            var events = nectoModule.createCheckboxList({
+                items: (ctx.events || []).filter(function (e) { return e.ForUsers; }),
+                idKey: 'Key',
+                value: value || [],
+                renderRow: function (e) { return { label: e.Name, sublabel: e.Key }; },
+                emptyMessage: t.tr('NotificationsNoUserEvents')
+            });
+            into.appendChild(el('div', { 'data-field': spec.path }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), events.element, describe(spec)]));
+            handles.push(events);
+            readers.push(function (out) { setPath(out.Permissions, spec.path, events.getValue()); });
         }
 
         if (spec.reveals) {
@@ -492,14 +507,18 @@ export function createGroupEditor(group, ctx) {
     });
     section(t.tr('HeaderAccountRules'), 'manage_accounts', accountsContent).element.setAttribute('data-section', 'accounts');
 
+    // Templates
+    var templatesDrawn = nectoTemplates.drawTemplateSections(section, draft, ctx, readers, handles);
+    ready = Promise.all([ready, templatesDrawn]);
+
     // One section per tool, each saying the tool is coming until it is built.
     sectionSpecs().forEach(function (spec) {
         var content = el('div', {}, [
-            el('div', { class: 'stolon-info', 'data-role': 'coming', text: t.tr('MessageToolComing') }),
+            spec.built ? null : el('div', { class: 'stolon-info', 'data-role': 'coming', text: t.tr('MessageToolComing') }),
             el('div', { class: 'fieldDescription', text: t.tr('HelpPermissionMerge') })
         ]);
         spec.fields.forEach(function (field) { drawField(field, content); });
-        section(t.tr(spec.title), spec.icon, content, { badge: { label: t.tr('BadgeComing'), color: 'gray' } }).element.setAttribute('data-section', spec.key);
+        section(t.tr(spec.title), spec.icon, content, spec.built ? {} : { badge: { label: t.tr('BadgeComing'), color: 'gray' } }).element.setAttribute('data-section', spec.key);
     });
 
     return {
@@ -526,6 +545,18 @@ export function createGroupEditor(group, ctx) {
     };
 }
 
+// groupOrder
+// Lists the ids of groups in their order, for Groups/Order.
+//
+// Inputs
+// groups [object[]]: The groups, without Everyone, in the new order.
+//
+// Output
+// [string[]]: Their ids.
+export function groupOrder(groups) {
+    return (groups || []).filter(function (g) { return !isEveryone(g); }).map(function (g) { return g.Id; });
+}
+
 export default function (view) {
     'use strict';
 
@@ -535,6 +566,7 @@ export default function (view) {
     var groups = [];
     var users = [];
     var devices = [];
+    var events = [];
     var loadSeq = 0;
 
     // report
@@ -550,12 +582,14 @@ export default function (view) {
         return Promise.all([
             shared.request('Groups'),
             shared.request('Groups/Users'),
-            shared.request('Devices').catch(function () { return { Items: [] }; })
+            shared.request('Devices').catch(function () { return { Items: [] }; }),
+            shared.request('Notifications/Events').catch(function () { return []; })
         ]).then(function (answers) {
             if (mine !== loadSeq) return;
             groups = answers[0] || [];
             users = answers[1] || [];
             devices = (answers[2] && answers[2].Items) || [];
+            events = Array.isArray(answers[3]) ? answers[3] : [];
             var items = groupItems(groups, users, shared);
             if (list) list.setItems(items);
             else {
@@ -620,7 +654,7 @@ export default function (view) {
     function openGroup(group) {
         var t = shared.t;
         var isNew = !group;
-        var editor = createGroupEditor(group || { Name: '', MemberIds: [], Permissions: {} }, { shared: shared, users: users, groups: groups, devices: devices });
+        var editor = createGroupEditor(group || { Name: '', MemberIds: [], Permissions: {} }, { shared: shared, users: users, groups: groups, devices: devices, events: events });
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('TitleNewGroup') : groupName(group, t),
             body: editor.element,
@@ -636,10 +670,48 @@ export default function (view) {
         });
     }
 
+    // openOrder
+    // Opens the group order in a sidecar, where the first group with a template on gives a member theirs.
+    function openOrder() {
+        var t = shared.t;
+        var ordered = groups.filter(function (g) { return !isEveryone(g); });
+        var list = nectoModule.createOrderedList({
+            items: ordered,
+            render: function (g) { return el('span', { text: g.Name }); },
+            label: function (g) { return g.Name; }
+        });
+        var status = el('div', { class: 'stolon-status-text', role: 'status' });
+        var body = el('div', {}, [el('div', { class: 'fieldDescription', text: t.tr('GroupsOrderHelp') }), status, list.element]);
+        nectoModule.openEditorSidecar({
+            title: t.tr('GroupsButtonOrder'),
+            body: body,
+            page: page,
+            isNew: true,
+            size: 'medium',
+            serialize: function () { return JSON.stringify(groupOrder(list.getItems())); },
+            saveText: t.tr('Save'),
+            onSave: function () {
+                return shared.request('Groups/Order', 'PUT', groupOrder(list.getItems())).then(function () {
+                    report(t.tr('GroupsOrderSaved'), false);
+                    loadGroups();
+                    return true;
+                }).catch(function (err) {
+                    return shared.errorText(err, t.tr('GroupsErrorSaveOrder')).then(function (text) {
+                        shared.setStatus(status, text, true);
+                        return false;
+                    });
+                });
+            },
+            onClose: function () { list.destroy(); }
+        });
+    }
+
     var made = nectoModule.createNectoPage(view, {
         page: 'necto_groups',
         bind: function () {
             view.querySelector('#btnAddGroup').addEventListener('click', function () { openGroup(null); });
+            var order = view.querySelector('#btnOrderGroups');
+            if (order) order.addEventListener('click', openOrder);
         },
         load: function () { loadGroups(); }
     });

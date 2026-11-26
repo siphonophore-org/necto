@@ -1,12 +1,24 @@
 <!-- necto_notifications.html -->
-<!-- The Notifications tool. It shows an empty state that says the tool is coming. -->
+<!-- The Notifications tool. It lists every channel with a test for each. -->
 
 <div id="NectoNotificationsPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-button"
      data-controller="__plugin/necto_notifications.js">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+                <div class="fieldDescription" data-str="NotificationsHelpPage">Sends each event to the channels below. Channels are set in Settings, and who gets which event is set on groups.</div>
+                <div id="notificationsStatus" class="stolon-status-text" role="status"></div>
+
+                <!-- Channels -->
+                <!-- Every channel, the user channels first, each with its test. -->
+                <div id="channelList"></div>
+                <div class="stolon-card-list-actions">
+                    <button is="emby-button" type="button" id="btnChannelSettings" class="raised stolon-button stolon-secondary">
+                        <span class="material-icons" aria-hidden="true">settings</span>
+                        <span data-str="NotificationsButtonSettings">Channel settings</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

@@ -45,8 +45,7 @@ public class InvitesController : ControllerBase
     {
         Translations = "Necto/Translations",
         Mark = "Invites",
-        MarkIcon = "mail",
-        Frame = HostedPageFrame.WebClient
+        MarkIcon = "mail"
     };
 
     private readonly InviteService _invites;

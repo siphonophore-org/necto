@@ -266,6 +266,7 @@ public sealed class InviteService : IDisposable
         ArgumentNullException.ThrowIfNull(request);
         string? error = null;
         var found = false;
+        var revived = false;
         _store.Mutate(c =>
         {
             var stored = c.Invites.FirstOrDefault(i => i.Id == id);
@@ -282,6 +283,13 @@ public sealed class InviteService : IDisposable
                 return false;
             }
 
+            // A day moved ahead turns the invite back on, as moving its expiry alone does.
+            if (copy.ExpiresAt != stored.ExpiresAt && (copy.ExpiresAt is not { } due || due.Date > Now.Date))
+            {
+                copy.Enabled = true;
+                revived = true;
+            }
+
             c.Invites[c.Invites.IndexOf(stored)] = copy;
             InviteNormalizer.Normalize(c);
             return true;
@@ -290,6 +298,11 @@ public sealed class InviteService : IDisposable
         if (!found)
         {
             return (null, null);
+        }
+
+        if (revived)
+        {
+            ClearPinFailures(id);
         }
 
         return error is not null ? (null, error) : (Summaries(i => i.Id == id).First(), null);
