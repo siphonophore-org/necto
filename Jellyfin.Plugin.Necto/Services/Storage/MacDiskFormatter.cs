@@ -69,7 +69,7 @@ public sealed partial class MacDiskFormatter : IDiskFormatter
         var arguments = Arguments(disk.Device, name, fileSystem);
         if (!OperatingSystem.IsMacOS() || arguments is null)
         {
-            return FormatResult.Failed("This disk can't be formatted");
+            return FormatResult.Failed("This disk cannot be formatted");
         }
 
         var start = new ProcessStartInfo(DiskUtil) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };

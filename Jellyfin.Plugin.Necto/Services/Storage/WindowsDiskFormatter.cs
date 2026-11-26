@@ -58,7 +58,7 @@ public sealed class WindowsDiskFormatter : IDiskFormatter
         var number = DiskNumber(disk.Device);
         if (!OperatingSystem.IsWindows() || number is null || Array.IndexOf((string[])FileSystems, fileSystem) < 0)
         {
-            return FormatResult.Failed("This disk can't be formatted");
+            return FormatResult.Failed("This disk cannot be formatted");
         }
 
         try

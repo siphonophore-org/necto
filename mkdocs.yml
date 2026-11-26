@@ -44,5 +44,6 @@ nav:
   - Overview: index.md
   - Tools:
       - Groups: Groups.md
+      - Storage: Storage.md
   - Development:
       - Plan: Plan.md

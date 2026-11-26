@@ -91,7 +91,7 @@ public sealed class ScanGuard : IHostedService
             return Array.Empty<DiskInfo>();
         }
 
-        _logger.LogWarning("Blocked a library scan because {Disks} can't be read", string.Join(", ", blockers.Select(d => d.MountPoint)));
+        _logger.LogWarning("Blocked a library scan because {Disks} cannot be read", string.Join(", ", blockers.Select(d => d.MountPoint)));
         _activity.ScanBlocked(blockers);
         return blockers;
     }

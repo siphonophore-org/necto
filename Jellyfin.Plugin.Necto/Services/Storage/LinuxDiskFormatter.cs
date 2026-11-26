@@ -117,7 +117,7 @@ public sealed class LinuxDiskFormatter : IDiskFormatter
     private static string Describe(DBusErrorReplyException ex) => ex.ErrorName switch
     {
         "org.freedesktop.UDisks2.Error.NotAuthorized" or "org.freedesktop.UDisks2.Error.NotAuthorizedCanObtain" or "org.freedesktop.DBus.Error.AccessDenied"
-            => "Jellyfin isn't allowed to manage disks",
+            => "Jellyfin is not allowed to manage disks",
         _ => ex.Message
     };
 

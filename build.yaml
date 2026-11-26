@@ -12,11 +12,14 @@ category: "Administration"
 owner: "siphonophore"
 artifacts:
 - "Jellyfin.Plugin.Necto.dll"
+- "Tmds.DBus.Protocol.dll"
 changelog:
   added:
   - "The first release of Necto"
   - "Groups, with members, a permission section for every tool, and Everyone for users in no group"
   - "Account rules on groups from User Management, with password requirements, expiry, inactivity, and session cleanup"
   - "Settings and Troubleshooting, with a section per tool"
+  - "Storage from Storage Manager, with disks, space, SMART health, missing disks and remounting, formatting, new folders, and libraries per disk. Its alerts go to Notifications"
   developer:
   - "Routes under /Groups list, create, save, and delete groups, list users with their groups, and give a user's permissions"
+  - "Routes under /Storage check the disks, give the format options, format a disk, and make a folder"

@@ -87,6 +87,11 @@ Turning WireGuard on asks to download `wireguard-go`, which is the only way Wire
 
 Everything Storage Manager does. Pooling disks or RAID is left out of 12.4.0.0: it needs the operating system's own tools run as root, which a plugin cannot do safely, and a pool Jellyfin cannot see as one disk gains nothing over a library with several folders. **Review**
 
+* Disk alerts write the activity log as Storage Manager did, and also go to Notifications under `storage.*` keys. Once the activity log is a Notifications channel, one of the two may need to go so entries are not written twice. **Review**
+* A disk's own alerts and its share address stay in the disk's sidecar on the **Storage** page, since each belongs to one disk the check found. Everything else is in **Settings > Storage**. **Review**
+* Formatting, erasing, and remounting keep Storage Manager's safeguards: a typed confirm, a second look at the disk when the format starts, one format at a time, and no format for the system disk, a mounted or stacked disk, or a library's own disk. **Review**
+* **Troubleshooting > Storage** can put every Storage setting back to its default after a confirm, each disk's own alerts and share addresses with it. **Review**
+
 ### Notifications
 
 One service every tool sends events to, and one set of channels.
