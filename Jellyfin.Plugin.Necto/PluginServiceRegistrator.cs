@@ -10,7 +10,7 @@ using Siphonophore.Stolon;
 namespace Jellyfin.Plugin.Necto;
 
 /// <summary>
-/// Registers every class marked with <see cref="PluginServiceAttribute"/>, and Stolon's activity logger.
+/// Registers every class marked with <see cref="PluginServiceAttribute"/>, and Stolon's activity logger, secret protector, and notifier.
 /// </summary>
 public class PluginServiceRegistrator : IPluginServiceRegistrator
 {
@@ -25,6 +25,8 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         }
 
         serviceCollection.AddActivityLogger();
+        serviceCollection.AddPluginSecretProtector("Necto");
+        serviceCollection.AddBaseNotifier();
     }
 
     /// <summary>

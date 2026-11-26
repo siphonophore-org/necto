@@ -25,6 +25,15 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Gets or sets the provider each user had before password rules moved them onto Necto's.</summary>
     public List<ProviderEnrollment> ProviderEnrollments { get; set; } = new();
 
+    /// <summary>Gets or sets the Notifications settings and channels.</summary>
+    public Notifications.NotificationSettings Notifications { get; set; } = new();
+
+    /// <summary>Gets or sets the Invites settings.</summary>
+    public Invites.InviteSettings InviteSettings { get; set; } = new();
+
+    /// <summary>Gets or sets the invites.</summary>
+    public List<Invites.Invite> Invites { get; set; } = new();
+
     /// <summary>
     /// Builds the Everyone group as a fresh install has it, which gives nothing.
     /// </summary>

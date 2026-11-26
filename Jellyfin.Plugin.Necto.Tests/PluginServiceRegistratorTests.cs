@@ -54,9 +54,9 @@ public class PluginServiceRegistratorTests
     [InlineData(typeof(IEventConsumer<UserDeletedEventArgs>), typeof(UserDeletedConsumer))]
     public void RegisterServices_Service_IsOneSingleton(System.Type service, System.Type implementation)
     {
-        var descriptor = Assert.Single(Registered(), d => d.ServiceType == service);
+        // An event can have several consumers, so each implementation is looked for under its service.
+        var descriptor = Assert.Single(Registered(), d => d.ServiceType == service && d.ImplementationType == implementation);
 
-        Assert.Equal(implementation, descriptor.ImplementationType);
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
     }
 }

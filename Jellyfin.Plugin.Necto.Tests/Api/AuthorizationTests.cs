@@ -28,21 +28,29 @@ public class AuthorizationTests
     }
 
     /// <summary>
-    /// Only the strings route allows anonymous callers.
-    /// True: nothing but the page's words is served without a sign in.
+    /// Only the strings, the shared service worker, and the invite signup routes allow anonymous callers.
+    /// True: nothing but the page's words, the worker, and an invite's own signup is served without a sign in.
     /// False: a route would answer anyone.
     /// </summary>
     [Fact]
-    public void OnlyTranslations_AllowsAnonymous()
+    public void OnlyPublicRoutes_AllowAnonymous()
     {
         var open = Controllers
             .SelectMany(c => c.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             .Where(m => m.GetCustomAttribute<AllowAnonymousAttribute>() is not null)
             .ToList();
 
-        Assert.Equal(new[] { typeof(NectoController).GetMethod(nameof(NectoController.Translations)) }, open);
+        var expected = new[]
+        {
+            typeof(NectoController).GetMethod(nameof(NectoController.Translations)),
+            typeof(Jellyfin.Plugin.Necto.Api.Notifications.NotificationsController).GetMethod(nameof(Jellyfin.Plugin.Necto.Api.Notifications.NotificationsController.Worker))
+        }.Concat(PublicInviteRoutes()).ToList();
+
+        Assert.Equal(expected.Select(m => m!.DeclaringType!.Name + "." + m.Name).OrderBy(n => n, StringComparer.Ordinal), open.Select(m => m.DeclaringType!.Name + "." + m.Name).OrderBy(n => n, StringComparer.Ordinal));
         Assert.All(Controllers, c => Assert.Null(c.GetCustomAttribute<AllowAnonymousAttribute>()));
     }
+
+    private static MethodInfo?[] PublicInviteRoutes() => System.Array.Empty<MethodInfo?>();
 
     /// <summary>
     /// No route starts with a segment Jellyfin 12.4 answers at.
