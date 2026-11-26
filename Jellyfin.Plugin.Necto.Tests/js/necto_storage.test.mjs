@@ -237,3 +237,206 @@ test('the tool checks every disk, says what needs a look, and lists the disks in
     assert.ok(sidecar.querySelector('[data-role="disk-alerts"]'));
     assert.equal(sidecar.querySelector('[data-role="new-folder"]'), null);
 });
+
+// openStorage
+// Shows the Storage tool over a view with its markup, answering its routes, and opens the first disk row.
+//
+// Inputs
+// disks [object[]]: What GET Storage/Disks gives.
+// opts [object]: config is the plugin configuration, answers the other routes, filter all to list every disk.
+//
+// Output
+// [object]: page, dom, view, saved configs, and the open sidecar.
+async function openStorage(disks, opts) {
+    opts = opts || {};
+    var page = installPage({ config: opts.config || {} });
+    var dom = page.dom;
+    globalThis.getComputedStyle = function () { return { getPropertyValue: function () { return '#888888'; } }; };
+    globalThis.ApiClient.getVirtualFolders = function () { return Promise.resolve([{ Name: 'Movies' }, { Name: 'Collections', CollectionType: 'boxsets' }]); };
+    var saved = [];
+    globalThis.ApiClient.updatePluginConfiguration = function (id, next) { saved.push(JSON.parse(JSON.stringify(next))); return Promise.resolve(); };
+    var ids = ['storageAttention', 'storageSpaceCards', 'storageCheckStatus', 'storageDiskList'];
+    var filterEl = dom.el('div', { id: 'storageDiskFilter', class: 'stolon-pill-group' }, [
+        dom.el('button', { class: 'stolon-pill', 'data-value': 'used' }),
+        dom.el('button', { class: 'stolon-pill', 'data-value': 'all' })
+    ]);
+    var refresh = dom.el('button', { id: 'btnStorageCheck' }, [dom.el('span', { id: 'storageRefreshIcon' })]);
+    var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }).concat([filterEl, refresh]));
+    dom.document.documentElement.appendChild(view);
+    routeApi(page, Object.assign({ 'GET Storage/Disks': disks }, opts.answers || {}));
+    var mod = await loadScript('necto_storage.js');
+    mod.default(view);
+    view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
+    await settle();
+    if (opts.filter === 'all') {
+        filterEl.querySelector('[data-value="all"]').click();
+        await settle(20);
+    }
+    view.querySelectorAll('#storageDiskList .stolon-record-list-row')[0].click();
+    await settle(50);
+    return { page: page, dom: dom, view: view, saved: saved, sidecar: dom.document.querySelector('.stolon-sidecar') };
+}
+
+// posts
+// Lists the POST requests the page sent to a route.
+function posts(opened, url) {
+    return opened.page.requests.filter(function (r) { return r.type === 'POST' && r.url === url; });
+}
+
+// sectionTitled
+// Finds the sidecar section with this heading.
+function sectionTitled(sidecar, title) {
+    return Array.prototype.find.call(sidecar.querySelectorAll('.necto-storage-section'), function (s) {
+        return s.querySelector('.stolon-subsection-title').textContent === title;
+    });
+}
+
+test('a mounted disk shows its space, libraries, and folders, with the folder states', async function () {
+    var opened = await openStorage([disk({ Level: 'Warning', WarningPercent: 50, WarningStop: { Enabled: true, Value: 50, Unit: 'Percent' }, ReadOnlyFolders: ['/mnt/media/Movies'] })]);
+    var sidecar = opened.sidecar;
+
+    assert.ok(sidecar.querySelector('.necto-storage-space'));
+    assert.ok(sidecar.querySelector('.stolon-pie-chart'));
+    assert.deepEqual(texts(sidecar, '.stolon-tag'), ['Movies']);
+    assert.match(sidecar.querySelector('.stolon-static-table-scroll').innerHTML, /Read only/);
+    assert.ok(sectionTitled(sidecar, 'New folder'));
+    assert.equal(sectionTitled(sidecar, 'Share address'), undefined);
+});
+
+test('turning on a disk own alerts and saving writes them for that disk only, then checks again', async function () {
+    var opened = await openStorage([disk()], { config: { Storage: { DiskOverrides: [{ MountPoint: '/mnt/other' }] } } });
+    var part = opened.sidecar.querySelector('[data-role="disk-alerts"]');
+    var save = Array.prototype.find.call(part.querySelectorAll('button'), function (b) { return b.textContent === 'Save'; });
+    assert.equal(save.disabled, true);
+    var toggle = part.querySelector('input[type="checkbox"]');
+    toggle.checked = true;
+    toggle.dispatchEvent(new globalThis.CustomEvent('change', { bubbles: true }));
+
+    assert.equal(save.disabled, false);
+    save.click();
+    await settle(50);
+
+    var overrides = opened.saved[0].Storage.DiskOverrides;
+    assert.deepEqual(overrides.map(function (o) { return o.MountPoint; }), ['/mnt/other', '/mnt/media']);
+    assert.equal(overrides[1].WarningStop.Value, 90);
+    assert.equal(opened.page.requests.filter(function (r) { return r.url === 'Storage/Disks'; }).length, 2);
+});
+
+test('a missing share takes a share address, saved for its mount point', async function () {
+    var opened = await openStorage([disk({ Kind: 'Share', State: 'Missing', TakesAddress: true, TotalBytes: null, FreeBytes: null })]);
+    var part = sectionTitled(opened.sidecar, 'Share address');
+    var input = part.querySelector('input');
+    input.value = 'smb://nas.example.com/Media';
+    input.dispatchEvent(new globalThis.CustomEvent('input'));
+
+    assert.equal(clickButton(part, 'Save'), true);
+    await settle(50);
+
+    assert.deepEqual(opened.saved[0].Storage.ShareAddresses, [{ MountPoint: '/mnt/media', Address: 'smb://nas.example.com/Media' }]);
+});
+
+test('New folder refuses a bad name before sending, then posts the name and library', async function () {
+    var opened = await openStorage([disk()], { answers: { 'POST Storage/Folders': { Created: true, Path: '/mnt/media/Shows' } } });
+    var part = opened.sidecar.querySelector('[data-role="new-folder"]');
+    var input = part.querySelector('input');
+    var select = part.querySelector('select');
+    assert.deepEqual(texts(select, 'option'), ['None', 'Movies']);
+    input.value = 'a/b';
+
+    assert.equal(clickButton(part, 'Create folder'), true);
+    await settle(20);
+    assert.equal(posts(opened, 'Storage/Folders').length, 0);
+    assert.match(part.querySelector('.stolon-error').textContent, /Use up to 100 characters/);
+
+    input.value = 'Shows';
+    select.value = 'Movies';
+    clickButton(part, 'Create folder');
+    await settle(50);
+    assert.deepEqual(JSON.parse(posts(opened, 'Storage/Folders')[0].data), { MountPoint: '/mnt/media', Name: 'Shows', Library: 'Movies' });
+});
+
+test('a folder the library refused keeps the sidecar open with the reason', async function () {
+    var opened = await openStorage([disk()], { answers: { 'POST Storage/Folders': { Created: true, ErrorKey: 'ErrorAddToLibrary' } } });
+    var part = opened.sidecar.querySelector('[data-role="new-folder"]');
+    part.querySelector('input').value = 'Shows';
+
+    clickButton(part, 'Create folder');
+    await settle(50);
+
+    assert.match(part.querySelector('.stolon-error').textContent, /Jellyfin would not add it to the library/);
+    assert.ok(opened.dom.document.querySelector('.stolon-sidecar'));
+});
+
+test('formatting an unformatted disk asks for its new name, then posts the format', async function () {
+    var blank = disk({ State: 'Unformatted', InUse: false, MountPoint: null, Device: '/dev/sdb', Model: 'Samsung SSD 870', TotalBytes: 2000 * GB, FreeBytes: null, Libraries: [], Folders: [] });
+    var opened = await openStorage([blank], {
+        filter: 'all',
+        answers: {
+            'GET Storage/Format': { FileSystems: ['ext4', 'exfat'], MountRoot: '/mnt', DashesForSpaces: true },
+            'POST Storage/Format': { Formatted: true, MountPoint: '/mnt/Media' }
+        }
+    });
+    var part = opened.sidecar.querySelector('[data-role="format"]');
+    assert.deepEqual(texts(part, '.stolon-choice-name'), ['EXT4', 'exFAT']);
+    assert.equal(part.querySelector('.stolon-warn').textContent, 'Formatting erases everything on this disk, then mounts it at /mnt/Media.');
+
+    assert.equal(clickButton(part, 'Format disk'), true);
+    await settle(50);
+    assert.equal(dialogText(opened.dom).title, 'Format Samsung SSD 870');
+    var typed = opened.dom.document.querySelector('.stolon-dialog:not(.stolon-sidecar) input');
+    typed.value = 'Media';
+    typed.dispatchEvent(new globalThis.CustomEvent('input'));
+    assert.equal(clickDialogButton(opened.dom, 'Format'), true);
+    await settle(50);
+
+    assert.deepEqual(JSON.parse(posts(opened, 'Storage/Format')[0].data), { Device: '/dev/sdb', Name: 'Media', FileSystem: 'ext4', Erase: false, Library: null });
+});
+
+test('a disk that holds data is erased only after its device name is typed', async function () {
+    var used = disk({ State: 'NotMounted', InUse: false, MountPoint: null, Device: '/dev/sdc', Model: 'Flash', Contents: ['Debian 13 (iso9660)'], TotalBytes: 16 * GB, FreeBytes: null, Libraries: [], Folders: [] });
+    var opened = await openStorage([used], {
+        filter: 'all',
+        answers: { 'GET Storage/Format': { FileSystems: ['ext4'], MountRoot: '/mnt', DashesForSpaces: true } }
+    });
+    var part = opened.sidecar.querySelector('[data-role="format"]');
+
+    assert.equal(clickButton(part, 'Erase and format'), true);
+    await settle(50);
+    assert.equal(dialogText(opened.dom).title, 'Erase Flash');
+    assert.match(dialogText(opened.dom).body, /including Debian 13 \(iso9660\)/);
+    assert.equal(clickDialogButton(opened.dom, 'Cancel'), true);
+    await settle(50);
+    assert.equal(posts(opened, 'Storage/Format').length, 0);
+});
+
+test('a bad volume name is refused before anything is asked', async function () {
+    var blank = disk({ State: 'Unformatted', InUse: false, MountPoint: null, Device: '/dev/sdb', TotalBytes: 2000 * GB, FreeBytes: null, Libraries: [], Folders: [] });
+    var opened = await openStorage([blank], { filter: 'all', answers: { 'GET Storage/Format': { FileSystems: ['ext4'], MountRoot: '/mnt' } } });
+    var part = opened.sidecar.querySelector('[data-role="format"]');
+    part.querySelector('input').value = '../etc';
+
+    clickButton(part, 'Format disk');
+    await settle(20);
+
+    assert.equal(dialogText(opened.dom), null);
+    assert.match(part.querySelector('.stolon-error').textContent, /Use up to 11 letters/);
+});
+
+test('a server that cannot format says so, and a library disk that dropped off offers no format', async function () {
+    var blank = disk({ State: 'Unformatted', InUse: false, MountPoint: null, Device: '/dev/sdb', TotalBytes: 2000 * GB, FreeBytes: null, Libraries: [], Folders: [] });
+    var opened = await openStorage([blank], { filter: 'all', answers: { 'GET Storage/Format': { FileSystems: [] } } });
+    assert.match(opened.sidecar.querySelector('[data-role="format"]').textContent, /This server cannot format disks\./);
+
+    var dropped = disk({ State: 'NotMounted', InUse: false, MountPoint: null, MountsAt: '/mnt/media', Device: '/dev/sdd', Libraries: [], Folders: [] });
+    var second = await openStorage([dropped, disk()], { filter: 'all' });
+    assert.equal(second.sidecar.querySelector('[data-role="format"]'), null);
+    assert.match(second.sidecar.textContent, /This is the disk a library expects at \/mnt\/media/);
+});
+
+test('the tool page holds no settings, only the disks', async function () {
+    var fs = await import('node:fs');
+    var html = fs.readFileSync(new URL('../../Jellyfin.Plugin.Necto/Web/necto_storage.html', import.meta.url), 'utf8');
+
+    assert.doesNotMatch(html, /Save|saveBar|emby-checkbox|Settings/);
+    assert.match(html, /storageDiskList/);
+});

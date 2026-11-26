@@ -83,7 +83,7 @@ The top of **Storage** names what needs a look, one line each. It is red when an
 
 The cards add up the size, used space, and free space of every disk Jellyfin uses that could be read. **Free** takes the color of the fullest disk's alert.
 
-Each row is one disk or share, with its name, its mount point, its type, its status, and a bar of its used space. The bar turns orange and red at the disk's **Storage low** and **Storage full** alerts. **Jellyfin** lists the disks that hold a library folder or one of Jellyfin's own folders. **All** also lists mounted disks Jellyfin does not use, disks with no file system, and on Linux, disks that hold data but are not mounted. **Refresh** checks every disk again.
+Each row is one disk or share, with its name, its mount point, its type, its status, and a bar of its used space. The bar turns orange and red at the disk's **Storage low** and **Storage full** alerts. **Jellyfin** lists the disks that hold a library folder or one of Jellyfin's own folders. **All** also lists mounted disks Jellyfin does not use, disks with no file system, and on Linux, disks that hold data but are not mounted. **Refresh** checks every disk again. Hover over it to see when the disks were last checked. On a phone, the notice, the cards, and the rows stack to fit. On Windows, disks show by drive letter and volume label, and shares by their `\\server\share` path.
 
 | Status | Meaning |
 | :--- | :--- |
@@ -233,6 +233,8 @@ Each alert goes to **Notifications** as an event. A check's changes of one kind 
 | "Folder added" | Storage made a folder on a disk |
 
 Changes of one kind in one check write one entry, such as "Disks missing". A disk that stays past an alert writes nothing more, since Storage records changes, not states.
+
+Storage also writes to Jellyfin's server log. Information lines record a disk remounted, a folder made, a format, and real-time monitoring paused or resumed. Warning lines record a disk that went missing, passed an alert, or could not be remounted. Turn on Debug logging for `Jellyfin.Plugin.Necto.Services.Storage` to see each check's decisions.
 
 ## Troubleshooting
 
