@@ -8,12 +8,12 @@ A [nectophore](https://en.wikipedia.org/wiki/Siphonophore#Nectophores) is one of
 
 ## Status
 
-Necto is being built. [docs/Plan.md](docs/Plan.md) lists what it holds and the order it is built in.
+Necto is being built, on the unstable channel only. The docs are at [necto.siphonophore.org](https://necto.siphonophore.org), and [docs/Plan.md](docs/Plan.md) lists what it holds and the order it is built in.
 
-Plugin repository URL for Jellyfin, from [Siphonophore](https://github.com/siphonophore-org/siphonophore), which also has an unstable channel:
+Plugin repository URL for Jellyfin, from [Siphonophore](https://github.com/siphonophore-org/siphonophore), unstable channel:
 
 ```
-https://repo.siphonophore.org/stable
+https://repo.siphonophore.org/unstable
 ```
 
 ## License

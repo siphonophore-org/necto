@@ -1,6 +1,6 @@
 site_name: Necto
 site_description: A Jellyfin plugin with tools to keep your server reachable, secure and healthy.
-site_url: https://siphonophore-org.github.io/necto/
+site_url: https://necto.siphonophore.org
 repo_url: https://github.com/siphonophore-org/necto
 repo_name: siphonophore-org/necto
 edit_uri: edit/main/docs/
