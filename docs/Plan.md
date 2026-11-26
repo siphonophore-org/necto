@@ -1,6 +1,6 @@
 # Necto Plan
 
-Necto is the Siphonophore administration plugin. It brings six JPKribs plugins into one, built on Stolon, with one place for permissions (groups) and one place for notifications. This page is the build plan, and every decision made without review is marked **Review**.
+Necto is the Siphonophore administration plugin. It brings seven JPKribs plugins into one, built on Stolon, with one place for permissions (groups) and one place for notifications. This page is the build plan, and every decision made without review is marked **Review**.
 
 ## Plugins Accounted For
 
@@ -92,7 +92,7 @@ One service every tool sends events to, and one set of channels.
 
 ## Routes
 
-Every route says what it does, as Zooid's do: `/Requests`, `/Issues`, `/Invites`, `/Groups`, `/Proxy`, `/Ddns`, `/WireGuard`, `/Scripts`, `/Pages`, `/Storage`, `/Notifications`, and `/Necto` only for the page's own strings. Each is checked against Jellyfin's own routes before it is used. The user pages are `/requests`, `/issues`, `/invites`, and the custom pages' own addresses.
+Every route says what it does, as Zooid's do: `/Requests`, `/Issues`, `/Invites`, `/Groups`, `/Proxy`, `/Ddns`, `/WireGuard`, `/Scripts`, `/Pages`, `/Storage`, `/Notifications`, and `/Necto` only for the page's own strings. None of them is a route of Jellyfin 12.4 itself. The user pages are `/requests`, `/issues`, `/invites`, and the custom pages' own addresses.
 
 ## Settings and Troubleshooting
 
