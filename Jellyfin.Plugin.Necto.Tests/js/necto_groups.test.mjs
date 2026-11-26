@@ -93,7 +93,9 @@ test('a group opens in a sidecar named for it, with its sections, and Delete, Ca
     assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Delete', 'Cancel', 'Save']);
     assert.deepEqual(texts(sidecar, '.stolon-collapsible-title'), ['Members', 'Account rules', 'Requests', 'Issues', 'Invites', 'WireGuard', 'Scripts', 'Custom pages', 'Notifications']);
     assert.deepEqual(texts(sidecar, '[data-section="accounts"] .stolon-subsection-title'), ['Password requirements', 'Expiry', 'Inactivity', 'Session management']);
-    assert.equal(sidecar.querySelectorAll('[data-role="coming"]').length, 7);
+    assert.equal(sidecar.querySelectorAll('[data-role="coming"]').length, 5);
+    assert.equal(sidecar.querySelector('[data-section="requests"] [data-role="coming"]'), null);
+    assert.equal(sidecar.querySelector('[data-section="issues"] [data-role="coming"]'), null);
     assert.equal(sidecar.querySelector('[data-section="accounts"] [data-role="coming"]'), null);
     assert.equal(sidecar.querySelector('[data-field="Name"]').value, 'Family');
 });
@@ -193,6 +195,63 @@ test('Delete confirmed sends the delete to the group\'s route and reports it', a
     assert.equal(del.type, 'DELETE');
     assert.equal(del.url, 'Groups/' + FAMILY);
     assert.match(opened.view.querySelector('#groupsStatus').textContent, /Group deleted\./);
+});
+
+test('the Requests and Issues sections hold every permission, built, with the profiles of each type to pick from', async function () {
+    var opened = await openPage({ 'GET Requests/Profiles': [
+        { Id: 'p1', Name: '1080p', Type: 'Movie', ServerId: 's1', Server: 'Radarr' },
+        { Id: 'p2', Name: '4K', Type: 'Movie', ServerId: 's1', Server: 'Radarr' },
+        { Id: 'p3', Name: 'HD', Type: 'Series', ServerId: 's2', Server: 'Sonarr' }
+    ] });
+    var sidecar = await openRow(opened, 1);
+    var requests = sidecar.querySelector('[data-section="requests"]');
+    var issues = sidecar.querySelector('[data-section="issues"]');
+
+    assert.equal(requests.querySelector('.stolon-badge'), null);
+    assert.deepEqual(Array.prototype.map.call(requests.querySelectorAll('[data-field]'), function (f) { return f.getAttribute('data-field'); }), [
+        'Requests.MayRequest', 'Requests.Movies', 'Requests.Series', 'Requests.Unreleased', 'Requests.AutoApproveMovies', 'Requests.AutoApproveSeries',
+        'Requests.MaxOpenRequests', 'Requests.MovieQuota', 'Requests.SeriesQuota', 'Requests.MaxSeasons', 'Requests.MovieProfiles', 'Requests.SeriesProfiles',
+        'Requests.MaySeeOthers', 'Requests.MaySeeRequesters', 'Requests.MayManage'
+    ]);
+    assert.deepEqual(Array.prototype.map.call(issues.querySelectorAll('[data-field]'), function (f) { return f.getAttribute('data-field'); }), ['Issues.MayReport', 'Issues.Limit', 'Issues.MayManage']);
+    assert.match(requests.textContent, /Allow requests/);
+    assert.match(requests.textContent, /See all requests/);
+    assert.match(issues.textContent, /Allow reports/);
+    assert.equal(requests.querySelector('[data-field="Requests.Movies"]').checked, true);
+    assert.equal(requests.querySelector('[data-field="Requests.MaxOpenRequests"]').value, '10');
+    assert.equal(issues.querySelector('[data-field="Issues.Limit"]').value, '10');
+    assert.deepEqual(texts(requests.querySelector('[data-field="Requests.MovieProfiles"]'), '.stolon-check-label'), ['1080p', '4K']);
+    assert.deepEqual(texts(requests.querySelector('[data-field="Requests.SeriesProfiles"]'), '.stolon-check-label'), ['HD']);
+});
+
+test('Save sends the Requests and Issues permissions the editor shows, the profiles picked among them', async function () {
+    var opened = await openPage({
+        'GET Requests/Profiles': [{ Id: 'p1', Name: '1080p', Type: 'Movie', ServerId: 's1', Server: 'Radarr' }, { Id: 'p2', Name: '4K', Type: 'Movie', ServerId: 's1', Server: 'Radarr' }],
+        ['PUT Groups/' + FAMILY]: function (o) { return JSON.parse(o.data); }
+    });
+    var sidecar = await openRow(opened, 1);
+    sidecar.querySelector('[data-field="Requests.Series"]').checked = false;
+    sidecar.querySelector('[data-field="Requests.AutoApproveMovies"]').checked = true;
+    sidecar.querySelector('[data-field="Requests.MaxSeasons"]').value = '2';
+    sidecar.querySelector('[data-field="Requests.MaySeeRequesters"]').checked = true;
+    sidecar.querySelector('[data-field="Issues.Limit"]').value = '-1';
+    var box = sidecar.querySelector('[data-field="Requests.MovieProfiles"] .stolon-check-row-input[data-id="p2"]');
+    box.checked = true;
+    box.dispatch('change', { bubbles: true });
+
+    clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Save');
+    await settle(50);
+
+    var body = JSON.parse(sent(opened)[0].data);
+    assert.equal(body.Permissions.Requests.MayRequest, true);
+    assert.equal(body.Permissions.Requests.Movies, true);
+    assert.equal(body.Permissions.Requests.Series, false);
+    assert.equal(body.Permissions.Requests.AutoApproveMovies, true);
+    assert.equal(body.Permissions.Requests.MaxSeasons, 2);
+    assert.equal(body.Permissions.Requests.MaySeeRequesters, true);
+    assert.deepEqual(body.Permissions.Requests.MovieProfiles, ['p2']);
+    assert.deepEqual(body.Permissions.Requests.SeriesProfiles, []);
+    assert.equal(body.Permissions.Issues.Limit, 10);
 });
 
 test('overlappingClients names a client more than one session rule covers', async function () {
