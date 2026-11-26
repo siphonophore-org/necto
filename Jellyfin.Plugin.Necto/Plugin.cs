@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Jellyfin.Plugin.Necto.Configuration;
+using Jellyfin.Plugin.Necto.Services.Groups;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
@@ -52,6 +53,18 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
 
     /// <inheritdoc />
     public override string Description => "Tools to keep your Jellyfin server reachable, secure and healthy.";
+
+    /// <summary>
+    /// Normalizes the groups of a configuration before it is saved, so a save from any page keeps Everyone, every
+    /// section, and only groups that exist in the settings that name one.
+    /// </summary>
+    /// <param name="incoming">The configuration about to be saved.</param>
+    /// <param name="stored">The configuration in effect.</param>
+    protected override void OnConfigurationSaving(PluginConfiguration incoming, PluginConfiguration stored)
+    {
+        ArgumentNullException.ThrowIfNull(incoming);
+        GroupNormalizer.Normalize(incoming);
+    }
 
     /// <inheritdoc />
     public override IEnumerable<PluginPageInfo> GetPages()

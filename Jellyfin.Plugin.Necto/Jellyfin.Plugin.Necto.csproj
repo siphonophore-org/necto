@@ -39,8 +39,14 @@
 
   <!-- Jellyfin strings the pages use. Stolon builds them in with Localization/*.json, in every language Jellyfin has. -->
   <ItemGroup>
+    <JellyfinString Include="Delete" />
+    <JellyfinString Include="DeleteName" />
+    <JellyfinString Include="LabelName" />
+    <JellyfinString Include="Save" />
     <JellyfinString Include="Settings" />
     <JellyfinString Include="TabDashboard" />
+    <!-- The plugin's own key keeps English Jellyfin also says, with another meaning. -->
+    <JellyfinTextMatch Include="TitleNewGroup" />
   </ItemGroup>
 
 </Project>
