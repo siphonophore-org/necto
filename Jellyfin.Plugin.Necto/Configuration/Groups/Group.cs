@@ -26,6 +26,9 @@ public class Group
     /// <summary>Gets or sets what the group gives its members.</summary>
     public GroupPermissions Permissions { get; set; } = new();
 
+    /// <summary>Gets or sets the Jellyfin policy and preferences the group writes onto its members.</summary>
+    public Policies.PolicyTemplate Template { get; set; } = new();
+
     /// <summary>Gets a value indicating whether this is the Everyone group.</summary>
     public bool IsEveryone => Id == EveryoneId;
 }

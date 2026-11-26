@@ -7,6 +7,7 @@ using Jellyfin.Data;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Database.Implementations.Enums;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Model.Users;
 
@@ -36,6 +37,7 @@ public sealed class FakeUsers
                 Id = user.Id,
                 Name = user.Username,
                 Policy = Copy(Policies[user.Id]),
+                Configuration = CopyConfig(Configurations.GetValueOrDefault(user.Id) ?? new UserConfiguration()),
                 LastActivityDate = LastActivity.GetValueOrDefault(user.Id),
                 PrimaryImageTag = user.Id.ToString("N")[..6]
             };
@@ -49,6 +51,23 @@ public sealed class FakeUsers
             user.AuthenticationProviderId = policy.AuthenticationProviderId;
             user.SetPermission(PermissionKind.IsDisabled, policy.IsDisabled);
             user.SetPermission(PermissionKind.IsAdministrator, policy.IsAdministrator);
+            return Task.CompletedTask;
+        });
+        stub.Answer("UpdateConfigurationAsync", args =>
+        {
+            Configurations[(Guid)args[0]!] = CopyConfig((UserConfiguration)args[1]!);
+            return Task.CompletedTask;
+        });
+        stub.Answer("GetUserByName", args => Users.Values.FirstOrDefault(u => string.Equals(u.Username, (string)args[0]!, StringComparison.OrdinalIgnoreCase)));
+        stub.Answer("CreateUserAsync", args =>
+        {
+            var created = Add((string)args[0]!);
+            OnCreated?.Invoke(created);
+            return Task.FromResult(created);
+        });
+        stub.Answer("ChangePassword", args =>
+        {
+            Passwords[(Guid)args[0]!] = (string)args[1]!;
             return Task.CompletedTask;
         });
         stub.Answer("DeleteUserAsync", args =>
@@ -70,6 +89,12 @@ public sealed class FakeUsers
 
     public Dictionary<Guid, DateTime?> LastActivity { get; } = new();
 
+    public Dictionary<Guid, UserConfiguration> Configurations { get; } = new();
+
+    public Dictionary<Guid, string> Passwords { get; } = new();
+
+    public Action<User>? OnCreated { get; set; }
+
     public List<Guid> Deleted { get; } = new();
 
     public User Add(string name, bool admin = false, DateTime? lastActivity = null, string provider = DefaultProvider)
@@ -83,6 +108,8 @@ public sealed class FakeUsers
     }
 
     public bool IsDisabled(Guid id) => Policies[id].IsDisabled;
+
+    private static UserConfiguration CopyConfig(UserConfiguration config) => JsonSerializer.Deserialize<UserConfiguration>(JsonSerializer.Serialize(config))!;
 
     private static UserPolicy Copy(UserPolicy policy) => JsonSerializer.Deserialize<UserPolicy>(JsonSerializer.Serialize(policy))!;
 }

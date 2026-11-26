@@ -50,7 +50,13 @@ public class AuthorizationTests
         Assert.All(Controllers, c => Assert.Null(c.GetCustomAttribute<AllowAnonymousAttribute>()));
     }
 
-    private static MethodInfo?[] PublicInviteRoutes() => System.Array.Empty<MethodInfo?>();
+    private static MethodInfo?[] PublicInviteRoutes() => new[]
+    {
+        typeof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController).GetMethod(nameof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController.MemberInvites)),
+        typeof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController).GetMethod(nameof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController.Signup)),
+        typeof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController).GetMethod(nameof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController.Info)),
+        typeof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController).GetMethod(nameof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController.Redeem))
+    };
 
     /// <summary>
     /// No route starts with a segment Jellyfin 12.4 answers at.
