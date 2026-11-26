@@ -28,6 +28,9 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Gets or sets the Storage settings.</summary>
     public Storage.StorageConfiguration Storage { get; set; } = new();
 
+    /// <summary>Gets or sets the Custom pages settings: pages, images, and stores.</summary>
+    public CustomPages.CustomPagesSettings CustomPages { get; set; } = new();
+
     /// <summary>
     /// Builds the Everyone group as a fresh install has it, which gives nothing.
     /// </summary>

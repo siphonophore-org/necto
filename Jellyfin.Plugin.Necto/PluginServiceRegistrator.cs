@@ -26,6 +26,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
 
         serviceCollection.AddActivityLogger();
         Services.Storage.StorageServices.Register(serviceCollection);
+        Services.CustomPages.CustomPagesServices.Register(serviceCollection);
     }
 
     /// <summary>

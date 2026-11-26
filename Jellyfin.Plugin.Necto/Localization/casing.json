@@ -19,5 +19,13 @@
   "SSD",
   "XFS",
   "ZFS",
-  "GB"
+  "GB",
+  "HTML",
+  "CSS",
+  "JavaScript",
+  "KB",
+  "MB",
+  "URL",
+  "Base64",
+  "API"
 ]

@@ -69,6 +69,17 @@
     <JellyfinString Include="LabelCache" />
     <JellyfinString Include="LabelTranscodes" />
     <JellyfinString Include="Reset" />
+    <JellyfinString Include="ButtonSignIn" />
+    <JellyfinString Include="Custom" />
+    <JellyfinString Include="Disabled" />
+    <JellyfinString Include="HeaderPageNotFound" />
+    <JellyfinString Include="Images" />
+    <JellyfinString Include="LabelPassword" />
+    <JellyfinString Include="LabelPath" />
+    <JellyfinString Include="LabelSource" />
+    <JellyfinString Include="LabelTitle" />
+    <JellyfinString Include="LabelUsername" />
+    <JellyfinString Include="Other" />
     <!-- The plugin's own key keeps English Jellyfin also says, with another meaning. -->
     <JellyfinTextMatch Include="TitleNewGroup" />
     <JellyfinTextMatch Include="StorageHeaderFormat" />
