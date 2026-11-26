@@ -1,0 +1,58 @@
+using System;
+using Jellyfin.Plugin.Necto.Configuration;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Configuration.Proxy;
+using Jellyfin.Plugin.Necto.Services.Ddns;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
+using Jellyfin.Plugin.Necto.Services.Proxy.Network;
+using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+using Jellyfin.Plugin.Necto.Api.Proxy;
+
+namespace Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
+
+/// <summary>
+/// A sign-in attempt.
+/// </summary>
+public sealed class SignInAttempt
+{
+    /// <summary>Gets or sets when it happened (UTC).</summary>
+    public DateTime TimeUtc { get; set; }
+
+    /// <summary>Gets or sets the username tried, empty when Jellyfin did not report it.</summary>
+    public string Username { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the Jellyfin user id, empty when no such user exists.</summary>
+    public string UserId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a value indicating whether it succeeded.</summary>
+    public bool Success { get; set; }
+
+    /// <summary>Gets or sets the client IP address.</summary>
+    public string Ip { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the hostname the client asked for.</summary>
+    public string Host { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the app name.</summary>
+    public string Client { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the device name.</summary>
+    public string DeviceName { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a value indicating whether the address is on the LAN or a trusted network.</summary>
+    public bool IsLocal { get; set; }
+
+    /// <summary>Gets or sets the country code.</summary>
+    public string CountryCode { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the country name.</summary>
+    public string Country { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the city name.</summary>
+    public string City { get; set; } = string.Empty;
+}

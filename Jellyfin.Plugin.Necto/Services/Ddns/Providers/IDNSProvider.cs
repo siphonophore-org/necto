@@ -1,0 +1,62 @@
+using System.Threading;
+using System.Threading.Tasks;
+using Jellyfin.Plugin.Necto.Configuration;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Configuration.Proxy;
+using Jellyfin.Plugin.Necto.Services.Ddns;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
+using Jellyfin.Plugin.Necto.Services.Proxy.Network;
+using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
+using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+using Jellyfin.Plugin.Necto.Api.Proxy;
+
+namespace Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+
+/// <summary>
+/// Pushes a record's configured IP address(es) to a specific DNS provider.
+/// </summary>
+/// <remarks>
+/// To add a provider: (1) add a value to <see cref="DNSProviderKind"/>. (2) add a class deriving from
+/// <see cref="DNSProviderBase"/> that returns that <see cref="Kind"/> and implements
+/// <see cref="UpdateAsync"/>. Registration is automatic (the assembly is scanned), and per-family
+/// providers should delegate the A/AAAA loop to <see cref="DNSProviderBase.ApplyPerFamilyAsync"/>.
+/// Implement <see cref="Label"/>, <see cref="Hint"/>, and <see cref="Fields"/> so the dashboard renders the
+/// provider with no JS change.
+/// </remarks>
+public interface IDNSProvider
+{
+    /// <summary>Gets the provider this implementation handles.</summary>
+    DNSProviderKind Kind { get; }
+
+    /// <summary>Gets the friendly name shown in the provider dropdown.</summary>
+    string Label { get; }
+
+    /// <summary>
+    /// Gets the key of the short hint shown under the provider dropdown, describing what each field holds. The hint
+    /// itself is in <c>Localization/en-us.json</c>.
+    /// </summary>
+    string Hint { get; }
+
+    /// <summary>Gets the fields this provider uses and the keys of their labels, so the dashboard shows only what it needs.</summary>
+    ProviderFields Fields { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether this provider can push an AAAA (IPv6) record. Single-address
+    /// protocols that only carry one IPv4 value return false, so the update cycle never records an IPv6
+    /// address as pushed when the protocol cannot deliver it.
+    /// </summary>
+    bool SupportsIPv6 { get; }
+
+    /// <summary>
+    /// Updates the record so its A/AAAA entries match the detected address(es).
+    /// </summary>
+    /// <param name="record">The record to update.</param>
+    /// <param name="ip">The detected public IP address(es).</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The outcome of the attempt.</returns>
+    Task<DNSUpdateResult> UpdateAsync(DNSRecord record, DetectedIP ip, CancellationToken cancellationToken);
+}

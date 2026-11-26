@@ -29,6 +29,19 @@
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="Siphonophore.Stolon" Version="12.4.8" />
+    <!-- Proxy: the reverse proxy, Let's Encrypt, and the location database. -->
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
+    <PackageReference Include="Certes" Version="4.1.0" />
+    <PackageReference Include="MaxMind.Db" Version="5.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The proxy runs its own Kestrel host. ASP.NET Core comes from the shared framework Jellyfin loads. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Jellyfin.Plugin.Necto.Tests" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,13 +53,21 @@
   <!-- Jellyfin strings the pages use. Stolon builds them in with Localization/*.json, in every language Jellyfin has. -->
   <ItemGroup>
     <JellyfinString Include="Delete" />
+    <JellyfinString Include="HeaderApiKey" />
+    <JellyfinString Include="LabelPassword" />
+    <JellyfinString Include="LabelServerHost" />
+    <JellyfinString Include="LabelUser" />
+    <JellyfinString Include="LabelUsername" />
     <JellyfinString Include="DeleteName" />
     <JellyfinString Include="LabelName" />
     <JellyfinString Include="Save" />
     <JellyfinString Include="Settings" />
     <JellyfinString Include="TabDashboard" />
+    <JellyfinString Include="Unknown" />
     <!-- The plugin's own key keeps English Jellyfin also says, with another meaning. -->
     <JellyfinTextMatch Include="TitleNewGroup" />
+    <!-- A DNS record, not a TV recording. -->
+    <JellyfinTextMatch Include="DdnsHeaderRecord" />
   </ItemGroup>
 
 </Project>

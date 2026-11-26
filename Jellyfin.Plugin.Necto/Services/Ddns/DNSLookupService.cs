@@ -1,0 +1,87 @@
+using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Jellyfin.Plugin.Necto.Configuration;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Configuration.Proxy;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
+using Jellyfin.Plugin.Necto.Services.Proxy.Network;
+using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
+using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+using Jellyfin.Plugin.Necto.Api.Proxy;
+
+namespace Jellyfin.Plugin.Necto.Services.Ddns;
+
+/// <summary>
+/// Resolves a hostname's current DNS addresses so the update cycle can compare them against the detected
+/// public IP. This catches a record that was changed from an external source, since the comparison is
+/// against live DNS rather than a value the plugin stored.
+/// </summary>
+public sealed class DNSLookupService
+{
+    private readonly ILogger<DNSLookupService> _logger;
+    private readonly Func<string, CancellationToken, Task<IPAddress[]>> _resolve;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DNSLookupService"/> class.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    public DNSLookupService(ILogger<DNSLookupService> logger)
+        : this(logger, Dns.GetHostAddressesAsync)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DNSLookupService"/> class with a custom resolver, so
+    /// tests can answer lookups without the network.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="resolve">Resolves a hostname to its addresses.</param>
+    internal DNSLookupService(ILogger<DNSLookupService> logger, Func<string, CancellationToken, Task<IPAddress[]>> resolve)
+    {
+        _logger = logger;
+        _resolve = resolve;
+    }
+
+    /// <summary>
+    /// Resolves the current A and AAAA addresses for a hostname.
+    /// </summary>
+    /// <param name="hostname">The hostname to resolve.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The resolved addresses, or a failed resolution when the lookup did not answer.</returns>
+    public async Task<DNSResolution> ResolveAsync(string hostname, CancellationToken cancellationToken)
+    {
+        // An IP literal (including legacy numeric forms such as a bare record id) is not a name, and the
+        // resolver would echo it back as if DNS served it.
+        if (string.IsNullOrWhiteSpace(hostname) || IPAddress.TryParse(hostname.Trim(), out _))
+        {
+            return DNSResolution.Failed;
+        }
+
+        try
+        {
+            var addresses = await _resolve(hostname.Trim(), cancellationToken).ConfigureAwait(false);
+            return DNSResolution.Resolved(addresses);
+        }
+        catch (SocketException ex)
+        {
+            // No such host, or the resolver could not answer. Treat it as not serving the address so the
+            // record is pushed rather than wrongly skipped.
+            _logger.LogDebug(ex, "DNS lookup for {Host} did not resolve", hostname);
+            return DNSResolution.Failed;
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "DNS lookup for {Host} was rejected as invalid", hostname);
+            return DNSResolution.Failed;
+        }
+    }
+}

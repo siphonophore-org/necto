@@ -64,6 +64,20 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
     {
         ArgumentNullException.ThrowIfNull(incoming);
         GroupNormalizer.Normalize(incoming);
+
+        // DDNS and Proxy change only through their own routes, which encrypt credentials and check every change.
+        incoming.Ddns = stored?.Ddns ?? new();
+        incoming.Proxy = stored?.Proxy ?? new();
+    }
+
+    /// <summary>
+    /// Puts Jellyfin's own network settings back if the proxy had Jellyfin trust it, so removing the plugin cannot
+    /// leave Jellyfin listening on this machine only.
+    /// </summary>
+    public override void OnUninstalling()
+    {
+        Services.Proxy.ProxyUninstall.Restore(ApplicationPaths);
+        base.OnUninstalling();
     }
 
     /// <inheritdoc />
@@ -121,6 +135,12 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
             Name = "necto_groups_sections.js",
             EmbeddedResourcePath = $"{ns}.Web.necto_groups_sections.js"
         };
+
+        // The DDNS and Proxy sections of Settings and Troubleshooting.
+        foreach (var module in new[] { "necto_ddns_sections.js", "necto_proxy_sections.js" })
+        {
+            yield return new PluginPageInfo { Name = module, EmbeddedResourcePath = $"{ns}.Web.{module}" };
+        }
 
         foreach (var page in GetSharedPages("necto"))
         {

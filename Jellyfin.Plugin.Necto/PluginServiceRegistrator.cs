@@ -25,6 +25,8 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         }
 
         serviceCollection.AddActivityLogger();
+        Services.Ddns.DdnsServices.Register(serviceCollection);
+        Services.Proxy.ProxyServices.Register(serviceCollection);
     }
 
     /// <summary>
