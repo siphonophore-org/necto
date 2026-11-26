@@ -1,12 +1,27 @@
 <!-- necto_issues.html -->
-<!-- The Issues tool. It shows an empty state that says the tool is coming. -->
+<!-- The Issues tool. It counts the issues by state and lists them, and each opens a sidecar with its decisions. -->
 
 <div id="NectoIssuesPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select"
      data-controller="__plugin/necto_issues.js">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+                <div class="fieldDescription" data-str="IssuesHelpTool">Lists every issue users reported. Open one to confirm, resolve, or decline it.</div>
+
+                <!-- Feature off -->
+                <!-- Shows while issues are off in Settings. -->
+                <div id="issuesOff" class="stolon-hidden"></div>
+
+                <!-- Counts -->
+                <!-- How many issues are in each state. -->
+                <div id="issueStats" class="stolon-cards compact"></div>
+
+                <div id="issuesStatus" class="stolon-status-text" role="status"></div>
+
+                <!-- Issues -->
+                <!-- Every issue, with search and state and type filters. -->
+                <div id="issuesTable"></div>
             </div>
         </div>
     </div>
