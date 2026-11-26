@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - unstable
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
