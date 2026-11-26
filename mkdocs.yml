@@ -1,0 +1,46 @@
+site_name: Necto
+site_description: A Jellyfin plugin with tools to keep your server reachable, secure and healthy.
+site_url: https://siphonophore-org.github.io/necto/
+repo_url: https://github.com/siphonophore-org/necto
+repo_name: siphonophore-org/necto
+edit_uri: edit/main/docs/
+docs_dir: docs
+
+theme:
+  name: material
+  logo: https://raw.githubusercontent.com/siphonophore-org/siphonophore/main/brand/necto/logo.svg
+  favicon: https://raw.githubusercontent.com/siphonophore-org/siphonophore/main/brand/necto/logo.svg
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Overview: index.md
+  - Development:
+      - Plan: Plan.md

@@ -1,0 +1,15 @@
+{
+  "HeaderTroubleshooting": "Troubleshooting",
+  "MessageToolComing": "This tool is coming.",
+  "TabDdns": "DDNS",
+  "TabGroups": "Groups",
+  "TabInvites": "Invites",
+  "TabIssues": "Issues",
+  "TabNotifications": "Notifications",
+  "TabPages": "Custom pages",
+  "TabProxy": "Proxy",
+  "TabRequests": "Requests",
+  "TabScripts": "Scripts",
+  "TabStorage": "Storage",
+  "TabWireGuard": "WireGuard"
+}

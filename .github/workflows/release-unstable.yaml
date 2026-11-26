@@ -1,0 +1,139 @@
+name: '🧪 Release Unstable'
+
+# Publishes the unstable branch as a pre-release, which only the Siphonophore unstable manifest lists. It runs
+# every Friday, and by hand from the Actions tab on any day. The version is the Jellyfin version, the year,
+# and a count that goes up by one with each unstable build of that year, 12.4.YYYY.N, such as 12.4.2026.1 and
+# then 12.4.2026.2. Each unstable build sorts after every stable release and after the builds before it. Only
+# published pre-releases with a zip count, so a failed run takes no number. A scheduled run skips when the
+# newest unstable build already holds the unstable branch's last commit. Releases are immutable once
+# published, so the zip goes into a draft that is published after. A draft left by a failed run is filled and
+# published.
+
+on:
+  schedule:
+    - cron: '0 15 * * 5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: read
+
+concurrency:
+  group: release-unstable
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      skipped: ${{ steps.build_info.outputs.skipped }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: unstable
+          fetch-depth: 0
+
+      - name: Get Build Info
+        id: build_info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          BASE=$(grep '^version:' build.yaml | sed 's/version: *"\?\([^"]*\)"\?.*/\1/' | tr -d '"' | cut -d. -f1-2)
+          YEAR=$(TZ=America/Denver date +%Y)
+          PREFIX="v${BASE}.${YEAR}."
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" --jq '.[]' | jq -s '.' > /tmp/releases.json
+
+          # The unstable builds that count: published pre-releases with a zip.
+          jq '[.[] | select(.prerelease and (.draft | not) and ([.assets[] | select(.name | endswith(".zip"))] | length > 0))]' /tmp/releases.json > /tmp/built.json
+          LAST=$(jq -r --arg p "$PREFIX" '[.[] | .tag_name | select(startswith($p)) | ltrimstr($p) | select(test("^[0-9]+$")) | tonumber] | max // 0' /tmp/built.json)
+          NEWEST=$(jq -r 'sort_by(.published_at) | last | .tag_name // ""' /tmp/built.json)
+          HEAD=$(git rev-parse HEAD)
+
+          if [ "$EVENT" = "schedule" ] && [ -n "$NEWEST" ] && [ "$(git rev-list -n 1 "$NEWEST" 2>/dev/null || true)" = "$HEAD" ]; then
+            echo "::notice::${NEWEST} already holds ${HEAD}, so this week has nothing new to release."
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          VERSION="${BASE}.${YEAR}.$((LAST + 1))"
+          TAG="v${VERSION}"
+          STATE=$(jq -r --arg t "$TAG" '[.[] | select(.tag_name == $t)][0] | if . == null then "missing" elif .draft then "draft" else "published" end' /tmp/releases.json)
+          if [ "$STATE" = "published" ]; then
+            echo "::error::${TAG} is already published without a zip, and a published release cannot change. Delete it, then run again."
+            exit 1
+          fi
+          echo "skipped=false" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "state=${STATE}" >> "$GITHUB_OUTPUT"
+          echo "newest=${NEWEST}" >> "$GITHUB_OUTPUT"
+          echo "Releasing ${TAG} from ${HEAD}."
+
+      - name: Setup .NET
+        if: steps.build_info.outputs.skipped != 'true'
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
+        with:
+          dotnet-version: 10.0.x
+
+      # build.sh reads the version from build.yaml, so the unstable version is written there for this build only.
+      - name: Set Version
+        if: steps.build_info.outputs.skipped != 'true'
+        env:
+          VERSION: ${{ steps.build_info.outputs.version }}
+        run: |
+          sed -i "s/^version:.*/version: \"${VERSION}\"/" build.yaml
+          grep '^version:' build.yaml
+
+      - name: Build Plugin
+        if: steps.build_info.outputs.skipped != 'true'
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Write Notes
+        if: steps.build_info.outputs.skipped != 'true'
+        env:
+          NEWEST: ${{ steps.build_info.outputs.newest }}
+        run: |
+          set -euo pipefail
+          {
+            echo "Unstable build from \`$(git rev-parse --short HEAD)\` on the unstable branch."
+            echo
+            echo "## Changes"
+            if [ -n "$NEWEST" ] && git rev-parse -q --verify "$NEWEST" >/dev/null; then
+              git log --no-merges --format='- %s' "${NEWEST}..HEAD"
+            else
+              git log --no-merges --format='- %s' -n 30
+            fi
+          } > /tmp/notes.md
+
+      - name: Publish Pre-release
+        if: steps.build_info.outputs.skipped != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.build_info.outputs.tag }}
+          VERSION: ${{ steps.build_info.outputs.version }}
+          STATE: ${{ steps.build_info.outputs.state }}
+        run: |
+          set -euo pipefail
+          if [ "$STATE" = "draft" ]; then
+            gh release edit "${TAG}" --prerelease --target "$(git rev-parse HEAD)" --notes-file /tmp/notes.md
+          else
+            gh release create "${TAG}" --draft --prerelease --target "$(git rev-parse HEAD)" --title "${TAG}" --notes-file /tmp/notes.md
+          fi
+          gh release upload "${TAG}" "dist/necto-${VERSION}.zip" "dist/necto-${VERSION}.zip.md5" --clobber
+          gh release edit "${TAG}" --draft=false
+
+  # A release made with this run's own token starts no other workflow, so the publish run is called here.
+  publish:
+    needs: release
+    if: needs.release.outputs.skipped != 'true'
+    uses: ./.github/workflows/publish.yaml
+    secrets:
+      SIPHONOPHORE_DISPATCH_TOKEN: ${{ secrets.SIPHONOPHORE_DISPATCH_TOKEN }}

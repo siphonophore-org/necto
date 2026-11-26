@@ -1,0 +1,17 @@
+---
+name: "Necto"
+guid: "a8b5ecb0-fc00-428b-85e8-74b85820166d"
+imageUrl: "https://raw.githubusercontent.com/siphonophore-org/siphonophore/main/brand/necto/catalog.svg"
+version: "12.4.0.0"
+targetAbi: "12.4.0.0"
+framework: "net10.0"
+overview: "Tools to keep your Jellyfin server reachable, secure and healthy."
+description: >
+  Necto is the Siphonophore administration plugin. It brings six JPKribs plugins into one, built on Stolon, with one place for permissions (groups) and one place for notifications.
+category: "Administration"
+owner: "siphonophore"
+artifacts:
+- "Jellyfin.Plugin.Necto.dll"
+changelog:
+  added:
+  - "The first release of Necto"
