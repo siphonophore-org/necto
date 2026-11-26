@@ -35,6 +35,14 @@ import {
 // The Stolon builders a tool page uses, so a page takes everything from this one module.
 export { openTool, confirmDialog, openEditorSidecar, createRecordList, createCollapsibleSection, createRepeater, createChipSelect, createCheckboxList, createSaveBar, createCopyField };
 
+// The Stolon builders the WireGuard and Scripts tools use.
+export {
+    openDialog, openSidecar, promptSidecar, createTagInput, createComboBox, adornField, createUserMultiSelector, createSortableCardList,
+    createChoiceGroup, createTimeline, createDefinitionList, createDataTable, createPaginatedTable, createSliderField, createDurationField,
+    createBarChart, createQrCode, createUsageMeter, createNumberUnitField, createInheritField, createCheckbox, generateGuid,
+    downloadJson, pickJsonFile, setFieldState, SECRET_KEPT, createTranslations as createToolTranslations
+} from './configurationpage?name=necto_stolon.js';
+
 var PLUGIN_ID = 'a8b5ecb0-fc00-428b-85e8-74b85820166d';
 
 // TRANSLATIONS_URL

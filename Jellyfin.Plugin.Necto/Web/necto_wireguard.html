@@ -1,12 +1,44 @@
 <!-- necto_wireguard.html -->
-<!-- The WireGuard tool. It shows an empty state that says the tool is coming. -->
+<!-- The WireGuard tool. It lists the host's peers and the connections to other hosts, each opening in a sidecar. -->
 
 <div id="NectoWireGuardPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox"
      data-controller="__plugin/necto_wireguard.js">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+                <div class="fieldDescription" data-str="WireGuardHelpTool">Lets users reach Jellyfin over WireGuard with their own peers, and connects this server to other WireGuard hosts.</div>
+                <div id="wireguardStatus" class="stolon-status-text" role="status"></div>
+
+                <!-- Off -->
+                <!-- Shown while WireGuard is off, or while wireguard-go is not downloaded. -->
+                <div id="wireguardOff" class="stolon-hidden"></div>
+                <div id="wireguardNoSidecar" class="stolon-warn stolon-hidden" data-str="WireGuardWarnNoSidecar">wireguard-go is not downloaded. Download it in Settings to run WireGuard.</div>
+
+                <div id="wireguardBody" class="stolon-hidden">
+                    <!-- Counts -->
+                    <div id="wireguardCards" class="stolon-cards compact"></div>
+                    <div id="hostError" class="stolon-warn stolon-hidden"></div>
+
+                    <div class="stolon-button-row" id="addButtons">
+                        <button is="emby-button" type="button" id="btnAddPeer" class="raised stolon-button primary fill stolon-hidden">
+                            <span class="material-icons" aria-hidden="true">add</span>
+                            <span data-str="WireGuardButtonAddPeer">Add peer</span>
+                        </button>
+                        <button is="emby-button" type="button" id="btnAddConnection" class="raised stolon-button secondary fill stolon-hidden">
+                            <span class="material-icons" aria-hidden="true">add_link</span>
+                            <span data-str="WireGuardButtonAddConnection">Add connection</span>
+                        </button>
+                    </div>
+
+                    <!-- Peers -->
+                    <!-- The devices and routers that connect to this server. -->
+                    <div id="peerSection"></div>
+
+                    <!-- Connections -->
+                    <!-- The other hosts this server connects to. -->
+                    <div id="connectionSection"></div>
+                </div>
             </div>
         </div>
     </div>

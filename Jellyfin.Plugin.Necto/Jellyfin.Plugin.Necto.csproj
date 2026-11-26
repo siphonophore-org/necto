@@ -47,7 +47,6 @@
     <JellyfinString Include="TabDashboard" />
     <!-- The plugin's own key keeps English Jellyfin also says, with another meaning. -->
     <JellyfinTextMatch Include="TitleNewGroup" />
-    <JellyfinTextMatch Include="WireGuardHeaderNetwork" />
     <JellyfinTextMatch Include="WireGuardTabHost" />
   </ItemGroup>
 
@@ -85,6 +84,7 @@
     <JellyfinString Include="LabelPlaylist" />
     <JellyfinString Include="LabelSource" />
     <JellyfinString Include="LabelStatus" />
+    <JellyfinString Include="Restart" />
     <JellyfinString Include="LabelSystem" />
     <JellyfinString Include="LabelTag" />
     <JellyfinString Include="LabelTitle" />

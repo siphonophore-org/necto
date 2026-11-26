@@ -186,13 +186,21 @@ export function sectionSpecs() {
             ]
         },
         {
-            key: 'wireguard', title: 'TabWireGuard', icon: 'vpn_lock', fields: [
+            key: 'wireguard', title: 'TabWireGuard', icon: 'vpn_lock', built: true, fields: [
                 { path: 'WireGuard.MayHavePeers', kind: 'check', label: 'LabelMayHavePeers', reveals: [
-                    { path: 'WireGuard.MaxPeers', kind: 'number', label: 'LabelMaxPeers', help: 'MaxPeersHelp', min: 0 }
+                    { path: 'WireGuard.MaxPeers', kind: 'number', label: 'LabelMaxPeers', help: 'MaxPeersHelp', min: 0 },
+                    { path: 'WireGuard.DataLimit', kind: 'gigabytes', label: 'WireGuardLabelMemberDataLimit', help: 'WireGuardMemberDataLimitHelp', min: 0 },
+                    { path: 'WireGuard.DataPeriod', kind: 'select', label: 'WireGuardLabelPeriod', names: ['Hour', 'Day', 'Week', 'Month', 'Year'], options: ['WireGuardPeriodHour', 'WireGuardPeriodDay', 'WireGuardPeriodWeek', 'WireGuardPeriodMonth', 'LabelYear'] }
                 ] }
             ]
         },
-        { key: 'scripts', title: 'TabScripts', icon: 'code', fields: [{ path: 'Scripts.AllScripts', kind: 'check', label: 'LabelAllScripts' }] },
+        {
+            key: 'scripts', title: 'TabScripts', icon: 'code', built: true, fields: [
+                { path: 'Scripts.AllScripts', kind: 'check', label: 'LabelAllScripts', hides: [
+                    { path: 'Scripts.ScriptIds', kind: 'records', label: 'ScriptsLabelGroupScripts', help: 'ScriptsGroupScriptsHelp', source: 'Scripts/Names' }
+                ] }
+            ]
+        },
         { key: 'pages', title: 'TabPages', icon: 'web', fields: [{ path: 'CustomPages.AllPages', kind: 'check', label: 'LabelAllPages' }] },
         { key: 'notifications', title: 'TabNotifications', icon: 'notifications', fields: [{ path: 'Notifications.AllEvents', kind: 'check', label: 'LabelAllEvents' }] }
     ];
@@ -416,8 +424,41 @@ export function createGroupEditor(group, ctx) {
             into.appendChild(el('div', { 'data-field': spec.path }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), list.element, describe(spec)]));
             handles.push(list);
             readers.push(function (out) { setPath(out.Permissions, spec.path, list.getValue()); });
+        } else if (spec.kind === 'gigabytes') {
+            input = el('input', { is: 'emby-input', type: 'number', id: id, 'data-field': spec.path, min: '0', step: 'any' });
+            input.value = value ? String(Math.round((value / 1073741824) * 100) / 100) : '0';
+            into.appendChild(el('div', { class: 'inputContainer' }, [
+                el('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: t.tr(spec.label) }),
+                input,
+                describe(spec)
+            ]));
+            readers.push(function (out) {
+                var gb = parseFloat(input.value);
+                setPath(out.Permissions, spec.path, isNaN(gb) || gb <= 0 ? 0 : Math.round(gb * 1073741824));
+            });
+        } else if (spec.kind === 'records') {
+            var records = nectoModule.createCheckboxList({
+                fetchItems: function () { return shared.request(spec.source).catch(function () { return []; }); },
+                idKey: 'Id',
+                matchKey: function (v) { return String(v || '').replace(/-/g, '').toLowerCase(); },
+                value: (value || []).map(function (v) { return String(v).replace(/-/g, '').toLowerCase(); }),
+                renderRow: function (r) { return { label: r.Name }; }
+            });
+            into.appendChild(el('div', { 'data-field': spec.path }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), records.element, describe(spec)]));
+            handles.push(records);
+            readers.push(function (out) { setPath(out.Permissions, spec.path, records.getValue()); });
         } else if (spec.kind === 'sessions') {
             drawSessions(into, value || [], spec);
+        }
+
+        // Fields a checkbox hides while it is on, such as the scripts a group runs while it runs every script.
+        if (spec.hides) {
+            var rest = el('div', { class: 'stolon-indent' });
+            spec.hides.forEach(function (child) { drawField(child, rest); });
+            into.appendChild(rest);
+            var hideRest = function () { rest.classList.toggle('stolon-hidden', input.checked); };
+            input.addEventListener('change', hideRest);
+            hideRest();
         }
 
         if (spec.reveals) {
@@ -495,11 +536,11 @@ export function createGroupEditor(group, ctx) {
     // One section per tool, each saying the tool is coming until it is built.
     sectionSpecs().forEach(function (spec) {
         var content = el('div', {}, [
-            el('div', { class: 'stolon-info', 'data-role': 'coming', text: t.tr('MessageToolComing') }),
+            spec.built ? null : el('div', { class: 'stolon-info', 'data-role': 'coming', text: t.tr('MessageToolComing') }),
             el('div', { class: 'fieldDescription', text: t.tr('HelpPermissionMerge') })
         ]);
         spec.fields.forEach(function (field) { drawField(field, content); });
-        section(t.tr(spec.title), spec.icon, content, { badge: { label: t.tr('BadgeComing'), color: 'gray' } }).element.setAttribute('data-section', spec.key);
+        section(t.tr(spec.title), spec.icon, content, spec.built ? {} : { badge: { label: t.tr('BadgeComing'), color: 'gray' } }).element.setAttribute('data-section', spec.key);
     });
 
     return {

@@ -1,2 +1,12 @@
 /* necto_shared.css */
-/* The layout the Necto tools add to Stolon. Every class carries the necto- prefix, and no tool adds one yet. */
+/* The layout the Necto tools add to Stolon. Every class carries the necto- prefix. */
+
+/* necto-wireguard-slash */
+/* The slash between a data limit's unit and its period, as tall as the fields beside it. */
+/* Example: <span class="necto-wireguard-slash">/</span> */
+.necto-wireguard-slash { display: flex; align-items: center; flex: 0 0 auto; line-height: 1; font-size: calc(var(--stolon-field-height) * 0.8); color: var(--stolon-text-muted); }
+
+/* necto-wireguard-meter */
+/* A peer's or connection's usage meter at the end of its row, one width so the bars line up down the list. */
+/* Example: <div class="necto-wireguard-meter"><div class="stolon-usage-meter">...</div></div> */
+.necto-wireguard-meter { width: calc(var(--stolon-size-large) * 6); max-width: 40vw; }

@@ -86,7 +86,7 @@ test('Troubleshooting draws a section per tool, Groups with its repairs and ever
     assert.deepEqual(texts(groups, '.stolon-subsection-title'), ['Password requirements', 'Scheduled checks', 'Password resets']);
     assert.deepEqual(texts(groups, '[data-action]'), ['Apply rules', 'Run now', 'Run now']);
     assert.match(groups.textContent, /Reset codes are off\. Turn on Show reset codes in Settings to list them\./);
-    assert.match(opened.section('wireguard').querySelector('[data-role="section-content"]').innerHTML, /This tool is coming\./);
+    assert.match(opened.section('proxy').querySelector('[data-role="section-content"]').innerHTML, /This tool is coming\./);
 });
 
 test('Apply rules posts to the password rules route and reports how many users moved', async function () {
