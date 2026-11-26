@@ -46,9 +46,10 @@ public static class NotificationMessages
         }
 
         url = url.Trim();
-        if (Uri.TryCreate(url, UriKind.Absolute, out var absolute) && (absolute.Scheme == Uri.UriSchemeHttps || absolute.Scheme == Uri.UriSchemeHttp))
+        if (Uri.TryCreate(url, UriKind.Absolute, out var absolute) && !url.StartsWith('/'))
         {
-            return absolute.AbsoluteUri;
+            // Any other scheme, such as javascript:, could run in whatever opens the link.
+            return absolute.Scheme == Uri.UriSchemeHttps || absolute.Scheme == Uri.UriSchemeHttp ? absolute.AbsoluteUri : null;
         }
 
         if (string.IsNullOrWhiteSpace(serverUrl))
