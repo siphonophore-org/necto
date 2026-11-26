@@ -231,6 +231,9 @@ export function rowKeys(rows, order) {
 // newId
 // Makes an id for a server, a profile, or a row, letters and digits only, as the server keeps them.
 //
+// Inputs
+// shared [object]: The Necto helper bag, for its GUID maker.
+//
 // Output
 // [string]: The id.
 function newId(shared) {
@@ -252,6 +255,13 @@ function languageName(code, t) {
 
 // sentence
 // Reads a string in sentence case where the strings offer it.
+//
+// Inputs
+// t [object]: The strings.
+// key [string]: The string's key.
+//
+// Output
+// [string]: The text.
 function sentence(t, key) {
     return typeof t.sentence === 'function' ? t.sentence(key) : t.tr(key);
 }
@@ -295,12 +305,27 @@ function checkField(input, label, help) {
 
 // numberInput
 // Builds a number input for a setting.
+//
+// Inputs
+// id [string]: The input's id.
+// path [string]: The setting it holds, as its data-field.
+// min [number]: The least value. Defaults to 0.
+//
+// Output
+// [HTMLInputElement]: The input.
 function numberInput(id, path, min) {
     return el('input', { is: 'emby-input', type: 'number', id: id, 'data-field': path, min: String(min || 0), step: '1' });
 }
 
 // checkbox
 // Builds a checkbox for a setting.
+//
+// Inputs
+// id [string]: The checkbox's id.
+// path [string]: The setting it holds, as its data-field.
+//
+// Output
+// [HTMLInputElement]: The checkbox.
 function checkbox(id, path) {
     return el('input', { type: 'checkbox', is: 'emby-checkbox', id: id, 'data-field': path });
 }
