@@ -10,3 +10,15 @@
 /* A peer's or connection's usage meter at the end of its row, one width so the bars line up down the list. */
 /* Example: <div class="necto-wireguard-meter"><div class="stolon-usage-meter">...</div></div> */
 .necto-wireguard-meter { width: calc(var(--stolon-size-large) * 6); max-width: 40vw; }
+
+/* necto-scripts editor spacing */
+/* Spacing between Stolon components in the Scripts editor that Stolon does not set itself. */
+/* Example: <div id="NectoScriptsPage"><button id="btnCheckPath">Check path</button></div> */
+#NectoScriptsPage #btnCheckPath { margin: 0 0 var(--stolon-gap-wide); }
+#NectoScriptsPage #webhookExample { margin-bottom: var(--stolon-gap-wide); }
+#NectoScriptsPage #triggerMount { margin-bottom: var(--stolon-gap-wide); }
+#NectoScriptsPage #conditionList .stolon-repeater-rows > * { align-items: end; }
+#NectoScriptsPage #itemKindMount:has(+ #itemKindWarn:not(.stolon-hidden)),
+#NectoScriptsPage #groupList:has(+ #userWarn:not(.stolon-hidden)),
+#NectoScriptsPage #forEachLimitRow:not(.stolon-hidden):has(+ #forEachWarn:not(.stolon-hidden)),
+#NectoScriptsPage #conditionList:has(+ #conditionWarnings:not(:empty)) { margin-bottom: var(--stolon-gap-wide); }

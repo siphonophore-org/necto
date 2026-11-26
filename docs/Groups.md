@@ -81,8 +81,8 @@ A refused change shows the reason on the password form, and writes "Password cha
 | **Requests** | **Allow requests**, **Movie quota**, **Series quota**, **Auto approve requests**, **Show others' requests**, **Manage requests** |
 | **Issues** | **Allow issue reports**, **Manage issues** |
 | **Invites** | **Allow invites**, **Open invites**, **Invite to any group**, **Invite groups** |
-| **WireGuard** | **Allow peers**, **Peers per member** |
-| **Scripts** | **Run every script** |
+| **WireGuard** | **Allow peers**, **Peers per member**, **Data per member (GB)**, **Period**. See [WireGuard](WireGuard.md#permissions) |
+| **Scripts** | **Run every script**, **Scripts that run**. See [Scripts](Scripts.md#groups) |
 | **Custom pages** | **Open every page** |
 | **Notifications** | **Receive every event** |
 

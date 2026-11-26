@@ -44,5 +44,7 @@ nav:
   - Overview: index.md
   - Tools:
       - Groups: Groups.md
+      - WireGuard: WireGuard.md
+      - Scripts: Scripts.md
   - Development:
       - Plan: Plan.md

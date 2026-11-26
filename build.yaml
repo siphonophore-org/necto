@@ -18,5 +18,11 @@ changelog:
   - "Groups, with members, a permission section for every tool, and Everyone for users in no group"
   - "Account rules on groups from User Management, with password requirements, expiry, inactivity, and session cleanup"
   - "Settings and Troubleshooting, with a section per tool"
+  - "WireGuard from the WireGuard plugin, with the host, peers, connections, DNS, and limits, and wireguard-go downloaded when WireGuard is turned on"
+  - "Scripts from the Scripts plugin, with triggers, conditions, steps, secrets, variables, history, export, and import, run for the groups that run them"
   developer:
   - "Routes under /Groups list, create, save, and delete groups, list users with their groups, and give a user's permissions"
+  - "Routes under /WireGuard give the tunnels' state and usage, the tunnel ends for the Dashboard map, change peers and connections, and download wireguard-go"
+  - "Routes under /Scripts give the editor's catalog and the script names, test and run scripts, take webhooks, and read and clear the run history"
+  - "The Release wgsidecar workflow builds wgsidecar from sidecar/ on wireguard-go and publishes it as the release wgsidecar-1.0.0"
+  - "Events wireguard.connected, wireguard.disconnected, wireguard.connection-established, wireguard.connection-lost, wireguard.data-limit, wireguard.failed, and scripts.failed go to Notifications"

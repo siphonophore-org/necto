@@ -316,7 +316,7 @@ export default function (view) {
     // Whether a warning in the editor is showing.
     function shown(id) {
         var node = el(id);
-        return !!node && !node.classList.contains('hidden') && node.textContent.trim() !== '';
+        return !!node && !node.classList.contains('stolon-hidden') && node.textContent.trim() !== '';
     }
 
     // ignoredLabel

@@ -3,6 +3,7 @@ bin/
 obj/
 artifacts/
 dist/
+dist-sidecar/
 
 # IDE folders
 .vs/

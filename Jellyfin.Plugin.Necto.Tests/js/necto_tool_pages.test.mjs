@@ -95,6 +95,7 @@ test('the Scripts tool draws a saved script from its own markup', async function
 
     assert.deepEqual(opened.errors, []);
     assert.equal(opened.view.querySelector('#scriptName').value, 'Notify');
+    assert.equal(opened.view.querySelector('#scriptEditor').classList.contains('stolon-hidden'), false);
     assert.match(opened.view.querySelector('#groupList').innerHTML, /Family/);
 });
 

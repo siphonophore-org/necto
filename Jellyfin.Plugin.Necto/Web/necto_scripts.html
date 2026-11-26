@@ -45,9 +45,9 @@
                     </div>
                     <span id="transferStatus" class="stolon-status-text"></span>
 
-                    <div id="emptyState" class="hidden"></div>
+                    <div id="emptyState" class="stolon-hidden"></div>
 
-                    <div id="scriptEditor" class="hidden">
+                    <div id="scriptEditor" class="stolon-hidden">
 
                         <!-- General -->
                         <div class="stolon-section" data-fold="general" data-fold-state="closed">
@@ -77,16 +77,16 @@
                                 <div class="fieldDescription" data-str="ScriptsHelpTriggers">The script runs when any checked trigger happens. Search to narrow the list.</div>
                                 <div id="triggerMount"></div>
 
-                                <div id="itemKindOptions" class="stolon-panel hidden">
+                                <div id="itemKindOptions" class="stolon-panel stolon-hidden">
                                     <div class="stolon-panel-header" data-str="ScriptsSectionItemKinds">Item kinds</div>
                                     <div class="stolon-panel-body">
                                         <div class="fieldDescription" data-str="ScriptsHelpItemKinds">Runs only for items of these kinds. Leave blank for every kind.</div>
                                         <div id="itemKindMount"></div>
-                                        <div id="itemKindWarn" class="stolon-warn hidden"></div>
+                                        <div id="itemKindWarn" class="stolon-warn stolon-hidden"></div>
                                     </div>
                                 </div>
 
-                                <div id="pausedOptions" class="stolon-panel hidden">
+                                <div id="pausedOptions" class="stolon-panel stolon-hidden">
                                     <div class="stolon-panel-body">
                                         <div class="stolon-field">
                                             <label data-str="ScriptsTriggerPlaybackPausedFor">Paused for a while</label>
@@ -96,7 +96,7 @@
                                     </div>
                                 </div>
 
-                                <div id="playingOptions" class="stolon-panel hidden">
+                                <div id="playingOptions" class="stolon-panel stolon-hidden">
                                     <div class="stolon-panel-body">
                                         <div class="stolon-field">
                                             <label data-str="ScriptsTriggerPlaybackPlayingFor">Playing for a while</label>
@@ -106,7 +106,7 @@
                                     </div>
                                 </div>
 
-                                <div id="progressOptions" class="stolon-panel hidden">
+                                <div id="progressOptions" class="stolon-panel stolon-hidden">
                                     <div class="stolon-panel-body">
                                         <div class="stolon-field">
                                             <label data-str="ScriptsTriggerPlaybackProgressReached">Playback passed a percentage</label>
@@ -116,7 +116,7 @@
                                     </div>
                                 </div>
 
-                                <div id="streamOptions" class="stolon-panel hidden">
+                                <div id="streamOptions" class="stolon-panel stolon-hidden">
                                     <div class="stolon-panel-body">
                                         <div class="stolon-field">
                                             <label data-str="ScriptsTriggerStreamCountReached">Stream count reached</label>
@@ -126,7 +126,7 @@
                                     </div>
                                 </div>
 
-                                <div id="transcodeOptions" class="stolon-panel hidden">
+                                <div id="transcodeOptions" class="stolon-panel stolon-hidden">
                                     <div class="stolon-panel-body">
                                         <div class="stolon-field">
                                             <label data-str="ScriptsTriggerTranscodeCountReached">Transcode count reached</label>
@@ -136,7 +136,7 @@
                                     </div>
                                 </div>
 
-                                <div id="webhookOptions" class="stolon-panel hidden">
+                                <div id="webhookOptions" class="stolon-panel stolon-hidden">
                                     <div class="stolon-panel-header" data-str="ScriptsHeaderWebhook">Webhook</div>
                                     <div class="stolon-panel-body">
                                         <div class="stolon-field">
@@ -153,7 +153,7 @@
                                     </div>
                                 </div>
 
-                                <div id="scheduleOptions" class="stolon-panel hidden">
+                                <div id="scheduleOptions" class="stolon-panel stolon-hidden">
                                     <div class="stolon-panel-header" data-str="Schedule">Schedule</div>
                                     <div class="stolon-panel-body">
                                         <div class="fieldDescription" data-str-rich="ScriptsHelpSchedule">
@@ -175,7 +175,7 @@
                             <div class="stolon-section-content">
                                 <div class="fieldDescription" data-str="ScriptsHelpGroups">Runs for the members of the groups that run it. On playback, any of the session's users counts. Triggers without a user ignore this.</div>
                                 <div id="groupList"></div>
-                                <div id="userWarn" class="stolon-warn hidden"></div>
+                                <div id="userWarn" class="stolon-warn stolon-hidden"></div>
                                 <div class="stolon-button-row">
                                     <button is="emby-button" type="button" id="btnOpenGroups" class="raised stolon-button secondary small">
                                         <span class="material-icons" aria-hidden="true">groups</span>
@@ -212,7 +212,7 @@
                             <div class="stolon-section-content">
                                 <div class="fieldDescription" data-str="ScriptsHelpSteps">Run in order. Drag a step or use the arrows to move it. A failed step stops the rest unless it continues on error.</div>
                                 <div id="operationList"></div>
-                                <div id="operationEmpty" class="hidden"></div>
+                                <div id="operationEmpty" class="stolon-hidden"></div>
                                 <div id="operationEditor"></div>
                                 <div class="stolon-selector">
                                     <select is="emby-select" id="newOperationType" class="stolon-selector-dropdown" aria-label="Step type" data-str-label="ScriptsLabelStepType"></select>
@@ -256,12 +256,12 @@
                                         passes its conditions. A trigger that already has one runs once as usual.
                                     </div>
                                 </div>
-                                <div id="forEachLimitRow" class="stolon-field hidden">
+                                <div id="forEachLimitRow" class="stolon-field stolon-hidden">
                                     <label data-str="ScriptsLabelForEachLimit">Most runs per event</label>
                                     <div id="forEachLimitMount"></div>
                                     <div class="fieldDescription" data-str="ScriptsHelpForEachLimit">Stops after this many matches. Each one is its own run in the history.</div>
                                 </div>
-                                <div id="forEachWarn" class="stolon-warn hidden"></div>
+                                <div id="forEachWarn" class="stolon-warn stolon-hidden"></div>
                                 <div class="selectContainer">
                                     <label for="onFailureScript" data-str="ScriptsLabelOnFailure">When this script fails, run</label>
                                     <select is="emby-select" id="onFailureScript"></select>

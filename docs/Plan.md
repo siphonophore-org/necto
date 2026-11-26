@@ -83,6 +83,24 @@ Several records, each with its own provider, credentials, name, and how often it
 
 Turning WireGuard on asks to download `wireguard-go`, which is the only way WireGuard runs. **Settings > WireGuard** shows the download and its version, and replaces it. A server with its own WireGuard uses that instead of Necto.
 
+* The download is `wgsidecar`, the WireGuard plugin's own sidecar on wireguard-go, built from `sidecar/` by the **Release wgsidecar** workflow and published as the release `wgsidecar-<version>` of this repository. Necto checks it against the release's `SHA256SUMS`, which catches a damaged download but not a release that was itself replaced. The workflow must run before WireGuard can be turned on. **Review**
+* A server with its own WireGuard leaves **Enable WireGuard** off. Necto has no mode that drives a system WireGuard. **Review**
+* The host's key pair is made the first time the host runs with wireguard-go downloaded, and a peer or connection that needs a new key pair is refused until then. A save from **Settings** keeps the stored peers, connections, and host keys, which only the WireGuard routes change. **Review**
+* **Data per user** moves onto groups as **Data per member (GB)** with its **Period**. Several groups give the largest limit of the groups that allow peers, with that group's period. **Review**
+* Groups decide which peers connect. A peer whose owner has no group with **Allow peers** is left out of the tunnel, and an owner past **Peers per member** keeps their oldest enabled peers. Administrators' peers and peers with no owner always connect, and administrators add peers for any user, as the WireGuard plugin let them. **Review**
+* The location lookups, the **Location** setting, and the **Refresh WireGuard locations** task are not in WireGuard. `GET /WireGuard/Peers` gives each tunnel end's public address, and the Dashboard map places it with the location database from Remote Access. **Review**
+* Peers connecting, connections, data limits, and failing tunnels are written to the activity log as the WireGuard plugin wrote them, and each is also sent to Notifications. **Review**
+* The keys and the script secrets share one secret protector, named `Jellyfin.Plugin.Necto`. **Review**
+
+### Scripts
+
+Everything the Scripts plugin does, with its history in **Troubleshooting** and its settings in **Settings**.
+
+* A script runs for a user only when one of the user's groups runs it, by **Run every script** or **Scripts that run**. Everyone runs no script on a fresh install, where the Scripts plugin's empty users list ran a script for everyone. **Review**
+* A failed sign in for a name with no account takes **Everyone**. **Review**
+* `scripts.failed` goes to Notifications at most once a minute for each script, so a burst of failures sends one alert. **Review**
+* An export is marked `necto-scripts`, and import reads a Scripts plugin export too. A script's users are not carried over, since groups decide them.
+
 ### Storage
 
 Everything Storage Manager does. Pooling disks or RAID is left out of 12.4.0.0: it needs the operating system's own tools run as root, which a plugin cannot do safely, and a pool Jellyfin cannot see as one disk gains nothing over a library with several folders. **Review**
