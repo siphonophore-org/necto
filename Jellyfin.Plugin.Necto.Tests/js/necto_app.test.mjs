@@ -46,7 +46,7 @@ test('the sidebar has its fold button', async function () {
 });
 
 test('each tool page that is not built shows the empty state that says the tool is coming', async function () {
-    for (var key of KEYS.filter(function (k) { return ['groups', 'settings', 'troubleshooting'].indexOf(k) < 0; })) {
+    for (var key of KEYS.filter(function (k) { return ['groups', 'storage', 'settings', 'troubleshooting'].indexOf(k) < 0; })) {
         var page = installPage({});
         var empty = page.dom.el('div', { class: 'stolon-empty-section', 'data-str': 'MessageToolComing' });
         var view = pageView(page.dom, [empty]);

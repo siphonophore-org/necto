@@ -68,6 +68,7 @@
     <JellyfinString Include="LabelMetadata" />
     <JellyfinString Include="LabelCache" />
     <JellyfinString Include="LabelTranscodes" />
+    <JellyfinString Include="Reset" />
     <!-- The plugin's own key keeps English Jellyfin also says, with another meaning. -->
     <JellyfinTextMatch Include="TitleNewGroup" />
     <JellyfinTextMatch Include="StorageHeaderFormat" />
