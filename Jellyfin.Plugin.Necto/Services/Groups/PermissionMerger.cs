@@ -63,7 +63,9 @@ public static class PermissionMerger
             WireGuard = new WireGuardPermissions
             {
                 MayHavePeers = peerHolders.Count > 0,
-                MaxPeers = Largest(peerHolders.Select(x => x.WireGuard.MaxPeers))
+                MaxPeers = Largest(peerHolders.Select(x => x.WireGuard.MaxPeers)),
+                DataLimit = LargestData(peerHolders.Select(x => x.WireGuard)).DataLimit,
+                DataPeriod = LargestData(peerHolders.Select(x => x.WireGuard)).DataPeriod
             },
             Scripts = new ScriptPermissions
             {
@@ -124,6 +126,20 @@ public static class PermissionMerger
         ArgumentNullException.ThrowIfNull(limits);
         var list = limits.Select(l => Math.Max(0, l)).ToList();
         return list.Count == 0 || list.Contains(0) ? 0 : list.Max();
+    }
+
+    /// <summary>
+    /// Takes the most generous data limit of several groups, with its period. 0 is no limit, so it beats any number.
+    /// </summary>
+    /// <param name="limits">The WireGuard sections of the groups that allow peers.</param>
+    /// <returns>The section whose limit is largest, or one with no limit when there is none.</returns>
+    public static WireGuardPermissions LargestData(IEnumerable<WireGuardPermissions> limits)
+    {
+        ArgumentNullException.ThrowIfNull(limits);
+        var list = limits.ToList();
+        return list.Count == 0 || list.Any(l => l.DataLimit <= 0)
+            ? new WireGuardPermissions { DataLimit = 0 }
+            : list.OrderByDescending(l => l.DataLimit).First();
     }
 
     private static List<string> Union(IEnumerable<string> values) => values.Distinct(StringComparer.Ordinal).ToList();

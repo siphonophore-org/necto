@@ -1,0 +1,155 @@
+using System;
+using System.Collections.Generic;
+using Jellyfin.Data.Enums;
+using Jellyfin.Plugin.Necto.Configuration.Scripts;
+
+namespace Jellyfin.Plugin.Necto.Services.Scripts;
+
+/// <summary>
+/// Everything one event supplies to the scripts it runs: the variables, plus the typed values the filters
+/// and steps act on.
+/// </summary>
+public sealed class EventContext
+{
+    private readonly Dictionary<ConditionField, List<string>> _candidates = new();
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EventContext"/> class.
+    /// </summary>
+    /// <param name="trigger">The event's trigger.</param>
+    public EventContext(ScriptTrigger trigger)
+    {
+        Trigger = trigger;
+    }
+
+    /// <summary>Gets the event's trigger.</summary>
+    public ScriptTrigger Trigger { get; }
+
+    /// <summary>Gets the variables without the <c>JF_</c> prefix. A value the event lacks is absent.</summary>
+    public Dictionary<string, string> Variables { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Gets or sets the kind of the event's item, when it has one.</summary>
+    public BaseItemKind? ItemKind { get; set; }
+
+    /// <summary>Gets or sets the event's item ID, when it has one.</summary>
+    public Guid? ItemId { get; set; }
+
+    /// <summary>Gets the IDs of the event's users: every user of a playback session, or the one signing in.</summary>
+    public List<Guid> UserIds { get; } = new();
+
+    /// <summary>Gets or sets the event's playback session ID, when it has one.</summary>
+    public string? SessionId { get; set; }
+
+    /// <summary>Gets or sets a one line description of the event for the history.</summary>
+    public string Summary { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether this event is a scheduled task that a script queued, in which case
+    /// no step may queue another task.
+    /// </summary>
+    public bool QueuedByScript { get; set; }
+
+    /// <summary>
+    /// Gets or sets the administrator running a test, whose own sessions are the only ones a test's message for
+    /// every session or every administrator reaches.
+    /// </summary>
+    public Guid? TesterId { get; set; }
+
+    /// <summary>
+    /// Gets or sets what this run is for beyond the event itself: an item or a user a script running for each
+    /// one picked, whose variables the event's own trigger does not list.
+    /// </summary>
+    public ForEachMode ForEach { get; set; }
+
+    /// <summary>
+    /// Copies the event, so a script running for each item or user can add one to its own copy.
+    /// </summary>
+    /// <returns>The copy.</returns>
+    public EventContext Copy()
+    {
+        var copy = new EventContext(Trigger)
+        {
+            ItemKind = ItemKind,
+            ItemId = ItemId,
+            SessionId = SessionId,
+            Summary = Summary,
+            QueuedByScript = QueuedByScript,
+            TesterId = TesterId,
+            ForEach = ForEach
+        };
+        foreach (var (name, value) in Variables)
+        {
+            copy.Variables[name] = value;
+        }
+
+        copy.UserIds.AddRange(UserIds);
+        foreach (var (field, values) in _candidates)
+        {
+            copy._candidates[field] = new List<string>(values);
+        }
+
+        return copy;
+    }
+
+    /// <summary>
+    /// Gets a variable, or an empty string when the event lacks it.
+    /// </summary>
+    /// <param name="name">The variable name without the prefix.</param>
+    /// <returns>The value.</returns>
+    public string Get(string name) => Variables.TryGetValue(name, out var value) ? value : string.Empty;
+
+    /// <summary>
+    /// Sets a variable. An empty value is left out.
+    /// </summary>
+    /// <param name="name">The variable name without the prefix.</param>
+    /// <param name="value">The value.</param>
+    public void Set(string name, string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            Variables.Remove(name);
+        }
+        else
+        {
+            Variables[name] = value;
+        }
+    }
+
+    /// <summary>
+    /// Adds a value a condition on <paramref name="field"/> may match beyond the field's own variable, such as
+    /// a user's name beside their ID, or every library an item sits in.
+    /// </summary>
+    /// <param name="field">The field.</param>
+    /// <param name="value">The value.</param>
+    public void AddCandidate(ConditionField field, string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return;
+        }
+
+        if (!_candidates.TryGetValue(field, out var list))
+        {
+            list = new List<string>();
+            _candidates[field] = list;
+        }
+
+        list.Add(value);
+    }
+
+    /// <summary>
+    /// Gets the values a condition on <paramref name="field"/> compares against.
+    /// </summary>
+    /// <param name="field">The field.</param>
+    /// <returns>The candidate values, empty when the event lacks the field.</returns>
+    public IReadOnlyList<string> CandidatesFor(ConditionField field)
+    {
+        if (_candidates.TryGetValue(field, out var list))
+        {
+            return list;
+        }
+
+        var value = Get(TriggerCatalog.VariableFor(field));
+        return value.Length == 0 ? Array.Empty<string>() : new[] { value };
+    }
+}

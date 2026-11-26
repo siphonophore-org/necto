@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Jellyfin.Plugin.Necto.Services;
+using Jellyfin.Plugin.Necto.Services.Scripts;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +26,10 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         }
 
         serviceCollection.AddActivityLogger();
+
+        // Encrypts the WireGuard keys and the script secrets at rest. The name is fixed, since a new one makes every stored secret unreadable.
+        serviceCollection.AddPluginSecretProtector("Jellyfin.Plugin.Necto");
+        ScriptsServices.Register(serviceCollection);
     }
 
     /// <summary>

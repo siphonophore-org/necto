@@ -1,0 +1,127 @@
+namespace Jellyfin.Plugin.Necto.Configuration.Scripts;
+
+/// <summary>
+/// One step of a script. The properties are flat so the XML configuration stays readable. Each
+/// <see cref="OperationType"/> reads only its own, and text fields accept <c>{{NAME}}</c> placeholders.
+/// </summary>
+public class ScriptOperation
+{
+    /// <summary>Gets or sets what the step does.</summary>
+    public OperationType Type { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the following steps still run when this one fails.</summary>
+    public bool ContinueOnError { get; set; }
+
+    /// <summary>
+    /// Gets or sets the executable, or with <see cref="RunThroughShell"/> the whole shell line. A path runs that
+    /// file and must be reachable by the server, which in Docker means mounted into the container. A bare
+    /// name such as <c>curl</c> is looked up on the server's PATH.
+    /// </summary>
+    public string Command { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the arguments, one per line. Ignored with <see cref="RunThroughShell"/>.</summary>
+    public string Arguments { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether <see cref="Command"/> runs through <c>/bin/sh -c</c> (or
+    /// <c>cmd /c</c> on Windows). Placeholders are not filled in a shell line, so event values reach the shell
+    /// only as environment variables.
+    /// </summary>
+    public bool RunThroughShell { get; set; }
+
+    /// <summary>
+    /// Gets or sets the folder the command runs in. Empty uses the folder holding the command when it is a
+    /// path to a file, otherwise the server's own working folder.
+    /// </summary>
+    public string WorkingDirectory { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the command timeout in seconds. Zero uses the default.</summary>
+    public int TimeoutSeconds { get; set; }
+
+    /// <summary>Gets or sets the HTTP method.</summary>
+    public string Method { get; set; } = "POST";
+
+    /// <summary>Gets or sets the absolute HTTP or HTTPS URL.</summary>
+    public string Url { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the request headers, one <c>Name: value</c> per line.</summary>
+    public string Headers { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the request body. Empty sends none.</summary>
+    public string Body { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the body's content type.</summary>
+    public string ContentType { get; set; } = "application/json";
+
+    /// <summary>Gets or sets the message header or activity log entry name.</summary>
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the message text or activity log overview.</summary>
+    public string Text { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets which sessions a message is shown on.</summary>
+    public MessageTarget Target { get; set; } = MessageTarget.EventSession;
+
+    /// <summary>Gets or sets how long a message shows, in seconds. Zero leaves it to the client.</summary>
+    public int DisplaySeconds { get; set; }
+
+    /// <summary>Gets or sets the key of the scheduled task to queue.</summary>
+    public string TaskKey { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a value indicating whether the refresh is a full refresh rather than a scan for missing data.</summary>
+    public bool FullRefresh { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the refresh replaces existing metadata and images.</summary>
+    public bool ReplaceAll { get; set; }
+
+    /// <summary>Gets or sets how long to wait, in seconds.</summary>
+    public int WaitSeconds { get; set; }
+
+    /// <summary>Gets or sets how many times a failed HTTP request is retried, with backoff.</summary>
+    public int Retries { get; set; }
+
+    /// <summary>Gets or sets the tag to add or remove. Placeholders are filled.</summary>
+    public string Tag { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the collection to add the item to or remove it from.</summary>
+    public string CollectionId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a value indicating whether <see cref="OperationType.SetFavorite"/> adds the favorite rather than removing it.</summary>
+    public bool Favorite { get; set; } = true;
+
+    /// <summary>Gets or sets a value indicating whether <see cref="OperationType.SetUserDisabled"/> disables the user rather than enabling them.</summary>
+    public bool Disable { get; set; } = true;
+
+    /// <summary>Gets or sets the script <see cref="OperationType.RunScript"/> runs.</summary>
+    public string ScriptId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the file <see cref="OperationType.AppendToFile"/> writes to. Its folder must exist.</summary>
+    public string FilePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the name a command's output or an HTTP response is saved under, so later steps can use it as
+    /// <c>{{NAME}}</c>. The exit code or HTTP status is saved as <c>{{NAME_STATUS}}</c>. Empty saves nothing.
+    /// </summary>
+    public string OutputName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the field to save when the output is JSON, such as <c>data.items[0].name</c>. Empty saves the
+    /// whole output.
+    /// </summary>
+    public string OutputJsonPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the variable the step's own condition tests. Empty always runs the step. Any variable works,
+    /// including one an earlier step saved.
+    /// </summary>
+    public string OnlyIfVariable { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets how <see cref="OnlyIfVariable"/> is compared with <see cref="OnlyIfValue"/>.</summary>
+    public ConditionOperator OnlyIfOperator { get; set; }
+
+    /// <summary>
+    /// Gets or sets the value the step's condition compares against. Placeholders are filled. Empty with
+    /// <see cref="ConditionOperator.Is"/> or <see cref="ConditionOperator.IsNot"/> tests for a missing value.
+    /// </summary>
+    public string OnlyIfValue { get; set; } = string.Empty;
+}

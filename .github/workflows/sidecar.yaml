@@ -1,0 +1,50 @@
+name: '🔐 Release wgsidecar'
+
+# Builds wgsidecar, the WireGuard sidecar built on wireguard-go, from sidecar/ for every platform, and publishes the
+# binaries and their SHA256SUMS as the release wgsidecar-<version>. Necto downloads the one for its server from that
+# release when WireGuard is turned on. The version is the one Jellyfin.Plugin.Necto/Services/WireGuard/SidecarRelease.cs names.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: sidecar/go.mod
+
+      - name: Test
+        working-directory: sidecar
+        run: go test ./...
+
+      - name: Build
+        run: bash sidecar/build.sh
+
+      - name: Find the version
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -n 's/.*public const string Version = "\([^"]*\)".*/\1/p' Jellyfin.Plugin.Necto/Services/WireGuard/SidecarRelease.cs)
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="wgsidecar-${{ steps.version.outputs.version }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::$TAG is already released. Raise the version in SidecarRelease.cs first."
+            exit 1
+          fi
+          gh release create "$TAG" dist-sidecar/* --title "wgsidecar ${{ steps.version.outputs.version }}" \
+            --notes "The WireGuard sidecar Necto downloads, built on wireguard-go from sidecar/." --latest=false

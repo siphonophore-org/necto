@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Services.Groups;
+using Jellyfin.Plugin.Necto.Services.Scripts;
+using Jellyfin.Plugin.Necto.Services.WireGuard;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
@@ -63,7 +65,10 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
     protected override void OnConfigurationSaving(PluginConfiguration incoming, PluginConfiguration stored)
     {
         ArgumentNullException.ThrowIfNull(incoming);
+        ArgumentNullException.ThrowIfNull(stored);
         GroupNormalizer.Normalize(incoming);
+        incoming.WireGuard = WireGuardValidator.Saving(incoming.WireGuard, stored.WireGuard);
+        incoming.Scripts = ScriptSettingsSaving.Saving(incoming.Scripts, stored.Scripts, ApplicationPaths);
     }
 
     /// <inheritdoc />
@@ -121,6 +126,12 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
             Name = "necto_groups_sections.js",
             EmbeddedResourcePath = $"{ns}.Web.necto_groups_sections.js"
         };
+
+        // The WireGuard and Scripts sections of Settings and Troubleshooting, and the modules their tool pages share.
+        foreach (var name in new[] { "necto_wireguard_sections.js", "necto_wireguard_common.js", "necto_scripts_sections.js", "necto_scripts_common.js", "necto_scripts_templates.js" })
+        {
+            yield return new PluginPageInfo { Name = name, EmbeddedResourcePath = $"{ns}.Web.{name}" };
+        }
 
         foreach (var page in GetSharedPages("necto"))
         {
