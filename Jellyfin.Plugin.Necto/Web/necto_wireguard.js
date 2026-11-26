@@ -76,6 +76,8 @@ export default function (view) {
     var peerList = null;
     var connectionList = null;
     var loadSeq = 0;
+    var serverName = '';
+    var SELF_ID = 'self';
 
     function $(id) { return view.querySelector('#' + id); }
 
@@ -151,6 +153,7 @@ export default function (view) {
         var host = ends.filter(function (e) { return e.Kind === 'Host'; })[0];
         var cards = [];
         if (w.HostEnabled) cards.push({ count: tunnelStateLabel(t, host ? host.State : 'Stopped'), label: t.tr('WireGuardTabHost'), color: host && host.State === 'Running' ? 'green' : host && host.State === 'Failed' ? 'red' : 'gray' });
+        if (w.ConnectEnabled || (w.Connections || []).length) cards.push({ count: t.tr(w.ConnectEnabled ? 'WireGuardStatusActive' : 'WireGuardStatusInactive'), label: t.tr('WireGuardLabelConnectEnabled'), color: w.ConnectEnabled ? 'green' : 'gray' });
         cards.push({ count: counts.peers, label: t.tr('WireGuardHeaderPeers') });
         cards.push({ count: counts.connections, label: t.tr('WireGuardHeaderConnections') });
         cards.push({ count: counts.connected, label: t.tr('WireGuardCardConnected'), color: counts.connected ? 'green' : 'gray' });
@@ -167,19 +170,33 @@ export default function (view) {
         shared.setVisible('btnAddConnection', on && !!w.ConnectEnabled);
         shared.setVisible('addButtons', on && (!!w.HostEnabled || !!w.ConnectEnabled));
 
+        // A narrow list, such as on a phone, drops each row's tunnel address.
+        var narrow = !!(globalThis.matchMedia && globalThis.matchMedia('(max-width: 600px)').matches);
         peerList.setItems((w.Peers || []).map(function (p) {
             var end = endOf(p.Id);
-            var tags = [stateTag(t, end.State || (p.Enabled ? 'Offline' : 'Disabled')), { label: p.Address, icon: 'lan' }];
+            var tags = [stateTag(t, end.State || (p.Enabled ? 'Offline' : 'Disabled'))];
+            if (!narrow) tags.push({ label: p.Address, icon: 'lan' });
             if (end.RemoteAddress) tags.push({ label: end.RemoteAddress, icon: 'place' });
             if ((p.RoutedSubnets || []).length) tags.push({ label: t.tr('WireGuardTagRouter'), icon: 'router' });
             return { id: p.Id, title: p.Name || p.Address, secondary: userName(p.UserId), tags: tags, aside: usageAside(p.Id, peerLimit(w, p)) };
         }));
-        connectionList.setItems((w.Connections || []).map(function (c) {
+        // This server leads the connections while it hosts, placed by its public address. It opens Settings.
+        var self = [];
+        if (on && w.HostEnabled) {
+            var hostState = host ? host.State : 'Stopped';
+            self.push({
+                id: SELF_ID,
+                title: serverName || t.tr('WireGuardTabHost'),
+                secondary: w.PublicEndpoint || '-',
+                tags: [stateTag(t, hostState === 'Running' ? 'Connected' : hostState === 'Failed' ? 'Failed' : 'Offline'), { label: t.tr('WireGuardTabHost'), icon: 'dns' }]
+            });
+        }
+        connectionList.setItems(self.concat((w.Connections || []).map(function (c) {
             var end = endOf(c.Id);
             var tags = [stateTag(t, end.State || (c.Enabled ? 'Offline' : 'Disabled'))];
             (c.Forwards || []).forEach(function (f) { tags.push({ label: '127.0.0.1:' + f.LocalPort, icon: 'swap_horiz' }); });
             return { id: c.Id, title: c.Name || c.Endpoint, secondary: c.Endpoint, tags: tags, aside: usageAside(c.Id, connectionLimit(w, c)) };
-        }));
+        })));
         shared.setVisible('peerSection', !!w.HostEnabled || (w.Peers || []).length > 0);
         shared.setVisible('connectionSection', !!w.ConnectEnabled || (w.Connections || []).length > 0);
     }
@@ -195,7 +212,8 @@ export default function (view) {
             shared.request('WireGuard/Peers').catch(function () { return []; }),
             shared.request('WireGuard/Status').catch(function () { return []; }),
             shared.request('WireGuard/Usage').catch(function () { return { Bytes: {}, Blocked: [], Refused: {} }; }),
-            shared.request('WireGuard/Sidecar').catch(function () { return null; })
+            shared.request('WireGuard/Sidecar').catch(function () { return null; }),
+            ApiClient.getPublicSystemInfo().catch(function () { return {}; })
         ]).then(function (r) {
             if (mine !== loadSeq) return;
             cfg = (r[0] && r[0].WireGuard) || {};
@@ -204,6 +222,7 @@ export default function (view) {
             tunnels = r[3] || [];
             usage = r[4] || usage;
             sidecar = r[5];
+            serverName = (r[6] && r[6].ServerName) || '';
             render();
         }).catch(function () {
             if (mine === loadSeq) report(t.tr('WireGuardErrorLoad'), true);
@@ -587,7 +606,10 @@ export default function (view) {
         bind: function (s, p) {
             t = s.t;
             peerList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderPeers'), emptyText: t.tr('WireGuardEmptyPeers'), onOpen: function (item) { openPeer(item.id); } });
-            connectionList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderConnections'), emptyText: t.tr('WireGuardEmptyConnections'), onOpen: function (item) { openConnection(item.id); } });
+            connectionList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderConnections'), emptyText: t.tr('WireGuardEmptyConnections'), onOpen: function (item) {
+                if (item.id === SELF_ID) nectoModule.openTool(view, 'settings');
+                else openConnection(item.id);
+            } });
             section($('peerSection'), t.tr('WireGuardHeaderPeers'), 'devices', peerList);
             section($('connectionSection'), t.tr('WireGuardHeaderConnections'), 'link', connectionList);
             $('btnAddPeer').addEventListener('click', function () { editPeer(null); });

@@ -76,11 +76,11 @@ A connection over its data limit stops until its period starts over.
 
 While WireGuard is off, the tool reads "WireGuard is off. Turn it on in Settings to add peers." While wireguard-go is not downloaded, a warning says so.
 
-The cards at the top show the host's state, and count the peers, the connections, how many are connected, and how many are over their data limit. **Left out** counts the peers their owners' groups leave out, while there are any. When the host cannot start, the reason shows under the cards. **Add peer** shows while the host is on, and **Add connection** while connecting is on.
+The cards at the top show the host's state and whether **Connect to hosts** is active, and count the peers, the connections, how many are connected, and how many are over their data limit. **Left out** counts the peers their owners' groups leave out, while there are any. When the host cannot start, the reason shows under the cards. **Add peer** shows while the host is on, and **Add connection** while connecting is on.
 
 ### Peers
 
-Each peer shows its owner, with tags for its state, address, where it connects from, and **Router** when it has child networks. A usage meter shows its data out of its data limit. The state is **Connected**, **Offline**, **Disabled**, **Over limit**, **Not allowed** when no group of its owner allows peers, or **Over peer count** when its owner has more peers than their groups give.
+Each peer shows its owner, with tags for its state, address, where it connects from, and **Router** when it has child networks. On a phone the address is left out. A usage meter shows its data out of its data limit. The state is **Connected**, **Offline**, **Disabled**, **Over limit**, **Not allowed** when no group of its owner allows peers, or **Over peer count** when its owner has more peers than their groups give.
 
 Select a peer to open its details in a sidecar, with its status, owner, address, child networks, last handshake, source, usage, and speed limit. The sidecar shows the peer's config file and a QR code of it. **Download** saves the config file, and **Edit** opens the editor.
 
@@ -94,7 +94,7 @@ A peer that brought its own public key gets a config file without a private key,
 
 ### Connections
 
-Each connection shows its remote host, with tags for its state and forwards, and a usage meter.
+While the host is on, this server leads the list, named after the server and placed by its **Public address**. Selecting it opens **Settings**. Each connection shows its remote host, with tags for its state and forwards, and a usage meter.
 
 Select a connection to open its details, with its status, remote host, this server's address, forwards, last handshake, last error, usage, and speed limit. **This server's public key** has a Copy button. Give it to the remote host.
 

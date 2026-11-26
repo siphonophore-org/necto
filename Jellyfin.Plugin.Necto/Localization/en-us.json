@@ -971,6 +971,8 @@
   "WireGuardSidecarInstalled": "Version {0} for {1}, downloaded {2}.",
   "WireGuardSidecarMissing": "Not downloaded. Version {0} for {1} downloads when WireGuard is turned on.",
   "WireGuardSidecarNoPlatform": "No wireguard-go is built for this server's platform.",
+  "WireGuardStatusActive": "Active",
+  "WireGuardStatusInactive": "Inactive",
   "WireGuardStatusRunning": "Running",
   "WireGuardStatusStarting": "Starting",
   "WireGuardStatusStopped": "Stopped",
