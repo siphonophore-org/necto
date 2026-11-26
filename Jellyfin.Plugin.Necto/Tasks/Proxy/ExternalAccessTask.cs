@@ -12,6 +12,7 @@ using Jellyfin.Plugin.Necto.Configuration.Proxy;
 using Jellyfin.Plugin.Necto.Services.Ddns;
 using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
 using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Notifications;
 using Jellyfin.Plugin.Necto.Services.Proxy;
 using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
 using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
@@ -34,6 +35,7 @@ public sealed class ExternalAccessTask : PluginScheduledTask
     private readonly ProxyManager _proxy;
     private readonly ActivityLogger _activity;
     private readonly ILogger<ExternalAccessTask> _logger;
+    private readonly INotifier _notifier;
     private bool _failing;
 
     /// <summary>
@@ -42,8 +44,11 @@ public sealed class ExternalAccessTask : PluginScheduledTask
     /// <param name="proxy">The proxy manager.</param>
     /// <param name="activity">The activity log writer.</param>
     /// <param name="logger">The logger.</param>
-    public ExternalAccessTask(ProxyManager proxy, ActivityLogger activity, ILogger<ExternalAccessTask> logger)
+    /// <param name="notifier">Sends a lost outside check to Notifications.</param>
+    public ExternalAccessTask(ProxyManager proxy, ActivityLogger activity, ILogger<ExternalAccessTask> logger, INotifier notifier)
     {
+        ArgumentNullException.ThrowIfNull(notifier);
+        _notifier = notifier;
         _proxy = proxy;
         _activity = activity;
         _logger = logger;
@@ -91,6 +96,7 @@ public sealed class ExternalAccessTask : PluginScheduledTask
                 _failing = true;
                 _logger.LogError("External access failed: {Message}", message);
                 _activity.Log(ServerText.Get(TranslationKeys.ProxyActivityExternalAccessFailed), "Necto.Proxy.ExternalAccessFailed", ActivityEntries.Plain(message), LogLevel.Error);
+                await _notifier.SendAsync(new NectoEvent(ProxyEvents.Unreachable, ServerText.Format(TranslationKeys.ProxyEventUnreachableTitle, Plugin.Instance?.ReadConfiguration(c => ProxyManager.PublicHostname(c.Proxy)) ?? string.Empty), message) { Level = NectoEventLevel.Error }, cancellationToken).ConfigureAwait(false);
             }
         }
         else if (_failing)

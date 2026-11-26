@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Jellyfin.Plugin.Necto.Configuration.Ddns;
 using Jellyfin.Plugin.Necto.Configuration.Proxy;
 using Jellyfin.Plugin.Necto.Services.Ddns;
+using Jellyfin.Plugin.Necto.Services.Notifications;
 using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
 using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
 using Jellyfin.Plugin.Necto.Services.Proxy.Network;
@@ -54,6 +55,7 @@ public sealed class ProxyManager : IAsyncDisposable
     private readonly CancellationTokenSource _shutdown = new();
     private readonly ReachabilityChecker _reachability;
     private readonly NameChecker _names;
+    private readonly INotifier? _notifier;
     private ProxyHost? _host;
     private ProxyRuntimeHolder? _holder;
     private DateTime? _startedUtc;
@@ -81,6 +83,7 @@ public sealed class ProxyManager : IAsyncDisposable
     /// <param name="reachability">Checks the HTTPS port from outside the network.</param>
     /// <param name="addresses">This server's public addresses, for the name check.</param>
     /// <param name="activity">The activity log writer, for start failures and recovery.</param>
+    /// <param name="notifier">Sends start failures and hidden visitors to Notifications.</param>
     public ProxyManager(
         ILoggerFactory loggerFactory,
         ProxyPaths paths,
@@ -96,8 +99,10 @@ public sealed class ProxyManager : IAsyncDisposable
         AcmeCertificateService acme,
         ReachabilityChecker reachability,
         PublicAddresses addresses,
-        ActivityLogger? activity = null)
+        ActivityLogger? activity = null,
+        INotifier? notifier = null)
     {
+        _notifier = notifier;
         ArgumentNullException.ThrowIfNull(loggerFactory);
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(application);
@@ -807,6 +812,7 @@ public sealed class ProxyManager : IAsyncDisposable
             "Necto.Proxy.EveryoneLooksLocal",
             ServerText.Format(TranslationKeys.ProxyActivityEveryoneLocalOverview, LocalTrafficWatch.Threshold),
             LogLevel.Warning);
+        _ = _notifier?.SendAsync(new NectoEvent(ProxyEvents.VisitorsHidden, ServerText.Get(TranslationKeys.ProxyActivityEveryoneLocal), ServerText.Format(TranslationKeys.ProxyActivityEveryoneLocalOverview, LocalTrafficWatch.Threshold)) { Level = NectoEventLevel.Warning });
     }
 
     private string EnsureDataDirectory()
@@ -844,6 +850,10 @@ public sealed class ProxyManager : IAsyncDisposable
             {
                 _reportedError = _error;
                 _activity?.Log(ServerText.Get(TranslationKeys.ProxyActivityProxyStartFailed), "Necto.Proxy.StartFailed", ActivityEntries.Plain(_error), LogLevel.Error);
+                if (_notifier is not null)
+                {
+                    await _notifier.SendAsync(new NectoEvent(ProxyEvents.StartFailed, ServerText.Get(TranslationKeys.ProxyEventStartFailedTitle), _error) { Level = NectoEventLevel.Error }, CancellationToken.None).ConfigureAwait(false);
+                }
             }
         }
     }

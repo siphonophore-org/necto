@@ -79,10 +79,10 @@ public class VisitorsController : ControllerBase
     /// Returns what each address did, the country totals for the map, the settings and the location database
     /// status.
     /// </summary>
-    /// <returns>The Remote Access page data.</returns>
+    /// <returns>The visitors, the totals by country for the map, this server's location, the settings and the location database status.</returns>
     /// <param name="type">Only this kind of activity, or empty for every kind.</param>
     /// <param name="place">A two-letter country code, "local" for your network, or empty for anywhere.</param>
-    [HttpGet]
+    [HttpGet("Visitors")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<object> Get([FromQuery] ActivityType? type = null, [FromQuery] string? place = null)
     {
@@ -128,6 +128,7 @@ public class VisitorsController : ControllerBase
             FailedByCountry = _store.GetFailedByCountry(),
             BlockedByCountry = _store.GetBlockedByCountry(),
             Settings = VisitorService.Settings,
+            Server = _server.Location,
             VisitorService.Recording,
             Location = _geo.GetStatus(VisitorService.RequiredLocation),
             GeoIpService.Attribution
@@ -137,12 +138,18 @@ public class VisitorsController : ControllerBase
     /// <summary>
     /// Adds an internet address to the block list and applies it.
     /// </summary>
-    /// <param name="ip">The address.</param>
+    /// <param name="target">The address.</param>
     /// <returns>An empty answer, or why it was refused.</returns>
-    [HttpPost("Block")]
+    [HttpPost("Visitors/Block")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult> Block([FromQuery] string ip)
+    public async Task<ActionResult> Block([FromBody] VisitorTarget target)
+    {
+        var ip = target?.Value ?? string.Empty;
+        return await BlockCoreAsync(ip).ConfigureAwait(false);
+    }
+
+    private async Task<ActionResult> BlockCoreAsync(string ip)
     {
         // An IPv6 visitor is kept in the history as its /64, which is blocked whole.
         var plugin = Plugin.Instance;
@@ -192,12 +199,18 @@ public class VisitorsController : ControllerBase
     /// <summary>
     /// Removes an address from the block list and applies it. A range that covers it is left alone.
     /// </summary>
-    /// <param name="ip">The address.</param>
+    /// <param name="target">The address.</param>
     /// <returns>An empty answer, or why it was refused.</returns>
-    [HttpPost("Unblock")]
+    [HttpPost("Visitors/Unblock")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult> Unblock([FromQuery] string ip)
+    public async Task<ActionResult> Unblock([FromBody] VisitorTarget target)
+    {
+        var ip = target?.Value ?? string.Empty;
+        return await UnblockCoreAsync(ip).ConfigureAwait(false);
+    }
+
+    private async Task<ActionResult> UnblockCoreAsync(string ip)
     {
         var plugin = Plugin.Instance;
         if (plugin is null || !BlockGuard.TryParseTarget(ip, out var target))
@@ -227,7 +240,7 @@ public class VisitorsController : ControllerBase
     /// </summary>
     /// <param name="incoming">The settings.</param>
     /// <returns>The saved settings.</returns>
-    [HttpPost("Settings")]
+    [HttpPost("Visitors/Settings")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<VisitorSettings> SaveSettings([FromBody] VisitorSettings incoming)
     {
@@ -271,7 +284,7 @@ public class VisitorsController : ControllerBase
     /// </summary>
     /// <param name="cancellationToken">Cancels the download.</param>
     /// <returns>The location database status.</returns>
-    [HttpPost("Location/Update")]
+    [HttpPost("Visitors/Location/Update")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<GeoIpStatus>> UpdateLocation(CancellationToken cancellationToken)
     {
@@ -283,12 +296,18 @@ public class VisitorsController : ControllerBase
     /// <summary>
     /// Lifts the ban on an address.
     /// </summary>
-    /// <param name="ip">The address.</param>
+    /// <param name="target">The address.</param>
     /// <returns>An empty answer, or why it was refused.</returns>
-    [HttpPost("Unban")]
+    [HttpPost("Visitors/Unban")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public ActionResult Unban([FromQuery] string ip)
+    public ActionResult Unban([FromBody] VisitorTarget target)
+    {
+        var ip = target?.Value ?? string.Empty;
+        return UnbanCore(ip);
+    }
+
+    private ActionResult UnbanCore(string ip)
     {
         // A ban is held per IPv4 address, or per IPv6 /64, /56 or /48. An address or a /64, as a visitor's row
         // shows it, lifts every ban that holds it, its own and any on a wider network, so the visitor really can
@@ -329,12 +348,18 @@ public class VisitorsController : ControllerBase
     /// Lets a country through the country rules and applies it: removed from a block list, or added to the
     /// countries allowed.
     /// </summary>
-    /// <param name="code">The two-letter country code.</param>
+    /// <param name="target">The two-letter country code.</param>
     /// <returns>An empty answer, or why it was refused.</returns>
-    [HttpPost("UnblockCountry")]
+    [HttpPost("Visitors/UnblockCountry")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult> UnblockCountry([FromQuery] string code)
+    public async Task<ActionResult> UnblockCountry([FromBody] VisitorTarget target)
+    {
+        var code = target?.Value ?? string.Empty;
+        return await UnblockCountryCoreAsync(code).ConfigureAwait(false);
+    }
+
+    private async Task<ActionResult> UnblockCountryCoreAsync(string code)
     {
         var plugin = Plugin.Instance;
         var country = (code ?? string.Empty).Trim().ToUpperInvariant();
@@ -399,7 +424,7 @@ public class VisitorsController : ControllerBase
     /// Deletes all People history.
     /// </summary>
     /// <returns>An empty answer.</returns>
-    [HttpDelete("History")]
+    [HttpDelete("Visitors/History")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult DeleteAll()
     {

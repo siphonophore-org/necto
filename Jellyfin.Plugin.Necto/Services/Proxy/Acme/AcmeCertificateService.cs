@@ -16,6 +16,7 @@ using Jellyfin.Plugin.Necto.Configuration.Proxy;
 using Jellyfin.Plugin.Necto.Services.Ddns;
 using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
 using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Notifications;
 using Jellyfin.Plugin.Necto.Services.Proxy;
 using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
 using Jellyfin.Plugin.Necto.Services.Proxy.Network;
@@ -49,6 +50,7 @@ public sealed class AcmeCertificateService : IDisposable
     private readonly IReadOnlyList<IDNSProvider> _providers;
     private readonly SecretProtector? _secrets;
     private readonly ActivityLogger? _activity;
+    private readonly INotifier? _notifier;
     private readonly ILogger<AcmeCertificateService> _logger;
     private readonly JsonFileStore<PendingTxtList> _pendingTxt;
     private readonly object _pendingLock = new();
@@ -68,6 +70,7 @@ public sealed class AcmeCertificateService : IDisposable
     /// <param name="providers">The DNS providers, some of which can publish TXT records for DNS-01.</param>
     /// <param name="secrets">Decrypts the DDNS records' credentials.</param>
     /// <param name="activity">The activity log writer.</param>
+    /// <param name="notifier">Sends issued and failed certificates to Notifications.</param>
     public AcmeCertificateService(
         ProxyPaths paths,
         Http01ChallengeStore challenges,
@@ -75,7 +78,8 @@ public sealed class AcmeCertificateService : IDisposable
         ILogger<AcmeCertificateService> logger,
         IEnumerable<IDNSProvider>? providers = null,
         SecretProtector? secrets = null,
-        ActivityLogger? activity = null)
+        ActivityLogger? activity = null,
+        INotifier? notifier = null)
     {
         ArgumentNullException.ThrowIfNull(paths);
         _providers = (providers ?? Enumerable.Empty<IDNSProvider>()).ToList();
@@ -85,6 +89,7 @@ public sealed class AcmeCertificateService : IDisposable
         _http = http;
         _logger = logger;
         _activity = activity;
+        _notifier = notifier;
         _pendingTxt = new JsonFileStore<PendingTxtList>(paths.AcmeTxtCleanupFile, logger);
     }
 
@@ -211,6 +216,11 @@ public sealed class AcmeCertificateService : IDisposable
                     _activity?.Log(ServerText.Get(TranslationKeys.ProxyActivityCertificateIssued), "Necto.Proxy.CertificateIssued", ServerText.Format(TranslationKeys.ProxyActivityCertificateIssuedOverview, list));
                 }
 
+                if (_notifier is not null)
+                {
+                    await _notifier.SendAsync(new NectoEvent(ProxyEvents.CertificateIssued, ServerText.Format(TranslationKeys.ProxyEventCertificateIssuedTitle, list), ServerText.Format(TranslationKeys.ProxyActivityCertificateIssuedOverview, list)), CancellationToken.None).ConfigureAwait(false);
+                }
+
                 return true;
             }
             catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
@@ -227,6 +237,11 @@ public sealed class AcmeCertificateService : IDisposable
                     decision.Action == AcmeAction.Renew ? "Necto.Proxy.CertificateRenewFailed" : "Necto.Proxy.CertificateIssueFailed",
                     ActivityEntries.Plain(ServerText.Format(TranslationKeys.ProxyActivityNextTryAfter, ActivityEntries.Phrase(error), next.ToString("u", System.Globalization.CultureInfo.InvariantCulture))),
                     level);
+                if (_notifier is not null)
+                {
+                    await _notifier.SendAsync(new NectoEvent(ProxyEvents.CertificateFailed, ServerText.Format(TranslationKeys.ProxyEventCertificateFailedTitle, string.Join(", ", names)), error) { Level = decision.Action == AcmeAction.Renew ? NectoEventLevel.Warning : NectoEventLevel.Error }, CancellationToken.None).ConfigureAwait(false);
+                }
+
                 return false;
             }
             finally
