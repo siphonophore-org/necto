@@ -39,7 +39,7 @@ namespace Jellyfin.Plugin.Necto.Services.Proxy.Acme;
 /// </summary>
 public sealed class AcmeCertificateService : IDisposable
 {
-    private const string DirectoryVariable = "DDNS_ACME_DIRECTORY";
+    private const string DirectoryVariable = "NECTO_ACME_DIRECTORY";
     private static readonly TimeSpan _validationPoll = TimeSpan.FromSeconds(2);
     private const int ValidationPolls = 60;
     private static readonly Uri _dnsOverHttps = new("https://cloudflare-dns.com/dns-query");

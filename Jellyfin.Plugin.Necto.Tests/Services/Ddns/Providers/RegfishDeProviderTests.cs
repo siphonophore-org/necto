@@ -1,0 +1,131 @@
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging.Abstractions;
+using Xunit;
+using Jellyfin.Plugin.Necto.Configuration;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Configuration.Proxy;
+using Jellyfin.Plugin.Necto.Services.Ddns;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
+using Jellyfin.Plugin.Necto.Services.Proxy.Network;
+using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
+using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
+using Jellyfin.Plugin.Necto.Services.Notifications;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+using Jellyfin.Plugin.Necto.Api.Proxy;
+using Jellyfin.Plugin.Necto.Tests.Fakes;
+
+namespace Jellyfin.Plugin.Necto.Tests.Services.Ddns.Providers;
+
+/// <summary>
+/// regfish.de takes a single GET carrying both families and reports the outcome in the body: only a
+/// reply containing "success" passes. Pins that parsing, the query shape (fqdn/forcehost/token/ipv4/ipv6),
+/// and the no-address early out.
+/// </summary>
+public class RegfishDeProviderTests
+{
+    private static DNSRecord Record() => new()
+    {
+        Hostname = "home.example.com",
+        Password = "updatetoken",
+        UpdateIPv4 = true,
+    };
+
+    [Fact]
+    public async Task SuccessBody_IsSuccess()
+    {
+        var provider = new RegfishDeProvider(
+            StubHttp.Always(HttpStatusCode.OK, "success|100|the update was successful"),
+            NullLogger<RegfishDeProvider>.Instance);
+
+        var result = await provider.UpdateAsync(Record(), new DetectedIP { IPv4 = "1.2.3.4" }, CancellationToken.None);
+
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task ErrorBodyWithHttp200_IsFailure()
+    {
+        var provider = new RegfishDeProvider(
+            StubHttp.Always(HttpStatusCode.OK, "ERR|401|authorization failed"),
+            NullLogger<RegfishDeProvider>.Instance);
+
+        var result = await provider.UpdateAsync(Record(), new DetectedIP { IPv4 = "1.2.3.4" }, CancellationToken.None);
+
+        Assert.False(result.Success);
+    }
+
+    [Fact]
+    public async Task UnsuccessfulBody_IsFailure()
+    {
+        var provider = new RegfishDeProvider(
+            StubHttp.Always(HttpStatusCode.OK, "unsuccessful|401|token rejected"),
+            NullLogger<RegfishDeProvider>.Instance);
+
+        var result = await provider.UpdateAsync(Record(), new DetectedIP { IPv4 = "1.2.3.4" }, CancellationToken.None);
+
+        Assert.False(result.Success);
+    }
+
+    [Fact]
+    public async Task HttpError_IsFailure()
+    {
+        var provider = new RegfishDeProvider(
+            StubHttp.Always(HttpStatusCode.Forbidden, "success"),
+            NullLogger<RegfishDeProvider>.Instance);
+
+        var result = await provider.UpdateAsync(Record(), new DetectedIP { IPv4 = "1.2.3.4" }, CancellationToken.None);
+
+        Assert.False(result.Success);
+    }
+
+    [Fact]
+    public async Task Request_CarriesBothFamiliesInOneQuery()
+    {
+        var requests = 0;
+        Uri? uri = null;
+        var factory = StubHttp.Factory(req =>
+        {
+            requests++;
+            uri = req.RequestUri;
+            return (HttpStatusCode.OK, "success");
+        });
+        var provider = new RegfishDeProvider(factory, NullLogger<RegfishDeProvider>.Instance);
+        var record = Record();
+        record.UpdateIPv6 = true;
+
+        var result = await provider.UpdateAsync(
+            record,
+            new DetectedIP { IPv4 = "1.2.3.4", IPv6 = "2001:db8::1" },
+            CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal(1, requests);
+        Assert.Equal("dyndns.regfish.de", uri!.Host);
+        Assert.Contains("fqdn=home.example.com", uri.Query, StringComparison.Ordinal);
+        Assert.Contains("forcehost=1", uri.Query, StringComparison.Ordinal);
+        Assert.Contains("token=updatetoken", uri.Query, StringComparison.Ordinal);
+        Assert.Contains("ipv4=1.2.3.4", uri.Query, StringComparison.Ordinal);
+        Assert.Contains("ipv6=2001%3Adb8%3A%3A1", uri.Query, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task NoMatchingAddress_FailsWithoutNetwork()
+    {
+        // IPv4 updates are enabled but detection produced no IPv4, so nothing may be sent.
+        var provider = new RegfishDeProvider(
+            StubHttp.Factory(_ => throw new Xunit.Sdk.XunitException("network")),
+            NullLogger<RegfishDeProvider>.Instance);
+
+        var result = await provider.UpdateAsync(Record(), new DetectedIP { IPv6 = "2001:db8::1" }, CancellationToken.None);
+
+        Assert.False(result.Success);
+    }
+}

@@ -11,6 +11,7 @@ namespace Jellyfin.Plugin.Necto.Tests;
 /// <summary>
 /// The plugin names itself, keeps its id, and registers the Necto page with every tool and every file it serves.
 /// </summary>
+[Collection(PluginInstanceCollection.Name)]
 public class PluginTests
 {
     private static readonly string[] Tools =

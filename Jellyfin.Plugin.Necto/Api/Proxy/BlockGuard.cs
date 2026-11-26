@@ -62,7 +62,7 @@ internal static class BlockGuard
             : n;
 
     /// <summary>
-    /// Reads what the Remote Access page asks to block: one address, or an IPv6 /64 as its history shows it.
+    /// Reads what the Proxy page asks to block: one address, or an IPv6 /64 as its history shows it.
     /// </summary>
     /// <param name="text">The address or network.</param>
     /// <param name="target">The network, a single address as a full-length one.</param>

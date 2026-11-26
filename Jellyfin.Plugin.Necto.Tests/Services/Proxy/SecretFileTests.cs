@@ -1,0 +1,67 @@
+using System;
+using System.IO;
+using Xunit;
+using Jellyfin.Plugin.Necto.Configuration;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Configuration.Proxy;
+using Jellyfin.Plugin.Necto.Services.Ddns;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
+using Jellyfin.Plugin.Necto.Services.Proxy.Network;
+using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
+using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
+using Jellyfin.Plugin.Necto.Services.Notifications;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+using Jellyfin.Plugin.Necto.Api.Proxy;
+using Jellyfin.Plugin.Necto.Tests.Fakes;
+
+namespace Jellyfin.Plugin.Necto.Tests.Services.Proxy;
+
+/// <summary>
+/// Key and certificate files are replaced whole and readable by the owner only.
+/// </summary>
+public sealed class SecretFileTests : IDisposable
+{
+    private readonly string _dir = Path.Join(Path.GetTempPath(), "remoteaccess-secret-tests-" + Guid.NewGuid().ToString("N"));
+
+    public SecretFileTests() => Directory.CreateDirectory(_dir);
+
+    public void Dispose()
+    {
+        try
+        {
+            Directory.Delete(_dir, true);
+        }
+        catch (IOException)
+        {
+            // A file still held open is left for the system's temporary-file cleanup.
+        }
+    }
+
+    [Fact]
+    public void Write_ReplacesTheFileAndLeavesNoTempBehind()
+    {
+        var path = Path.Join(_dir, "key.pem");
+        SecretFile.Write(path, "first"u8);
+        SecretFile.Write(path, "second"u8);
+
+        Assert.Equal("second", File.ReadAllText(path));
+        Assert.Equal(new[] { path }, Directory.GetFiles(_dir));
+    }
+
+    [Fact]
+    public void Write_IsOwnerOnly()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var path = Path.Join(_dir, "key.pem");
+        SecretFile.Write(path, "secret"u8);
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(path));
+    }
+}

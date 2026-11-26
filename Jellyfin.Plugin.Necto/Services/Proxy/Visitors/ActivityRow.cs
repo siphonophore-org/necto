@@ -16,7 +16,7 @@ using Jellyfin.Plugin.Necto.Api.Proxy;
 namespace Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
 
 /// <summary>
-/// One row of the Remote Access table: an address and what it did.
+/// One row of the visitor table: an address and what it did.
 /// </summary>
 public sealed class ActivityRow
 {

@@ -105,7 +105,7 @@ internal static class LocalAuthority
         }
 
         using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        var name = "CN=Jellyfin Remote Access root (" + Environment.MachineName + "), O=Jellyfin Remote Access";
+        var name = "CN=Jellyfin Necto root (" + Environment.MachineName + "), O=Jellyfin Remote Access";
         var request = new CertificateRequest(name, key, HashAlgorithmName.SHA256);
         request.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, true, 0, true));
         request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, true));

@@ -1,0 +1,138 @@
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging.Abstractions;
+using Xunit;
+using Jellyfin.Plugin.Necto.Configuration;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Configuration.Proxy;
+using Jellyfin.Plugin.Necto.Services.Ddns;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
+using Jellyfin.Plugin.Necto.Services.Proxy.Network;
+using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
+using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
+using Jellyfin.Plugin.Necto.Services.Notifications;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+using Jellyfin.Plugin.Necto.Api.Proxy;
+using Jellyfin.Plugin.Necto.Tests.Fakes;
+
+namespace Jellyfin.Plugin.Necto.Tests.Services.Ddns.Providers;
+
+/// <summary>
+/// Request-shaping tests for the text-protocol providers (OVH, DDNSS, ChangeIP). They report success
+/// from the response body, so these pin the success/failure parsing against representative replies.
+/// </summary>
+public class DynDnsStyleProviderTests
+{
+    private static readonly DetectedIP V4 = new() { IPv4 = "1.2.3.4" };
+
+    // MARK: OVH (dyndns2 "good" / "nochg")
+
+    [Theory]
+    [InlineData("good 1.2.3.4", true)]
+    [InlineData("nochg 1.2.3.4", true)]
+    [InlineData("badauth", false)]
+    [InlineData("nohost", false)]
+    public async Task Ovh_ParsesDynDnsReply(string body, bool expectSuccess)
+    {
+        var provider = new OvhProvider(StubHttp.Always(HttpStatusCode.OK, body), NullLogger<OvhProvider>.Instance);
+        var record = new DNSRecord { Hostname = "home.example.com", Login = "u", Password = "p", UpdateIPv4 = true };
+
+        var result = await provider.UpdateAsync(record, V4, CancellationToken.None);
+
+        Assert.Equal(expectSuccess, result.Success);
+    }
+
+    [Fact]
+    public async Task Ovh_HttpError_IsFailure()
+    {
+        var provider = new OvhProvider(StubHttp.Always(HttpStatusCode.Unauthorized, "nope"), NullLogger<OvhProvider>.Instance);
+        var record = new DNSRecord { Hostname = "home.example.com", Login = "u", Password = "p", UpdateIPv4 = true };
+
+        var result = await provider.UpdateAsync(record, V4, CancellationToken.None);
+
+        Assert.False(result.Success);
+    }
+
+    // MARK: DDNSS.de ("good")
+
+    [Theory]
+    [InlineData("good", true)]
+    [InlineData("Updated 1 hostname good", true)]
+    [InlineData("badysn", false)]
+    [InlineData("Error: bad key", false)]
+    [InlineData("Error\nbut something good below", false)] // "good" only off the first line must not pass
+    public async Task Ddnss_ParsesReply(string body, bool expectSuccess)
+    {
+        var provider = new DdnssProvider(StubHttp.Always(HttpStatusCode.OK, body), NullLogger<DdnssProvider>.Instance);
+        var record = new DNSRecord { Hostname = "host", Password = "key", UpdateIPv4 = true };
+
+        var result = await provider.UpdateAsync(record, V4, CancellationToken.None);
+
+        Assert.Equal(expectSuccess, result.Success);
+    }
+
+    // MARK: Dynadot ("ok" status token)
+
+    [Theory]
+    [InlineData("ok", true)]
+    [InlineData("Error: bad password", false)]
+    [InlineData("lookup failed", false)] // contains the substring "ok" but is not the status token
+    public async Task Dynadot_ParsesReply(string body, bool expectSuccess)
+    {
+        var provider = new DynadotProvider(StubHttp.Always(HttpStatusCode.OK, body), NullLogger<DynadotProvider>.Instance);
+        var record = new DNSRecord { Hostname = "home.example.com", Password = "ddnspw", UpdateIPv4 = true };
+
+        var result = await provider.UpdateAsync(record, V4, CancellationToken.None);
+
+        Assert.Equal(expectSuccess, result.Success);
+    }
+
+    // MARK: ChangeIP ("success")
+
+    [Theory]
+    [InlineData("Successful update", true)]
+    [InlineData("200 Successful Update", true)]
+    [InlineData("Authentication failed", false)]
+    [InlineData("Error\na previous success is irrelevant", false)] // "success" only off the first line must not pass
+    public async Task ChangeIp_ParsesReply(string body, bool expectSuccess)
+    {
+        var provider = new ChangeIpProvider(StubHttp.Always(HttpStatusCode.OK, body), NullLogger<ChangeIpProvider>.Instance);
+        var record = new DNSRecord { Hostname = "home.example.com", Login = "u", Password = "p", UpdateIPv4 = true };
+
+        var result = await provider.UpdateAsync(record, V4, CancellationToken.None);
+
+        Assert.Equal(expectSuccess, result.Success);
+    }
+
+    // MARK: shared validation short-circuit (no network)
+
+    [Fact]
+    public async Task Ovh_MissingCredentials_FailsWithoutNetwork()
+    {
+        // Throws if any request is actually sent. This proves the early out before any network call.
+        var provider = new OvhProvider(StubHttp.Factory(_ => throw new Xunit.Sdk.XunitException("network")), NullLogger<OvhProvider>.Instance);
+        var record = new DNSRecord { Hostname = "home.example.com", Login = "", Password = "", UpdateIPv4 = true };
+
+        var result = await provider.UpdateAsync(record, V4, CancellationToken.None);
+
+        Assert.False(result.Success);
+    }
+
+    [Theory]
+    [InlineData("Unsuccessful Update")]
+    [InlineData("200 unsuccessful")]
+    public async Task ChangeIp_UnsuccessfulReply_IsAFailure(string body)
+    {
+        var provider = new ChangeIpProvider(StubHttp.Always(HttpStatusCode.OK, body), NullLogger<ChangeIpProvider>.Instance);
+        var record = new DNSRecord { Hostname = "home.example.com", Login = "u", Password = "p", UpdateIPv4 = true };
+
+        var result = await provider.UpdateAsync(record, V4, CancellationToken.None);
+
+        Assert.False(result.Success);
+    }
+}

@@ -484,7 +484,7 @@
   "ProxyErrorUndoBeforeOff": "Undo Trust the proxy before turning the proxy off, so Jellyfin's remote access goes back to how it was.",
   "ProxyErrorUnknownLocation": "Location has an unknown value.",
   "ProxyErrorUnknownValue": "{0} has an unknown value.",
-  "ProxyErrorUnreadableState": "Remote Access could not read its record of Jellyfin's network settings, so nothing was changed. Try again in a moment. If this keeps happening, check the file {0}.",
+  "ProxyErrorUnreadableState": "The proxy could not read its record of Jellyfin's network settings, so nothing was changed. Try again in a moment. If this keeps happening, check the file {0}.",
   "ProxyErrorUpstream": "\"{0}\" is not an http or https address, such as http://192.168.1.20:8096.",
   "ProxyErrorUpstreamUnreachable": "The service at {0} did not answer through the proxy.",
   "ProxyEventBanned": "Address banned by the proxy",
