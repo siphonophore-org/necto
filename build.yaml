@@ -35,6 +35,7 @@ changelog:
   - "Proxy, a reverse proxy to any service, with routes from the Jellyfin, Jellyfin LAN and Blank templates, a certificate per route by HTTP or DNS challenge or upload, and bans, rate limits, locations and trusted networks"
   - "Requests, with the request page at /requests, Radarr and Sonarr, discovery from TMDb, the blocklist, and imports"
   - "Issues, with the issue page at /issues, states, notes, and a check for changed files"
+  - "One sign in for the request, issue, invite, and custom pages, drawn as the web client's sign in page, whose Remember me signs the web client in too"
   - "Dashboard, with a status card for each tool that is on, one world map of the proxy's visitors and the WireGuard tunnels, the share card, and Necto's recent activity"
   - "No password, key, or token reaches a page through the plugin configuration, and saving any page keeps every stored secret"
   - "Each request and issue event posts to Discord in its own color"

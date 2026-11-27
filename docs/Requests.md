@@ -13,7 +13,7 @@ Without Radarr or Sonarr, approved requests are still tracked, and turn availabl
 
 ## The Request Page
 
-The request page is at `https://jellyfin.example.com/requests/`. It looks and works like the installed web client, with the same header, library buttons, user menu, cards, and details pages, since it loads the web client's own stylesheets. It uses the viewer's Jellyfin session from the same browser, and a viewer who is not signed in signs in on the page itself, with their user and password or with **Quick Connect**.
+The request page is at `https://jellyfin.example.com/requests/`. It looks and works like the installed web client, with the same header, library buttons, user menu, cards, and details pages, since it loads the web client's own stylesheets. It uses the viewer's Jellyfin session from the same browser. A viewer who is not signed in gets the same sign in as every Necto user page, drawn as the web client's sign in page, with their user and password or **Quick Connect**. With **Remember me** on, the web client at `/web/` is signed in too.
 
 | Request page | Request page on a phone |
 | :---: | :---: |
@@ -21,7 +21,7 @@ The request page is at `https://jellyfin.example.com/requests/`. It looks and wo
 
 * With nothing typed, it shows rows. **My requests**, then **Requests** with everyone else's for a viewer who may see them, then **Recently Added**, **Recommended for you**, the trending, upcoming, and popular rows from TMDb, and the home rows set in **Settings**.
 * Search checks the library first, then TMDb, in **Movies**, **Shows**, and **People** rows. Search `tmdb:603`, `imdb:tt0133093`, or `tvdb:81189` to find a title by its id.
-* A title's page has its genres, studios, and networks as links, **More Like This**, its seasons with their episodes, a trailer, and its collection. A collection's page has **Request all**.
+* A title's page has its genres, studios, and networks as links, **More Like This**, its seasons with their episodes, a trailer, and its collection. A season with no episodes yet is left out. A collection's page has **Request all**.
 * A row's page has a **Filter** button that works like a library's, with status, type, genre, and for TMDb lists sort, decade, rating, runtime, language, and streaming service.
 * Each card's badge says where the title stands: in the library, pending, approved or in Radarr or Sonarr, downloaded, or blocked. On a title's page the same state is a plain icon among its buttons, and its words show on hover.
 * The user menu's **Notifications** item turns on browser notifications in this browser. It signs the browser up through `/Notifications/Push/Subscribe`, so Requests and Issues events reach it.
