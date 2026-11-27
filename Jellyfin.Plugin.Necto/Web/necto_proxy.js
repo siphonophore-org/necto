@@ -389,7 +389,7 @@ export function notices(status, t) {
 // [object]: action and value, disabled when the button is off, and reason, the key of the button's tooltip.
 export function rowAction(row) {
     if (row.Banned) return { action: 'unban', value: row.Ip };
-    if (row.Exempt) return { action: 'block', value: row.Ip, disabled: true, reason: 'ProxyNeverBlocked' };
+    if (row.Exempt) return { action: 'block', value: row.Ip, disabled: true, reason: 'ProxyTextNeverBlocked' };
     if (row.Listed) return { action: 'unblock', value: row.Ip };
     if (row.Covered) return { action: 'unblock', value: row.Ip, disabled: true, reason: 'ProxyBlockedByRange' };
     if (row.CountryBlocked) return { action: 'unblock-country', value: row.CountryCode, country: row.Country || row.CountryCode, reason: 'ProxyAllowCountry' };
@@ -709,7 +709,7 @@ export default function (view) {
     function requestCertificate(route, editor) {
         var t = shared.t;
         if (!requestable()) return Promise.resolve();
-        return nectoModule.confirmDialog(t.tr('ProxyConfirmRequestCertificate'), { title: t.format('ProxyTitleRequestCertificate', route.Host || t.tr('ProxyNoHost')), confirmText: t.tr('ProxyButtonRequest') }).then(function (ok) {
+        return nectoModule.confirmDialog(t.tr('ProxyConfirmRequestCertificate'), { title: t.format('ProxyTitleRequestCertificate', route.Host || t.tr('ProxyNoHost')), confirmText: t.tr('ProxyButtonRequestCertificate') }).then(function (ok) {
             if (!ok) return;
             editor.setStatus(t.tr('ProxyRequesting'), false);
             return shared.request('Proxy/Routes/' + encodeURIComponent(route.Id) + '/Certificate/Request', 'POST').then(function (result) {
@@ -844,7 +844,7 @@ export default function (view) {
                 { key: 'Ip', label: t.tr('LabelAddress') },
                 { key: 'Country', label: t.tr('HeaderCountry'), value: function (b) { return b.Country || t.tr('Unknown'); } },
                 { key: 'Failures', label: t.tr('ProxyColumnFailures'), align: 'end' },
-                { key: 'BannedUtc', label: t.tr('ProxyColumnBanned'), value: function (b) { return b.BannedUtc ? shared.formatDate(b.BannedUtc) : ''; } },
+                { key: 'BannedUtc', label: t.tr('ProxyHeaderBanned'), value: function (b) { return b.BannedUtc ? shared.formatDate(b.BannedUtc) : ''; } },
                 { key: 'UntilUtc', label: t.tr('ProxyColumnEnds'), value: function (b) { return b.UntilUtc ? shared.formatDate(b.UntilUtc) : t.tr('ProxyUntilLifted'); } },
                 { key: 'action', label: t.tr('HeaderAction'), sortable: false, render: function (b) { return button(t.tr('ProxyButtonUnban'), 'stolon-secondary', { action: 'unban', value: b.Ip }, t.format('ProxyButtonUnbanAddress', b.Ip)); } }
             ],

@@ -71,7 +71,8 @@ public class DdnsController : ControllerBase
                 Label = p.Label,
                 Hint = StolonTranslations.Get(p.Hint, language),
                 Fields = p.Fields.Translated(language),
-                Txt = p is IAcmeDnsProvider
+                Txt = p is IAcmeDnsProvider,
+                Follow = CanFollowProxy(p)
             })
             .ToList());
     }
@@ -295,6 +296,18 @@ public class DdnsController : ControllerBase
     }
 
     /// <summary>
+    /// Whether a record with this provider can follow the proxy's host names. That needs a hostname field that holds a
+    /// name, so providers that work the host out from the account or take a record id cannot.
+    /// </summary>
+    /// <param name="provider">The provider.</param>
+    /// <returns>True when the provider's hostname field holds a DNS name.</returns>
+    internal static bool CanFollowProxy(IDNSProvider provider)
+    {
+        ArgumentNullException.ThrowIfNull(provider);
+        return !string.IsNullOrEmpty(provider.Fields.Hostname) && !RecordTarget.HoldsRecordId(provider.Kind);
+    }
+
+    /// <summary>
     /// Turns a submitted credential into the value to save: the kept marker keeps the stored value, an empty field
     /// clears it, and anything typed is encrypted.
     /// </summary>
@@ -344,6 +357,12 @@ public class DdnsController : ControllerBase
         if (record.Hostname.Length == 0 && !record.FollowProxyHosts && NeedsHostname(_providers, record.Provider))
         {
             return BadRequest(Errors(Reply(TranslationKeys.DdnsErrorRecordNeedsHostname)));
+        }
+
+        // A provider without a name field would push a route's name as a record id, or ignore it.
+        if (record.FollowProxyHosts && _providers.FirstOrDefault(p => p.Kind == record.Provider) is { } chosen && !CanFollowProxy(chosen))
+        {
+            return BadRequest(Errors(Reply(TranslationKeys.DdnsErrorCannotFollowProxy)));
         }
 
         // Encrypted values are never sent by the page, which shows a marker instead, so one arriving here was

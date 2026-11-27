@@ -36,11 +36,13 @@ public static class RecordTarget
         ArgumentNullException.ThrowIfNull(record);
         var host = Clean(record.Hostname);
 
+        if (HoldsRecordId(record.Provider))
+        {
+            return null;
+        }
+
         return record.Provider switch
         {
-            // The Hostname field holds a numeric record id, not a name.
-            DNSProviderKind.DnsMadeEasy or DNSProviderKind.Sitelutions => null,
-
             DNSProviderKind.DuckDns => DuckDnsName(host),
 
             // These APIs take the record name relative to the zone, so even a dotted name outside the zone
@@ -58,6 +60,14 @@ public static class RecordTarget
             _ => AsFqdn(host)
         };
     }
+
+    /// <summary>
+    /// Returns whether the provider's Hostname field holds a numeric record id rather than a name.
+    /// </summary>
+    /// <param name="kind">The provider.</param>
+    /// <returns>True for DNS Made Easy and Sitelutions.</returns>
+    public static bool HoldsRecordId(DNSProviderKind kind)
+        => kind is DNSProviderKind.DnsMadeEasy or DNSProviderKind.Sitelutions;
 
     /// <summary>
     /// Returns whether two versions of a record target the same DNS record with the same account: the

@@ -12,8 +12,10 @@ globalThis.setInterval = function () { return 1; };
 globalThis.clearInterval = function () {};
 
 var PROVIDERS = [
-    { Value: 'Cloudflare', Label: 'Cloudflare', Hint: 'Use an API token.', Txt: true, Fields: { Hostname: 'Hostname', Login: null, Password: 'API token', Zone: 'Zone', Server: false, Ttl: true, IPv6: true, Advanced: [] } },
-    { Value: 'DynDns2', Label: 'DynDNS v2', Hint: '', Txt: false, Fields: { Hostname: 'Hostname', Login: 'Username', Password: 'Password', Zone: null, Server: true, Ttl: false, IPv6: false, Advanced: ['wildcard', 'mx', 'backupmx'] } }
+    { Value: 'Cloudflare', Label: 'Cloudflare', Hint: 'Use an API token.', Txt: true, Follow: true, Fields: { Hostname: 'Hostname', Login: null, Password: 'API token', Zone: 'Zone', Server: false, Ttl: true, IPv6: true, Advanced: [] } },
+    { Value: 'DynDns2', Label: 'DynDNS v2', Hint: '', Txt: false, Follow: true, Fields: { Hostname: 'Hostname', Login: 'Username', Password: 'Password', Zone: null, Server: true, Ttl: false, IPv6: false, Advanced: ['wildcard', 'mx', 'backupmx'] } },
+    { Value: 'DnsMadeEasy', Label: 'DNS Made Easy', Hint: '', Txt: false, Follow: false, Fields: { Hostname: 'Record ID', Login: 'Username', Password: 'Password', Zone: null, Server: false, Ttl: false, IPv6: true, Advanced: [] } },
+    { Value: 'Inwx', Label: 'INWX', Hint: '', Txt: false, Follow: false, Fields: { Hostname: null, Login: 'Username', Password: 'Password', Zone: null, Server: false, Ttl: false, IPv6: true, Advanced: [] } }
 ];
 
 // strings
@@ -86,6 +88,40 @@ test('a record that follows the proxy needs no hostname, and one with no address
     assert.equal(editor.validate(), null);
     editor.element.querySelector('[data-field="UpdateIPv4"]').checked = false;
     assert.equal(editor.validate(), 'DdnsErrorSelectFamily');
+});
+
+test('Follow the proxy shows only for a provider whose hostname holds a name, and the hostname help says so', async function () {
+    var bag = await strings();
+    var ddns = await loadScript('necto_ddns.js');
+    var editor = ddns.createRecordEditor({ Provider: 'DnsMadeEasy', Hostname: '12345', FollowProxyHosts: true, UpdateIPv4: true }, { shared: bag, providers: PROVIDERS });
+    var field = function (name) { return editor.element.querySelector('[data-field="' + name + '"]'); };
+    var hidden = function (name) { return field(name).closest('.inputContainer, .checkboxContainer, .selectContainer').classList.contains('stolon-hidden'); };
+    var help = function () { return field('Hostname').closest('.inputContainer').querySelector('.fieldDescription').textContent; };
+
+    assert.equal(hidden('FollowProxyHosts'), true);
+    assert.equal(hidden('Hostname'), false);
+    assert.equal(editor.getValue().FollowProxyHosts, false);
+    assert.match(help(), /record ID, not a name/);
+    field('Provider').value = 'Inwx';
+    field('Provider').dispatchEvent(new globalThis.Event('change'));
+    assert.equal(hidden('FollowProxyHosts'), true);
+    assert.equal(hidden('Hostname'), true);
+    field('Provider').value = 'Cloudflare';
+    field('Provider').dispatchEvent(new globalThis.Event('change'));
+    assert.equal(hidden('FollowProxyHosts'), false);
+    assert.equal(help(), 'The DNS name this record keeps pointed at this server.');
+});
+
+test('the provider field links its setup guide on the docs site', async function () {
+    var bag = await strings();
+    var ddns = await loadScript('necto_ddns.js');
+    var editor = ddns.createRecordEditor({ Provider: 'Cloudflare', UpdateIPv4: true }, { shared: bag, providers: PROVIDERS });
+    var link = editor.element.querySelector('[data-role="provider-guide"]');
+
+    assert.equal(link.getAttribute('href'), 'https://necto.siphonophore.org/providers/Cloudflare/');
+    assert.equal(link.textContent, 'Setup guide for Cloudflare');
+    assert.equal(link.getAttribute('target'), '_blank');
+    assert.equal(ddns.guideUrl('DynDns2'), 'https://necto.siphonophore.org/providers/DynDns2/');
 });
 
 test('outcomeMessage counts the records updated and failed', async function () {

@@ -28,6 +28,21 @@ public class RecordTargetTests
     public void RecordIdProviders_HaveNoName(DNSProviderKind kind, string host)
         => Assert.Null(Name(kind, host));
 
+    /// <summary>
+    /// Only DNS Made Easy and Sitelutions hold a record id in the Hostname field.
+    /// True: those records are never checked against DNS or offered to follow the proxy.
+    /// False: a route's name would be pushed as a record id.
+    /// </summary>
+    /// <param name="kind">The provider.</param>
+    /// <param name="expected">Whether its Hostname field holds a record id.</param>
+    [Theory]
+    [InlineData(DNSProviderKind.DnsMadeEasy, true)]
+    [InlineData(DNSProviderKind.Sitelutions, true)]
+    [InlineData(DNSProviderKind.Cloudflare, false)]
+    [InlineData(DNSProviderKind.DuckDns, false)]
+    public void HoldsRecordId_OnlyForRecordIdProviders(DNSProviderKind kind, bool expected)
+        => Assert.Equal(expected, RecordTarget.HoldsRecordId(kind));
+
     [Theory]
     [InlineData("myhome", "myhome.duckdns.org")]
     [InlineData("myhome.duckdns.org", "myhome.duckdns.org")]

@@ -85,7 +85,7 @@ test('statusCards and notices sum how the proxy stands', async function () {
 test('rowAction unbans a ban, never blocks your network, and lets a country through', async function () {
     var proxy = await loadScript('necto_proxy.js');
     assert.deepEqual(proxy.rowAction({ Banned: true, Ip: '203.0.113.5' }), { action: 'unban', value: '203.0.113.5' });
-    assert.deepEqual(proxy.rowAction({ Exempt: true, Ip: '192.168.1.2' }), { action: 'block', value: '192.168.1.2', disabled: true, reason: 'ProxyNeverBlocked' });
+    assert.deepEqual(proxy.rowAction({ Exempt: true, Ip: '192.168.1.2' }), { action: 'block', value: '192.168.1.2', disabled: true, reason: 'ProxyTextNeverBlocked' });
     assert.deepEqual(proxy.rowAction({ Listed: true, Ip: '203.0.113.6' }), { action: 'unblock', value: '203.0.113.6' });
     assert.deepEqual(proxy.rowAction({ Covered: true, Ip: '203.0.113.7' }), { action: 'unblock', value: '203.0.113.7', disabled: true, reason: 'ProxyBlockedByRange' });
     var country = proxy.rowAction({ CountryBlocked: true, CountryCode: 'FR', Country: 'France' });
@@ -346,7 +346,7 @@ test('unblocking a country asks first and names it', async function () {
     unblock.click();
     await settle(50);
 
-    assert.equal(dialogText(opened.dom).title, 'Unblock France');
+    assert.equal(dialogText(opened.dom).title, 'Unblock connections from France');
     assert.equal(posts(opened, 'Proxy/Visitors/UnblockCountry').length, 0);
     clickDialogButton(opened.dom, 'Unblock');
     await settle(50);
@@ -364,7 +364,7 @@ test('Request certificate asks first, then orders the route\'s certificate', asy
     await settle(50);
 
     assert.equal(dialogText(opened.dom).title, 'Request a certificate for media.example.com');
-    clickDialogButton(opened.dom, 'Request');
+    clickDialogButton(opened.dom, 'Request certificate');
     await settle(50);
     assert.equal(posts(opened, 'Proxy/Routes/a/Certificate/Request').length, 1);
 });
@@ -384,7 +384,7 @@ test('the country rule note names the server country, warns while the database i
     assert.match(sections.countryNote('AllowOnly', { CountryDatabaseLoaded: false }, false, t).text, /everyone can connect/);
     assert.equal(sections.countryNote('Block', null, false, t).warn, false);
     assert.equal(sections.refusedText({}, t), 'The country rules refused no one since Jellyfin started.');
-    assert.match(sections.refusedText({ CN: 2, '': 5 }, t), /^Since Jellyfin started, the country rules refused Unknown \(5\), .+ \(2\)\.$/);
+    assert.match(sections.refusedText({ CN: 2, '': 5 }, t), /^Since Jellyfin started, the country rules refused 5 from Unknown, 2 from .+\.$/);
     assert.match(sections.locationNote('City', t), /130 MB/);
 });
 
@@ -413,7 +413,7 @@ test('nameItems shows the public name, where it points, and this server\'s addre
     var items = sections.nameItems({ Hostname: 'media.example.com', Addresses: ['198.51.100.1'], PublicAddress: '203.0.113.2' }, bag.t);
 
     assert.deepEqual(items.map(function (i) { return i.value; }), ['media.example.com', '198.51.100.1', '203.0.113.2']);
-    assert.deepEqual(items.map(function (i) { return i.label; }), ['Public name', 'Points to', 'This server']);
+    assert.deepEqual(items.map(function (i) { return i.label; }), ['Public name', 'Points to', 'This server\'s public address']);
     assert.deepEqual(sections.nameItems({ Hostname: '' }, bag.t), []);
 });
 
@@ -463,7 +463,7 @@ test('the Locations notes follow the picked rule and detail, and hide the countr
     var refused = opened.section.querySelector('[data-role="country-refused"]');
 
     assert.match(note.textContent, /This server is in /);
-    assert.match(refused.textContent, /\(3\)\.$/);
+    assert.match(refused.textContent, /3 from .+\.$/);
     assert.match(opened.section.querySelector('[data-role="location-note"]').textContent, /130 MB/);
     var mode = opened.section.querySelector('[data-field="CountryMode"]');
     mode.value = 'Off';

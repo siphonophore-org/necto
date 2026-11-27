@@ -247,6 +247,65 @@ public class DdnsControllerTests
     }
 
     /// <summary>
+    /// A record may follow the proxy only with a provider whose hostname field holds a name.
+    /// True: DNS Made Easy and Sitelutions take a record id, and Inwx has no hostname field, so they are refused.
+    /// False: a following record would push a route's name as a record id, or a name the provider ignores.
+    /// </summary>
+    /// <param name="kind">The provider.</param>
+    /// <param name="allowed">Whether following is allowed.</param>
+    [Theory]
+    [InlineData(DNSProviderKind.Inwx, false)]
+    [InlineData(DNSProviderKind.DnsMadeEasy, false)]
+    [InlineData(DNSProviderKind.Sitelutions, false)]
+    [InlineData(DNSProviderKind.DynDns2, true)]
+    public void CreateRecord_FollowingTheProxy_IsRefusedWhereTheProviderHoldsNoName(DNSProviderKind kind, bool allowed)
+    {
+        using var h = new OrchestratorHarness(http => new IDNSProvider[]
+        {
+            new InwxProvider(http, NullLogger<InwxProvider>.Instance),
+            new DnsMadeEasyProvider(http, NullLogger<DnsMadeEasyProvider>.Instance),
+            new SitelutionsProvider(http, NullLogger<SitelutionsProvider>.Instance)
+        });
+        var record = OrchestratorHarness.DynDnsRecord(host: "12345");
+        record.Provider = kind;
+        record.FollowProxyHosts = true;
+
+        var result = Controller(h).CreateRecord(record).Result;
+
+        if (allowed)
+        {
+            Assert.IsType<OkObjectResult>(result);
+        }
+        else
+        {
+            Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Empty(h.Plugin.ReadConfiguration(c => c.Ddns.Records.ToList()));
+        }
+    }
+
+    /// <summary>
+    /// The provider list says which providers can follow the proxy.
+    /// True: the record sidecar offers Follow the proxy's host names only where it works.
+    /// False: the page would offer it for record id providers.
+    /// </summary>
+    [Fact]
+    public void GetProviders_SaysWhichCanFollowTheProxy()
+    {
+        using var h = new OrchestratorHarness(http => new IDNSProvider[]
+        {
+            new DnsMadeEasyProvider(http, NullLogger<DnsMadeEasyProvider>.Instance),
+            new CloudflareProvider(http, NullLogger<CloudflareProvider>.Instance)
+        });
+
+        var list = ((OkObjectResult)Controller(h).GetProviders().Result!).Value!;
+        using var doc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(list));
+        var follow = doc.RootElement.EnumerateArray().ToDictionary(e => e.GetProperty("Value").GetString()!, e => e.GetProperty("Follow").GetBoolean());
+
+        Assert.False(follow["DnsMadeEasy"]);
+        Assert.True(follow["Cloudflare"]);
+    }
+
+    /// <summary>
     /// Without the key store a typed credential is refused and nothing is stored, while a save with none typed
     /// still goes through.
     /// True: a credential is never stored in the clear.
