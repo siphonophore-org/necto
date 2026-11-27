@@ -1,6 +1,6 @@
 // necto_groups.js
 // The Groups tool. It lists the groups, Everyone first, and opens each in an editor sidecar with its name, its
-// members, and a collapsible section of permissions per tool, with Delete, Cancel, and Save on the shelf.
+// members, and a collapsible section of permissions per tool, with Remove, Cancel, and Save on the shelf.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import * as nectoTemplates from './configurationpage?name=necto_groups_templates.js';
@@ -150,52 +150,50 @@ export function accountTags(group, t) {
     return tags;
 }
 
-// userCounts
-// Counts the users for the cards over the list: administrators, active, inactive past their groups' window,
-// disabled, and those whose groups expire them within 7 days.
+// groupCounts
+// Counts the groups and their users for the cards over the list: the groups besides Everyone, the users in one, the
+// users only Everyone holds, and those whose groups expire them within 7 days. Administrators are in no group.
 //
 // Inputs
+// groups [object[]]: The groups from Groups, Everyone among them.
 // users [object[]]: The users from Groups/Users.
 // now [Date]: The time to count at.
 //
 // Output
-// [object]: { admins, active, inactive, disabled, expiring }.
-export function userCounts(users, now) {
-    var counts = { admins: 0, active: 0, inactive: 0, disabled: 0, expiring: 0 };
+// [object]: { groups, members, loose, expiring }.
+export function groupCounts(groups, users, now) {
+    var counts = { groups: (groups || []).filter(function (g) { return !isEveryone(g); }).length, members: 0, loose: 0, expiring: 0 };
     var today = new Date(now.getTime());
     today.setHours(0, 0, 0, 0);
     var soon = new Date(today.getTime());
     soon.setDate(soon.getDate() + 7);
     (users || []).forEach(function (u) {
-        if (u.IsAdministrator) { counts.admins++; return; }
+        if (u.IsAdministrator) return;
+        if ((u.GroupIds || []).some(function (id) { return !sameId(id, EVERYONE_ID); })) counts.members++;
+        else counts.loose++;
         if (u.ExpiresOn) {
             var due = new Date(String(u.ExpiresOn).slice(0, 10) + 'T00:00:00');
             if (due >= today && due <= soon) counts.expiring++;
         }
-        if (u.IsDisabled) { counts.disabled++; return; }
-        var last = u.LastActivityDate ? new Date(u.LastActivityDate).getTime() : NaN;
-        if (u.InactiveDays > 0 && !isNaN(last) && last < now.getTime() - u.InactiveDays * 86400000) counts.inactive++;
-        else counts.active++;
     });
     return counts;
 }
 
-// userCards
-// Turns the user counts into the cards over the list.
+// groupCards
+// Turns the counts into the cards over the list.
 //
 // Inputs
-// counts [object]: What userCounts gives.
+// counts [object]: What groupCounts gives.
 // t [object]: The strings.
 //
 // Output
 // [object[]]: The cards.
-export function userCards(counts, t) {
+export function groupCards(counts, t) {
     return [
-        { count: counts.admins, label: t.tr('LabelAdministrators'), color: 'blue' },
-        { count: counts.active, label: t.tr('StateActive'), color: 'green' },
-        { count: counts.inactive, label: t.tr('StateInactive'), color: 'yellow' },
-        { count: counts.disabled, label: t.tr('Disabled'), color: 'red' },
-        { count: counts.expiring, label: t.tr('GroupsCardExpiring'), color: 'purple' }
+        { count: counts.groups, label: t.tr('TabGroups'), color: 'blue' },
+        { count: counts.members, label: t.tr('HeaderMembers'), color: 'green' },
+        { count: counts.loose, label: t.tr('ScriptsSummaryNoGroups'), color: 'gray' },
+        { count: counts.expiring, label: t.tr('GroupsCardExpiring'), color: 'orange' }
     ];
 }
 
@@ -233,14 +231,14 @@ export function groupItems(groups, users, shared) {
 // sectionSpecs
 // Describes the permission sections of the editor after Account rules, one per tool, in sidebar order. Each field
 // names its path in the group's permissions. A field with reveals shows them while it is on, and fallback is its
-// value while the group has none.
+// value while the group has none. grants names the paths that give the tool to members, which color the tile.
 //
 // Output
-// [object[]]: Each section's tool key, title key, icon, and fields.
+// [object[]]: Each section's tool key, title key, icon, grants, and fields.
 export function sectionSpecs() {
     return [
         {
-            key: 'requests', title: 'TabRequests', icon: 'movie_filter', fields: [
+            key: 'requests', title: 'TabRequests', icon: 'movie_filter', grants: ['Requests.MayRequest', 'Requests.MayManage'], fields: [
                 { path: 'Requests.MayRequest', kind: 'check', label: 'LabelMayRequest', reveals: [
                     { path: 'Requests.Movies', kind: 'check', label: 'Movies', fallback: true },
                     { path: 'Requests.Series', kind: 'check', label: 'Series', fallback: true },
@@ -260,7 +258,7 @@ export function sectionSpecs() {
             ]
         },
         {
-            key: 'issues', title: 'TabIssues', icon: 'report_problem', fields: [
+            key: 'issues', title: 'TabIssues', icon: 'report_problem', grants: ['Issues.MayReport', 'Issues.MayManage'], fields: [
                 { path: 'Issues.MayReport', kind: 'check', label: 'IssuesLabelMayReport', reveals: [
                     { path: 'Issues.Limit', kind: 'number', label: 'RequestsLabelIssueQuota', help: 'IssuesHelpLimit', min: 0, fallback: 10 }
                 ] },
@@ -268,7 +266,7 @@ export function sectionSpecs() {
             ]
         },
         {
-            key: 'invites', title: 'TabInvites', icon: 'mail', fields: [
+            key: 'invites', title: 'TabInvites', icon: 'mail', grants: ['Invites.MayCreate'], fields: [
                 { path: 'Invites.MayCreate', kind: 'check', label: 'LabelMayCreateInvites', reveals: [
                     { path: 'Invites.MaxInvites', kind: 'number', label: 'LabelMaxInvites', help: 'MaxInvitesHelp', min: 0 },
                     { path: 'Invites.AnyGroup', kind: 'check', label: 'LabelAnyGroup' },
@@ -277,7 +275,7 @@ export function sectionSpecs() {
             ]
         },
         {
-            key: 'wireguard', title: 'TabWireGuard', icon: 'vpn_lock', fields: [
+            key: 'wireguard', title: 'TabWireGuard', icon: 'vpn_lock', grants: ['WireGuard.MayHavePeers'], fields: [
                 { path: 'WireGuard.MayHavePeers', kind: 'check', label: 'LabelMayHavePeers', reveals: [
                     { path: 'WireGuard.MaxPeers', kind: 'number', label: 'LabelMaxPeers', help: 'MaxPeersHelp', min: 0 },
                     { path: 'WireGuard.DataLimit', kind: 'gigabytes', label: 'WireGuardLabelMemberDataLimit', help: 'WireGuardMemberDataLimitHelp', min: 0 },
@@ -286,21 +284,21 @@ export function sectionSpecs() {
             ]
         },
         {
-            key: 'scripts', title: 'TabScripts', icon: 'code', fields: [
+            key: 'scripts', title: 'TabScripts', icon: 'code', grants: ['Scripts.AllScripts', 'Scripts.ScriptIds'], fields: [
                 { path: 'Scripts.AllScripts', kind: 'check', label: 'LabelAllScripts', hides: [
                     { path: 'Scripts.ScriptIds', kind: 'records', label: 'ScriptsLabelGroupScripts', help: 'ScriptsGroupScriptsHelp', source: 'Scripts/Names' }
                 ] }
             ]
         },
         {
-            key: 'pages', title: 'TabPages', icon: 'web', fields: [
+            key: 'pages', title: 'TabPages', icon: 'web', grants: ['CustomPages.AllPages', 'CustomPages.PageIds'], fields: [
                 { path: 'CustomPages.AllPages', kind: 'check', label: 'LabelAllPages', help: 'PagesAllPagesHelp' },
                 { path: 'CustomPages.PageIds', kind: 'pages', label: 'PagesLabelGroupPages', help: 'PagesGroupPagesHelp', hiddenBy: 'CustomPages.AllPages' }
             ]
         },
-        { key: 'notifications', title: 'TabNotifications', icon: 'notifications', fields: [
+        { key: 'notifications', title: 'TabNotifications', icon: 'notifications', grants: ['Notifications.AllEvents', 'Notifications.EventKeys'], fields: [
             { path: 'Notifications.AllEvents', kind: 'check', label: 'LabelAllEvents', help: 'NotificationsAllEventsHelp' },
-            { path: 'Notifications.EventKeys', kind: 'events', label: 'NotificationsGroupEvents', help: 'NotificationsGroupEventsHelp' },
+            { path: 'Notifications.EventKeys', kind: 'events', label: 'NotificationsGroupEvents', help: 'NotificationsGroupEventsHelp', hiddenBy: 'Notifications.AllEvents' },
             { path: 'Notifications.BrowserNotifications', kind: 'check', label: 'LabelBrowserNotifications', help: 'NotificationsGroupBrowsersHelp', fallback: true },
             { path: 'Notifications.JellyfinMessages', kind: 'check', label: 'NotificationsChannelApps', help: 'NotificationsGroupAppsHelp', fallback: true }
         ] }
@@ -349,6 +347,39 @@ export function accountSpecs() {
             ]
         }
     ];
+}
+
+// grantsAny
+// Tells whether a group gives members anything in a tool, so its section's tile shows green.
+//
+// Inputs
+// permissions [object]: The group's permissions.
+// paths [string[]]: The paths that give the tool, each a switch or a list.
+//
+// Output
+// [boolean]: True when any switch is on or any list holds an entry.
+export function grantsAny(permissions, paths) {
+    return (paths || []).some(function (path) {
+        var value = getPath(permissions || {}, path);
+        return Array.isArray(value) ? value.length > 0 : !!value;
+    });
+}
+
+// eventGroups
+// Sorts the events into one group per tool that is on, in sidebar order.
+//
+// Inputs
+// events [object[]]: The events from Notifications/Events, each with Key, Name, and Tool.
+// config [object]: The plugin configuration, or null to keep every tool.
+//
+// Output
+// [object[]]: Each group's tool key, its name, and its events.
+export function eventGroups(events, config) {
+    return nectoModule.nectoTools().filter(function (tool) {
+        return !config || nectoModule.toolIsOn(config, tool.key);
+    }).map(function (tool) {
+        return { key: tool.key, name: tool.name, events: (events || []).filter(function (e) { return e.Tool === tool.key; }) };
+    }).filter(function (group) { return group.events.length > 0; });
 }
 
 // knownClients
@@ -555,16 +586,31 @@ export function createGroupEditor(group, ctx) {
         } else if (spec.kind === 'sessions') {
             drawSessions(into, value || [], spec);
         } else if (spec.kind === 'events') {
-            var events = nectoModule.createCheckboxList({
-                items: ctx.events || [],
-                idKey: 'Key',
-                value: value || [],
-                renderRow: function (e) { return { label: e.Name, sublabel: e.Key }; },
-                emptyMessage: t.tr('NotificationsNoUserEvents')
+            var groups = eventGroups(ctx.events, ctx.config);
+            var shownKeys = [];
+            var eventsRow = h('div', { 'data-field': spec.path }, [h('div', { class: 'selectLabel', text: t.tr(spec.label) }), describe(spec)]);
+            var lists = groups.map(function (group) {
+                var eventList = nectoModule.createCheckboxList({
+                    items: group.events,
+                    idKey: 'Key',
+                    value: value || [],
+                    search: false,
+                    renderRow: function (e) { return { label: e.Name }; }
+                });
+                group.events.forEach(function (e) { shownKeys.push(e.Key); });
+                eventsRow.appendChild(h('h3', { class: 'stolon-subsection-title', text: group.name }));
+                eventsRow.appendChild(eventList.element);
+                handles.push(eventList);
+                return eventList;
             });
-            into.appendChild(h('div', { 'data-field': spec.path }, [h('div', { class: 'selectLabel', text: t.tr(spec.label) }), events.element, describe(spec)]));
-            handles.push(events);
-            readers.push(function (out) { setPath(out.Permissions, spec.path, events.getValue()); });
+            if (!groups.length) eventsRow.appendChild(nectoModule.h('div', { class: 'fieldDescription', text: t.tr('NotificationsNoUserEvents') }));
+            into.appendChild(eventsRow);
+            // Events of a tool that is off keep their place, so turning it back on finds them picked.
+            readers.push(function (out) {
+                var kept = (value || []).filter(function (key) { return shownKeys.indexOf(key) < 0; });
+                setPath(out.Permissions, spec.path, kept.concat.apply(kept, lists.map(function (l) { return l.getValue(); })));
+            });
+            hideBy(spec, into, eventsRow);
         } else if (spec.kind === 'pages') {
             var pages = nectoModule.createCheckboxList({
                 fetchItems: function () { return shared.request('Pages').then(function (all) { return grantablePages(all, value); }).catch(function () { return []; }); },
@@ -579,12 +625,7 @@ export function createGroupEditor(group, ctx) {
             handles.push(pages);
             ready = Promise.all([ready, pages.ready]);
             readers.push(function (out) { setPath(out.Permissions, spec.path, pages.getValue()); });
-            var every = into.querySelector('[data-field="' + spec.hiddenBy + '"]');
-            if (every) {
-                var hide = function () { pagesRow.classList.toggle('stolon-hidden', every.checked); };
-                every.addEventListener('change', hide);
-                hide();
-            }
+            hideBy(spec, into, pagesRow);
         }
 
         // Fields a checkbox hides while it is on, such as the scripts a group runs while it runs every script.
@@ -605,6 +646,16 @@ export function createGroupEditor(group, ctx) {
             input.addEventListener('change', reflect);
             reflect();
         }
+    }
+
+    // hideBy
+    // Hides a field's row while the checkbox its spec names in hiddenBy is on.
+    function hideBy(spec, into, row) {
+        var every = spec.hiddenBy ? into.querySelector('[data-field="' + spec.hiddenBy + '"]') : null;
+        if (!every) return;
+        var hide = function () { row.classList.toggle('stolon-hidden', every.checked); };
+        every.addEventListener('change', hide);
+        hide();
     }
 
     // drawProfiles
@@ -706,25 +757,37 @@ export function createGroupEditor(group, ctx) {
     var templatesDrawn = nectoTemplates.drawTemplateSections(section, draft, ctx, readers, handles);
     ready = Promise.all([ready, templatesDrawn]);
 
-    // One section per tool, without the tools that are off. Their permissions stay as they were.
+    // One section per tool, without the tools that are off. Their permissions stay as they were. Each tile shows
+    // green while the group gives members anything in the tool.
+    var tiles = [];
     sectionSpecs().filter(function (spec) { return !ctx.config || nectoModule.toolIsOn(ctx.config, spec.key); }).forEach(function (spec) {
-        var content = h('div', {}, [
-            h('div', { class: 'fieldDescription', text: t.tr('HelpPermissionMerge') })
-        ]);
+        var content = h('div');
         spec.fields.forEach(function (field) { drawField(field, content); });
-        section(t.tr(spec.title), spec.icon, content).element.setAttribute('data-section', spec.key);
+        var made = section(t.tr(spec.title), spec.icon, content);
+        made.element.setAttribute('data-section', spec.key);
+        tiles.push({ section: made, grants: spec.grants });
     });
-    ready = Promise.all([ready].concat(waits)).then(function () {});
+    var paintTiles = function () {
+        var permissions = current().Permissions;
+        tiles.forEach(function (tile) { tile.section.setIconColor(grantsAny(permissions, tile.grants) ? 'green' : 'gray'); });
+    };
+    root.addEventListener('change', paintTiles);
+    paintTiles();
+    ready = Promise.all([ready].concat(waits)).then(paintTiles);
+
+    // current
+    // Reads the group with the editor's values.
+    function current() {
+        var out = JSON.parse(JSON.stringify(draft));
+        readers.forEach(function (read) { read(out); });
+        if (everyone) out.MemberIds = [];
+        return out;
+    }
 
     return {
         element: root,
         ready: ready,
-        getValue: function () {
-            var out = JSON.parse(JSON.stringify(draft));
-            readers.forEach(function (read) { read(out); });
-            if (everyone) out.MemberIds = [];
-            return out;
-        },
+        getValue: current,
         validate: function () {
             var value = this.getValue();
             if (!everyone && !value.Name) return 'ErrorGroupNameRequired';
@@ -776,6 +839,8 @@ export default function (view) {
     // Reads the groups, the users, the devices, and the Radarr and Sonarr profiles, then draws the list. An answer that lands after a newer load is dropped.
     function loadGroups() {
         var mine = ++loadSeq;
+        // The cards show a dash until the groups and users are read.
+        if (!list) shared.renderCards('groupCards', groupCards({ groups: '–', members: '–', loose: '–', expiring: '–' }, shared.t));
         return Promise.all([
             shared.request('Groups'),
             shared.request('Groups/Users'),
@@ -791,7 +856,7 @@ export default function (view) {
             events = Array.isArray(answers[3]) ? answers[3] : [];
             profiles = Array.isArray(answers[4]) ? answers[4] : [];
             config = answers[5];
-            shared.renderCards('groupUserCards', userCards(userCounts(users, new Date()), shared.t));
+            shared.renderCards('groupCards', groupCards(groupCounts(groups, users, new Date()), shared.t));
             var items = groupItems(groups, users, shared);
             if (list) list.setItems(items);
             else {
@@ -855,22 +920,22 @@ export default function (view) {
         });
     }
 
-    // deleteGroup
-    // Asks first, then deletes the group and closes its sidecar.
-    function deleteGroup(group, close) {
+    // removeGroup
+    // Asks first, then removes the group and closes its sidecar. Its members and their accounts stay.
+    function removeGroup(group, close) {
         var t = shared.t;
-        nectoModule.confirmDialog(t.tr('ConfirmDeleteGroup'), {
-            title: t.format('DeleteName', group.Name),
-            confirmText: t.tr('Delete'),
+        nectoModule.confirmDialog(t.tr('ConfirmRemoveGroup'), {
+            title: t.format('TitleRemoveName', group.Name),
+            confirmText: t.tr('ButtonRemove'),
             destructive: true
         }).then(function (confirmed) {
             if (!confirmed) return;
             shared.request('Groups/' + group.Id, 'DELETE').then(function () {
                 close('deleted');
-                report(t.tr('ToastGroupDeleted'), false);
+                report(t.tr('ToastGroupRemoved'), false);
                 loadGroups();
             }).catch(function (err) {
-                shared.errorText(err, t.tr('ErrorDeleteGroup')).then(function (text) { report(text, true); });
+                shared.errorText(err, t.tr('ErrorRemoveGroup')).then(function (text) { report(text, true); });
             });
         });
     }
@@ -892,15 +957,15 @@ export default function (view) {
             ready: editor.ready,
             serialize: function () { return JSON.stringify(editor.getValue()); },
             saveText: t.tr('Save'),
-            deleteText: t.tr('Delete'),
+            deleteText: t.tr('ButtonRemove'),
             onSave: function () { return saveGroup(editor, isNew); },
-            onDelete: function (close) { deleteGroup(group, close); },
+            onDelete: function (close) { removeGroup(group, close); },
             onClose: function () { editor.destroy(); }
         });
     }
 
     // openOrder
-    // Opens the group order in a sidecar, where the first group with a template on gives a member theirs.
+    // Opens the group order in a sidecar, where the first group that sets Jellyfin settings gives a member theirs.
     function openOrder() {
         var t = shared.t;
         var ordered = groups.filter(function (g) { return !isEveryone(g); });

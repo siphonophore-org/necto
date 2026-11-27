@@ -5,30 +5,49 @@
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import { stateOf as diskState } from './configurationpage?name=necto_storage.js';
 import { resultTag as recordTag } from './configurationpage?name=necto_ddns.js';
-
-// EMPTY_CHART
-// The flat gray line a card shows when it has nothing to chart, so every card keeps the same shape and the cards in
-// a row line up.
-var EMPTY_CHART = { sparkline: [0, 0], sparklineColor: 'gray' };
+import { statCards as requestCards } from './configurationpage?name=necto_requests.js';
+import { statCards as issueCards } from './configurationpage?name=necto_issues.js';
+import { stateCards as inviteCards } from './configurationpage?name=necto_invites.js';
+import { stateTag as tunnelTag } from './configurationpage?name=necto_wireguard_common.js';
+import { sendCounts } from './configurationpage?name=necto_notifications.js';
+import { EVERYONE_ID, sameId } from './configurationpage?name=necto_groups.js';
 
 // DASH
 // What a card shows in place of a value it could not read.
 var DASH = '—';
 
+// PLACEHOLDER
+// What a table cell shows until its data arrives.
+var PLACEHOLDER = '–';
+
 // CERTIFICATE_WARNING_DAYS
 // How close to its expiry a certificate makes the Proxy card ask for attention.
 var CERTIFICATE_WARNING_DAYS = 14;
 
+// CARD_STATES
+// The state words a card's pill takes, each with its string key and the Stolon badge state that colors it.
+var CARD_STATES = {
+    failed: { key: 'LabelFailed', state: 'Failed' },
+    error: { key: 'HeaderError', state: 'Error' },
+    offline: { key: 'StateOffline', state: 'Offline' },
+    attention: { key: 'LogLevel.Warning', state: 'Warning' },
+    pending: { key: 'StatePending', state: 'Pending' },
+    active: { key: 'StateActive', state: 'Active' },
+    off: { key: 'Off', state: 'Off' },
+    idle: { key: 'PriorityIdle', state: 'Idle' }
+};
+
 // MAP_LAYERS
-// Each kind the map marks, with the tool that must be on for it to show, the count it reads from a country, and its
-// color. The server's own country shows while either tool is on.
+// Each kind the map marks, with the tool that must be on for it to show, the count it reads from a country, its
+// color, and the icon its column shows on a narrow table. The server's own country shows while either tool is on, as
+// a mark on the map only, since a count of one says nothing a column would.
 var MAP_LAYERS = [
-    { key: 'visitors', tool: 'proxy', field: 'Visitors', label: 'HeaderVisitors', color: 'blue' },
-    { key: 'failed', tool: 'proxy', field: 'Failed', label: 'HeaderFailedSignIns', color: 'red' },
-    { key: 'blocked', tool: 'proxy', field: 'Blocked', label: 'HeaderRefused', color: 'purple' },
-    { key: 'peers', tool: 'wireguard', field: 'Peers', label: 'HeaderPeers', color: 'green' },
-    { key: 'connections', tool: 'wireguard', field: 'Connections', label: 'HeaderConnections', color: 'orange' },
-    { key: 'server', tool: 'any', field: 'Server', label: 'DashboardLayerServer', color: 'yellow' }
+    { key: 'visitors', tool: 'proxy', field: 'Visitors', label: 'HeaderVisitors', color: 'blue', icon: 'person' },
+    { key: 'failed', tool: 'proxy', field: 'Failed', label: 'HeaderFailedSignIns', color: 'red', icon: 'no_accounts' },
+    { key: 'blocked', tool: 'proxy', field: 'Blocked', label: 'HeaderRefused', color: 'purple', icon: 'block' },
+    { key: 'peers', tool: 'wireguard', field: 'Peers', label: 'HeaderPeers', color: 'green', icon: 'devices' },
+    { key: 'connections', tool: 'wireguard', field: 'Connections', label: 'HeaderConnections', color: 'orange', icon: 'lan' },
+    { key: 'server', tool: 'any', field: 'Server', label: 'DashboardLayerServer', color: 'yellow', icon: 'dns', column: false }
 ];
 
 // TYPE_TOOLS
@@ -42,6 +61,85 @@ var TYPE_TOOLS = [
     ['scripts', 'scripts'], ['necto.', 'groups']
 ];
 
+// setState
+// Gives a card its pill, in the word and the Stolon badge color of one of the card states.
+//
+// Inputs
+// card [object]: The card.
+// t [object]: The strings.
+// state [string]: A key of CARD_STATES.
+//
+// Output
+// [object]: The card.
+export function setState(card, t, state) {
+    var entry = CARD_STATES[state];
+    card.status = t.tr(entry.key);
+    card.statusColor = nectoModule.BADGE_STATES.stateColors[entry.state];
+    return card;
+}
+
+// legend
+// Names the parts of a card's bar that hold anything, in bar order, as the card's detail line.
+//
+// Inputs
+// t [object]: The strings.
+// segments [object[]]: The bar's parts, each with a label and a value.
+// emptyKey [string]: The key of the line shown while every part is 0.
+//
+// Output
+// [string]: Such as "Pending 1, Approved 2".
+export function legend(t, segments, emptyKey) {
+    var parts = segments.filter(function (s) { return s.value > 0; }).map(function (s) { return t.format('DashboardLegendPart', s.label, s.value); });
+    return parts.length ? parts.join(', ') : t.tr(emptyKey);
+}
+
+// tally
+// Counts items into bar parts by their label, keeping the first color and order each label is met in.
+//
+// Inputs
+// tags [object[]]: One { label, color } per item.
+//
+// Output
+// [object[]]: The parts, each { label, value, color }.
+export function tally(tags) {
+    var parts = [];
+    tags.forEach(function (tag) {
+        var part = parts.filter(function (p) { return p.label === tag.label; })[0];
+        if (part) part.value++;
+        else parts.push({ label: tag.label, value: 1, color: tag.color || 'gray' });
+    });
+    return parts;
+}
+
+// fromCountCards
+// Turns a tool page's count cards into a card's bar, leaving out an untinted total such as Open.
+//
+// Inputs
+// cards [object[]]: The count cards, each { label, count, color }.
+//
+// Output
+// [object[]]: The bar's parts, each { label, value, color }.
+export function fromCountCards(cards) {
+    return cards.filter(function (c) { return !!c.color; }).map(function (c) { return { label: c.label, value: Number(c.count) || 0, color: c.color }; });
+}
+
+// withBar
+// Gives a card its bar and the legend under it.
+//
+// Inputs
+// card [object]: The card.
+// t [object]: The strings.
+// segments [object[]]: The bar's parts.
+// emptyKey [string]: The key of the line shown while every part is 0.
+//
+// Output
+// [object]: The card.
+function withBar(card, t, segments, emptyKey) {
+    card.segments = segments;
+    card.detail = legend(t, segments, emptyKey);
+    return card;
+}
+
 // failedCard
 // Turns a card whose route could not be read into one that says so.
 //
@@ -50,9 +148,9 @@ var TYPE_TOOLS = [
 // card [object]: The card's icon, title, and tool.
 //
 // Output
-// [object]: The card, with a dash for its value and a red status.
+// [object]: The card, with a dash for its value, an empty bar, and a red status.
 function failedCard(t, card) {
-    return Object.assign(card, EMPTY_CHART, { value: DASH, status: t.tr('HeaderError'), statusColor: 'red', detail: t.tr('DashboardCardFailed') });
+    return setState(Object.assign(card, { value: DASH, segments: [], detail: t.tr('DashboardCardFailed') }), t, 'error');
 }
 
 // toolCard
@@ -69,19 +167,19 @@ function toolCard(key) {
 }
 
 // sum
-// Adds up the values of a card's bars or segments.
+// Adds up numbers.
 //
 // Inputs
-// parts [object[]]: The parts, each with a value.
+// values [number[]]: The numbers.
 //
 // Output
 // [number]: The total.
-function sum(parts) {
-    return parts.reduce(function (total, part) { return total + (part.value || 0); }, 0);
+function sum(values) {
+    return (values || []).reduce(function (total, n) { return total + (Number(n) || 0); }, 0);
 }
 
 // requestsCard
-// Sums up the requests: those waiting for approval as the number, and a column per state.
+// Sums up the requests: those waiting for approval as the number, and a part per status as the Requests tool counts it.
 //
 // Inputs
 // t [object]: The strings.
@@ -94,24 +192,17 @@ export function requestsCard(t, stats) {
     if (!stats) return failedCard(t, card);
     var by = stats.ByStatus || {};
     var pending = by.Pending || 0;
-    var failed = by.Failed || 0;
-    var open = pending + (by.Approved || 0) + (by.PartiallyAvailable || 0) + failed;
-    card.bars = [
-        { label: t.tr('StatePending'), value: pending, color: 'orange' },
-        { label: t.tr('StateApproved'), value: by.Approved || 0, color: 'purple' },
-        { label: t.tr('LabelAvailable'), value: (by.Available || 0) + (by.PartiallyAvailable || 0), color: 'green' },
-        { label: t.tr('LabelFailed'), value: failed, color: 'red' }
-    ];
     card.value = pending;
     card.valueLabel = t.tr('StatePending').toLowerCase();
-    card.detail = t.format('DashboardRequestsLine', open, failed);
-    if (failed > 0) return Object.assign(card, { status: t.tr('LabelFailed'), statusColor: 'red' });
-    if (pending > 0) return Object.assign(card, { status: t.tr('StatePending'), statusColor: 'orange' });
-    return Object.assign(card, { status: t.tr('PriorityIdle'), statusColor: 'gray' });
+    withBar(card, t, fromCountCards(requestCards(stats, t)), 'DashboardEmptyRequests');
+    if (by.Failed > 0) return setState(card, t, 'failed');
+    if (pending > 0) return setState(card, t, 'pending');
+    if ((by.Approved || 0) + (by.PartiallyAvailable || 0) > 0) return setState(card, t, 'active');
+    return setState(card, t, 'idle');
 }
 
 // issuesCard
-// Sums up the issue reports: the open ones as the number, and a column per state.
+// Sums up the issue reports: the open ones as the number, and a part per state as the Issues tool counts it.
 //
 // Inputs
 // t [object]: The strings.
@@ -122,23 +213,14 @@ export function requestsCard(t, stats) {
 export function issuesCard(t, stats) {
     var card = toolCard('issues');
     if (!stats) return failedCard(t, card);
-    var reported = stats.Reported || 0;
-    var confirmed = stats.Confirmed || 0;
-    card.bars = [
-        { label: t.tr('StateReported'), value: reported, color: 'orange' },
-        { label: t.tr('StateConfirmed'), value: confirmed, color: 'purple' },
-        { label: t.tr('StateResolved'), value: stats.Resolved || 0, color: 'green' },
-        { label: t.tr('StateDeclined'), value: (stats.Declined || 0) + (stats.Rescinded || 0), color: 'gray' }
-    ];
-    card.value = reported + confirmed;
+    card.value = (stats.Reported || 0) + (stats.Confirmed || 0);
     card.valueLabel = t.tr('StateOpen').toLowerCase();
-    card.detail = t.format('DashboardIssuesLine', reported, confirmed);
-    if (card.value > 0) return Object.assign(card, { status: t.tr('StateOpen'), statusColor: 'orange' });
-    return Object.assign(card, { status: t.tr('PriorityIdle'), statusColor: 'gray' });
+    withBar(card, t, fromCountCards(issueCards(stats, t)), 'DashboardEmptyIssues');
+    return setState(card, t, card.value > 0 ? 'pending' : 'idle');
 }
 
 // invitesCard
-// Sums up the invite links: the active ones as the number, and one bar split by state.
+// Sums up the invite links: the active ones as the number, and a part per state as the Invites tool counts it.
 //
 // Inputs
 // t [object]: The strings.
@@ -149,39 +231,36 @@ export function issuesCard(t, stats) {
 export function invitesCard(t, invites) {
     var card = toolCard('invites');
     if (!Array.isArray(invites)) return failedCard(t, card);
-    var count = function (states) { return invites.filter(function (i) { return states.indexOf(i.State) >= 0; }).length; };
-    var active = count(['Active']);
-    card.segments = [
-        { label: t.tr('StateActive'), value: active, color: 'green' },
-        { label: t.tr('StateLocked'), value: count(['Locked']), color: 'orange' },
-        { label: t.tr('StateExpired'), value: count(['Expired', 'GroupExpired']), color: 'gray' },
-        { label: t.tr('StateUsedUp'), value: count(['UsedUp']), color: 'blue' }
-    ];
+    var segments = fromCountCards(inviteCards(invites, t));
+    var active = segments[0].value;
     card.value = active;
     card.valueLabel = t.tr('StateActive').toLowerCase();
-    card.detail = t.format('DashboardInvitesLine', active, invites.length);
-    if (active > 0) return Object.assign(card, { status: t.tr('StateActive'), statusColor: 'green' });
-    return Object.assign(card, { status: t.tr('PriorityIdle'), statusColor: 'gray' });
+    withBar(card, t, segments, 'DashboardEmptyInvites');
+    return setState(card, t, active > 0 ? 'active' : 'idle');
 }
 
 // groupsCard
-// Sums up the groups: how many there are besides Everyone, and how many users are in one.
+// Sums up the groups: how many there are besides Everyone, and the users in one beside those only Everyone holds.
+// Administrators are in no group, so they are left out.
 //
 // Inputs
 // t [object]: The strings.
 // config [object]: The plugin configuration.
+// users [object[]]: What Groups/Users answered, or null when it could not be read.
 //
 // Output
 // [object]: The status card's options, with tool for the tool it opens.
-export function groupsCard(t, config) {
-    var card = Object.assign(toolCard('groups'), EMPTY_CHART);
-    var groups = (config && config.Groups) || [];
-    var members = {};
-    groups.forEach(function (g) { (g.MemberIds || []).forEach(function (id) { members[String(id).toLowerCase()] = true; }); });
-    var count = Object.keys(members).length;
-    card.value = groups.length;
-    card.detail = t.plural(count, 'DashboardMembersOne', 'DashboardMembersMany');
-    return card;
+export function groupsCard(t, config, users) {
+    var card = toolCard('groups');
+    if (!Array.isArray(users)) return failedCard(t, card);
+    var people = users.filter(function (u) { return !u.IsAdministrator; });
+    var grouped = people.filter(function (u) { return (u.GroupIds || []).some(function (id) { return !sameId(id, EVERYONE_ID); }); }).length;
+    card.value = ((config && config.Groups) || []).filter(function (g) { return !sameId(g.Id, EVERYONE_ID); }).length;
+    withBar(card, t, [
+        { label: t.tr('HeaderMembers'), value: grouped, color: 'green' },
+        { label: t.tr('ScriptsSummaryNoGroups'), value: people.length - grouped, color: 'gray' }
+    ], 'DashboardEmptyUsers');
+    return setState(card, t, grouped > 0 ? 'active' : 'idle');
 }
 
 // soonestCertificate
@@ -204,12 +283,12 @@ function soonestCertificate(status) {
 }
 
 // proxyCard
-// Sums up the proxy: whether it runs, its active routes as the number, a dot per route, and when its first
-// certificate expires.
+// Sums up the proxy: its active routes as the number, a part per route state, and its first certificate to expire
+// once that is close.
 //
 // Inputs
 // t [object]: The strings.
-// shared [object]: The helper bag, for formatDate.
+// shared [object]: The helper bag.
 // status [object]: What Proxy/Status answered, or null when it could not be read.
 // now [Date]: The time now.
 //
@@ -219,28 +298,31 @@ export function proxyCard(t, shared, status, now) {
     var card = toolCard('proxy');
     if (!status) return failedCard(t, card);
     var routes = status.Routes || [];
-    card.value = routes.filter(function (r) { return r.Active; }).length;
-    card.dots = routes.map(function (r) {
-        var broken = r.Certificate && r.Certificate.Error;
-        return { label: r.Host, color: broken ? 'red' : (r.Active ? 'green' : 'gray') };
-    });
-    if (!card.dots.length) Object.assign(card, EMPTY_CHART);
+    var broken = function (r) { return !!(r.Certificate && r.Certificate.Error); };
+    var count = function (test) { return routes.filter(test).length; };
+    // A route whose certificate failed counts as failed whether or not it is on.
+    var segments = [
+        { label: t.tr('StateActive'), value: count(function (r) { return r.Active && !broken(r); }), color: 'green' },
+        { label: t.tr('LabelFailed'), value: count(broken), color: 'red' },
+        { label: t.tr('Off'), value: count(function (r) { return !r.Active && !broken(r); }), color: 'gray' }
+    ];
+    card.value = segments[0].value;
+    card.valueLabel = t.tr('StateActive').toLowerCase();
+    withBar(card, t, segments, 'DashboardEmptyRoutes');
     var soonest = soonestCertificate(status);
     var days = soonest ? (soonest - now) / 86400000 : null;
-    if (soonest === null) card.detail = t.tr('DashboardNoCertificates');
+    if (status.Error) return setState(Object.assign(card, { detail: status.Error }), t, 'failed');
+    if (!status.Running) return setState(card, t, 'offline');
     // The day is enough for a certificate, and keeps the line inside the card.
-    else if (days < 0) card.detail = t.format('DashboardCertificateExpired', new Date(soonest).toLocaleDateString());
-    else card.detail = t.format('DashboardCertificateExpires', new Date(soonest).toLocaleDateString());
-    if (status.Error) return Object.assign(card, { status: t.tr('LabelFailed'), statusColor: 'red', detail: status.Error });
-    if (!status.Running) return Object.assign(card, { status: t.tr('StateStopped'), statusColor: 'gray' });
-    if (days !== null && days < 0) return Object.assign(card, { status: t.tr('StateExpired'), statusColor: 'red' });
-    if (days !== null && days < CERTIFICATE_WARNING_DAYS) return Object.assign(card, { status: t.tr('DashboardStateAttention'), statusColor: 'orange' });
-    return Object.assign(card, { status: t.tr('StateRunning'), statusColor: 'green' });
+    if (days !== null && days < 0) return setState(Object.assign(card, { detail: t.format('DashboardCertificateExpired', soonest.toLocaleDateString()) }), t, 'failed');
+    if (days !== null && days < CERTIFICATE_WARNING_DAYS) return setState(Object.assign(card, { detail: t.format('DashboardCertificateExpires', soonest.toLocaleDateString()) }), t, 'attention');
+    if (segments[1].value > 0) return setState(card, t, 'failed');
+    return setState(card, t, card.value > 0 ? 'active' : 'idle');
 }
 
 // ddnsCard
-// Sums up the DDNS records: those that are on as the number, and a dot per record and per name it follows, in the
-// color of its last result.
+// Sums up the DDNS records: every record and every name a record follows as the number, and a part per last result,
+// with the records that are off as their own part.
 //
 // Inputs
 // t [object]: The strings.
@@ -254,31 +336,33 @@ export function ddnsCard(t, answer) {
     var records = [];
     (answer.Records || []).forEach(function (entry) {
         if (!entry || !entry.Record) return;
-        if (entry.Followed && entry.Followed.length) records = records.concat(entry.Followed);
+        if (entry.Followed && entry.Followed.length) records = records.concat(entry.Followed.map(function (f) { return Object.assign({ Enabled: entry.Record.Enabled }, f); }));
         else records.push(entry.Record);
     });
-    var on = records.filter(function (r) { return r.Enabled !== false; });
-    card.value = on.length;
-    if (!records.length) return Object.assign(card, EMPTY_CHART, { detail: t.tr('DashboardNoRecords'), status: t.tr('PriorityIdle'), statusColor: 'gray' });
-    card.dots = records.map(function (r) {
-        var tag = r.Enabled === false ? null : recordTag(r, t);
-        return { label: r.Hostname || r.Name, color: tag ? tag.color : 'gray' };
+    var off = { label: t.tr('Off'), color: 'gray' };
+    // Every good result reads Up to date, so Updated and Up to date share one part.
+    var good = { label: t.tr('DdnsResultUnchanged'), color: 'green' };
+    var tags = records.map(function (r) {
+        if (r.Enabled === false) return off;
+        var tag = recordTag(r, t);
+        return !tag || tag.color === 'green' ? good : tag;
     });
-    var colors = card.dots.map(function (d) { return d.color; });
-    var good = on.filter(function (r) { var tag = recordTag(r, t); return tag && tag.color === 'green'; }).length;
-    card.detail = t.format('DashboardRecordsLine', good, on.length);
-    if (colors.indexOf('red') >= 0) return Object.assign(card, { status: t.tr('LabelFailed'), statusColor: 'red' });
-    if (colors.indexOf('orange') >= 0) return Object.assign(card, { status: t.tr('DashboardStateAttention'), statusColor: 'orange' });
-    if (on.length) return Object.assign(card, { status: t.tr('DashboardStateHealthy'), statusColor: 'green' });
-    return Object.assign(card, { status: t.tr('Off'), statusColor: 'gray' });
+    var order = ['green', 'orange', 'red', 'gray'];
+    var segments = tally(tags.filter(function (tag) { return tag !== off; })).sort(function (a, b) { return order.indexOf(a.color) - order.indexOf(b.color); });
+    var offCount = tags.filter(function (tag) { return tag === off; }).length;
+    if (offCount) segments.push({ label: off.label, value: offCount, color: off.color });
+    card.value = records.length;
+    withBar(card, t, segments, 'DashboardNoRecords');
+    var colors = tags.map(function (tag) { return tag.color; });
+    if (colors.indexOf('red') >= 0) return setState(card, t, 'failed');
+    if (colors.indexOf('orange') >= 0) return setState(card, t, 'attention');
+    if (records.length > offCount) return setState(card, t, 'active');
+    return setState(card, t, records.length ? 'off' : 'idle');
 }
 
-// TUNNEL_COLORS
-// The dot color of a tunnel end's state: green connected, orange held back by its limits, red failed, and gray off.
-var TUNNEL_COLORS = { Connected: 'green', OverLimit: 'orange', NotAllowed: 'orange', OverPeerCount: 'orange', Failed: 'red' };
-
 // wireGuardCard
-// Sums up WireGuard: the connected peers and connections as the number, and a dot per tunnel end.
+// Sums up WireGuard: the connected peers and connections as the number, and a part per tunnel state as the VPN tool
+// tags it.
 //
 // Inputs
 // t [object]: The strings.
@@ -295,18 +379,20 @@ export function wireGuardCard(t, map) {
     var connected = ends.filter(function (e) { return e.Connected; }).length;
     card.value = connected;
     card.valueLabel = t.tr('StateConnected').toLowerCase();
-    card.detail = t.format('DashboardTunnelsLine', connected, ends.length);
-    card.dots = ends.map(function (e) { return { label: e.Name, color: TUNNEL_COLORS[e.State] || 'gray' }; });
-    if (!card.dots.length) Object.assign(card, EMPTY_CHART);
+    var order = ['green', 'orange', 'red', 'gray'];
+    var segments = tally(ends.map(function (e) {
+        var tag = tunnelTag(t, e.State);
+        return { label: tag.label, color: tag.off ? 'gray' : tag.color };
+    })).sort(function (a, b) { return order.indexOf(a.color) - order.indexOf(b.color); });
+    withBar(card, t, segments, 'DashboardEmptyTunnels');
     var failed = (host && host.State === 'Failed') || ends.some(function (e) { return e.State === 'Failed'; });
-    if (failed) return Object.assign(card, { status: t.tr('LabelFailed'), statusColor: 'red' });
-    if (connected > 0) return Object.assign(card, { status: t.tr('StateConnected'), statusColor: 'green' });
-    if (host && host.State === 'Running') return Object.assign(card, { status: t.tr('StateRunning'), statusColor: 'green' });
-    return Object.assign(card, { status: t.tr('StateOffline'), statusColor: 'gray' });
+    if (failed) return setState(card, t, 'failed');
+    if (connected > 0 || (host && host.State === 'Running')) return setState(card, t, 'active');
+    return setState(card, t, 'off');
 }
 
 // scriptsCard
-// Sums up the scripts: the failed runs of the last 14 days as the number, with the runs of each day as a line.
+// Sums up the scripts: the failed runs of the last 14 days as the number, and the runs that succeeded and failed.
 //
 // Inputs
 // t [object]: The strings.
@@ -317,26 +403,20 @@ export function wireGuardCard(t, map) {
 export function scriptsCard(t, days) {
     var card = toolCard('scripts');
     if (!days) return failedCard(t, card);
-    var ok = days.Succeeded || [];
-    var bad = days.Failed || [];
-    var failed = sum(bad.map(function (n) { return { value: n }; }));
-    var runs = failed + sum(ok.map(function (n) { return { value: n }; }));
+    var ok = sum(days.Succeeded);
+    var failed = sum(days.Failed);
     card.value = failed;
     card.valueLabel = t.tr('LabelFailed').toLowerCase();
-    card.detail = t.format('DashboardRunsLine', runs, failed);
-    if (runs > 0) {
-        card.sparkline = ok.map(function (n, i) { return (n || 0) + (bad[i] || 0); });
-        if (failed > 0) card.sparklineColor = 'red';
-    } else {
-        Object.assign(card, EMPTY_CHART);
-    }
-    if (failed > 0) return Object.assign(card, { status: t.tr('LabelFailed'), statusColor: 'red' });
-    if (runs > 0) return Object.assign(card, { status: t.tr('DashboardStateHealthy'), statusColor: 'green' });
-    return Object.assign(card, { status: t.tr('PriorityIdle'), statusColor: 'gray' });
+    withBar(card, t, [
+        { label: t.tr('ScriptsStatusSucceeded'), value: ok, color: 'green' },
+        { label: t.tr('LabelFailed'), value: failed, color: 'red' }
+    ], 'DashboardEmptyRuns');
+    if (failed > 0) return setState(card, t, 'failed');
+    return setState(card, t, ok > 0 ? 'active' : 'idle');
 }
 
 // pagesCard
-// Sums up the custom pages: those that are on as the number, out of how many there are.
+// Sums up the custom pages: the published ones as the number, beside the unpublished ones.
 //
 // Inputs
 // t [object]: The strings.
@@ -345,16 +425,21 @@ export function scriptsCard(t, days) {
 // Output
 // [object]: The status card's options, with tool for the tool it opens.
 export function pagesCard(t, config) {
-    var card = Object.assign(toolCard('pages'), EMPTY_CHART);
+    var card = toolCard('pages');
     var pages = (config && config.CustomPages && config.CustomPages.Pages) || [];
     var on = pages.filter(function (p) { return p.Enabled !== false; }).length;
     card.value = on;
-    card.detail = t.format('DashboardPagesLine', on, pages.length);
-    return card;
+    card.valueLabel = t.tr('PagesLabelPublished').toLowerCase();
+    withBar(card, t, [
+        { label: t.tr('PagesLabelPublished'), value: on, color: 'green' },
+        { label: t.tr('PagesStatusUnpublished'), value: pages.length - on, color: 'gray' }
+    ], 'DashboardEmptyPages');
+    if (on > 0) return setState(card, t, 'active');
+    return setState(card, t, pages.length ? 'off' : 'idle');
 }
 
 // storageCard
-// Sums up the disks: how many there are, and a dot per disk in the color of its state, as the Storage tool shows it.
+// Sums up the disks Jellyfin uses, as the Storage tool counts them: how many there are, and a part per state.
 //
 // Inputs
 // t [object]: The strings.
@@ -365,21 +450,19 @@ export function pagesCard(t, config) {
 export function storageCard(t, disks) {
     var card = toolCard('storage');
     if (!Array.isArray(disks)) return failedCard(t, card);
-    var states = disks.map(function (d) { return diskState(t, d); });
-    card.value = disks.length;
-    card.dots = disks.map(function (d, i) { return { label: (d.IsSystem ? t.tr('LabelSystem') : d.Name) + ', ' + states[i].label, color: states[i].color }; });
-    if (!card.dots.length) Object.assign(card, EMPTY_CHART);
+    var used = disks.filter(function (d) { return d.InUse; });
+    var states = used.map(function (d) { return diskState(t, d); });
+    var order = ['green', 'orange', 'red', 'blue', 'gray'];
+    card.value = used.length;
+    card.valueLabel = t.tr('DashboardInUse');
+    withBar(card, t, tally(states).sort(function (a, b) { return order.indexOf(a.color) - order.indexOf(b.color); }), 'DashboardEmptyDisks');
     var colors = states.map(function (s) { return s.color; });
-    var attention = colors.filter(function (c) { return c === 'red' || c === 'orange'; }).length;
-    card.detail = t.format('DashboardDisksLine', attention, disks.length);
-    if (colors.indexOf('red') >= 0) return Object.assign(card, { status: t.tr('DashboardStateAttention'), statusColor: 'red' });
-    if (colors.indexOf('orange') >= 0) return Object.assign(card, { status: t.tr('DashboardStateAttention'), statusColor: 'orange' });
-    if (disks.length) return Object.assign(card, { status: t.tr('DashboardStateHealthy'), statusColor: 'green' });
-    return Object.assign(card, { status: t.tr('PriorityIdle'), statusColor: 'gray' });
+    if (colors.indexOf('red') >= 0 || colors.indexOf('orange') >= 0) return setState(card, t, 'attention');
+    return setState(card, t, used.length ? 'active' : 'idle');
 }
 
 // notificationsCard
-// Sums up the send log: the sends it holds as the number, with one bar of those that went and those that failed.
+// Sums up the send log: the sends it holds as the number, and those that went beside those that failed.
 //
 // Inputs
 // t [object]: The strings.
@@ -390,17 +473,15 @@ export function storageCard(t, disks) {
 export function notificationsCard(t, log) {
     var card = toolCard('notifications');
     if (!Array.isArray(log)) return failedCard(t, card);
-    var failed = log.filter(function (e) { return !e.Ok; }).length;
+    var counts = sendCounts(log);
     card.value = log.length;
-    card.segments = [
-        { label: t.tr('StateSent'), value: log.length - failed, color: 'green' },
-        { label: t.tr('LabelFailed'), value: failed, color: 'red' }
-    ];
-    card.detail = t.format('DashboardSendsLine', log.length - failed, failed);
-    if (log.length && !log[0].Ok) return Object.assign(card, { status: t.tr('LabelFailed'), statusColor: 'red' });
-    if (failed > 0) return Object.assign(card, { status: t.tr('DashboardStateAttention'), statusColor: 'orange' });
-    if (log.length) return Object.assign(card, { status: t.tr('DashboardStateHealthy'), statusColor: 'green' });
-    return Object.assign(card, { status: t.tr('PriorityIdle'), statusColor: 'gray' });
+    withBar(card, t, [
+        { label: t.tr('StateSent'), value: counts.sent, color: 'green' },
+        { label: t.tr('LabelFailed'), value: counts.failed, color: 'red' }
+    ], 'DashboardEmptySends');
+    if (log.length && !log[0].Ok) return setState(card, t, 'failed');
+    if (counts.failed > 0) return setState(card, t, 'attention');
+    return setState(card, t, log.length ? 'active' : 'idle');
 }
 
 // toolsOn
@@ -432,9 +513,10 @@ export function showsMap(config) {
 }
 
 // CARD_READS
-// The route each card reads, by tool. A tool with none builds its card from the configuration, and WireGuard's card
-// reads the map.
+// The route each card reads, by tool. Pages builds its card from the configuration, and WireGuard's card reads the
+// map.
 var CARD_READS = {
+    groups: 'Groups/Users',
     requests: 'Requests/Stats',
     issues: 'Issues/Stats',
     invites: 'Invites/List',
@@ -487,7 +569,7 @@ function buildCard(key, t, shared, config, answer, map, now) {
         case 'requests': return requestsCard(t, answer);
         case 'issues': return issuesCard(t, answer);
         case 'invites': return invitesCard(t, answer);
-        case 'groups': return groupsCard(t, config);
+        case 'groups': return groupsCard(t, config, answer);
         case 'proxy': return proxyCard(t, shared, answer, now);
         case 'ddns': return ddnsCard(t, answer);
         case 'wireguard': return wireGuardCard(t, map);
@@ -503,17 +585,17 @@ function buildCard(key, t, shared, config, answer, map, now) {
 //
 // Inputs
 // t [object]: The strings.
-// map [object]: What Dashboard/Map answered.
+// map [object]: What Dashboard/Map answered, or the plugin configuration before the map is read.
 //
 // Output
-// [object[]]: Each layer's key, label, color, and the country field it counts.
+// [object[]]: Each layer's key, label, color, icon, the country field it counts, and whether the table gives it a column.
 export function mapLayers(t, map) {
     return MAP_LAYERS.filter(function (layer) {
-        if (layer.tool === 'proxy') return !!map.Proxy;
-        if (layer.tool === 'wireguard') return !!map.WireGuard;
+        if (layer.tool === 'proxy') return !!(map.Proxy === true || (map.Proxy && map.Proxy.Enabled));
+        if (layer.tool === 'wireguard') return !!(map.WireGuard === true || (map.WireGuard && map.WireGuard.Enabled));
         return true;
     }).map(function (layer) {
-        return { key: layer.key, label: t.tr(layer.label), color: layer.color, field: layer.field };
+        return { key: layer.key, label: t.tr(layer.label), color: layer.color, field: layer.field, icon: layer.icon, column: layer.column !== false };
     });
 }
 
@@ -564,6 +646,20 @@ export function countryRows(map, layers, active, nameOf) {
     });
 }
 
+// placeholderRow
+// The country table's one row while the map is read, a dash in every column.
+//
+// Inputs
+// layers [object[]]: The layers, from mapLayers.
+//
+// Output
+// [object]: The row.
+export function placeholderRow(layers) {
+    var row = { code: '', name: PLACEHOLDER };
+    layers.filter(function (layer) { return layer.column !== false; }).forEach(function (layer) { row[layer.key] = PLACEHOLDER; });
+    return row;
+}
+
 // toolOfType
 // Names the tool that wrote an activity log entry.
 //
@@ -581,11 +677,12 @@ export function toolOfType(type) {
 }
 
 // SEVERITY_STATUS
-// The timeline status of an entry's severity: red for errors, orange for warnings, and blue for the rest.
+// The timeline status of an entry's severity: red for errors and orange for warnings. Other entries take none.
 var SEVERITY_STATUS = { Critical: 'red', Error: 'red', Warning: 'orange' };
 
 // activityItems
-// Turns Necto's activity log entries into timeline events, each marked with its tool's icon and its severity.
+// Turns Necto's activity log entries into timeline events, each marked with its tool's icon, and with its severity
+// when it is a warning or an error.
 //
 // Inputs
 // entries [object[]]: What Dashboard/Activity answered, newest first.
@@ -601,9 +698,9 @@ export function activityItems(entries, shared) {
         var item = {
             time: shared.formatDate(entry.Date),
             datetime: entry.Date,
-            title: entry.Name,
-            status: SEVERITY_STATUS[entry.Severity] || 'blue'
+            title: entry.Name
         };
+        if (SEVERITY_STATUS[entry.Severity]) item.status = SEVERITY_STATUS[entry.Severity];
         if (entry.Overview) item.body = entry.Overview;
         if (tool && icons[tool]) item.icon = icons[tool];
         return item;
@@ -659,7 +756,9 @@ export default function (view) {
     function drawCards(cards) {
         clearCards();
         // The grid goes on the page before its cards, so its rows are balanced to the width they have.
-        grid = nectoModule.createStatusCardGrid({ minWidth: 240 });
+        grid = nectoModule.createStatusCardGrid({ minWidth: 150 });
+        // Every card takes one width, so ten cards never read as two kinds.
+        grid.element.classList.add('stolon-even');
         getEl('dashboardCards').appendChild(grid.element);
         grid.setCards(cards.map(function (card) {
             var options = Object.assign({}, card);
@@ -672,7 +771,7 @@ export default function (view) {
     // Fills the country table for the layers that are on, each with its column.
     function showLayers(active) {
         if (!countries || !mapData) return;
-        layers.forEach(function (layer) { countries.setColumnHidden(layer.key, active.indexOf(layer.key) < 0); });
+        layers.filter(function (layer) { return layer.column; }).forEach(function (layer) { countries.setColumnHidden(layer.key, active.indexOf(layer.key) < 0); });
         countries.setRows(countryRows(mapData, layers, active, map.countryName));
     }
 
@@ -704,8 +803,9 @@ export default function (view) {
         });
         mapHost.appendChild(map.element);
         countries = nectoModule.createDataTable({
-            columns: [{ key: 'name', label: t.tr('HeaderCountry') }].concat(layers.map(function (l) {
-                return { key: l.key, label: l.label, align: 'end' };
+            // The columns share the width, each at least as wide as its icon heading on a narrow table.
+            columns: [{ key: 'name', label: t.tr('HeaderCountry'), width: 'minmax(4rem, 1fr)' }].concat(layers.filter(function (l) { return l.column; }).map(function (l) {
+                return { key: l.key, label: l.label, icon: l.icon, align: 'end', width: 'minmax(4rem, 1fr)' };
             })),
             rows: [],
             rowKey: 'code',
@@ -717,16 +817,25 @@ export default function (view) {
         nectoModule.linkWorldMap(map, countries, { field: 'code', rowKey: 'code' });
     }
 
-    // Draws the map for the tools that are on. A tool that is off takes its layers with it, and the viewer's own
-    // choice of layers stays until the tools change.
+    // Builds the map and its table again when the layers change. The viewer's own choice of layers stays until then.
+    function useLayers(t, next) {
+        layers = next;
+        var keys = layers.map(function (l) { return l.key; }).join();
+        if (keys === layerSet) return false;
+        layerSet = keys;
+        buildLayers(t);
+        return true;
+    }
+
+    // Shows the map's table with a dash in every column until the map is read.
+    function prepareMap(shared, config) {
+        if (useLayers(shared.t, mapLayers(shared.t, config)) || !mapData) countries.setRows([placeholderRow(layers)]);
+    }
+
+    // Draws the map for the tools that are on. A tool that is off takes its layers with it.
     function drawMap(shared, data) {
         mapData = data;
-        layers = mapLayers(shared.t, data);
-        var keys = layers.map(function (l) { return l.key; }).join();
-        if (keys !== layerSet) {
-            layerSet = keys;
-            buildLayers(shared.t);
-        }
+        useLayers(shared.t, mapLayers(shared.t, data));
         map.setCounts(mapCounts(data, layers));
         shared.setVisible(mapNote, !data.LocationLoaded);
         attribution.textContent = data.Attribution || '';
@@ -738,7 +847,7 @@ export default function (view) {
         shareNote = nectoModule.h('div', { class: 'fieldDescription', text: t.tr('DashboardShareNote') });
         shareHomeOnly = nectoModule.h('div', { class: 'stolon-warn stolon-hidden', text: t.tr('DashboardShareHomeOnly') });
         qr = nectoModule.createQrCode({ label: t.tr('DashboardShareQrLabel'), fileName: 'jellyfin-qr.png' });
-        shareButton = nectoModule.h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button secondary small stolon-hidden' }, [
+        shareButton = nectoModule.h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-hidden' }, [
             nectoModule.h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'share' }),
             nectoModule.h('span', { text: t.tr('Share') })
         ]);
@@ -795,12 +904,13 @@ export default function (view) {
         var load = ++loads;
         var t = shared.t;
         var status = getEl('dashboardStatus');
-        if (status) status.textContent = '';
+        if (status) shared.setVisible(status, false);
         shared.getConfig().then(function (config) {
             if (load !== loads) return null;
             var keys = toolsOn(config);
             var mapOn = showsMap(config);
             shared.setVisible('dashboardMap', mapOn);
+            if (mapOn) prepareMap(shared, config);
             return Promise.all([
                 Promise.all(keys.map(function (key) { return CARD_READS[key] ? read(shared, CARD_READS[key]) : Promise.resolve(null); })),
                 mapOn ? read(shared, 'Dashboard/Map') : Promise.resolve(null),
@@ -817,7 +927,10 @@ export default function (view) {
         }).catch(function () {
             if (load !== loads) return;
             clearCards();
-            if (status) status.textContent = t.tr('DashboardErrorLoad');
+            if (status) {
+                status.textContent = t.tr('DashboardErrorLoad');
+                shared.setVisible(status, true);
+            }
         });
     }
 }

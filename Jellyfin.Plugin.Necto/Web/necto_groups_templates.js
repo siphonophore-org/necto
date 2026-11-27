@@ -365,8 +365,8 @@ export function loadSources(shared) {
 }
 
 // drawTemplateSections
-// Adds the template's sections to a group editor: whether the group sets Jellyfin settings, then Access and features
-// and Preferences, each row left to the member or set by the group.
+// Adds the Jellyfin settings sections to a group editor: whether the group sets them, then Access and features and
+// Preferences, each row left to the member or set by the group. Preferences shows only while the group sets them.
 //
 // Inputs
 // section [function]: The editor's section(title, icon, content) adder.
@@ -390,20 +390,24 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
     var accessBody = h('div', { 'data-role': 'template-access' });
     var prefsBody = h('div', { 'data-role': 'template-preferences' });
     var intro = h('div', {}, [
-        h('div', { class: 'fieldDescription', text: t.tr('GroupsTemplateHelp') }),
         h('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
             h('label', {}, [on, h('span', { text: t.tr('GroupsTemplateEnable') })]),
             h('div', { class: 'fieldDescription checkboxFieldDescription', text: t.tr('GroupsTemplateEnableHelp') })
         ]),
         accessBody
     ]);
-    section(t.tr('GroupsTemplateAccessTitle'), 'admin_panel_settings', intro).element.setAttribute('data-section', 'template-access');
-    section(t.tr('GroupsTemplatePreferencesTitle'), 'tune', prefsBody).element.setAttribute('data-section', 'template-preferences');
+    var access = section(t.tr('GroupsTemplateAccessTitle'), 'admin_panel_settings', intro);
+    access.element.setAttribute('data-section', 'template-access');
+    var prefs = section(t.tr('GroupsTemplatePreferencesTitle'), 'tune', prefsBody);
+    prefs.element.setAttribute('data-section', 'template-preferences');
     readers.push(function (out) { out.Template = out.Template || {}; out.Template.Enabled = !!on.checked; });
+    // Both tiles follow the switch. Preferences has nothing to show while it is off, so the section hides.
+    handles.push(nectoModule.bindTileToSwitch(access.element, on));
+    handles.push(nectoModule.bindTileToSwitch(prefs.element, on));
 
     var reflect = function () {
         accessBody.classList.toggle('stolon-hidden', !on.checked);
-        prefsBody.classList.toggle('stolon-hidden', !on.checked);
+        prefs.element.classList.toggle('stolon-hidden', !on.checked);
     };
     on.addEventListener('change', reflect);
     reflect();

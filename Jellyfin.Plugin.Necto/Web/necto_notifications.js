@@ -59,8 +59,37 @@ export function channelSummary(channel, shared) {
     return shared.t.plural(channel.EventCount, 'NotificationsEventCountOne', 'NotificationsEventCountMany');
 }
 
+// sendCounts
+// Counts the sends in the log that went and those that failed.
+//
+// Inputs
+// log [object[]]: What Notifications/Log answered.
+//
+// Output
+// [object]: { sent, failed }.
+export function sendCounts(log) {
+    var failed = (log || []).filter(function (e) { return !e.Ok; }).length;
+    return { sent: (log || []).length - failed, failed: failed };
+}
+
+// sendCards
+// Turns the send counts into the cards over the list.
+//
+// Inputs
+// counts [object]: What sendCounts gives.
+// t [object]: The strings.
+//
+// Output
+// [object[]]: The Sent and Failed cards.
+export function sendCards(counts, t) {
+    return [
+        { count: counts.sent, label: t.tr('StateSent'), color: 'green' },
+        { count: counts.failed, label: t.tr('LabelFailed'), color: 'red' }
+    ];
+}
+
 // channelItems
-// Turns the channels into rows, each with its kind, its state, and a Test button.
+// Turns the channels into rows, each with its kind when it has a name of its own, its state, and a Test button.
 //
 // Inputs
 // channels [object[]]: The channels from Notifications/Channels.
@@ -72,10 +101,12 @@ export function channelSummary(channel, shared) {
 export function channelItems(channels, shared, onTest) {
     var t = shared.t;
     return (channels || []).map(function (channel) {
-        var tags = [{ label: t.tr(KIND_KEYS[channel.Kind] || 'LabelWebhook'), icon: KIND_ICONS[channel.Kind] || 'send' }];
+        var kind = t.tr(KIND_KEYS[channel.Kind] || 'LabelWebhook');
+        // A channel Necto keeps is named by its kind, so its kind tag would only repeat the name.
+        var tags = channelName(channel, t) === kind ? [] : [{ label: kind, icon: KIND_ICONS[channel.Kind] || 'send' }];
         if (!channel.Enabled) tags.push({ label: t.tr('Off'), color: 'gray', off: true });
         else if (!channel.Ready) tags.push({ label: t.tr('NotificationsTagNotSetUp'), color: 'orange' });
-        var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'test', 'data-channel': channel.Id }, [h('span', { text: t.tr('ButtonTest') })]);
+        var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'test', 'data-channel': channel.Id }, [h('span', { text: t.tr('ButtonTest') })]);
         button.addEventListener('click', function (e) { e.stopPropagation(); onTest(channel, button); });
         return { id: channel.Id, title: channelName(channel, t), secondary: channelSummary(channel, shared), tags: tags, aside: button, channel: channel };
     });
@@ -86,6 +117,7 @@ export default function (view) {
 
     var shared = null;
     var list = null;
+    var sendsDrawn = false;
     var loadSeq = 0;
 
     // report
@@ -107,9 +139,16 @@ export default function (view) {
     }
 
     // loadChannels
-    // Reads the channels and draws them. An answer that lands after a newer load is dropped.
+    // Reads the channels and the send log and draws them. An answer that lands after a newer load is dropped.
     function loadChannels() {
         var mine = ++loadSeq;
+        // The cards show a dash until the log is read, and keep it when it cannot be.
+        if (!sendsDrawn) shared.renderCards('notificationsCards', sendCards({ sent: '–', failed: '–' }, shared.t));
+        shared.request('Notifications/Log').then(function (log) {
+            if (mine !== loadSeq) return;
+            sendsDrawn = true;
+            shared.renderCards('notificationsCards', sendCards(sendCounts(Array.isArray(log) ? log : []), shared.t));
+        }).catch(function () { /* the dashes stay */ });
         return shared.request('Notifications/Channels').then(function (channels) {
             if (mine !== loadSeq) return;
             var items = channelItems(Array.isArray(channels) ? channels : [], shared, test);

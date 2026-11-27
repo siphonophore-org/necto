@@ -81,8 +81,8 @@ test('Troubleshooting draws a section per tool, Groups with its repairs', async 
 
     assert.deepEqual(texts(opened.view, '.stolon-collapsible-title').filter(function (t) { return TOOLS.indexOf(t) >= 0; }), TOOLS);
     var groups = opened.section('groups');
-    assert.deepEqual(texts(groups, '.stolon-subsection-title'), ['Password requirements', 'Templates', 'Scheduled checks', 'Password resets']);
-    assert.deepEqual(texts(groups, '[data-action]'), ['Apply rules', 'Apply templates', 'Run now', 'Run now']);
+    assert.deepEqual(texts(groups, '.stolon-subsection-title'), ['Password requirements', 'Jellyfin settings', 'Scheduled checks', 'Password resets']);
+    assert.deepEqual(texts(groups, '[data-action]'), ['Apply rules', 'Apply settings', 'Run now', 'Run now']);
     assert.match(groups.textContent, /Reset codes are off\. Turn on Show reset codes in Settings to list them\./);
 });
 
