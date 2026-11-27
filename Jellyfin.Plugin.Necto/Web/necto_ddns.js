@@ -1,5 +1,5 @@
 // necto_ddns.js
-// The DDNS tool. It shows the public address the last run found, lists the records with their last result, and opens
+// The DDNS tool. It counts the records beside the public addresses the last run found, lists the records with their last result, and opens
 // each in an editor sidecar with the fields its provider uses, its update interval, and its status.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
@@ -58,7 +58,7 @@ export function providerOf(providers, kind) {
 }
 
 // recordName
-// Names a record for the list: its name, else its hostname, else its provider.
+// Names a record for the list: its name, else its host name, else its provider.
 //
 // Inputs
 // record [object]: The record.
@@ -86,9 +86,23 @@ export function resultTag(record, t) {
     return { label: t.tr(action.key), color: colors[action.state] };
 }
 
+// recordState
+// Gives the outcome that stands for a record: its own, or for a record that follows the proxy the host whose result
+// matters most.
+//
+// Inputs
+// entry [object]: One of the Records from Ddns/Records, as { Record, Followed }.
+//
+// Output
+// [object]: The record or followed host whose LastAction stands for it.
+function recordState(entry) {
+    var r = entry.Record;
+    return r.FollowProxyHosts && (entry.Followed || []).length ? worst(entry.Followed) : r;
+}
+
 // recordItems
-// Turns the records into rows for the record list, each with its provider, its name, its last result, and whether it
-// is off.
+// Turns the records into rows for the record list. Each row names the record once, shows its provider and, for a
+// record that follows the proxy, how many names it covers, and carries one tag, Off or its last result.
 //
 // Inputs
 // entries [object[]]: The Records from Ddns/Records, each { Record, Followed }.
@@ -100,22 +114,69 @@ export function resultTag(record, t) {
 export function recordItems(entries, providers, t) {
     return (entries || []).map(function (entry) {
         var r = entry.Record;
+        var title = recordName(r, providers);
         var where = r.FollowProxyHosts
             ? t.plural((entry.Followed || []).length, 'DdnsFollowsHostsOne', 'DdnsFollowsHostsMany')
-            : (r.Hostname || '');
-        var tags = [];
-        var result = resultTag(r.FollowProxyHosts && (entry.Followed || []).length ? worst(entry.Followed) : r, t);
-        if (result) tags.push(result);
-        if (!r.Enabled) tags.push({ label: t.tr('Off'), color: 'gray', off: true });
+            : ((r.Hostname || '').trim() !== title ? (r.Hostname || '').trim() : '');
+        var tag = r.Enabled ? resultTag(recordState(entry), t) : { label: t.tr('Off'), color: 'gray' };
         return {
             id: r.Id,
-            title: recordName(r, providers),
+            title: title,
             secondary: [providerLabel(providers, r.Provider), where].filter(function (x) { return x; }).join(' · '),
-            tags: tags,
+            tags: tag ? [tag] : [],
             record: r,
             followed: entry.Followed || []
         };
     });
+}
+
+// countCards
+// Gives the cards at the top of the tool: how many records there are, how many are up to date, and how many need
+// attention.
+//
+// Inputs
+// data [object]: The answer from Ddns/Records.
+// t [object]: The strings.
+//
+// Output
+// [object[]]: The cards, each { count, label, color }.
+export function countCards(data, t) {
+    var on = ((data && data.Records) || []).filter(function (e) { return e.Record && e.Record.Enabled; });
+    var current = 0;
+    var attention = 0;
+    on.forEach(function (entry) {
+        var action = ACTIONS[recordState(entry).LastAction];
+        if (!action) return;
+        if (action.state === 'success') current++;
+        else attention++;
+    });
+    return [
+        { count: ((data && data.Records) || []).length, label: t.tr('LabelRecords'), color: 'blue' },
+        { count: current, label: t.tr('DdnsResultUnchanged'), color: current ? 'green' : 'gray' },
+        { count: attention, label: t.tr('DashboardStateAttention'), color: attention ? 'orange' : 'gray' }
+    ];
+}
+
+// addressCard
+// Builds the record card of the public addresses the last run found, which every record shares.
+//
+// Inputs
+// data [object]: The answer from Ddns/Records.
+// t [object]: The strings.
+//
+// Output
+// [HTMLElement]: The card.
+export function addressCard(data, t) {
+    var row = function (labelKey, value) {
+        return h('div', { class: 'stolon-record-row' }, [
+            h('span', { class: 'stolon-record-label', text: t.tr(labelKey) }),
+            h('span', { class: value ? 'stolon-mono' : 'stolon-muted', text: value || t.tr('TextNotFound') })
+        ]);
+    };
+    return h('div', { class: 'stolon-record-card', 'data-role': 'public-address' }, [
+        row('DdnsLabelPublicIpv4', data && data.DetectedIPv4),
+        row('DdnsLabelPublicIpv6', data && data.DetectedIPv6)
+    ]);
 }
 
 // worst
@@ -166,13 +227,13 @@ export function statusItems(record, shared) {
 }
 
 // createRecordEditor
-// Builds the body of a record's sidecar: its name, provider and the fields that provider uses, which addresses it
-// keeps, how often, whether it follows the proxy's host names, its finer settings, and its last result.
+// Builds the body of a record's sidecar as sections led by icon tiles: the record, with its provider, host name, and
+// the fields that provider uses, its updates, its finer settings, and its last run.
 //
 // Inputs
 // record [object]: The record to edit, or a new one.
-// ctx [object]: shared is the Necto helper bag, providers the providers, and followed the hosts a following record
-//   covers.
+// ctx [object]: shared is the Necto helper bag, providers the providers, followed the hosts a following record
+//   covers, and proxyOn whether the Proxy tool is on, which Follow the proxy's host names needs.
 //
 // Output
 // [object]: A handle with element, getValue, validate, setStatus, and destroy.
@@ -183,8 +244,9 @@ export function createRecordEditor(record, ctx) {
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var root = h('div', { 'data-role': 'record-editor' }, [status]);
     var handles = [];
+    // A record that already follows the proxy keeps the switch in reach while the proxy is off, so it can be undone.
+    var followAllowed = ctx.proxyOn !== false || !!draft.FollowProxyHosts;
 
-    var name = nectoModule.createInputField({ label: t.tr('LabelName'), field: 'Name', value: draft.Name, help: t.tr('DdnsNameHelp') });
     var enabled = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelEnabled'), field: 'Enabled', checked: draft.Enabled !== false, help: t.tr('DdnsEnabledHelp') });
     var provider = nectoModule.createSelectField({
         label: t.tr('LabelProvider'),
@@ -193,16 +255,14 @@ export function createRecordEditor(record, ctx) {
         value: draft.Provider
     });
     var follow = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelFollowProxy'), field: 'FollowProxyHosts', checked: !!draft.FollowProxyHosts, help: t.tr('DdnsFollowProxyHelp') });
-    var hostname = nectoModule.createInputField({ label: t.tr('DdnsLabelHostname'), field: 'Hostname', value: draft.Hostname, placeholder: 'home.example.com', help: t.tr('DdnsHostnameHelp') });
-    var hint = h('div', { class: 'fieldDescription' });
+    var hostname = nectoModule.createInputField({ label: t.tr('LabelHostName'), field: 'Hostname', value: draft.Hostname, placeholder: 'home.example.com', help: t.tr('DdnsHostnameHelp') });
     var guide = h('a', { class: 'button-link', target: '_blank', rel: 'noopener noreferrer', 'data-role': 'provider-guide' });
-    provider.element.appendChild(hint);
     provider.element.appendChild(h('div', { class: 'fieldDescription' }, [guide]));
-    var login = nectoModule.createSecretField({ label: t.tr('GuideProviderLogin'), field: 'Login', stored: !!draft.Login, clearText: t.tr('ButtonClearSaved') });
-    var password = nectoModule.createSecretField({ label: t.tr('LabelPassword'), field: 'Password', help: t.tr('DdnsLimitedTokenHelp'), stored: !!draft.Password, clearText: t.tr('ButtonClearSaved') });
+    var login = nectoModule.createSecretField({ label: t.tr('GuideProviderLogin'), field: 'Login', stored: !!draft.Login });
+    var password = nectoModule.createSecretField({ label: t.tr('LabelPassword'), field: 'Password', help: t.tr('DdnsLimitedTokenHelp'), stored: !!draft.Password });
     var zone = nectoModule.createInputField({ label: t.tr('DdnsLabelZone'), field: 'Zone', value: draft.Zone, placeholder: 'example.com' });
     var ipv4 = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelUpdateIpv4'), field: 'UpdateIPv4', checked: draft.UpdateIPv4 !== false });
-    var ipv6 = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelUpdateIpv6'), field: 'UpdateIPv6', checked: !!draft.UpdateIPv6, help: t.tr('DdnsUpdateFamiliesHelp') });
+    var ipv6 = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelUpdateIpv6'), field: 'UpdateIPv6', checked: !!draft.UpdateIPv6 });
     var every = nectoModule.createInputField({ label: t.tr('DdnsLabelUpdateEvery'), field: 'UpdateEveryMinutes', type: 'number', min: 5, value: draft.UpdateEveryMinutes || 15, help: t.tr('DdnsUpdateEveryHelp') });
     var server = nectoModule.createInputField({ label: t.tr('DdnsLabelServerOverride'), field: 'Server', value: draft.Server, placeholder: 'Default', help: t.tr('DdnsServerOverrideHelp') });
     var ttl = nectoModule.createInputField({ label: t.tr('DdnsLabelTtl'), field: 'Ttl', type: 'number', min: 1, value: draft.Ttl || 1, help: t.tr('DdnsTtlHelp') });
@@ -212,21 +272,23 @@ export function createRecordEditor(record, ctx) {
     var mx = nectoModule.createInputField({ label: t.tr('DdnsLabelMxHost'), field: 'Mx', value: draft.Mx, placeholder: 'mail.example.com', help: t.tr('DdnsMxHostHelp') });
     var backupMx = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelBackupMx'), field: 'BackupMx', checked: !!draft.BackupMx });
 
+    // section
+    // Adds one of the editor's sections, led by its icon tile, with its fields a wide gap apart.
+    function section(titleKey, icon, fields, open) {
+        var made = nectoModule.createCollapsibleSection({ title: t.tr(titleKey), icon: icon, collapsed: !open });
+        fields.forEach(function (f) { made.content.appendChild(f.element || f); });
+        made.content.classList.add('stolon-flow');
+        made.element.setAttribute('data-section', icon);
+        root.appendChild(made.element);
+        handles.push(made);
+        return made;
+    }
 
-    [name, enabled, provider].forEach(function (f) { root.appendChild(f.element); });
-    root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderName') }));
-    [follow, hostname, login, password, zone].forEach(function (f) { root.appendChild(f.element); });
-    root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderUpdates') }));
-    [ipv4, ipv6, every].forEach(function (f) { root.appendChild(f.element); });
-    var advanced = h('div', {}, [server, ttl, proxied, wildcard, isStatic, mx, backupMx].map(function (f) { return f.element; }));
-    var advancedSection = nectoModule.createCollapsibleSection({ title: t.tr('DdnsHeaderAdvanced'), icon: 'tune', collapsed: true, content: advanced });
-    root.appendChild(advancedSection.element);
-    handles.push(advancedSection);
+    section('DdnsHeaderRecord', 'dns', [provider, follow, hostname, login, password, zone, enabled], true);
+    section('DdnsHeaderUpdates', 'update', [ipv4, ipv6, every]);
+    section('DdnsHeaderAdvanced', 'tune', [server, ttl, proxied, wildcard, isStatic, mx, backupMx]);
 
     if (draft.Id) {
-        var statusList = h('div', { 'data-role': 'record-status' });
-        root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderStatus') }));
-        root.appendChild(statusList);
         var rows = draft.FollowProxyHosts && (ctx.followed || []).length
             ? (ctx.followed || []).map(function (f) {
                 var tag = resultTag(f, t);
@@ -234,24 +296,23 @@ export function createRecordEditor(record, ctx) {
             })
             : statusItems(draft, shared);
         var statusDl = nectoModule.createDefinitionList({ items: rows });
-        statusList.appendChild(statusDl.element);
         handles.push(statusDl);
+        section('DdnsHeaderStatus', 'history', [h('div', { 'data-role': 'record-status' }, [statusDl.element])]);
     }
 
     // showFields
-    // Shows only what the picked provider uses, with its own labels and hint.
+    // Shows only what the picked provider uses, with its own labels and its setup guide.
     function showFields() {
         var spec = fields_of(provider.input.value);
         var f = spec.Fields || {};
-        hint.textContent = spec.Hint || '';
         guide.setAttribute('href', guideUrl(provider.input.value));
         guide.textContent = t.format('DdnsProviderGuide', spec.Label || provider.input.value);
         var set = function (field, label) {
             field.element.classList.toggle('stolon-hidden', !label);
             if (label) field.element.querySelector('label').textContent = label;
         };
-        var following = !!spec.Follow && follow.input.checked;
-        follow.element.classList.toggle('stolon-hidden', !spec.Follow);
+        var following = !!spec.Follow && followAllowed && follow.input.checked;
+        follow.element.classList.toggle('stolon-hidden', !spec.Follow || !followAllowed);
         set(hostname, following ? null : f.Hostname);
         hostname.element.querySelector('.fieldDescription').textContent = t.tr(HOLDS_RECORD_ID.indexOf(provider.input.value) >= 0 ? 'DdnsHostnameIdHelp' : 'DdnsHostnameHelp');
         set(login, f.Login);
@@ -283,11 +344,12 @@ export function createRecordEditor(record, ctx) {
             var spec = fields_of(provider.input.value).Fields || {};
             var adv = spec.Advanced || [];
             var out = JSON.parse(JSON.stringify(draft));
-            out.Name = name.input.value.trim();
+            out.FollowProxyHosts = !!fields_of(provider.input.value).Follow && followAllowed && !!follow.input.checked;
+            out.Hostname = spec.Hostname ? hostname.input.value.trim() : '';
+            // The host name names the record, so only a record that follows the proxy keeps a name of its own.
+            out.Name = out.FollowProxyHosts ? (draft.Name || '') : '';
             out.Enabled = !!enabled.input.checked;
             out.Provider = provider.input.value;
-            out.FollowProxyHosts = !!fields_of(provider.input.value).Follow && !!follow.input.checked;
-            out.Hostname = spec.Hostname ? hostname.input.value.trim() : '';
             out.Login = spec.Login ? login.getValue() : '';
             out.Password = spec.Password ? password.getValue() : '';
             out.Zone = spec.Zone ? zone.input.value.trim() : '';
@@ -306,7 +368,7 @@ export function createRecordEditor(record, ctx) {
         validate: function () {
             var value = this.getValue();
             var spec = fields_of(value.Provider).Fields || {};
-            if (spec.Hostname && !value.FollowProxyHosts && !value.Hostname) return 'DdnsErrorEnterHostname';
+            if (spec.Hostname && !value.FollowProxyHosts && !value.Hostname) return 'ErrorEnterHostName';
             if (!value.UpdateIPv4 && !value.UpdateIPv6) return 'DdnsErrorSelectFamily';
             return null;
         },
@@ -348,8 +410,8 @@ export default function (view) {
     var shared = null;
     var page = null;
     var list = null;
-    var addressList = null;
     var providers = [];
+    var proxyOn = true;
     var loadSeq = 0;
 
     // report
@@ -358,23 +420,18 @@ export default function (view) {
         shared.setStatus('ddnsStatus', message, !!isError, { timeout: 10000 });
     }
 
-    // showAddress
-    // Shows the public addresses the last run found, and why one is missing.
-    function showAddress(data) {
+    // showSummary
+    // Shows the count cards, the public addresses the last run found, and why one is missing.
+    function showSummary(data) {
         var t = shared.t;
         var notices = view.querySelector('#ddnsNotices');
         notices.textContent = '';
         if (data.SecretsPlaintext) notices.appendChild(nectoModule.createBanner({ kind: 'warn', text: t.tr('DdnsKeyStoreUnavailable'), dismissible: false }).element);
         if (data.DetectionMessage) notices.appendChild(nectoModule.createBanner({ kind: 'warn', text: data.DetectionMessage, dismissible: false }).element);
-        var items = [
-            { label: t.tr('DdnsLabelPublicIpv4'), value: data.DetectedIPv4 || t.tr('TextNotFound') },
-            { label: t.tr('DdnsLabelPublicIpv6'), value: data.DetectedIPv6 || t.tr('TextNotFound') }
-        ];
-        if (addressList) addressList.setItems(items);
-        else {
-            addressList = nectoModule.createDefinitionList({ items: items });
-            view.querySelector('#ddnsAddress').appendChild(addressList.element);
-        }
+        shared.renderCards('ddnsCards', countCards(data, t));
+        var address = view.querySelector('#ddnsAddress');
+        address.textContent = '';
+        address.appendChild(addressCard(data, t));
     }
 
     // loadRecords
@@ -382,11 +439,13 @@ export default function (view) {
     function loadRecords() {
         var mine = ++loadSeq;
         var ready = providers.length ? Promise.resolve(providers) : shared.request('Ddns/Providers');
-        return Promise.all([ready, shared.request('Ddns/Records')]).then(function (answers) {
+        var config = shared.getConfig().catch(function () { return null; });
+        return Promise.all([ready, shared.request('Ddns/Records'), config]).then(function (answers) {
             if (mine !== loadSeq) return;
             providers = answers[0] || [];
             var data = answers[1] || {};
-            showAddress(data);
+            if (answers[2]) proxyOn = nectoModule.toolIsOn(answers[2], 'proxy');
+            showSummary(data);
             var items = recordItems(data.Records, providers, shared.t);
             if (list) list.setItems(items);
             else {
@@ -454,7 +513,7 @@ export default function (view) {
     function openRecord(record, followed) {
         var t = shared.t;
         var isNew = !record;
-        var editor = createRecordEditor(record || newRecord(), { shared: shared, providers: providers, followed: followed || [] });
+        var editor = createRecordEditor(record || newRecord(), { shared: shared, providers: providers, followed: followed || [], proxyOn: proxyOn });
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('DdnsTitleNewRecord') : recordName(record, providers),
             body: editor.element,

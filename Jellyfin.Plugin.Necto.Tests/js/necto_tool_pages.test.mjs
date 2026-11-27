@@ -94,7 +94,12 @@ test('the Scripts tool draws a saved script from its own markup', async function
     });
 
     assert.deepEqual(opened.errors, []);
-    assert.equal(opened.view.querySelector('#scriptName').value, 'Notify');
+    assert.match(opened.view.querySelector('#selectScript').innerHTML, /Notify/);
+    var tiles = Array.prototype.map.call(opened.view.querySelectorAll('[data-fold] > .stolon-collapsible-header .stolon-collapsible-tile, [data-fold] .stolon-collapsible-tile'), function (n) { return n.textContent; });
+    assert.deepEqual(Array.from(new Set(tiles)), ['description', 'bolt', 'groups', 'rule', 'format_list_bulleted', 'key', 'settings', 'science']);
+    assert.equal(opened.view.querySelectorAll('[data-fold] .stolon-collapsible-content.stolon-flow').length, 8);
+    assert.deepEqual(Array.prototype.map.call(opened.view.querySelectorAll('.stolon-selector-actions button'), function (b) { return b.id; }),
+        ['btnNewScript', 'btnRenameScript', 'btnRemoveScript', 'btnImportScripts', 'btnExportScripts']);
     assert.equal(opened.view.querySelector('#scriptEditor').classList.contains('stolon-hidden'), false);
     assert.match(opened.view.querySelector('#groupList').innerHTML, /Family/);
 });

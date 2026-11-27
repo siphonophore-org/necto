@@ -55,7 +55,7 @@ public sealed class SpaceshipProvider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.DdnsLabelHostname,
+        Hostname = TranslationKeys.LabelHostName,
         Login = TranslationKeys.HeaderApiKey,
         Password = TranslationKeys.DdnsLabelApiSecret,
         Zone = TranslationKeys.LabelDomain,

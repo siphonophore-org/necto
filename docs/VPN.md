@@ -76,13 +76,13 @@ A connection over its data limit stops until its period starts over.
 
 ## The VPN Tool
 
-While WireGuard is off, the tool reads "WireGuard is off. Turn it on in Settings to add peers." While **Host peers** and **Connect to hosts** are both off and there is nothing to list, it reads "Turn on Host peers or Connect to hosts in Settings to add peers." While wireguard-go is not downloaded, a warning says so.
+While VPN is off, the tool reads "VPN is off. Turn it on in Settings to add peers." While **Host peers** and **Connect to hosts** are both off and there is nothing to list, it reads "Peers and connections are off. Turn them on in Settings to add them." The count cards hide in both cases. While wireguard-go is not downloaded, a warning says so.
 
 | WireGuard | WireGuard on a phone |
 | :---: | :---: |
 | ![VPN](screenshots/WireGuard.png) | ![VPN on a phone](screenshots/WireGuard%20Phone.png) |
 
-The cards at the top show the host's state and whether **Connect to hosts** is active, or **Failed** while any connection failed, and count the peers, the connections, how many are connected, and how many are over their data limit. **Left out** counts the peers their owners' groups leave out, while there are any. When the host cannot start, the reason shows under the cards. **Add peer** shows while the host is on, and **Add connection** while connecting is on.
+The cards at the top show the host's state, how many **Peers** and **Connections** are connected out of all of them, and how many are over their data limit. **Connections** turns red while any connection failed and gray while **Connect to hosts** is off. **Left out** counts the peers their owners' groups leave out, while there are any. When the host cannot start, the reason shows under the cards. **Add peer** shows while the host is on, and **Add connection** while connecting is on.
 
 ### Peers
 
@@ -92,10 +92,10 @@ Each peer shows its owner, with tags for its state, address, where it connects f
 
 Select a peer to open its details in a sidecar, with its status, owner, address, child networks, last handshake, source, usage, and speed limit. The sidecar shows the peer's config file and a QR code of it. **Download** saves the config file, and **Edit** opens the editor.
 
-The peer editor has three sections.
+The peer editor has three sections, each led by an icon.
 
 * **Peer**. **Name**, **Owner**, **Address**, **Public key**, and **Enabled**. A blank address takes the next free one. A blank public key makes a new key pair, which needs wireguard-go.
-* **Limits**. **Download speed (Mbps)**, **Upload speed (Mbps)**, and **Data limit**, each the default unless overridden.
+* **Limits**. **Download speed (Mbps)**, **Upload speed (Mbps)**, and **Data limit**, each the default unless overridden. **Inherit** reads **No limit** while the default sets none.
 * **Advanced**. **Child networks**, the networks behind a router that does not NAT. Leave it blank for a single device.
 
 A peer that brought its own public key gets a config file without a private key, for the device to fill in. **Remove** asks first. The peer's config file stops working.
@@ -106,12 +106,12 @@ While the host is on, this server leads the list, named after the server and pla
 
 Select a connection to open its details, with its status, remote host, this server's address, forwards, last handshake, last error, usage, and speed limit. **This server's public key** has a Copy button. Give it to the remote host.
 
-The connection editor has five sections.
+The connection editor has five sections, each led by an icon.
 
-* **Import a config**. Paste a WireGuard config file to fill in the fields below.
 * **Connection**. **Name**, **Remote host**, **Remote public key**, **Preshared key**, **This server's address**, **Private key**, and **Enabled**. A blank private key keeps the saved one, or makes a new one for a new connection.
+* **Import a config**. Paste a WireGuard config file to fill in the connection's fields.
 * **Forwards**. One per line, as the local port, a space, then the remote host and port, such as `18096 10.0.0.1:8096`. Each opens on `127.0.0.1` only.
-* **Limits**. **Download speed (Mbps)**, **Upload speed (Mbps)**, and **Data limit**, each the default unless overridden.
+* **Limits**. **Download speed (Mbps)**, **Upload speed (Mbps)**, and **Data limit**, each the default unless overridden. **Inherit** reads **No limit** while the default sets none.
 * **Advanced**. **Keepalive (seconds)**.
 
 ## Permissions

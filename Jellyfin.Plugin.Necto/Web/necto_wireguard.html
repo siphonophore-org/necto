@@ -7,7 +7,7 @@
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="fieldDescription" data-str="WireGuardHelpTool">Lets users reach Jellyfin over WireGuard with their own peers, and connects this server to other WireGuard hosts.</div>
+                <div class="fieldDescription" data-str="WireGuardHelpTool">Lets users reach Jellyfin with their own peers, and connects this server to remote hosts.</div>
                 <div id="wireguardStatus" class="stolon-status-text" role="status"></div>
 
                 <!-- Off -->
@@ -17,7 +17,7 @@
 
                 <div id="wireguardBody" class="stolon-stack stolon-hidden">
                     <!-- Counts -->
-                    <div id="wireguardCards" class="stolon-cards"></div>
+                    <div id="wireguardCards" class="stolon-cards stolon-even"></div>
                     <div id="hostError" class="stolon-warn stolon-hidden"></div>
 
                     <!-- Both off -->
@@ -25,11 +25,11 @@
                     <div id="wireguardBothOff" class="stolon-hidden"></div>
 
                     <div class="stolon-button-row" id="addButtons">
-                        <button is="emby-button" type="button" id="btnAddPeer" class="raised stolon-button primary fill stolon-hidden">
+                        <button is="emby-button" type="button" id="btnAddPeer" class="raised stolon-button stolon-primary stolon-fill stolon-hidden">
                             <span class="material-icons" aria-hidden="true">add</span>
                             <span data-str="WireGuardButtonAddPeer">Add peer</span>
                         </button>
-                        <button is="emby-button" type="button" id="btnAddConnection" class="raised stolon-button secondary fill stolon-hidden">
+                        <button is="emby-button" type="button" id="btnAddConnection" class="raised stolon-button stolon-secondary stolon-fill stolon-hidden">
                             <span class="material-icons" aria-hidden="true">add_link</span>
                             <span data-str="WireGuardButtonAddConnection">Add connection</span>
                         </button>

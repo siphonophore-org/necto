@@ -191,7 +191,9 @@ export function pageItems(pages, t) {
         var tags = [{ label: tierLabel(p.Visibility, t), color: normalizeVisibility(p.Visibility) === 'Anonymous' ? 'green' : (normalizeVisibility(p.Visibility) === 'User' ? 'blue' : 'purple') }];
         if (p.Enabled === false) tags.push({ label: t.tr('PagesStatusUnpublished'), color: 'gray' });
         if (p.Unsandboxed || (p.ApiRoutes || []).length) tags.push({ label: t.tr('PagesTagSystemAccess'), color: 'orange' });
-        return { id: String(index), index: index, title: '/pages/' + (p.Slug || ''), secondary: p.Title || '', tags: tags };
+        var address = '/pages/' + (p.Slug || '');
+        var title = (p.Title || '').trim();
+        return { id: String(index), index: index, title: title || address, secondary: title ? address : '', tags: tags };
     });
 }
 
@@ -427,7 +429,7 @@ export function createPageEditor(page, shared) {
     var visibility = fieldRow('select', t.tr('PagesLabelVisibility'), { 'data-field': 'Visibility' }, t.tr('PagesVisibilityHelp'));
     tierOptions(visibility.control, t);
     visibility.control.value = normalizeVisibility(draft.Visibility);
-    var groupsNote = h('div', { class: 'stolon-info', 'data-role': 'groups-note', text: t.tr('PagesGroupsNote') });
+    var visibilityHelp = visibility.row.querySelector('.fieldDescription');
     var published = checkRow(t.tr('PagesLabelPublished'), t.tr('PagesPublishedHelp'), 'Enabled');
     published.control.checked = draft.Enabled !== false;
     var singleFile = checkRow(t.tr('PagesLabelSingleFile'), t.tr('PagesSingleFileHelp'), 'SingleFile');
@@ -458,16 +460,32 @@ export function createPageEditor(page, shared) {
         routes.element
     ]);
 
-    var source = fieldRow('select', t.tr('LabelSource'), { 'data-field': 'Source' });
-    [['html', 'HTML'], ['css', 'CSS'], ['js', 'JavaScript']].forEach(function (o) {
-        source.control.appendChild(h('option', { value: o[0], text: o[1] }));
-    });
     var code = h('textarea', { class: 'stolon-code', spellcheck: 'false', 'data-field': 'Code', 'aria-label': t.tr('PagesLabelPageSource'), rows: '16' });
     var hint = h('div', { class: 'fieldDescription', 'data-role': 'hint' });
     var codeRow = h('div', { class: 'inputContainer' }, [code, hint]);
+    // The source box moves into whichever of HTML, CSS, and JavaScript is open, and stands alone for a single file.
+    var source = nectoModule.createSubTabs({
+        label: t.tr('PagesLabelPageSource'),
+        tabs: [{ id: 'html', label: 'HTML' }, { id: 'css', label: 'CSS' }, { id: 'js', label: 'JavaScript' }],
+        onChange: function (id) {
+            flushSource();
+            currentPane = id;
+            placeSource();
+            loadSource();
+        }
+    });
+    source.element.setAttribute('data-role', 'source-tabs');
+    var codeHolder = h('div', { 'data-role': 'single-source' });
 
-    [slug.row, urlRow, title.row, visibility.row, groupsNote, published.row, singleFile.row, system.row, routesRow, source.row, codeRow]
+    [slug.row, urlRow, title.row, visibility.row, published.row, singleFile.row, system.row, routesRow, source.element, codeHolder]
         .forEach(function (node) { root.appendChild(node); });
+
+    // placeSource
+    // Puts the source box under the open source tab, or on its own for a single file.
+    function placeSource() {
+        var holder = single ? codeHolder : source.getPanel(currentPane);
+        if (holder && codeRow.parentNode !== holder) holder.appendChild(codeRow);
+    }
 
     // field
     // Names the page field the source box shows.
@@ -496,14 +514,16 @@ export function createPageEditor(page, shared) {
     }
 
     // reflect
-    // Shows the address, the groups note, the routes, and the source picker for the editor's choices.
+    // Shows the address, the Visibility help, the routes, and the source tabs for the editor's choices.
     function reflect() {
         var s = slugify(slug.control.value);
         url.setValue(s ? serverOrigin() + '/pages/' + s : '');
         setHidden(urlRow, !s);
-        setHidden(groupsNote, visibility.control.value !== 'User');
+        visibilityHelp.textContent = t.tr(visibility.control.value === 'User' ? 'PagesGroupsNote' : 'PagesVisibilityHelp');
         setHidden(routesRow, !system.control.checked);
-        setHidden(source.row, single);
+        setHidden(source.element, single);
+        setHidden(codeHolder, !single);
+        placeSource();
     }
 
     slug.control.addEventListener('input', reflect);
@@ -514,11 +534,6 @@ export function createPageEditor(page, shared) {
         single = singleFile.control.checked;
         loadSource();
         reflect();
-    });
-    source.control.addEventListener('change', function () {
-        flushSource();
-        currentPane = source.control.value;
-        loadSource();
     });
     loadSource();
     reflect();
@@ -540,7 +555,7 @@ export function createPageEditor(page, shared) {
             return out;
         },
         setStatus: function (message, isError) { shared.setStatus(status, message, !!isError); },
-        destroy: function () { routes.destroy(); url.destroy(); }
+        destroy: function () { routes.destroy(); url.destroy(); source.destroy(); }
     };
 }
 
@@ -596,7 +611,7 @@ export function createStoreEditor(store, count, shared) {
     custom.control.value = preset ? '' : days;
     var notify = checkRow(t.tr('PagesLabelNotifyAdmins'), t.tr('PagesNotifyHelp'), 'NotifyOnWrite');
     notify.control.checked = !!draft.NotifyOnWrite;
-    var meter = nectoModule.createUsageMeter({ label: t.tr('PagesCardRecords'), usedText: t.tr('PagesUsageMeter') });
+    var meter = nectoModule.createUsageMeter({ label: t.tr('LabelRecords'), usedText: t.tr('PagesUsageMeter') });
     var meterRow = h('div', { class: 'inputContainer', 'data-role': 'usage' }, [meter.element]);
 
     [name.row, urlRow, enabled.row, read.row, scope.row, write.row, anonWarn, scopeWarn, editOwn.row, limit.row, retention.row, custom.row, notify.row, meterRow]
@@ -853,7 +868,7 @@ export default function (view) {
         var c = storeCounts(settings.Stores, counts);
         shared.renderCards(panel.querySelector('[data-role="store-counts"]'), [
             { count: c.stores, label: t.tr('PagesTabStores'), color: 'blue' },
-            { count: c.records, label: t.tr('PagesCardRecords'), color: 'green' },
+            { count: c.records, label: t.tr('LabelRecords'), color: 'green' },
             { count: c.open, label: t.tr('PagesCardOpenToWrites'), color: c.open > 0 ? 'orange' : 'gray' }
         ]);
         var items = storeItems(settings.Stores, counts, t);
@@ -883,7 +898,7 @@ export default function (view) {
         var original = isNew ? newPage() : settings.Pages[index];
         var editor = createPageEditor(original, shared);
         nectoModule.openEditorSidecar({
-            title: isNew ? t.tr('PagesTitleNewPage') : '/pages/' + (original.Slug || ''),
+            title: isNew ? t.tr('PagesTitleNewPage') : ((original.Title || '').trim() || '/pages/' + (original.Slug || '')),
             body: editor.element,
             page: page,
             isNew: isNew,
@@ -1067,14 +1082,12 @@ export default function (view) {
                 h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }), h('span', { text: t.tr('PagesButtonAddPage') })
             ]);
             addPage.addEventListener('click', function () { openPage(-1); });
-            [pagesIntro, h('div', { class: 'stolon-cards', 'data-role': 'page-counts' }), h('div', { 'data-role': 'page-list' }), h('div', { class: 'stolon-card-list-actions' }, [addPage])]
+            [pagesIntro, h('div', { class: 'stolon-cards stolon-even', 'data-role': 'page-counts' }), h('div', { 'data-role': 'page-list' }), h('div', { class: 'stolon-card-list-actions' }, [addPage])]
                 .forEach(function (n) { panel.appendChild(n); });
             drawPages();
         } else if (tab.id === 'assets') {
             var assetsIntro = h('div', { class: 'fieldDescription' });
             fillWithCode(assetsIntro, t.tr('PagesAssetsIntro'), ['asset/logo.png']);
-            var assetsInfo = h('div', { class: 'stolon-info' });
-            fillWithCode(assetsInfo, t.tr('PagesAssetsVisibilityInfo'), ['/pages/asset/{name}']);
             var refused = '';
             picker = nectoModule.createFilePicker({
                 accept: 'image/*',
@@ -1094,17 +1107,16 @@ export default function (view) {
                     setTimeout(function () { refused = ''; }, 0);
                 }
             });
-            [assetsIntro, assetsInfo, h('div', { class: 'stolon-cards', 'data-role': 'asset-counts' }), picker.element, h('div', { class: 'stolon-asset-list', 'data-role': 'asset-list' })]
+            [assetsIntro, h('div', { class: 'stolon-cards stolon-even', 'data-role': 'asset-counts' }), h('div', { class: 'stolon-asset-list', 'data-role': 'asset-list' }), picker.element]
                 .forEach(function (n) { panel.appendChild(n); });
             drawAssets();
         } else if (tab.id === 'stores') {
-            var storesIntro = h('div', { class: 'fieldDescription' });
-            fillWithCode(storesIntro, t.tr('PagesStoresIntro'), ["pageStore.read('name')", "pageStore.write('name', data)"]);
+            var storesIntro = h('div', { class: 'fieldDescription', text: t.tr('PagesStoresIntro') });
             var addStore = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'add-store' }, [
                 h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }), h('span', { text: t.tr('PagesButtonAddStore') })
             ]);
             addStore.addEventListener('click', function () { openStore(-1); });
-            [storesIntro, h('div', { class: 'stolon-cards', 'data-role': 'store-counts' }), h('div', { 'data-role': 'store-list' }), h('div', { class: 'stolon-card-list-actions' }, [addStore])]
+            [storesIntro, h('div', { class: 'stolon-cards stolon-even', 'data-role': 'store-counts' }), h('div', { 'data-role': 'store-list' }), h('div', { class: 'stolon-card-list-actions' }, [addStore])]
                 .forEach(function (n) { panel.appendChild(n); });
             drawStores();
         }

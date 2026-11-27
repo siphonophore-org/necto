@@ -27,7 +27,7 @@ async function strings() {
     return bag.translations.then(function () { return bag; });
 }
 
-test('recordItems names each record, its provider and host, its last result, and whether it is off', async function () {
+test('recordItems names each record once, with its provider and one tag, Off or its last result', async function () {
     var bag = await strings();
     var ddns = await loadScript('necto_ddns.js');
     var items = ddns.recordItems([
@@ -36,11 +36,12 @@ test('recordItems names each record, its provider and host, its last result, and
     ], PROVIDERS, bag.t);
 
     assert.equal(items[0].title, 'home.example.com');
-    assert.equal(items[0].secondary, 'Cloudflare · home.example.com');
+    assert.equal(items[0].secondary, 'Cloudflare');
     assert.deepEqual(items[0].tags.map(function (t) { return t.label; }), ['Updated']);
     assert.equal(items[1].title, 'Office');
     assert.equal(items[1].secondary, 'DynDNS v2 · Follows 2 proxy names');
-    assert.deepEqual(items[1].tags.map(function (t) { return t.label; }), ['Failed', 'Off']);
+    assert.deepEqual(items[1].tags.map(function (t) { return t.label; }), ['Off']);
+    assert.equal(items[1].tags[0].off, undefined);
 });
 
 test('resultTag says a record that never ran is not checked yet', async function () {
@@ -81,7 +82,7 @@ test('a record that follows the proxy needs no hostname, and one with no address
     var bag = await strings();
     var ddns = await loadScript('necto_ddns.js');
     var editor = ddns.createRecordEditor({ Provider: 'Cloudflare', Hostname: '', UpdateIPv4: true }, { shared: bag, providers: PROVIDERS });
-    assert.equal(editor.validate(), 'DdnsErrorEnterHostname');
+    assert.equal(editor.validate(), 'ErrorEnterHostName');
     var follow = editor.element.querySelector('[data-field="FollowProxyHosts"]');
     follow.checked = true;
     follow.dispatchEvent(new globalThis.Event('change'));
@@ -101,7 +102,7 @@ test('Follow the proxy shows only for a provider whose hostname holds a name, an
     assert.equal(hidden('FollowProxyHosts'), true);
     assert.equal(hidden('Hostname'), false);
     assert.equal(editor.getValue().FollowProxyHosts, false);
-    assert.match(help(), /record ID, not a name/);
+    assert.match(help(), /record's ID, not its name/);
     field('Provider').value = 'Inwx';
     field('Provider').dispatchEvent(new globalThis.Event('change'));
     assert.equal(hidden('FollowProxyHosts'), true);
@@ -109,7 +110,57 @@ test('Follow the proxy shows only for a provider whose hostname holds a name, an
     field('Provider').value = 'Cloudflare';
     field('Provider').dispatchEvent(new globalThis.Event('change'));
     assert.equal(hidden('FollowProxyHosts'), false);
-    assert.equal(help(), 'The DNS name this record keeps pointed at this server.');
+    assert.equal(help(), 'Keeps this DNS name pointed at this server.');
+});
+
+test('Follow the proxy hides while the proxy is off, unless the record already follows it', async function () {
+    var bag = await strings();
+    var ddns = await loadScript('necto_ddns.js');
+    var hidden = function (editor) { return editor.element.querySelector('[data-field="FollowProxyHosts"]').closest('.checkboxContainer').classList.contains('stolon-hidden'); };
+    var off = ddns.createRecordEditor({ Provider: 'Cloudflare', Hostname: 'home.example.com', UpdateIPv4: true }, { shared: bag, providers: PROVIDERS, proxyOn: false });
+    var following = ddns.createRecordEditor({ Provider: 'Cloudflare', FollowProxyHosts: true, UpdateIPv4: true }, { shared: bag, providers: PROVIDERS, proxyOn: false });
+    var on = ddns.createRecordEditor({ Provider: 'Cloudflare', Hostname: 'home.example.com', UpdateIPv4: true }, { shared: bag, providers: PROVIDERS, proxyOn: true });
+
+    assert.equal(hidden(off), true);
+    assert.equal(off.getValue().FollowProxyHosts, false);
+    assert.equal(hidden(following), false);
+    assert.equal(following.getValue().FollowProxyHosts, true);
+    assert.equal(hidden(on), false);
+});
+
+test('the record editor has one name field and sections led by icon tiles', async function () {
+    var bag = await strings();
+    var ddns = await loadScript('necto_ddns.js');
+    var editor = ddns.createRecordEditor({ Id: 'a', Name: 'Old name', Provider: 'Cloudflare', Hostname: 'home.example.com', UpdateIPv4: true }, { shared: bag, providers: PROVIDERS });
+    var tiles = Array.prototype.map.call(editor.element.querySelectorAll('.stolon-collapsible-tile'), function (n) { return n.textContent; });
+
+    assert.equal(editor.element.querySelector('[data-field="Name"]'), null);
+    assert.equal(editor.element.querySelectorAll('.stolon-subsection-title').length, 0);
+    assert.deepEqual(tiles, ['dns', 'update', 'tune', 'history']);
+    assert.equal(new Set(tiles).size, tiles.length);
+    assert.equal(editor.getValue().Name, '');
+});
+
+test('countCards counts the records, those up to date and those that need attention', async function () {
+    var bag = await strings();
+    var ddns = await loadScript('necto_ddns.js');
+    var cards = ddns.countCards({
+        Records: [
+            { Record: { Enabled: true, LastAction: 'Updated' }, Followed: [] },
+            { Record: { Enabled: true, LastAction: 'Failed' }, Followed: [] },
+            { Record: { Enabled: true, FollowProxyHosts: true }, Followed: [{ LastAction: 'Backing off' }, { LastAction: 'Updated' }] },
+            { Record: { Enabled: false, LastAction: 'Failed' }, Followed: [] }
+        ],
+        DetectedIPv4: '203.0.113.10',
+        DetectedIPv6: ''
+    }, bag.t);
+
+    assert.deepEqual(cards.map(function (c) { return [c.label, c.count]; }), [
+        ['Records', 4], ['Up to date', 1], ['Needs attention', 2]
+    ]);
+    var card = ddns.addressCard({ DetectedIPv4: '203.0.113.10', DetectedIPv6: '' }, bag.t);
+    assert.match(card.textContent, /Public IPv4203\.0\.113\.10/);
+    assert.match(card.textContent, /Public IPv6Not found/);
 });
 
 test('the provider field links its setup guide on the docs site', async function () {
@@ -132,11 +183,11 @@ test('outcomeMessage counts the records updated and failed', async function () {
     assert.equal(ddns.outcomeMessage({ Records: [], Warnings: [] }, bag).text, 'No records to update.');
 });
 
-test('the page draws the public address and a row per record', async function () {
+test('the page draws the cards with the public address and a row per record', async function () {
     var page = installPage({});
     var dom = page.dom;
     var view = pageView(dom, [
-        dom.el('div', { id: 'ddnsNotices' }), dom.el('div', { id: 'ddnsAddress' }), dom.el('div', { id: 'ddnsRecords' }),
+        dom.el('div', { id: 'ddnsNotices' }), dom.el('div', { id: 'ddnsCards' }), dom.el('div', { id: 'ddnsAddress' }), dom.el('div', { id: 'ddnsRecords' }),
         dom.el('button', { id: 'btnAddRecord' }), dom.el('button', { id: 'btnUpdateNow' }), dom.el('span', { id: 'ddnsStatus' })
     ]);
     dom.document.documentElement.appendChild(view);

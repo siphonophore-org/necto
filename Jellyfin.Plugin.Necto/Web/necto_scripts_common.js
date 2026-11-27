@@ -204,11 +204,11 @@ export function operatorLabels() {
 }
 
 // operationTypes
-// The step types, each with its label, its group in the step picker, and what the event must carry for the step
-// to act. A step whose need is missing reports Skipped.
+// The step types, each with its label, its group in the step picker, what the event must carry for the step to act,
+// and the icon its card leads with. A step whose need is missing reports Skipped.
 //
 // Output
-// [object]: { label, group, needs } for each step type, by its name.
+// [object]: { label, group, needs, icon } for each step type, by its name.
 export function operationTypes() {
     var run = t.tr('ScriptsLabelRun');
     var sessions = t.tr('ScriptsTriggerGroupSessions');
@@ -216,28 +216,28 @@ export function operationTypes() {
     var users = t.tr('HeaderUsers');
     var server = t.tr('TabServer');
     return {
-        RunCommand: { label: t.tr('ScriptsStepRunCommand'), group: run, needs: null },
-        HttpRequest: { label: t.tr('ScriptsStepHttpRequest'), group: run, needs: null },
-        RunScript: { label: t.tr('ScriptsStepRunScript'), group: run, needs: null },
-        Wait: { label: t.tr('ScriptsStepWait'), group: run, needs: null },
-        StopScript: { label: t.tr('ScriptsStepStopScript'), group: run, needs: null },
-        SendMessage: { label: t.tr('SendMessage'), group: sessions, needs: null },
-        PausePlayback: { label: t.tr('ScriptsStepPausePlayback'), group: sessions, needs: 'session' },
-        StopPlayback: { label: t.tr('StopPlayback'), group: sessions, needs: 'session' },
-        MarkPlayed: { label: t.tr('MarkPlayed'), group: items, needs: 'useritem' },
-        MarkUnplayed: { label: t.tr('MarkUnplayed'), group: items, needs: 'useritem' },
-        SetFavorite: { label: t.tr('ScriptsStepSetFavorite'), group: items, needs: 'useritem' },
-        AddTag: { label: t.tr('ScriptsStepAddTag'), group: items, needs: 'item' },
-        RemoveTag: { label: t.tr('ScriptsStepRemoveTag'), group: items, needs: 'item' },
-        AddToCollection: { label: t.tr('AddToCollection'), group: items, needs: 'item' },
-        RemoveFromCollection: { label: t.tr('RemoveFromCollection'), group: items, needs: 'item' },
-        RefreshMetadata: { label: t.tr('RefreshMetadata'), group: items, needs: 'item' },
-        SetUserDisabled: { label: t.tr('ScriptsStepSetUserDisabled'), group: users, needs: 'user' },
-        SignOutUser: { label: t.tr('ScriptsStepSignOutUser'), group: users, needs: 'user' },
-        ScanLibraries: { label: t.tr('ScriptsStepScanLibraries'), group: server, needs: null },
-        RunScheduledTask: { label: t.tr('ScriptsStepRunScheduledTask'), group: server, needs: null },
-        WriteActivityLog: { label: t.tr('ScriptsStepWriteActivityLog'), group: server, needs: null },
-        AppendToFile: { label: t.tr('ScriptsStepAppendToFile'), group: server, needs: null }
+        RunCommand: { label: t.tr('ScriptsStepRunCommand'), group: run, needs: null, icon: 'terminal' },
+        HttpRequest: { label: t.tr('ScriptsStepHttpRequest'), group: run, needs: null, icon: 'http' },
+        RunScript: { label: t.tr('ScriptsStepRunScript'), group: run, needs: null, icon: 'code' },
+        Wait: { label: t.tr('ScriptsStepWait'), group: run, needs: null, icon: 'hourglass_empty' },
+        StopScript: { label: t.tr('ScriptsStepStopScript'), group: run, needs: null, icon: 'stop_circle' },
+        SendMessage: { label: t.tr('SendMessage'), group: sessions, needs: null, icon: 'message' },
+        PausePlayback: { label: t.tr('ScriptsStepPausePlayback'), group: sessions, needs: 'session', icon: 'pause' },
+        StopPlayback: { label: t.tr('StopPlayback'), group: sessions, needs: 'session', icon: 'stop' },
+        MarkPlayed: { label: t.tr('MarkPlayed'), group: items, needs: 'useritem', icon: 'check_circle' },
+        MarkUnplayed: { label: t.tr('MarkUnplayed'), group: items, needs: 'useritem', icon: 'radio_button_unchecked' },
+        SetFavorite: { label: t.tr('ScriptsStepSetFavorite'), group: items, needs: 'useritem', icon: 'favorite' },
+        AddTag: { label: t.tr('ScriptsStepAddTag'), group: items, needs: 'item', icon: 'sell' },
+        RemoveTag: { label: t.tr('ScriptsStepRemoveTag'), group: items, needs: 'item', icon: 'label_off' },
+        AddToCollection: { label: t.tr('AddToCollection'), group: items, needs: 'item', icon: 'library_add' },
+        RemoveFromCollection: { label: t.tr('RemoveFromCollection'), group: items, needs: 'item', icon: 'playlist_remove' },
+        RefreshMetadata: { label: t.tr('RefreshMetadata'), group: items, needs: 'item', icon: 'refresh' },
+        SetUserDisabled: { label: t.tr('ScriptsStepSetUserDisabled'), group: users, needs: 'user', icon: 'person_off' },
+        SignOutUser: { label: t.tr('ScriptsStepSignOutUser'), group: users, needs: 'user', icon: 'logout' },
+        ScanLibraries: { label: t.tr('ScriptsStepScanLibraries'), group: server, needs: null, icon: 'video_library' },
+        RunScheduledTask: { label: t.tr('ScriptsStepRunScheduledTask'), group: server, needs: null, icon: 'schedule' },
+        WriteActivityLog: { label: t.tr('ScriptsStepWriteActivityLog'), group: server, needs: null, icon: 'receipt_long' },
+        AppendToFile: { label: t.tr('ScriptsStepAppendToFile'), group: server, needs: null, icon: 'note_add' }
     };
 }
 

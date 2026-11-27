@@ -14,7 +14,7 @@
 
 ## The Pages Tool
 
-**Pages** has three tabs: **Pages**, **Images**, and **Stores**. Each list opens a record in a sidecar, whose shelf holds **Delete**, **Cancel**, and **Save**. A save asks the server first whether it would take the change, so a refused save shows its reason, such as "Two pages use the slug rules.". The tool holds no settings, which are in **Settings > Pages**.
+**Pages** has three tabs: **Pages**, **Images**, and **Stores**, each with one line under it on what it holds. Each list opens a record in a sidecar, whose shelf holds **Delete**, **Cancel**, and **Save**. A save asks the server first whether it would take the change, so a refused save shows its reason, such as "Two pages use the slug rules.". The tool holds no settings, which are in **Settings > Pages**.
 
 | Pages | Pages on a phone |
 | :---: | :---: |
@@ -22,7 +22,7 @@
 
 ## Pages
 
-**Pages** counts the pages by tier and lists each by its address, with its title, its tier, and tags for **Unpublished** and **System access**. Select **Add page** for a new one.
+**Pages** counts the pages by tier and lists each by its title over its address, with its tier and tags for **Unpublished** and **System access**. A page with no title is listed by its address. Select **Add page** for a new one.
 
 ![Page editor](screenshots/Page%20Editor.png)
 
@@ -30,11 +30,11 @@ The page sidecar holds:
 
 * **Slug** sets the page's address. It keeps lower case letters, digits, dashes, and underscores. The **URL** under it shows the full address with a copy button.
 * **Title** sets the document title.
-* **Visibility** sets who may open the page. See [Who May Open a Page](#who-may-open-a-page).
+* **Visibility** sets who may open the page. For **Signed in** its line says the page opens for administrators and the groups that give it. See [Who May Open a Page](#who-may-open-a-page).
 * **Published** serves the page at its address. An unpublished page answers as not found.
 * **Use a single webpage file** serves one complete HTML document as written, in place of separate HTML, CSS, and JavaScript.
 * **Allow system access** runs the page without the sandbox. See [System Access](#system-access).
-* **Source** picks the HTML, CSS, or JavaScript pane the box below edits. The box holds the whole document while **Use a single webpage file** is on.
+* **HTML**, **CSS**, and **JavaScript** are tabs over the source box, each showing its own part of the page. The tabs hide and the box holds the whole document while **Use a single webpage file** is on.
 
 The slugs `asset`, `store`, `stores`, and `configuration` are kept for the pages' own routes.
 
@@ -63,7 +63,7 @@ A group gives pages in **Groups > Pages**, with **Open every page** or **Pages m
 
 ## Images
 
-**Images** hosts images for the pages. Drop or select images to upload them, up to 5 MB each. An upload with the name of an image already there replaces it and keeps its tier. The cards count **Images**, **Other** files, and their total **Size**.
+**Images** hosts images for the pages. The list of images comes first, and the drop zone under it takes new ones. Drop or select images to upload them, up to 5 MB each. An upload with the name of an image already there replaces it and keeps its tier. The cards count **Images**, **Other** files, and their total **Size**.
 
 ![Pages images](screenshots/Pages%20Images.png)
 

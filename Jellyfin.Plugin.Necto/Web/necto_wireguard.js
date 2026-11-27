@@ -42,41 +42,45 @@ export function connectionLimit(cfg, c) {
 }
 
 // countCards
-// Counts what the cards at the top show: peers, connections, how many are connected, and how many are left out.
+// Counts what the cards at the top show: the peers and connections, how many of each are connected, and how many
+// are over their data limit or left out.
 //
 // Inputs
 // cfg [object]: The WireGuard settings.
 // ends [object[]]: The tunnel ends from WireGuard/Peers.
 //
 // Output
-// [object]: { peers, connections, connected, over, refused }.
+// [object]: { peers, connections, peersConnected, connectionsConnected, over, refused }.
 export function countCards(cfg, ends) {
     var list = ends || [];
+    var connected = function (kind) { return list.filter(function (e) { return e.Kind === kind && e.Connected; }).length; };
     return {
         peers: (cfg.Peers || []).length,
         connections: (cfg.Connections || []).length,
-        connected: list.filter(function (e) { return e.Kind !== 'Host' && e.Connected; }).length,
+        peersConnected: connected('Peer'),
+        connectionsConnected: connected('Connection'),
         over: list.filter(function (e) { return e.State === 'OverLimit'; }).length,
         refused: list.filter(function (e) { return e.State === 'NotAllowed' || e.State === 'OverPeerCount'; }).length
     };
 }
 
-// connectCard
-// The Connect card. It follows the Connect to hosts switch, and reads Failed while any connection's tunnel failed.
+// connectionsCard
+// The Connections card: how many connections are connected out of all of them. It is red while any connection's
+// tunnel failed, gray while Connect to hosts is off, and green while one is connected.
 //
 // Inputs
-// t [object]: The strings.
 // cfg [object]: The WireGuard settings.
 // tunnels [object[]]: The running tunnels from WireGuard/Status.
+// counts [object]: What countCards gave.
+// t [object]: The strings.
 //
 // Output
-// [object]: A card, or null when Connect is off and there are no connections.
-export function connectCard(t, cfg, tunnels) {
-    if (!cfg.ConnectEnabled && !(cfg.Connections || []).length) return null;
+// [object]: The card, or null while Connect to hosts is off and there are no connections.
+export function connectionsCard(cfg, tunnels, counts, t) {
+    if (!cfg.ConnectEnabled && !counts.connections) return null;
     var failed = (tunnels || []).some(function (x) { return x.Key !== 'host' && x.State === 'Failed'; });
-    var label = t.tr('WireGuardLabelConnectEnabled');
-    if (!cfg.ConnectEnabled) return { count: t.tr('StateInactive'), label: label, color: 'gray' };
-    return failed ? { count: t.tr('LabelFailed'), label: label, color: 'red' } : { count: t.tr('StateActive'), label: label, color: 'green' };
+    var color = !cfg.ConnectEnabled ? 'gray' : failed ? 'red' : counts.connectionsConnected ? 'green' : 'blue';
+    return { count: counts.connectionsConnected + ' / ' + counts.connections, label: t.tr('HeaderConnections'), color: color };
 }
 
 export default function (view) {
@@ -177,14 +181,14 @@ export default function (view) {
         var host = ends.filter(function (e) { return e.Kind === 'Host'; })[0];
         var cards = [];
         if (w.HostEnabled) cards.push({ count: tunnelStateLabel(t, host ? host.State : 'Stopped'), label: t.tr('LabelServerHost'), color: host && host.State === 'Running' ? 'green' : host && host.State === 'Failed' ? 'red' : 'gray' });
-        var connect = connectCard(t, w, tunnels);
-        if (connect) cards.push(connect);
-        cards.push({ count: counts.peers, label: t.tr('HeaderPeers') });
-        cards.push({ count: counts.connections, label: t.tr('HeaderConnections') });
-        cards.push({ count: counts.connected, label: t.tr('StateConnected'), color: counts.connected ? 'green' : 'gray' });
+        if (w.HostEnabled || counts.peers) cards.push({ count: counts.peersConnected + ' / ' + counts.peers, label: t.tr('HeaderPeers'), color: counts.peersConnected ? 'green' : 'blue' });
+        var connections = connectionsCard(w, tunnels, counts, t);
+        if (connections) cards.push(connections);
         cards.push({ count: counts.over, label: t.tr('WireGuardTagOverLimit'), color: counts.over ? 'red' : 'gray' });
         if (counts.refused) cards.push({ count: counts.refused, label: t.tr('WireGuardCardLeftOut'), color: 'orange' });
         shared.renderCards('wireguardCards', cards);
+        // The counts mean nothing while WireGuard or both of its halves are off, so they hide then.
+        shared.setVisible('wireguardCards', on && (!!w.HostEnabled || !!w.ConnectEnabled));
 
         var hostTunnel = tunnels.filter(function (x) { return x.Key === 'host'; })[0];
         var error = hostTunnel && hostTunnel.State !== 'Running' ? hostTunnel.Error : (on && w.HostEnabled && !hostTunnel && sidecar && sidecar.Installed ? t.tr('WireGuardErrorNoTunnel') : '');
@@ -321,69 +325,59 @@ export default function (view) {
             size: 'large',
             page: page,
             buttons: [
-                { text: t.tr('Edit'), icon: 'edit', className: 'stolon-button secondary', action: function (close) { close(); editPeer(peer); } },
-                { text: t.tr('Download'), icon: 'download', className: 'stolon-button primary', action: function () { if (configText) downloadText(safeFileName(peer.Name) + '.conf', configText); } }
+                { text: t.tr('Edit'), icon: 'edit', className: 'stolon-button stolon-secondary', action: function (close) { close(); editPeer(peer); } },
+                { text: t.tr('Download'), icon: 'download', className: 'stolon-button stolon-primary', action: function () { if (configText) downloadText(safeFileName(peer.Name) + '.conf', configText); } }
             ]
         });
     }
 
     // field
-    // A labelled text or number input, with an optional description and placeholder.
+    // A Stolon input field with its label, an optional description, and a valid example value.
     function field(labelKey, type, value, helpKey, placeholder) {
-        var id = 'necto-wg-' + Math.random().toString(36).slice(2);
-        var input = h('input', { is: 'emby-input', type: type, id: id, autocomplete: 'off', min: type === 'number' ? '0' : null, placeholder: placeholder || null });
-        input.value = value == null ? '' : value;
-        return {
-            element: h('div', { class: 'inputContainer' }, [
-                h('label', { for: id, text: t.tr(labelKey) }),
-                input,
-                helpKey ? h('div', { class: 'fieldDescription', text: t.tr(helpKey) }) : null
-            ]),
-            input: input
-        };
+        return nectoModule.createInputField({
+            label: t.tr(labelKey),
+            type: type,
+            value: value == null ? '' : value,
+            min: type === 'number' ? 0 : undefined,
+            placeholder: placeholder || undefined,
+            autocomplete: 'off',
+            help: helpKey ? t.tr(helpKey) : undefined
+        });
     }
 
     // textArea
-    // A labelled code area with a description.
+    // A Stolon text area in the code font, with its label and description.
     function textArea(labelKey, helpKey, value, placeholder, rows) {
-        var id = 'necto-wg-' + Math.random().toString(36).slice(2);
-        var area = h('textarea', { class: 'stolon-code stolon-code-block', id: id, rows: String(rows || 3), spellcheck: 'false', placeholder: placeholder || null });
-        area.value = value || '';
-        return {
-            element: h('div', { class: 'inputContainer' }, [
-                h('label', { for: id, text: t.tr(labelKey) }),
-                area,
-                h('div', { class: 'fieldDescription', text: t.tr(helpKey) })
-            ]),
-            input: area
-        };
+        var made = nectoModule.createTextareaField({ label: t.tr(labelKey), help: t.tr(helpKey), value: value || '', placeholder: placeholder || undefined, rows: rows || 3 });
+        made.input.classList.add('stolon-mono');
+        made.input.setAttribute('spellcheck', 'false');
+        return made;
     }
 
     // labelled
-    // Puts a control under a label, as a form field.
-    function labelled(labelKey, control, helpKey) {
-        return h('div', { class: 'inputContainer' }, [
-            h('label', { text: t.tr(labelKey) }),
-            control,
-            helpKey ? h('div', { class: 'fieldDescription', text: t.tr(helpKey) }) : null
-        ]);
+    // Puts a compound control, such as an Inherit Field, under its label, as a form field.
+    function labelled(labelKey, control) {
+        return h('div', { class: 'inputContainer' }, [h('label', { text: t.tr(labelKey) }), control]);
     }
 
     // collapsible
-    // A collapsible section holding a group of an editor's fields, closed unless it is the first.
-    function collapsible(titleKey, children, open) {
-        var content = h('div', {}, children.map(function (c) { return c.element || c; }));
-        return nectoModule.createCollapsibleSection({ title: t.tr(titleKey), content: content, collapsed: !open }).element;
+    // A section of an editor's fields, led by its icon tile, its fields a wide gap apart, closed unless it is the first.
+    function collapsible(titleKey, icon, children, open) {
+        var made = nectoModule.createCollapsibleSection({ title: t.tr(titleKey), icon: icon, collapsed: !open });
+        children.forEach(function (c) { made.content.appendChild(c.element || c); });
+        made.content.classList.add('stolon-flow');
+        return made.element;
     }
 
     // inheritSpeed
     // A speed limit in Mbps that takes the default until it is overridden.
     function inheritSpeed(labelKey, own, inherited) {
-        var input = h('input', { is: 'emby-input', type: 'number', min: '0' });
+        var input = h('input', { is: 'emby-input', type: 'number', min: '0', 'aria-label': t.tr(labelKey) });
         var made = nectoModule.createInheritField({
             field: input,
             inheritedValue: inherited || 0,
-            inheritedText: limitText(null, inherited || 0, 'Mbps'),
+            inheritedText: inherited > 0 ? limitText(null, inherited, 'Mbps') : t.tr('LabelNoLimit'),
+            label: t.tr(labelKey),
             value: { inherit: own == null, value: own == null ? (inherited || 0) : own }
         });
         return {
@@ -404,7 +398,8 @@ export default function (view) {
         var made = nectoModule.createInheritField({
             field: limit,
             inheritedValue: inherited,
-            inheritedText: dataText(t, shared, inherited.bytes, inherited.period),
+            inheritedText: inherited.bytes > 0 ? dataText(t, shared, inherited.bytes, inherited.period) : t.tr('LabelNoLimit'),
+            label: t.tr('WireGuardLabelDataLimit'),
             value: { inherit: !own, value: own || inherited }
         });
         return {
@@ -414,6 +409,19 @@ export default function (view) {
                 return v.inherit ? null : v.value;
             }
         };
+    }
+
+    // ownerField
+    // The owner of a peer, picked from the server's users.
+    function ownerField(userId) {
+        var made = nectoModule.createSelectField({
+            label: t.tr('WireGuardLabelOwner'),
+            help: t.tr('WireGuardOwnerHelp'),
+            options: users.map(function (u) { return { value: u.Id, text: u.Name }; })
+        });
+        var match = users.filter(function (u) { return compact(u.Id) === compact(userId); })[0];
+        if (match) made.input.value = match.Id;
+        return made;
     }
 
     // saveRecord
@@ -461,10 +469,10 @@ export default function (view) {
         var peer = existing || { UserId: ApiClient.getCurrentUserId(), Name: '', Address: '', RoutedSubnets: [], Enabled: true, PublicKey: '' };
         var status = h('div', { class: 'stolon-status-text', role: 'status' });
         var name = field('LabelName', 'text', peer.Name, null, t.tr('WireGuardPlaceholderPeerName'));
-        var owner = shared.createUserSelector({ value: peer.UserId, includeEmptyOption: false });
+        var owner = ownerField(peer.UserId);
         var address = field('LabelAddress', 'text', peer.Address, null, t.tr('WireGuardPlaceholderNextFree'));
         var subnets = field('WireGuardLabelRoutedSubnets', 'text', (peer.RoutedSubnets || []).join(', '), 'WireGuardRoutedSubnetsHelp', '192.168.1.0/24');
-        var enabled = nectoModule.createCheckbox({ label: t.tr('LabelEnabled'), checked: peer.Enabled !== false });
+        var enabled = nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), checked: peer.Enabled !== false });
         var publicKey = field('WireGuardLabelPublicKey', 'text', isNew ? '' : peer.PublicKey, isNew ? 'WireGuardPublicKeyHelp' : null, isNew ? t.tr('WireGuardPlaceholderMadeForYou') : '');
         publicKey.input.readOnly = !isNew;
         var down = inheritSpeed('WireGuardLabelDownloadMbps', peer.DownloadMbps, cfg.PeerDownloadMbps);
@@ -472,16 +480,16 @@ export default function (view) {
         var data = inheritData(peer.DataLimit != null ? { bytes: peer.DataLimit, period: normalizePeriod(peer.DataPeriod) } : null, { bytes: cfg.PeerDataLimit || 0, period: normalizePeriod(cfg.PeerDataPeriod) });
         var body = h('div', {}, [
             status,
-            collapsible('WireGuardHeaderPeer', [name, labelled('WireGuardLabelOwner', owner.element, 'WireGuardOwnerHelp'), address, publicKey, enabled], true),
-            collapsible('HeaderLimits', [down, up, data]),
-            collapsible('TabAdvanced', [subnets])
+            collapsible('WireGuardHeaderPeer', 'devices', [name, owner, address, publicKey, enabled], true),
+            collapsible('HeaderLimits', 'speed', [down, up, data]),
+            collapsible('TabAdvanced', 'tune', [subnets])
         ]);
 
         function read() {
             var d = data.read();
             return {
                 Name: name.input.value.trim(),
-                UserId: owner.getValue(),
+                UserId: owner.input.value,
                 Address: address.input.value.trim(),
                 RoutedSubnets: subnets.input.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean),
                 Enabled: !!enabled.input.checked,
@@ -498,7 +506,6 @@ export default function (view) {
             body: body,
             page: page,
             isNew: isNew,
-            ready: owner.ready,
             serialize: function () { return JSON.stringify(read()); },
             saveText: t.tr('Save'),
             deleteText: t.tr('ButtonRemove'),
@@ -510,8 +517,7 @@ export default function (view) {
                 }
                 return saveRecord('WireGuard/Peers', isNew, peer.Id, values, status);
             },
-            onDelete: function (close) { removeRecord('WireGuard/Peers', peer.Id, peer.Name, 'WireGuardConfirmRemovePeer', close); },
-            onClose: function () { if (owner.destroy) owner.destroy(); }
+            onDelete: function (close) { removeRecord('WireGuard/Peers', peer.Id, peer.Name, 'WireGuardConfirmRemovePeer', close); }
         });
     }
 
@@ -547,7 +553,7 @@ export default function (view) {
             body: body,
             size: 'large',
             page: page,
-            buttons: [{ text: t.tr('Edit'), icon: 'edit', className: 'stolon-button primary', action: function (close) { close(); editConnection(c); } }]
+            buttons: [{ text: t.tr('Edit'), icon: 'edit', className: 'stolon-button stolon-primary', action: function (close) { close(); editConnection(c); } }]
         });
     }
 
@@ -566,18 +572,18 @@ export default function (view) {
         var address = field('WireGuardLabelOurAddress', 'text', c.Address, null, '10.0.0.5');
         var privateKey = field('LabelPrivateKey', 'password', '', 'WireGuardPrivateKeyHelp', c.PrivateKey ? t.tr('WireGuardPlaceholderKept') : t.tr('WireGuardPlaceholderMadeForYou'));
         var forwards = textArea('WireGuardLabelForwards', 'WireGuardForwardsHelp', (c.Forwards || []).map(function (f) { return f.LocalPort + ' ' + f.RemoteHost + ':' + f.RemotePort; }).join('\n'), '18096 10.0.0.1:8096', 3);
-        var enabled = nectoModule.createCheckbox({ label: t.tr('LabelEnabled'), checked: c.Enabled !== false });
+        var enabled = nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), checked: c.Enabled !== false });
         var keepalive = field('WireGuardLabelKeepalive', 'number', c.Keepalive, null, '25');
         var down = inheritSpeed('WireGuardLabelDownloadMbps', c.DownloadMbps, cfg.ConnectionDownloadMbps);
         var up = inheritSpeed('WireGuardLabelUploadMbps', c.UploadMbps, cfg.ConnectionUploadMbps);
         var data = inheritData(c.DataLimit != null ? { bytes: c.DataLimit, period: normalizePeriod(c.DataPeriod) } : null, { bytes: cfg.ConnectionDataLimit || 0, period: normalizePeriod(cfg.ConnectionDataPeriod) });
         var body = h('div', {}, [
             status,
-            collapsible('WireGuardHeaderImport', [importArea]),
-            collapsible('WireGuardHeaderConnection', [name, endpoint, peerKey, psk, address, privateKey, enabled], true),
-            collapsible('WireGuardLabelForwards', [forwards]),
-            collapsible('HeaderLimits', [down, up, data]),
-            collapsible('TabAdvanced', [keepalive])
+            collapsible('WireGuardHeaderConnection', 'link', [name, endpoint, peerKey, psk, address, privateKey, enabled], true),
+            collapsible('WireGuardHeaderImport', 'content_paste', [importArea]),
+            collapsible('WireGuardLabelForwards', 'swap_horiz', [forwards]),
+            collapsible('HeaderLimits', 'speed', [down, up, data]),
+            collapsible('TabAdvanced', 'tune', [keepalive])
         ]);
 
         importArea.input.addEventListener('input', function () {

@@ -44,7 +44,7 @@ public sealed class SimplyComProvider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.DdnsLabelHostname,
+        Hostname = TranslationKeys.LabelHostName,
         Login = TranslationKeys.DdnsLabelAccountName,
         Password = TranslationKeys.HeaderApiKey,
         Zone = TranslationKeys.DdnsLabelZone,

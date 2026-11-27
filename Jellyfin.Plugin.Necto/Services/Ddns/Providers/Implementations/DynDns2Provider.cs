@@ -62,7 +62,7 @@ public sealed class DynDns2Provider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.DdnsLabelHostname,
+        Hostname = TranslationKeys.LabelHostName,
         Login = TranslationKeys.LabelUsername,
         Password = TranslationKeys.LabelPassword,
         Server = true,

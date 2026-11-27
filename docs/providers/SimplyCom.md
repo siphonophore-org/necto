@@ -2,7 +2,7 @@
 
 Open a record on the **DDNS** page, or select **Add record**, set **Provider** to **Simply.com**, then fill in:
 
-- **Hostname**: the record.
+- **Host name**: the record.
 - **Account name**: your Simply.com account name, which is your account number.
 - **API Key**: your Simply.com API key.
 - **Zone**: optional. The domain to scope the update to.

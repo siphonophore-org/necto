@@ -149,7 +149,7 @@ export function createRouteEditor(route, ctx) {
     var root = h('div', { 'data-role': 'route-editor' }, [status]);
     var handles = [];
 
-    var host = nectoModule.createInputField({ label: t.tr('ProxyLabelHost'), field: 'Host', value: draft.Host, placeholder: 'media.example.com', help: t.tr('ProxyHostHelp') });
+    var host = nectoModule.createInputField({ label: t.tr('LabelHostName'), field: 'Host', value: draft.Host, placeholder: 'media.example.com', help: t.tr('ProxyHostHelp') });
     var ddnsNames = nectoModule.createSelectField({
         label: t.tr('ProxyLabelDdnsName'),
         field: 'DdnsName',
@@ -283,7 +283,7 @@ export function createRouteEditor(route, ctx) {
         },
         validate: function () {
             var value = this.getValue();
-            if (!value.Host) return 'ProxyErrorRouteNeedsHost';
+            if (!value.Host) return 'ErrorEnterHostName';
             if (target.input.value === 'other' && !/^https?:\/\/[^/]+\/?$/i.test(value.Upstream)) return 'ProxyErrorEnterUpstream';
             if (value.Certificate.Mode === 'Automatic' && value.Certificate.Challenge === 'Http' && (value.LocalOnly || value.Host.indexOf('*') === 0)) return 'ProxyErrorHttpChallengeNeedsInternet';
             return null;
@@ -861,7 +861,7 @@ export default function (view) {
                 { key: 'User', label: t.tr('LabelUser') },
                 { key: 'Ip', label: t.tr('LabelAddress') },
                 { key: 'Device', label: t.tr('LabelDevice') },
-                { key: 'Host', label: t.tr('ProxyLabelHost'), value: function (r) { return (r.Host || '').replace(/^https?:\/\//, ''); } },
+                { key: 'Host', label: t.tr('LabelHostName'), value: function (r) { return (r.Host || '').replace(/^https?:\/\//, ''); } },
                 { key: 'place', label: t.tr('HeaderCountry'), value: place },
                 { key: 'city', label: t.tr('ProxyColumnCity'), hidden: true, value: function (r) { return r.IsLocal ? '' : (r.City || ''); } },
                 { key: 'LastUtc', label: t.tr('ProxyColumnLastSeen'), value: function (r) { return shared.formatDate(r.LastUtc); } },

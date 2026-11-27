@@ -18,15 +18,15 @@
 ## The Scripts Tool
 
 
-The counts at the top show how many scripts there are, and how many are enabled and disabled. Select a script from the list above **New**, **Duplicate**, **Delete**, **Export**, and **Import** to edit it.
+The counts at the top show how many scripts there are, and how many are enabled and disabled. Select a script from the list above **New**, **Rename**, **Remove**, **Import**, and **Export** to edit it.
 
 | Scripts | Scripts on a phone |
 | :---: | :---: |
 | ![Scripts](screenshots/Scripts.png) | ![Scripts on a phone](screenshots/Scripts%20Phone.png) |
 
-Each script has a **Name** and an optional **Description** saying what it is for. **New** asks for both and starts from a blank script or a template, such as stopping playback paused for 30 minutes, limiting the server to 3 transcodes, asking "Still watching?" after 3 hours, posting new items to Discord, or scanning every library nightly. **Duplicate** adds a disabled copy of the open script, without its secrets. **Delete** asks first, then deletes the open script and saves that at once. Unsaved edits to other scripts stay unsaved.
+Each script has a **Name** and an optional **Description** saying what it is for. **New** asks for both and starts from a blank script or a template, such as stopping playback paused for 30 minutes, limiting the server to 3 transcodes, asking "Still watching?" after 3 hours, posting new items to Discord, or scanning every library nightly. **Rename** asks for the open script's new name, which is kept until you **Save**. **Remove** asks first, then removes the open script and saves that at once. Unsaved edits to other scripts stay unsaved.
 
-The editor's sections open and close from their headings, and all start closed. Each heading says what its section holds, such as *1 trigger*, *2 steps*, *2 groups*, or *2 conditions, all must match*, **General** shows the script's description and whether it is **Enabled** or **Disabled**, and **Testing** names the trigger to test with. A section with a warning names it in an orange badge. **Groups** shows what ignores its groups, such as **Schedule ignored**. **Conditions** counts the conditions a selected trigger never matches, such as **1 never matches**. **Behavior** shows **No item kinds** when it runs for each library item with none chosen, or **For each ignored** when every trigger already has its own item or user.
+The editor's sections open and close from their headings, each led by an icon, and all start closed. **General** holds the **Description** and **Enabled**. Each heading says what its section holds, such as *1 trigger*, *2 steps*, *2 groups*, or *2 conditions, all must match*, **General** shows the script's description and whether it is **Enabled** or **Disabled**, and **Testing** names the trigger to test with. A section with a warning names it in an orange badge. **Groups** shows what ignores its groups, such as **Schedule ignored**. **Conditions** counts the conditions a selected trigger never matches, such as **1 never matches**. **Behavior** shows **No item kinds** when it runs for each library item with none chosen, or **For each ignored** when every trigger already has its own item or user.
 
 Every other change is kept until you **Save**. **Save** is the full width bar at the end of the editor, and the line above it says when there are unsaved changes. Leaving the page with unsaved changes asks first.
 
@@ -211,7 +211,7 @@ Genre, Tag, and Studio match when any of the item's values does. A field the tri
 
 ## Steps
 
-Steps run in order. Drag a step, or use its arrows, to reorder it, and open it to edit.
+Steps run in order. Each step's card leads with its type's icon. Drag a step, or use its arrows, to reorder it, and open it to edit. Pick a **Step type**, then select **Add step** to add one at the end.
 
 ![Script steps](screenshots/Script%20Steps.png)
 
@@ -284,7 +284,7 @@ Use **Check path** to confirm the server can see the file and that it is executa
 
 ## Secrets
 
-Keep tokens and passwords in the script's **Secrets** rather than in its steps. Use one as `{{SECRET_NAME}}` in a step, or `$JF_SECRET_NAME` in a command. Values are encrypted into their own file beside Necto's configuration, never sent back to the browser in any form, and left out of exports. Wherever a secret of three or more characters shows up in a step's message or a command's output, the history and the activity log show `[SECRET_NAME]` instead. Each secret is a row with a **Name** and a **Value**. **Add secret** adds a row, and the cross at the end of a row removes the secret when you save. A name is capital letters, digits, and underscores, and typing fixes it as you go. Renaming a secret keeps its value. A stored value shows as dots and stays until you type a new one. The **Clear Value** button beside a stored value empties it when you save. A secrets file or key that cannot be read while saving is written to the server log.
+Keep tokens and passwords in the script's **Secrets** rather than in its steps. Use one as `{{SECRET_NAME}}` in a step, or `$JF_SECRET_NAME` in a command. Values are encrypted into their own file beside Necto's configuration, never sent back to the browser in any form, and left out of exports. Wherever a secret of three or more characters shows up in a step's message or a command's output, the history and the activity log show `[SECRET_NAME]` instead. Each secret is a row with a **Name** and a **Value**. **Add secret** adds a row, and the cross at the end of a row removes the secret when you save. A name is capital letters, digits, and underscores, and typing fixes it as you go. Renaming a secret keeps its value. A stored value shows as dots and stays until you type a new one. The **Clear** button beside a stored value empties it when you save. A secrets file or key that cannot be read while saving is written to the server log.
 
 
 ## Variables

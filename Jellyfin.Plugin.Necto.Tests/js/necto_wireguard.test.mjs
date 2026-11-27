@@ -50,10 +50,11 @@ test('the counts take peers, connections, connected ends, and the ones left out'
     var counts = mod.countCards(settings(), [
         { Kind: 'Host', Connected: true, State: 'Running' },
         { Kind: 'Peer', Connected: true, State: 'Connected' },
-        { Kind: 'Peer', Connected: false, State: 'NotAllowed' }
+        { Kind: 'Peer', Connected: false, State: 'NotAllowed' },
+        { Kind: 'Connection', Connected: true, State: 'Connected' }
     ]);
 
-    assert.deepEqual(counts, { peers: 2, connections: 0, connected: 1, over: 0, refused: 1 });
+    assert.deepEqual(counts, { peers: 2, connections: 0, peersConnected: 1, connectionsConnected: 1, over: 0, refused: 1 });
     assert.deepEqual(mod.peerLimit({ PeerDataLimit: 5, PeerDataPeriod: 2 }, {}), { bytes: 5, period: 'Week' });
 });
 
@@ -99,13 +100,16 @@ test('the tool lists each peer with its owner and state, and a peer the groups l
     assert.equal(opened.view.querySelector('#wireguardBody').classList.contains('stolon-hidden'), false);
 });
 
-test('with WireGuard off, the tool says so and how to turn it on', async function () {
+test('with WireGuard off, the tool says so and how to turn it on, with no count cards', async function () {
     var off = settings();
     off.Enabled = false;
-    off.Peers = [];
     var opened = await openPage({}, off);
 
-    assert.match(opened.view.querySelector('#wireguardOff').innerHTML, /WireGuard is off\. Turn it on in Settings to add peers\./);
+    assert.equal(opened.view.querySelector('#wireguardCards').classList.contains('stolon-hidden'), true);
+    off.Peers = [];
+    opened = await openPage({}, off);
+
+    assert.match(opened.view.querySelector('#wireguardOff').innerHTML, /VPN is off\. Turn it on in Settings to add peers\./);
     assert.equal(opened.view.querySelector('#wireguardBody').classList.contains('stolon-hidden'), true);
 });
 
@@ -115,23 +119,26 @@ test('with Host peers and Connect to hosts both off and nothing listed, the tool
     both.Peers = [];
     var opened = await openPage({}, both);
 
-    assert.match(opened.view.querySelector('#wireguardBothOff').innerHTML, /Turn on Host peers or Connect to hosts in Settings to add peers\./);
+    assert.match(opened.view.querySelector('#wireguardBothOff').innerHTML, /Peers and connections are off\. Turn them on in Settings to add them\./);
+    assert.equal(opened.view.querySelector('#wireguardCards').classList.contains('stolon-hidden'), true);
     assert.equal(opened.view.querySelector('#wireguardBothOff').classList.contains('stolon-hidden'), false);
 
     var hosting = await openPage();
     assert.equal(hosting.view.querySelector('#wireguardBothOff').classList.contains('stolon-hidden'), true);
+    assert.equal(hosting.view.querySelector('#wireguardCards').classList.contains('stolon-hidden'), false);
 });
 
-test('the Connect card reads Failed while a connection failed, and Active or Inactive otherwise', async function () {
+test('the Connections card counts connected connections, red while one failed and gray while connecting is off', async function () {
     installPage({});
     var mod = await loadScript('necto_wireguard.js');
     var t = { tr: function (k) { return k; } };
-    var on = { ConnectEnabled: true, Connections: [{}] };
+    var on = { ConnectEnabled: true, Connections: [{}, {}] };
+    var counts = { connections: 2, connectionsConnected: 1 };
 
-    assert.equal(mod.connectCard(t, { ConnectEnabled: false, Connections: [] }, []), null);
-    assert.deepEqual(mod.connectCard(t, on, [{ Key: 'host', State: 'Failed' }]), { count: 'StateActive', label: 'WireGuardLabelConnectEnabled', color: 'green' });
-    assert.deepEqual(mod.connectCard(t, on, [{ Key: 'abc', State: 'Failed' }]), { count: 'LabelFailed', label: 'WireGuardLabelConnectEnabled', color: 'red' });
-    assert.equal(mod.connectCard(t, { ConnectEnabled: false, Connections: [{}] }, [{ Key: 'abc', State: 'Failed' }]).count, 'StateInactive');
+    assert.equal(mod.connectionsCard({ ConnectEnabled: false, Connections: [] }, [], { connections: 0, connectionsConnected: 0 }, t), null);
+    assert.deepEqual(mod.connectionsCard(on, [{ Key: 'host', State: 'Failed' }], counts, t), { count: '1 / 2', label: 'HeaderConnections', color: 'green' });
+    assert.equal(mod.connectionsCard(on, [{ Key: 'abc', State: 'Failed' }], counts, t).color, 'red');
+    assert.equal(mod.connectionsCard({ ConnectEnabled: false }, [{ Key: 'abc', State: 'Failed' }], counts, t).color, 'gray');
 });
 
 test('Add peer opens an editor sidecar that posts the peer to its route', async function () {
@@ -142,6 +149,7 @@ test('Add peer opens an editor sidecar that posts the peer to its route', async 
 
     assert.ok(sidecar);
     assert.deepEqual(texts(sidecar, '.stolon-collapsible-title'), ['Peer', 'Limits', 'Advanced']);
+    assert.deepEqual(texts(sidecar, '.stolon-collapsible-tile'), ['devices', 'speed', 'tune']);
     sidecar.querySelector('input[type="text"]').value = 'Tablet';
     clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Save');
     await settle(50);

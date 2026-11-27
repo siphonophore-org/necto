@@ -2,7 +2,7 @@
 
 Open a record on the **DDNS** page, or select **Add record**, set **Provider** to **ZoneEdit**, then fill in:
 
-- **Hostname**: the host to update.
+- **Host name**: the host to update.
 - **Username**: your ZoneEdit username.
 - **DDNS token**: your ZoneEdit Dynamic DNS authentication token, or your account password.
 - **Zone**: optional. The domain to scope the update to.

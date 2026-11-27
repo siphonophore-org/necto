@@ -2,7 +2,7 @@
 
 Open a record on the **DDNS** page, or select **Add record**, set **Provider** to **Spaceship**, then fill in:
 
-- **Hostname**: the record. The subdomain is worked out from it, with @ for the apex.
+- **Host name**: the record. The subdomain is worked out from it, with @ for the apex.
 - **API Key**: your Spaceship API key.
 - **API secret**: your Spaceship API secret. Create both in the Spaceship API Manager.
 - **Domain**: the domain, such as example.com. A bare two-label hostname is treated as the apex. Fill it in for multi-label subdomains or multi-label TLDs like .co.uk.

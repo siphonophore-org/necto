@@ -60,7 +60,7 @@ public sealed class DynuProvider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.DdnsLabelHostname,
+        Hostname = TranslationKeys.LabelHostName,
         Login = TranslationKeys.LabelUsername,
         Password = TranslationKeys.LabelPassword,
         Zone = TranslationKeys.DdnsLabelCustomDomain,

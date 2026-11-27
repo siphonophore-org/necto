@@ -59,7 +59,7 @@ public sealed class NfsnProvider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.DdnsLabelHostname,
+        Hostname = TranslationKeys.LabelHostName,
         Login = TranslationKeys.DdnsLabelMemberLogin,
         Password = TranslationKeys.HeaderApiKey,
         Zone = TranslationKeys.DdnsLabelDnsZone,

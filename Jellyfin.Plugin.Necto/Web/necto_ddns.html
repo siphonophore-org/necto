@@ -1,5 +1,5 @@
 <!-- necto_ddns.html -->
-<!-- The DDNS tool. It shows the public address the last run found and lists the records, each opening an editor sidecar. -->
+<!-- The DDNS tool. It counts the records beside the public addresses the last run found and lists the records, each opening an editor sidecar. -->
 
 <div id="NectoDdnsPage" data-role="page" class="page type-interior pluginConfigurationPage"
      data-require="emby-input,emby-button,emby-select,emby-checkbox"
@@ -9,6 +9,10 @@
             <div class="verticalSection verticalSection-extrabottompadding">
                 <div class="fieldDescription" data-str="DdnsHelpPage">Keeps each DNS name pointed at this server's public address.</div>
                 <div id="ddnsNotices"></div>
+
+                <!-- Counts -->
+                <!-- The records, and how many are up to date or need attention. -->
+                <div id="ddnsCards" class="stolon-cards stolon-even"></div>
 
                 <!-- Public address -->
                 <!-- The addresses the last run found, shared by every record. -->

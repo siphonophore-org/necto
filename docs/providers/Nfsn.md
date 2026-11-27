@@ -2,7 +2,7 @@
 
 Open a record on the **DDNS** page, or select **Add record**, set **Provider** to **NearlyFreeSpeech.NET**, then fill in:
 
-- **Hostname**: the host.
+- **Host name**: the host.
 - **Member login**: your NFSN member login.
 - **API Key**: your NFSN API key. Request one on the NFSN site under Profile, then API.
 - **DNS zone**: the DNS zone, such as example.com.

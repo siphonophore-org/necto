@@ -50,7 +50,7 @@ public sealed class IonosProvider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.DdnsLabelHostname,
+        Hostname = TranslationKeys.LabelHostName,
         Password = TranslationKeys.HeaderApiKey,
         Server = true,
         Ttl = true,
