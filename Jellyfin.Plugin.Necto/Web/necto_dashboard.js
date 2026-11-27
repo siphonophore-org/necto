@@ -144,9 +144,7 @@ export function barParts(segments) {
 // Output
 // [boolean]: true when the legend adds something.
 export function showsLegend(parts, valueLabel) {
-    if (!parts.length) return false;
-    if (parts.length > 1) return true;
-    return String(parts[0].label || '').toLowerCase() !== String(valueLabel || '').toLowerCase();
+    return parts.length > 0;
 }
 
 // withBar
@@ -227,10 +225,10 @@ export function requestsCard(t, stats) {
     var days = stats.Days || {};
     card.value = pending;
     card.valueLabel = t.tr('StatePending').toLowerCase();
-    card.bars = dayBars(days.Days, days.Made, null, function (day, made) { return t.format('DashboardRequestsOnDay', day, made); });
+    var total = Object.keys(by).reduce(function (n, k) { return n + (Number(by[k]) || 0); }, 0);
+    card.bars = sum(days.Made) > 0 ? dayBars(days.Days, days.Made, null, function (day, made) { return t.format('DashboardRequestsOnDay', day, made); }) : null;
     card.segments = null;
     card.legend = false;
-    var total = Object.keys(by).reduce(function (n, k) { return n + (Number(by[k]) || 0); }, 0);
     card.detail = by.Failed > 0 ? t.format('ScheduledTaskFailedWithName', by.Failed) : (total > 0 ? '' : t.tr('DashboardEmptyRequests'));
     if (by.Failed > 0) return setState(card, t, 'failed');
     if (pending > 0) return setState(card, t, 'pending');
@@ -333,20 +331,37 @@ function soonestCertificate(status) {
 //
 // Output
 // [object]: The status card's options, with tool for the tool it opens.
+// proxyAnswer
+// Joins what Proxy/Status and Proxy/Routes/All answered into the status the Proxy card reads, with each route's state.
+//
+// Inputs
+// answer [any]: Both answers, or one status, or null.
+//
+// Output
+// [object]: The status with RouteStates, or null when the status could not be read.
+export function proxyAnswer(answer) {
+    if (!Array.isArray(answer)) return answer || null;
+    var status = answer[0];
+    if (!status) return null;
+    var page = answer[1] || {};
+    return Object.assign({}, status, { RouteStates: (page.Items || []).map(function (row) { return row.State; }) });
+}
+
 export function proxyCard(t, shared, status, now) {
     var card = toolCard('proxy');
     if (!status) return failedCard(t, card);
-    var routes = status.Routes || [];
-    var broken = function (r) { return !!(r.Certificate && r.Certificate.Error); };
-    var count = function (test) { return routes.filter(test).length; };
-    // A route whose certificate failed counts as failed whether or not it is on.
+    // The route states the Proxy page shows, in its order and colors.
+    var states = (status.RouteStates || []);
+    var count = function (state) { return states.filter(function (s) { return s === state; }).length; };
     var segments = [
-        { label: t.tr('StateActive'), value: count(function (r) { return r.Active && !broken(r); }), color: 'green' },
-        { label: t.tr('LabelFailed'), value: count(broken), color: 'red' },
-        { label: t.tr('Off'), value: count(function (r) { return !r.Active && !broken(r); }), color: 'gray' }
+        { label: t.tr('ProxyStateHttps'), value: count('Https'), color: 'green' },
+        { label: t.tr('ProxyStateHttp'), value: count('Http'), color: 'blue' },
+        { label: t.tr('ProxyStateIncomplete'), value: count('Incomplete'), color: 'purple' },
+        { label: t.tr('ProxyStateUntrusted'), value: count('Untrusted'), color: 'orange' },
+        { label: t.tr('Off'), value: count('Off'), color: 'gray' }
     ];
     card.value = segments[0].value;
-    card.valueLabel = t.tr('StateActive').toLowerCase();
+    card.valueLabel = t.tr('ProxyStateHttps');
     withBar(card, t, segments, 'DashboardEmptyRoutes');
     var soonest = soonestCertificate(status);
     var days = soonest ? (soonest - now) / 86400000 : null;
@@ -355,8 +370,8 @@ export function proxyCard(t, shared, status, now) {
     // The day is enough for a certificate, and keeps the line inside the card.
     if (days !== null && days < 0) return setState(Object.assign(card, { detail: t.format('DashboardCertificateExpired', soonest.toLocaleDateString()) }), t, 'failed');
     if (days !== null && days < CERTIFICATE_WARNING_DAYS) return setState(Object.assign(card, { detail: t.format('DashboardCertificateExpires', soonest.toLocaleDateString()) }), t, 'attention');
-    if (segments[1].value > 0) return setState(card, t, 'failed');
-    return setState(card, t, card.value > 0 ? 'active' : 'idle');
+    if (segments[2].value + segments[3].value > 0) return setState(card, t, 'attention');
+    return setState(card, t, segments[0].value + segments[1].value > 0 ? 'active' : 'idle');
 }
 
 // ddnsCard
@@ -454,7 +469,7 @@ export function scriptsCard(t, days) {
     var failed = sum(days.Failed);
     card.value = ok + failed;
     card.valueLabel = t.tr('DashboardValueRuns');
-    card.bars = dayBars(days.Days, days.Succeeded, days.Failed, function (day, runs, failed) { return t.format('DashboardRunsOnDay', day, runs, failed); });
+    card.bars = ok + failed > 0 ? dayBars(days.Days, days.Succeeded, days.Failed, function (day, runs, failed) { return t.format('DashboardRunsOnDay', day, runs, failed); }) : null;
     card.segments = null;
     card.legend = false;
     card.detail = failed > 0 ? t.format('ScheduledTaskFailedWithName', failed) : (ok > 0 ? '' : t.tr('DashboardEmptyRuns'));
@@ -593,7 +608,7 @@ export function notificationsCard(t, log, now) {
     var days = sendDays(log, now || new Date());
     card.value = sent;
     card.valueLabel = t.tr('StateSent').toLowerCase();
-    card.bars = dayBars(days.Days, days.Sent, days.Failed, function (day, total, bad) { return t.format('DashboardSendsOnDay', day, total - bad, bad); });
+    card.bars = log.length ? dayBars(days.Days, days.Sent, days.Failed, function (day, total, bad) { return t.format('DashboardSendsOnDay', day, total - bad, bad); }) : null;
     card.segments = null;
     card.legend = false;
     card.detail = failed > 0 ? t.format('ScheduledTaskFailedWithName', failed) : (log.length ? '' : t.tr('DashboardEmptySends'));
@@ -638,7 +653,7 @@ var CARD_READS = {
     requests: 'Requests/Stats',
     issues: 'Issues/Stats',
     invites: 'Invites/List',
-    proxy: 'Proxy/Status',
+    proxy: ['Proxy/Status', 'Proxy/Routes/All?skip=0&take=1000'],
     ddns: 'Ddns/Records',
     scripts: 'Scripts/History/Days',
     storage: 'Storage/Disks',
@@ -688,7 +703,7 @@ function buildCard(key, t, shared, config, answer, map, now) {
         case 'issues': return issuesCard(t, answer);
         case 'invites': return invitesCard(t, answer);
         case 'groups': return groupsCard(t, config, answer);
-        case 'proxy': return proxyCard(t, shared, answer, now);
+        case 'proxy': return proxyCard(t, shared, proxyAnswer(answer), now);
         case 'ddns': return ddnsCard(t, answer);
         case 'wireguard': return wireGuardCard(t, map);
         case 'scripts': return scriptsCard(t, answer);
@@ -1050,7 +1065,11 @@ export default function (view) {
             shared.setVisible('dashboardMap', mapOn);
             if (mapOn) prepareMap(shared, config);
             return Promise.all([
-                Promise.all(keys.map(function (key) { return CARD_READS[key] ? read(shared, CARD_READS[key]) : Promise.resolve(null); })),
+                Promise.all(keys.map(function (key) {
+                    var what = CARD_READS[key];
+                    if (!what) return Promise.resolve(null);
+                    return Array.isArray(what) ? Promise.all(what.map(function (route) { return read(shared, route); })) : read(shared, what);
+                })),
                 mapOn ? read(shared, 'Dashboard/Map') : Promise.resolve(null),
                 config.Proxy && config.Proxy.Enabled ? read(shared, 'Proxy/PublicAddress') : Promise.resolve(null),
                 read(shared, 'Dashboard/Activity')

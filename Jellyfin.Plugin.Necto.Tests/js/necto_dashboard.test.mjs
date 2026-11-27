@@ -63,7 +63,7 @@ function shown(card) {
     return card.segments.map(function (s) { return s.label + ' ' + s.value; }).join(', ');
 }
 
-test('a card keeps only the parts that hold anything, and lists them only when they add to its number', async function () {
+test('a card keeps only the parts that hold anything, and always lists them under its bar', async function () {
     installPage({});
     var dashboard = await loadScript('necto_dashboard.js');
 
@@ -71,14 +71,14 @@ test('a card keeps only the parts that hold anything, and lists them only when t
         [{ label: 'Pending', value: 1 }, { label: 'Approved', value: 2 }]);
     assert.deepEqual(dashboard.barParts([{ label: 'Pending', value: 0 }]), []);
     assert.equal(dashboard.showsLegend([], 'pending'), false);
-    assert.equal(dashboard.showsLegend([{ label: 'Published', value: 2 }], 'published'), false);
+    assert.equal(dashboard.showsLegend([{ label: 'Published', value: 2 }], 'published'), true);
     assert.equal(dashboard.showsLegend([{ label: 'Full', value: 1 }], 'in use'), true);
     assert.equal(dashboard.showsLegend([{ label: 'Published', value: 2 }, { label: 'Unpublished', value: 1 }], 'published'), true);
 
     var none = dashboard.issuesCard(t, {});
     assert.deepEqual([none.segments, none.legend, none.detail], [null, false, 'No issue reports yet']);
     var one = dashboard.pagesCard(t, { CustomPages: { Pages: [{ Enabled: true }] } });
-    assert.deepEqual([one.value, one.legend, one.detail, parts(one)], [1, false, '', ['Published 1']]);
+    assert.deepEqual([one.value, one.legend, one.detail, parts(one)], [1, true, '', ['Published 1']]);
 });
 
 test('every card states its pill in a Stolon badge word and color, and its line says when its bar is empty', async function () {
@@ -108,7 +108,7 @@ test('the Requests card counts those waiting for approval with a column per day 
     assert.deepEqual(card.bars.slice(-2).map(function (b) { return [b.value, b.color]; }), [[4, 'green'], [2, 'green']]);
     assert.equal(card.bars[13].label, '2026-11-27: 2 requests');
     var pending = dashboard.requestsCard(t, { ByStatus: { Pending: 1 } });
-    assert.deepEqual([pending.status, pending.statusColor, pending.detail, pending.bars.length], ['Pending', 'purple', '', 14]);
+    assert.deepEqual([pending.status, pending.statusColor, pending.detail, pending.bars], ['Pending', 'purple', '', null], 'no chart while no request was made in the last 14 days');
     assert.equal(dashboard.requestsCard(t, { ByStatus: { Approved: 1 } }).status, 'Active');
     var none = dashboard.requestsCard(t, { ByStatus: {} });
     assert.deepEqual([none.status, none.detail], ['Idle', 'No requests yet']);
@@ -175,18 +175,21 @@ test('the Groups card counts the groups, and the users as members, in no group, 
     assert.equal(dashboard.pagesCard(t, { CustomPages: { Pages: [{ Enabled: false }] } }).status, 'Off');
 });
 
-test('the Proxy card counts its active routes and asks for attention as its first certificate nears expiry', async function () {
+test('the Proxy card counts its routes by the Proxy page states and asks for attention as its first certificate nears expiry', async function () {
     installPage({});
     var dashboard = await loadScript('necto_dashboard.js');
     var route = function (host, active, notAfter, error) {
         return { Host: host, Active: active, Certificate: { Loaded: !!notAfter, NotAfterUtc: notAfter, Error: error || '' } };
     };
 
-    var card = dashboard.proxyCard(t, shared, { Running: true, Routes: [route('a.example.com', true, days(60)), route('b.example.com', false, days(30))] }, NOW);
+    var both = dashboard.proxyAnswer([{ Running: true, Routes: [route('a.example.com', true, days(60)), route('b.example.com', false, days(30))] }, { Items: [{ State: 'Https' }, { State: 'Off' }] }]);
+    var card = dashboard.proxyCard(t, shared, both, NOW);
     assert.equal(card.value, 1);
     assert.equal(card.status, 'Active');
-    assert.deepEqual([card.detail, shown(card)], ['', 'Active 1, Off 1']);
-    assert.equal(card.valueLabel, 'active');
+    assert.deepEqual([card.detail, shown(card)], ['', 'HTTPS 1, Off 1']);
+    assert.equal(card.valueLabel, 'HTTPS');
+    var half = dashboard.proxyCard(t, shared, dashboard.proxyAnswer([{ Running: true, Routes: [] }, { Items: [{ State: 'Untrusted' }] }]), NOW);
+    assert.deepEqual([half.status, shown(half)], ['Warning', 'Untrusted 1']);
 
     var soon = dashboard.proxyCard(t, shared, { Running: true, Routes: [route('a.example.com', true, days(5))] }, NOW);
     assert.deepEqual([soon.status, soon.statusColor], ['Warning', 'orange']);
@@ -196,10 +199,10 @@ test('the Proxy card counts its active routes and asks for attention as its firs
     assert.match(expired.detail, /^A certificate expired/);
     var stopped = dashboard.proxyCard(t, shared, { Running: false, Routes: [] }, NOW);
     assert.deepEqual([stopped.status, stopped.statusColor, stopped.detail], ['Offline', 'red', 'No routes yet']);
-    var failed = dashboard.proxyCard(t, shared, { Running: false, Error: 'Port 443 is in use.', Routes: [route('a.example.com', true, null, 'Bad key')] }, NOW);
+    var failed = dashboard.proxyCard(t, shared, dashboard.proxyAnswer([{ Running: false, Error: 'Port 443 is in use.', Routes: [route('a.example.com', true, null, 'Bad key')] }, { Items: [{ State: 'Incomplete' }] }]), NOW);
     assert.equal(failed.status, 'Failed');
     assert.equal(failed.detail, 'Port 443 is in use.');
-    assert.deepEqual(parts(failed), ['Failed 1']);
+    assert.deepEqual(parts(failed), ['Incomplete 1']);
 });
 
 test('the DDNS card counts the records up to date, with a part per last result and the records that are off', async function () {
@@ -265,7 +268,7 @@ test('the Scripts, Storage, and Notifications cards show failures first', async 
     var quiet = dashboard.scriptsCard(t, { Succeeded: [1], Failed: [0] });
     assert.deepEqual([quiet.status, quiet.detail], ['Active', '']);
     var idle = dashboard.scriptsCard(t, { Succeeded: [], Failed: [] });
-    assert.deepEqual([idle.detail, idle.value, idle.bars.length, idle.bars.every(function (b) { return b.value === 0; })], ['No runs in 14 days', 0, 14, true]);
+    assert.deepEqual([idle.detail, idle.value, idle.bars], ['No runs in 14 days', 0, null], 'no chart while nothing ran');
 
     var storage = dashboard.storageCard(t, [
         { Name: 'media', State: 'Available', InUse: true, Health: 'Good', Level: 'None' },
