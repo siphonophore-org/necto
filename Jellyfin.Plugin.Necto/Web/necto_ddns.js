@@ -450,7 +450,7 @@ export default function (view) {
         shared.renderCards('ddnsCards', countCards(data, t));
         var address = view.querySelector('#ddnsAddress');
         address.textContent = '';
-        address.appendChild(addressCard(data, t));
+        address.appendChild(nectoModule.createCollapsibleSection({ title: t.tr('DdnsHeaderPublicAddress'), icon: 'public', collapsible: false, content: addressCard(data, t) }).element);
     }
 
     // loadRecords

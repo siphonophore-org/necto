@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton, clickDialogButton, dialogText, strings } from './support.mjs';
+import { installPage, loadScript, pageView, settle, routeApi, rowHtml, texts, clickButton, clickDialogButton, dialogText, strings } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
@@ -215,7 +215,7 @@ test('the Storage section of Troubleshooting asks before it resets the settings,
 test('the notice lists each problem no row shows on its own line, and hides while there is none', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
-    var ids = ['storageAttention', 'storageSpaceCards', 'storageDisks'];
+    var ids = ['storageAttention', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
     var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
@@ -240,7 +240,7 @@ test('the notice lists each problem no row shows on its own line, and hides whil
 test('the tool checks every disk, lists the disks in use with their state, and leaves the notice to what rows do not show', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
-    var ids = ['storageAttention', 'storageSpaceCards', 'storageDisks'];
+    var ids = ['storageAttention', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
     var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
@@ -258,12 +258,14 @@ test('the tool checks every disk, lists the disks in use with their state, and l
     var attention = view.querySelector('#storageAttention');
     assert.equal(attention.querySelector('.stolon-banner'), null);
     assert.ok(attention.classList.contains('stolon-hidden'));
-    var rows = view.querySelectorAll('#storageDisks .stolon-record-list-row');
+    var rows = view.querySelectorAll('#storageDisks .stolon-table-row');
     assert.equal(rows.length, 1);
-    assert.match(rows[0].textContent, /media/);
-    assert.match(rows[0].textContent, /Local/);
-    assert.ok(rows[0].querySelector('.stolon-usage-meter-badge, [data-role="row-state"]'));
-    assert.ok(view.querySelector('#storageDisks .necto-storage-tabs #btnStorageCheck'));
+    assert.match(rowHtml(rows[0]), /data-role="row-icon"[\s\S]*media[\s\S]*Local[\s\S]*data-role="row-state"/);
+    var controls = view.querySelector('#storageDisks .stolon-table-controls');
+    assert.equal(controls.querySelector('input').getAttribute('placeholder'), 'Search disks');
+    assert.deepEqual(texts(controls, 'select option'), ['Every disk', 'Used by Jellyfin']);
+    assert.ok(controls.querySelector('.stolon-table-reload-btn'));
+    assert.equal(view.querySelector('#storageDisks .stolon-table-row-checkbox'), null);
 
     rows[0].click();
     await settle(50);
@@ -290,7 +292,7 @@ async function openStorage(disks, opts) {
     globalThis.ApiClient.getVirtualFolders = function () { return Promise.resolve([{ Name: 'Movies' }, { Name: 'Collections', CollectionType: 'boxsets' }]); };
     var saved = [];
     globalThis.ApiClient.updatePluginConfiguration = function (id, next) { saved.push(JSON.parse(JSON.stringify(next))); return Promise.resolve(); };
-    var ids = ['storageAttention', 'storageSpaceCards', 'storageDisks'];
+    var ids = ['storageAttention', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
     var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApi(page, Object.assign({ 'GET Storage/Disks': disks }, opts.answers || {}));
@@ -299,10 +301,12 @@ async function openStorage(disks, opts) {
     view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
     await settle();
     if (opts.filter === 'all') {
-        view.querySelectorAll('#storageDisks [role="tab"]')[1].click();
+        var select = view.querySelector('#storageDisks select');
+        select.value = 'All';
+        select.dispatchEvent(new globalThis.Event('change'));
         await settle(20);
     }
-    view.querySelectorAll('#storageDisks .stolon-record-list-row')[0].click();
+    view.querySelectorAll('#storageDisks .stolon-table-row')[0].click();
     await settle(50);
     return { page: page, dom: dom, view: view, saved: saved, sidecar: dom.document.querySelector('.stolon-sidecar') };
 }

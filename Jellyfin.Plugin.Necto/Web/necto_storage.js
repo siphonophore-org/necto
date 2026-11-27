@@ -309,8 +309,7 @@ export default function (view) {
     var shared = null;
     var page = null;
     var t = null;
-    var list = null;
-    var tabs = null;
+    var table = null;
     var disks = [];
     var checkedAt = null;
     var spinner = null;
@@ -365,19 +364,11 @@ export default function (view) {
         return { element: made.element, content: content };
     }
 
-    // asideOf
-    // Builds the end of a disk's row: a usage meter of its space with the state badge in its head when the disk was
-    // read, or the state badge alone when it was not.
-    function asideOf(disk) {
-        var state = stateOf(t, disk);
-        if (isRead(disk)) return nectoModule.createUsageMeter(Object.assign(meterOptions(disk), { badge: { label: state.label, color: state.color } })).element;
-        return nectoModule.rowBadge(state);
-    }
-
-    // itemOf
-    // Turns a disk into a record list row.
-    function itemOf(disk) {
-        return { id: disk.MountPoint || disk.Device, title: nameOf(t, disk), secondary: secondaryOf(t, shared, disk), tags: tagsOf(t, disk), aside: asideOf(disk), asideFill: true, disk: disk };
+    // usedText
+    // Says how much of a disk that was read is used, such as 1.2 TB of 2 TB used, or nothing for one that was not.
+    function usedText(disk) {
+        if (!isRead(disk)) return '';
+        return t.format('StorageUsedOfTotal', shared.formatSize(disk.TotalBytes - disk.FreeBytes), shared.formatSize(disk.TotalBytes));
     }
 
     // stopItem
@@ -879,13 +870,12 @@ export default function (view) {
     }
 
     // render
-    // Draws the notice and the space cards for the disks in use, and the rows the filter shows.
+    // Draws the notice and the space cards for the disks in use, and the table again.
     function render() {
         var used = disks.filter(function (d) { return d.InUse; });
         renderAttention(used);
         renderSpace(used);
-        var shown = tabs.getValue() === 'all' ? disks : used;
-        list.setItems(shown.map(itemOf));
+        if (table) table.refresh();
     }
 
     // showChecked
@@ -900,9 +890,11 @@ export default function (view) {
     // setChecking
     // Swaps the Refresh button's icon for a spinner while a check runs, and back when it ends.
     function setChecking(busy) {
-        var button = $('btnStorageCheck');
+        var button = table && table.addButton('reload');
+        if (!button) return;
         button.disabled = busy;
-        $('storageRefreshIcon').classList.toggle('stolon-hidden', busy);
+        var icon = button.querySelector('.material-icons');
+        if (icon) icon.classList.toggle('stolon-hidden', busy);
         if (busy && !spinner) {
             spinner = nectoModule.createSpinner({ size: 'small', label: t.tr('StorageStatusChecking') });
             button.insertBefore(spinner.element, button.firstChild);
@@ -930,48 +922,43 @@ export default function (view) {
         });
     }
 
-    // refreshButton
-    // Builds Refresh, the icon at the end of the tab line that checks every disk again. Its icon turns into a
-    // spinner while a check runs.
-    function refreshButton() {
-        return h('button', { is: 'emby-button', type: 'button', id: 'btnStorageCheck', class: 'stolon-row-btn', title: t.tr('Refresh'), 'aria-label': t.tr('Refresh') }, [
-            h('span', { id: 'storageRefreshIcon', class: 'material-icons', 'aria-hidden': 'true', text: 'refresh' })
-        ]);
-    }
-
     // bindPage
-    // Draws the disk list once, under sub-tabs for the disks Jellyfin uses and every disk, with Refresh at the end of the
-    // tab line.
+    // Draws the disks' table once, with its search, the filter for the disks Jellyfin uses or every disk, and Refresh at
+    // the end of its toolbar, which checks every disk again.
     function bindPage(bag, handle) {
         shared = bag;
         page = handle;
         t = shared.t;
-        list = nectoModule.createRecordList({
-            label: t.tr('StorageHeaderDisks'),
-            emptyText: t.tr('StorageEmptyDisks'),
-            onOpen: function (item) { openDisk(item.disk); }
+        table = nectoModule.createToolTable(view, shared, {
+            containerId: 'storageDisks',
+            rows: function () { return disks; },
+            idKey: function (disk) { return disk.MountPoint || disk.Device; },
+            search: t.tr('StorageSearchDisks'),
+            filters: [{
+                label: t.tr('StorageLabelShown'),
+                allLabel: t.tr('StorageFilterEveryDisk'),
+                options: [{ value: 'InUse', label: t.tr('StorageFilterJellyfin') }],
+                initialValue: 'InUse',
+                test: function (disk) { return !!disk.InUse; }
+            }],
+            empty: { message: t.tr('StorageEmptyDisks'), filteredMessage: t.tr('StorageEmptyDisksMatch') },
+            icon: function (disk) { return typeOf(t, disk).icon; },
+            title: function (disk) { return nameOf(t, disk); },
+            lines: function (disk) { return [secondaryOf(t, shared, disk), usedText(disk)].concat(tagsOf(t, disk).map(function (tag) { return tag.label; })); },
+            status: function (disk) { return stateOf(t, disk); },
+            onRowClick: function (disk) { openDisk(disk); },
+            onReload: check
         });
-        tabs = nectoModule.createSubTabs({
-            label: t.tr('StorageHeaderDisks'),
-            tabs: [{ id: 'used', label: t.tr('LabelJellyfin') }, { id: 'all', label: t.tr('All') }],
-            value: 'used',
-            render: function () { return null; },
-            onChange: function (id) {
-                tabs.getPanel(id).appendChild(list.element);
-                render();
-            }
+        var reload = table.addButton('reload');
+        if (reload) {
+            reload.addEventListener('mouseenter', function () {
+                this.title = checkedAt ? t.format('StorageLastChecked', shared.formatRelativeTime(checkedAt)) : t.tr('Refresh');
+            });
+        }
+        page.addCleanup(function () {
+            closeDisk();
+            if (table) { table.destroy(); table = null; }
         });
-        tabs.getPanel('used').appendChild(list.element);
-        var status = h('div', { id: 'storageCheckStatus', class: 'stolon-error stolon-hidden', role: 'status' });
-        var refresh = refreshButton();
-        refresh.classList.add('necto-storage-refresh');
-        var bar = h('div', { class: 'necto-storage-tabs' }, [tabs.element, refresh]);
-        $('storageDisks').appendChild(h('div', { class: 'stolon-stack' }, [status, bar]));
-        refresh.addEventListener('click', check);
-        refresh.addEventListener('mouseenter', function () {
-            this.title = checkedAt ? t.format('StorageLastChecked', shared.formatRelativeTime(checkedAt)) : t.tr('Refresh');
-        });
-        page.addCleanup(closeDisk);
     }
 
     nectoModule.createNectoPage(view, { page: 'necto_storage', bind: bindPage, load: function () { check(); } });

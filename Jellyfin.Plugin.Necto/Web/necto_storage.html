@@ -15,11 +15,13 @@
 
                 <!-- Space -->
                 <!-- How many disks the libraries use, and their used and free space, added up. -->
-                <div id="storageSpaceCards" class="stolon-cards"></div>
+                <div id="storageSpaceCards" class="stolon-cards stolon-even"></div>
+
+                <div id="storageCheckStatus" class="stolon-error stolon-hidden" role="status"></div>
 
                 <!-- Disks -->
-                <!-- One row per disk or share, each opened in a sidecar, in a fixed section with Refresh at the end of its
-                     header. Its sub-tabs show the disks Jellyfin uses, or every disk. -->
+                <!-- One row per disk or share, each opened in a sidecar, with search, a filter for the disks Jellyfin uses
+                     or every disk, and Refresh at the end of the toolbar. -->
                 <div id="storageDisks"></div>
             </div>
         </div>

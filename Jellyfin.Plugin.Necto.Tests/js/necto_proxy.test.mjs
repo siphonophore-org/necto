@@ -223,7 +223,7 @@ test('the route editor turns Request certificate off until the proxy can order o
     assert.equal(request.disabled, false);
 });
 
-test('while the proxy is off the page says so in place of its cards and sections, and keeps its routes listed', async function () {
+test('while the proxy is off the page shows its one off line and nothing else', async function () {
     var page = installPage({});
     var dom = page.dom;
     var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyStatus', 'proxyRoutes', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }));
@@ -242,11 +242,10 @@ test('while the proxy is off the page says so in place of its cards and sections
     await settle();
 
     assert.equal(titles[titles.length - 1], 'Proxy');
-    assert.match(rowHtml(view.querySelector('#proxyRoutes .stolon-table-row')), /media\.example\.com/);
     assert.match(view.querySelector('#proxyOff').innerHTML, /The proxy is off\. Turn it on in Settings to forward its routes\./);
     assert.equal(view.querySelector('#proxyOff').classList.contains('stolon-hidden'), false);
     assert.equal(view.querySelector('#proxyNotices').classList.contains('stolon-hidden'), true);
-    ['proxyCards', 'proxyJellyfin', 'proxyVisitors', 'btnAddRoute'].forEach(function (id) {
+    ['proxyCards', 'proxyRoutes', 'proxyJellyfin', 'proxyVisitors'].forEach(function (id) {
         assert.equal(view.querySelector('#' + id).classList.contains('stolon-hidden'), true, id);
     });
     assert.deepEqual(texts(view, '.stolon-collapsible-title'), ['Jellyfin', 'Visitors']);

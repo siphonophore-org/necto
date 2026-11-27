@@ -804,16 +804,16 @@ export default function (view) {
         list.forEach(function (n) {
             box.appendChild(nectoModule.createBanner({ kind: n.cls.replace('stolon-', ''), text: n.text, dismissible: false }).element);
         });
-        shared.setVisible(box, list.length > 0);
+        shared.setVisible(box, list.length > 0 && !!proxyStatus.Enabled);
         shared.renderCards('proxyCards', statusCards(proxyStatus, routes, t));
         drawJellyfin();
         showOff(!proxyStatus.Enabled);
     }
 
     // showOff
-    // Shows the off state while the proxy is off: one line pointing to Settings in place of the cards, Add route,
-    // Jellyfin, and Visitors. Routes already added stay listed. The heading names the tool itself, since a tool that
-    // is off leaves the sidebar the heading takes its name from.
+    // Shows the off state while the proxy is off: one line pointing to Settings in place of the notices, the cards,
+    // the routes, Jellyfin, and Visitors. The heading names the tool itself, since a tool that is off leaves the
+    // sidebar the heading takes its name from.
     function showOff(off) {
         var t = shared.t;
         if (shared.setPageTitle) shared.setPageTitle(off ? t.tr('TabProxy') : '');
@@ -821,8 +821,8 @@ export default function (view) {
         box.innerHTML = off ? shared.emptySection(t.tr('ProxyOffNotice')) : '';
         shared.setVisible(box, off);
         shared.setVisible('proxyCards', !off);
-        shared.setVisible('proxyRoutes', !off || routes.length > 0);
-        if (table) shared.setVisible(table.addButton('btnAddRoute'), !off);
+        shared.setVisible('proxyRoutes', !off);
+        shared.setVisible('proxyStatus', !off);
         if (jellyfin) shared.setVisible(jellyfin.section.element, !off);
         if (visitors) shared.setVisible(visitors.element, !off);
     }
@@ -842,7 +842,7 @@ export default function (view) {
             var trust = trustRow.button;
             var undo = undoRow.button;
             var content = h('div', { class: 'stolon-stack' }, [status, nectoModule.createResetGroup([trustRow, undoRow]).element]);
-            var section = nectoModule.createCollapsibleSection({ title: t.tr('LabelJellyfin'), icon: 'shield', collapsed: managed, content: content });
+            var section = nectoModule.createCollapsibleSection({ title: t.tr('LabelJellyfin'), icon: 'shield', collapsible: false, content: content });
             // The section takes its holder's place, so the page's column spaces it like its neighbors.
             section.element.id = 'proxyJellyfin';
             var holderJellyfin = view.querySelector('#proxyJellyfin');
@@ -1204,7 +1204,7 @@ export default function (view) {
             h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderActivity') }), activityHost,
             h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderCountries') }), countryHost,
             location, attribution].forEach(function (n) { content.appendChild(n); });
-        var section = nectoModule.createCollapsibleSection({ title: t.tr('HeaderVisitors'), icon: 'travel_explore', collapsed: true, content: content });
+        var section = nectoModule.createCollapsibleSection({ title: t.tr('HeaderVisitors'), icon: 'travel_explore', collapsible: false, content: content });
         section.element.id = 'proxyVisitors';
         var holderVisitors = view.querySelector('#proxyVisitors');
         holderVisitors.parentNode.replaceChild(section.element, holderVisitors);
