@@ -43,8 +43,7 @@ async function openPage(answers, storage) {
         dom.el('div', { id: 'requestStats' }),
         dom.el('div', { id: 'requestsChanged', class: 'stolon-hidden' }),
         dom.el('div', { id: 'requestsStatus' }),
-        dom.el('div', { id: 'requestsTable' }),
-        dom.el('div', { id: 'requestsEmpty', class: 'stolon-hidden' })
+        dom.el('div', { id: 'requestsTable' })
     ]);
     dom.document.documentElement.appendChild(view);
     var routes = Object.assign({
@@ -396,13 +395,15 @@ test('each row names who asked and when under its title, and the bulk bar takes 
     assert.ok(Array.prototype.every.call(opened.view.querySelectorAll('[data-bulk]'), function (b) { return !/stolon-small/.test(b.className); }));
 });
 
-test('with no requests at all the page says No requests yet in place of the list', async function () {
-    var opened = await openPage({ 'GET Requests/Stats': { Total: 0, ByStatus: {} } });
+test('with no requests at all the table frame says No requests yet, whatever the kept filter, and keeps its toolbar', async function () {
+    var opened = await openPage({ 'GET Requests/Stats': { Total: 0, ByStatus: {} }, 'GET Requests/All': { Items: [], TotalCount: 0 } }, { 'necto-requests-filters': JSON.stringify({ status: 'Failed' }) });
+    await settle(50);
 
-    var empty = opened.view.querySelector('#requestsEmpty');
-    assert.equal(empty.classList.contains('stolon-hidden'), false);
-    assert.match(empty.innerHTML, /No requests yet\./);
-    assert.equal(opened.view.querySelector('#requestsTable').classList.contains('stolon-hidden'), true);
+    var table = opened.view.querySelector('#requestsTable');
+    assert.equal(table.classList.contains('stolon-hidden'), false);
+    assert.match(table.textContent, /No requests yet\./);
+    assert.doesNotMatch(table.textContent, /No requests match/);
+    assert.ok(table.querySelector('.stolon-table-controls input'));
 });
 
 test('a filter that finds no request says No requests match, and the list with All says No requests yet', async function () {

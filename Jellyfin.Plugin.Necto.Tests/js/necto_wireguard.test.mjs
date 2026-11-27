@@ -125,7 +125,7 @@ test('with Host peers and Connect to hosts both off and nothing listed, the tool
     assert.equal(hosting.view.querySelector('#wireguardCards').classList.contains('stolon-hidden'), false);
 });
 
-test('the table answers its search and type filter from the rows, a page at a time', async function () {
+test('the table rows name this server, each peer, and each connection with their lines and state', async function () {
     installPage({});
     var mod = await loadScript('necto_wireguard.js');
     var t = { tr: function (k) { return k; } };
@@ -145,13 +145,6 @@ test('the table answers its search and type filter from the rows, a page at a ti
     assert.equal(rows[2].Detail, '0 B this month · 127.0.0.1:8443');
     assert.equal(rows[2].State.off, true);
     assert.deepEqual(mod.tunnelRows(t, Object.assign({}, cfg, { HostEnabled: false }), [], names).map(function (r) { return r.Kind; }), ['Peer', 'Connection']);
-
-    assert.deepEqual(mod.readQuery('WireGuard/Tunnels?skip=0&take=50&search=office%20one&type=Connection'), { skip: '0', take: '50', search: 'office one', type: 'Connection' });
-    assert.deepEqual(mod.pageOf(rows, { type: 'Peer' }).Items.map(function (r) { return r.Id; }), ['p1']);
-    assert.deepEqual(mod.pageOf(rows, { search: 'OFFICE' }).Items.map(function (r) { return r.Id; }), ['c1']);
-    assert.equal(mod.pageOf(rows, { type: 'All' }).TotalCount, 3);
-    var page = mod.pageOf(rows, { skip: 1, take: 1 });
-    assert.deepEqual([page.Items[0].Id, page.TotalCount], ['p1', 3]);
 });
 
 test('the Connections card counts connected connections, red while one failed and gray while connecting is off', async function () {

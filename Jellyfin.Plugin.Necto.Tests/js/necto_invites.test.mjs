@@ -75,8 +75,8 @@ test('the table shows each invite with its link, group, uses, PIN, and maker, an
     assert.equal(rows.length, 2);
     var first = cells(rows[0]);
     assert.match(first[0], /Family[\s\S]*https:\/\/media\.example\.com\/invites\/abc123[\s\S]*2 of 5 uses · Never expires · Asks for a PIN/);
-    assert.match(first[1], /data-role="invite-state"><span class="stolon-badge stolon-green[^"]*">Active/);
-    assert.match(first[1], /data-action="copy-link"[^>]*aria-label="Copy link"[\s\S]*data-action="show-qr"[^>]*aria-label="Show QR code"/);
+    assert.match(first[1], /data-role="row-state"><span class="stolon-badge stolon-green[^"]*">Active/);
+    assert.match(first[1], /data-row-action="copy-link"[^>]*aria-label="Copy link"[\s\S]*data-row-action="show-qr"[^>]*aria-label="Show QR code"/);
     assert.match(cells(rows[1])[0], /Untitled invite[\s\S]*Made by viewer/);
     assert.match(cells(rows[1])[1], /Used up/);
     assert.ok(opened.page.requests.some(function (r) { return /^Invites\/All\?/.test(r.url); }));
@@ -105,7 +105,7 @@ test('with no invites the table frame says No invites yet, and keeps its toolbar
 // rowButton
 // Puts a row button, as the state cell draws it, into the table and clicks it.
 function clickRowButton(opened, action, id) {
-    var btn = opened.dom.el('button', { 'data-action': action, 'data-id': id });
+    var btn = opened.dom.el('button', { 'data-row-action': action, 'data-id': id });
     opened.view.querySelector('.stolon-table-row').appendChild(btn);
     btn.click();
     return btn;
@@ -244,13 +244,10 @@ test('bulk Remove asks first, then removes every invite picked', async function 
     assert.match(opened.view.querySelector('#invitesStatus').textContent, /Removed 2 invites\./);
 });
 
-test('bulkResultText and canChange say what a bulk change did and which invites take it', async function () {
+test('canChange tells which invites a bulk change takes', async function () {
     installPage({});
     var mod = await loadScript('necto_invites.js');
-    var t = { plural: function (n, one, many) { return (n === 1 ? one : many) + ':' + n; } };
 
-    assert.deepEqual(mod.bulkResultText('disable', 2, 1, 1, t), { text: 'InvitesBulkDisabledMany:2 InvitesBulkFailedOne:1 InvitesBulkSkippedDisableOne:1', isError: true });
-    assert.deepEqual(mod.bulkResultText('remove', 1, 0, 0, t), { text: 'InvitesBulkRemovedOne:1', isError: false });
     assert.equal(mod.canChange({ Enabled: true }, 'enable'), false);
     assert.equal(mod.canChange({ Enabled: false }, 'enable'), true);
     assert.equal(mod.canChange({ Enabled: false }, 'disable'), false);

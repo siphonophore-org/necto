@@ -402,3 +402,297 @@ export function createNectoShared(view, bag) {
     return shared;
 }
 
+
+// TABLE_PAST
+// The past tense of each bulk verb, as the result strings name it, such as InvitesBulkEnabledOne.
+var TABLE_PAST = { enable: 'Enabled', disable: 'Disabled', remove: 'Removed', update: 'Updated', export: 'Exported' };
+
+// readTableQuery
+// Reads a table's request, such as Groups/All?skip=0&take=50&search=kids&filter=On, into a query.
+//
+// Inputs
+// url [string]: The address the table asked for.
+//
+// Output
+// [object]: Each parameter by name, such as { skip, take, search, filter }.
+export function readTableQuery(url) {
+    var query = {};
+    String(url || '').split('?').slice(1).join('?').split('&').forEach(function (pair) {
+        if (!pair) return;
+        var at = pair.indexOf('=');
+        var key = decodeURIComponent(at < 0 ? pair : pair.slice(0, at));
+        query[key] = decodeURIComponent((at < 0 ? '' : pair.slice(at + 1)).replace(/\+/g, ' '));
+    });
+    return query;
+}
+
+// tablePageOf
+// Answers one page of a table from rows the page already holds, as a table route would: the rows every filter keeps
+// whose text holds the search, then the page asked for.
+//
+// Inputs
+// rows [object[]]: Every row.
+// query [object]: skip, take, search, and each filter's value by name, from readTableQuery.
+// textOf [function]: textOf(row) gives the text the search looks in.
+// filters [object[]]: Each filter's name and test(row, value). A value of All or empty keeps every row.
+//
+// Output
+// [object]: { Items, TotalCount }.
+export function tablePageOf(rows, query, textOf, filters) {
+    var q = String(query.search || '').trim().toLowerCase();
+    var found = (rows || []).filter(function (row) {
+        var kept = (filters || []).every(function (f) {
+            var value = query[f.name || 'filter'];
+            return !value || value === 'All' || !f.test || f.test(row, value);
+        });
+        return kept && (!q || String(textOf(row) || '').toLowerCase().indexOf(q) >= 0);
+    });
+    var skip = Number(query.skip) || 0;
+    var take = Number(query.take) || found.length;
+    return { Items: found.slice(skip, skip + take), TotalCount: found.length };
+}
+
+// tableStatusHtml
+// Draws a row's status cell: its badges, then its icon buttons, side by side.
+//
+// Inputs
+// badges [object|object[]]: label and color for each badge, or none.
+// buttons [object[]]: action, icon, and label for each button, or none.
+// id [string]: The row's id, which each button carries.
+//
+// Output
+// [string]: The cell's HTML.
+export function tableStatusHtml(badges, buttons, id) {
+    var list = Array.isArray(badges) ? badges : (badges ? [badges] : []);
+    var html = list.filter(Boolean).map(function (b) {
+        return '<span data-role="row-state">' + badgeHtml(b.label, b.color) + '</span>';
+    }).join('');
+    (buttons || []).forEach(function (b) {
+        html += '<button is="emby-button" type="button" class="stolon-row-btn" data-row-action="' + escapeHtml(b.action) + '" data-id="' + escapeHtml(id) + '" title="' + escapeHtml(b.label) + '" aria-label="' + escapeHtml(b.label) + '">'
+            + '<span class="material-icons" aria-hidden="true">' + escapeHtml(b.icon) + '</span></button>';
+    });
+    return '<div class="necto-row-aside">' + html + '</div>';
+}
+
+// tableInfoHtml
+// Draws a row's main cell: its name over its lines.
+//
+// Inputs
+// title [string]: The name.
+// lines [string[]]: The lines under it. Empty ones are left out.
+//
+// Output
+// [string]: The cell's HTML.
+export function tableInfoHtml(title, lines) {
+    return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + escapeHtml(title) + '</div>'
+        + (lines || []).filter(Boolean).map(function (line) { return '<div class="stolon-table-item-sub">' + escapeHtml(line) + '</div>'; }).join('')
+        + '</div>';
+}
+
+// createToolTable
+// Builds a tool's table of records in the one layout every tool uses: search first, then the filters, then the tool's
+// own actions such as Add, at the end of the toolbar. Picked rows show the bulk bar with Select all, the count, the
+// bulk actions, and Reload at its end. Each row has an optional thumbnail, its name over its lines, and a status cell
+// with its badges and icon buttons. A row opens with onRowClick. The empty and no match lines show inside the table.
+// The rows come from a route that takes skip, take, search, and each filter, or from rows the page already holds.
+//
+// Inputs
+// view [HTMLElement]: The tool's view.
+// shared [object]: The Necto helper bag.
+// o [object]:
+//   containerId : the id of the element the table fills [required]
+//   endpoint    : the route, such as Invites/All, or rows, a function that gives every row, for rows the page holds
+//   idKey       : a row's id, as a property name or a function (default Id)
+//   search      : the search box's placeholder, such as Search invites
+//   filters     : [{ name, label, options, initialValue, allLabel, onChange(value), test(row, value) }], whose All
+//                 value is All. name is the query parameter, filter by default. test filters rows the page holds.
+//   textOf      : textOf(row) gives the text the search looks in, for rows the page holds (default name and lines)
+//   empty       : { message, filteredMessage }, such as No invites yet. and No invites match. [required]
+//   title       : title(row) gives the row's name [required]
+//   lines       : lines(row) gives the lines under the name
+//   image       : image(row) gives the thumbnail's address, with imageShape, for a table with thumbnails
+//   status      : status(row) gives the badge, or badges, of the status cell
+//   buttons     : buttons(row) gives the icon buttons after the badges, each { action, icon, label }
+//   onButton    : onButton(action, row, button) runs when one is chosen
+//   add         : [{ id, icon, text, variant, onClick }] for the end of the toolbar. variant is primary by default
+//   bulk        : [{ verb, text, variant }] for the bulk bar, and onBulk(verb, rows) runs when one is chosen
+//   statusFooter: statusFooter(row) gives HTML under the badges, such as a progress bar
+//   onRowClick, onReload, rowClass, pageSize (default 50)
+//
+// Output
+// [object]: The paginated table's handle, with addButton(id) for a toolbar action, getRowById(id), setNone(true)
+//   while the tool has no records at all, so the table says No X yet. whatever the filter, and destroy, which also
+//   empties the container.
+export function createToolTable(view, shared, o) {
+    var bag = Object.create(shared);
+    bag.apiPrefix = '';
+    var filters = (o.filters || []).map(function (f) {
+        var name = f.name || 'filter';
+        return {
+            name: name,
+            label: f.label,
+            options: f.options || [],
+            allValue: 'All',
+            allLabel: f.allLabel,
+            initialValue: f.initialValue || 'All',
+            onChange: f.onChange,
+            buildParams: function (value) { var p = {}; p[name] = value === 'All' ? null : value; return p; }
+        };
+    });
+    if (o.rows) {
+        var textOf = o.textOf || function (row) { return [o.title(row)].concat(o.lines ? o.lines(row) : []).join(' '); };
+        bag.apiRequest = function (url) {
+            return Promise.resolve(tablePageOf(o.rows(), readTableQuery(url), textOf, o.filters || []));
+        };
+    }
+    var bulk = o.bulk || [];
+    var idKey = o.idKey || 'Id';
+    var idOfRow = function (row) { return String(typeof idKey === 'function' ? idKey(row) : row[idKey]); };
+    var columns = [{
+        key: 'Name', type: 'custom',
+        className: o.image ? 'stolon-table-cell-with-thumb' : '',
+        image: o.image,
+        imageShape: o.imageShape,
+        render: function (row) { return tableInfoHtml(o.title(row), o.lines ? o.lines(row) : []); }
+    }];
+    if (o.status || o.buttons || o.statusFooter) {
+        columns.push({
+            key: 'State', type: 'custom', className: 'stolon-table-cell-status',
+            render: function (row) {
+                return tableStatusHtml(o.status ? o.status(row) : null, o.buttons ? o.buttons(row) : null, idOfRow(row)) + (o.statusFooter ? o.statusFooter(row) || '' : '');
+            }
+        });
+    }
+    var buttons = {};
+    var table = createPaginatedTable(view, bag, {
+        containerId: o.containerId,
+        endpoint: o.endpoint || 'rows',
+        selection: { enabled: true, idKey: idKey, onSelectionChange: onSelection },
+        search: { enabled: true, placeholder: o.search },
+        filters: filters,
+        pagination: { pageSize: o.pageSize || 50 },
+        emptyState: o.empty,
+        rowClass: o.rowClass,
+        columns: columns,
+        actions: { onRowClick: o.onRowClick, onReload: o.onReload }
+    });
+
+    // onSelection
+    // Turns the bulk actions on while rows are picked.
+    function onSelection(ids) {
+        Object.keys(buttons).forEach(function (key) { if (buttons[key].hasAttribute('data-bulk')) buttons[key].disabled = !ids.length; });
+    }
+
+    var controls = table.getControlsContainer();
+    (o.add || []).forEach(function (a) {
+        var button = h('button', { is: 'emby-button', type: 'button', id: a.id, class: 'raised stolon-button stolon-' + (a.variant || 'primary') }, [
+            a.icon ? h('span', { class: 'material-icons', 'aria-hidden': 'true', text: a.icon }) : null,
+            h('span', { text: a.text })
+        ]);
+        button.addEventListener('click', function () { a.onClick(button); });
+        buttons[a.id] = button;
+        if (controls) controls.appendChild(button);
+    });
+
+    var actions = table.getBulkActionsContainer();
+    if (actions && bulk.length) {
+        bulk.forEach(function (b) {
+            var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-' + (b.variant || 'secondary'), 'data-bulk': b.verb, disabled: true }, [h('span', { text: b.text })]);
+            buttons['bulk-' + b.verb] = button;
+            actions.appendChild(button);
+        });
+        actions.addEventListener('click', function (e) {
+            var button = e.target.closest('[data-bulk]');
+            if (button && !button.disabled && o.onBulk) o.onBulk(button.getAttribute('data-bulk'), table.getSelectedItems());
+        });
+    }
+
+    var container = view.querySelector('#' + o.containerId);
+    var rowById = function (id) { return table.getItems().filter(function (row) { return idOfRow(row) === String(id); })[0] || null; };
+    var onClick = function (e) {
+        var button = e.target.closest('[data-row-action]');
+        if (!button || !o.onButton) return;
+        e.stopPropagation();
+        var row = rowById(button.getAttribute('data-id'));
+        if (row) o.onButton(button.getAttribute('data-row-action'), row, button);
+    };
+    // The row's buttons answer before the row opens, so choosing one never opens the row too.
+    if (container) container.addEventListener('click', onClick, true);
+    // A tool with no records at all says so, as No X yet., even while a kept filter would say none match.
+    var none = false;
+    var paintNone = function () {
+        var empty = container ? container.querySelector('.stolon-list-empty') : null;
+        if (none && empty) empty.textContent = o.empty.message;
+    };
+    ['load', 'reload', 'refresh', 'setFilter', 'setSearch'].forEach(function (name) {
+        var run = table[name];
+        table[name] = function () {
+            return run.apply(table, arguments).then(function (result) { paintNone(); return result; });
+        };
+    });
+    var destroy = table.destroy;
+    table.setNone = function (value) { none = !!value; paintNone(); };
+    table.addButton = function (id) { return buttons[id] || null; };
+    table.getRowById = rowById;
+    table.destroy = function () {
+        destroy();
+        if (container) {
+            container.removeEventListener('click', onClick, true);
+            container.innerHTML = '';
+        }
+    };
+    return table;
+}
+
+// runBulk
+// Runs a bulk action on the rows picked that take it, one after another, asking first before a removal, and says
+// how many it changed. The result strings are named after a prefix, such as InvitesBulk for InvitesBulkEnabledOne,
+// InvitesBulkFailedOne, and InvitesBulkSkippedEnableOne, each with a Many form.
+//
+// Inputs
+// shared [object]: The Necto helper bag.
+// o [object]: verb, enable, disable, remove, update, or export, rows, the rows picked, prefix, the strings' prefix,
+//   call(row), which runs it on one row and returns a promise, fits(row), which tells whether a row takes it (by
+//   default Enable skips the enabled rows and Disable the disabled ones, by enabled(row)), confirm, { text, title }
+//   for the question before a removal, and report(text, isError).
+//
+// Output
+// [Promise]: Resolves with how many it changed, or null when the question was turned down.
+export function runBulk(shared, o) {
+    var t = shared.t;
+    var rows = o.rows || [];
+    if (!rows.length) return Promise.resolve(0);
+    var enabled = o.enabled || function (row) { return !!row.Enabled; };
+    var fits = o.fits || function (row) {
+        if (o.verb === 'enable') return !enabled(row);
+        if (o.verb === 'disable') return enabled(row);
+        return true;
+    };
+    var picked = rows.filter(fits);
+    var ask = o.confirm
+        ? confirmDialog(o.confirm.text, { title: o.confirm.title, confirmText: o.confirm.button || t.tr('ButtonRemove'), destructive: o.verb === 'remove' })
+        : Promise.resolve(true);
+    return ask.then(function (ok) {
+        if (!ok) return null;
+        if (o.report) o.report(t.tr('TextWorking'), false);
+        var done = 0;
+        var failed = 0;
+        return picked.reduce(function (chain, row) {
+            return chain.then(function () {
+                return Promise.resolve().then(function () { return o.call(row); }).then(function () { done += 1; }, function () { failed += 1; });
+            });
+        }, Promise.resolve()).then(function () {
+            var p = o.prefix;
+            var past = TABLE_PAST[o.verb] || 'Updated';
+            var text = [t.plural(done, p + past + 'One', p + past + 'Many')];
+            if (failed) text.push(t.plural(failed, p + 'FailedOne', p + 'FailedMany'));
+            var skipped = rows.length - picked.length;
+            if (skipped) {
+                var kind = o.verb === 'enable' ? 'Enable' : 'Disable';
+                text.push(t.plural(skipped, p + 'Skipped' + kind + 'One', p + 'Skipped' + kind + 'Many'));
+            }
+            if (o.report) o.report(text.join(' '), failed > 0);
+            return done;
+        });
+    });
+}

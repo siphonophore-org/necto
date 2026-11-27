@@ -442,6 +442,8 @@ export default function (view) {
     var shared = null;
     var page = null;
     var table = null;
+    // Whether no one has made a request at all, so the table says No requests yet whatever its filter.
+    var none = false;
     var banner = null;
     var filters = { status: 'Open', requester: '' };
     var requesters = [];
@@ -477,16 +479,10 @@ export default function (view) {
         return shared.request('Requests/Stats').then(function (stats) {
             stats = stats || {};
             shared.renderCards('requestStats', statCards(stats, shared.t));
-            showEmpty(!stats.Total);
+            none = !stats.Total;
+            if (table) table.setNone(none);
             return stats;
         }).catch(function () { return null; });
-    }
-
-    // showEmpty
-    // Shows No requests yet in place of the list while there are none at all.
-    function showEmpty(none) {
-        view.querySelector('#requestsEmpty').classList.toggle('stolon-hidden', !none);
-        view.querySelector('#requestsTable').classList.toggle('stolon-hidden', none);
     }
 
     // loadRequesters
@@ -525,22 +521,17 @@ export default function (view) {
     function createTable() {
         var t = shared.t;
         tableRequesters = requestersKey();
-        // The table calls the bag's apiRequest, which goes by each route's own path.
-        var bag = Object.create(shared);
-        bag.apiPrefix = '';
-        table = nectoModule.createPaginatedTable(view, bag, {
+        table = nectoModule.createToolTable(view, shared, {
             containerId: 'requestsTable',
             endpoint: 'Requests/All',
-            selection: { enabled: true, idKey: 'RequestId', onSelectionChange: onSelection },
-            search: { enabled: true, placeholder: t.tr('RequestsSearchRequests') },
+            idKey: 'RequestId',
+            search: t.tr('RequestsSearchRequests'),
             filters: [
                 {
                     label: t.tr('HeaderStatus'),
                     options: statOrder(t).map(function (s) { return { value: s.key, label: s.label }; }),
-                    allValue: 'All',
-                    initialValue: filters.status || 'All',
-                    onChange: function (value) { filters.status = value; keepFilters(storage(), filters); markShown(); },
-                    buildParams: function (value) { return { filter: value || null }; }
+                    initialValue: filters.status,
+                    onChange: function (value) { filters.status = value; keepFilters(storage(), filters); markShown(); }
                 },
                 {
                     name: 'user',
@@ -548,52 +539,30 @@ export default function (view) {
                     options: requesterOptions(requesters),
                     allLabel: t.tr('GroupEveryone'),
                     initialValue: filters.requester,
-                    onChange: function (value) { filters.requester = value; keepFilters(storage(), filters); markShown(); },
-                    buildParams: function (value) { return { user: value }; }
+                    onChange: function (value) { filters.requester = value; keepFilters(storage(), filters); markShown(); }
                 }
             ],
-            pagination: { pageSize: PAGE_SIZE },
-            emptyState: { message: t.tr('RequestsEmpty'), filteredMessage: t.tr('RequestsEmptyMatch') },
-            columns: [
-                {
-                    key: 'Title', type: 'custom', className: 'stolon-table-cell-with-thumb',
-                    image: function (item) { return item.Request && item.Request.PosterUrl ? artwork(item.Request.PosterUrl) : null; },
-                    imageShape: 'portrait',
-                    render: function (item) {
-                        var r = item.Request || {};
-                        return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + esc(r.Title) + '</div>'
-                            + '<div class="stolon-table-item-sub">' + esc(subline(r, t)) + '</div>'
-                            + '<div class="stolon-table-item-sub">' + esc(requesterLine(r, t)) + '</div>'
-                            + (r.RequesterNote ? '<div class="stolon-table-item-sub">“' + esc(r.RequesterNote) + '”</div>' : '')
-                            + '</div>';
-                    }
-                },
-                { key: 'Status', type: 'custom', className: 'stolon-table-cell-status', render: function (item) { return statusCell(item.Request || {}, shared); } }
-            ],
-            actions: {
-                onRowClick: function (item) { if (item.Request) showRequest(item.Request); },
-                onReload: function () { markShown(); }
-            }
+            pageSize: PAGE_SIZE,
+            empty: { message: t.tr('RequestsEmpty'), filteredMessage: t.tr('RequestsEmptyMatch') },
+            image: function (item) { return item.Request && item.Request.PosterUrl ? artwork(item.Request.PosterUrl) : null; },
+            imageShape: 'portrait',
+            title: function (item) { return (item.Request || {}).Title; },
+            lines: function (item) {
+                var r = item.Request || {};
+                return [subline(r, t), requesterLine(r, t), r.RequesterNote ? '“' + r.RequesterNote + '”' : ''];
+            },
+            statusFooter: function (item) { return statusCell(item.Request || {}, shared); },
+            bulk: [{ verb: 'approve', text: t.tr('RequestsButtonApprove'), variant: 'primary' }, { verb: 'decline', text: t.tr('RequestsButtonReject') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
+            onBulk: function (verb) { bulk(verb); },
+            onRowClick: function (item) { if (item.Request) showRequest(item.Request); },
+            onReload: function () { markShown(); }
         });
-
-        var actions = table.getBulkActionsContainer();
-        if (actions) {
-            [['approve', 'RequestsButtonApprove', 'stolon-primary'], ['decline', 'RequestsButtonReject', 'stolon-secondary'], ['remove', 'ButtonRemove', 'stolon-destructive']].forEach(function (b) {
-                actions.appendChild(h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + b[2], 'data-bulk': b[0], disabled: true }, [h('span', { text: t.tr(b[1]) })]));
-            });
-            actions.addEventListener('click', function (e) {
-                var btn = e.target.closest('[data-bulk]');
-                if (btn && !btn.disabled) bulk(btn.getAttribute('data-bulk'));
-            });
-        }
     }
 
     // destroyTable
     // Takes the list down when the page hides.
     function destroyTable() {
         if (table) { table.destroy(); table = null; }
-        var mount = view.querySelector('#requestsTable');
-        if (mount) mount.innerHTML = '';
     }
 
     // loadTable
@@ -601,6 +570,7 @@ export default function (view) {
     function loadTable() {
         if (!table) {
             createTable();
+            table.setNone(none);
             return table.load();
         }
         if (tableRequesters !== requestersKey()) {
@@ -654,12 +624,6 @@ export default function (view) {
                 return null;
             });
         });
-    }
-
-    // onSelection
-    // Turns the bulk actions on while rows are picked.
-    function onSelection(ids) {
-        view.querySelectorAll('[data-bulk]').forEach(function (btn) { btn.disabled = !ids.length; });
     }
 
     // act
@@ -931,7 +895,6 @@ export default function (view) {
             actions: [{ text: shared.t.tr('RequestsButtonShowLatest'), onClick: function () { reload(); } }]
         });
         view.querySelector('#requestsChanged').appendChild(banner.element);
-        view.querySelector('#requestsEmpty').innerHTML = shared.emptySection(shared.t.tr('RequestsEmpty'));
     }
 
     // loadPage

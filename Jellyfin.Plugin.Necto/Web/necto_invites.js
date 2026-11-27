@@ -6,7 +6,6 @@
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
 var h = nectoModule.h;
-var esc = nectoModule.escapeHtml;
 
 // EVERYONE_ID
 // The id of the Everyone group, which an invite names for no group.
@@ -119,31 +118,6 @@ export function stateFilters(t) {
     return STATE_ORDER.map(function (state) { return { value: state, label: t.tr(STATE_KEYS[state]) }; });
 }
 
-// stateCell
-// Draws the end of an invite's row: its state badge, then Copy link and Show QR code for its link, evenly spaced.
-//
-// Inputs
-// invite [object]: The invite.
-// shared [object]: The Necto helper bag.
-//
-// Output
-// [string]: The cell's HTML.
-export function stateCell(invite, shared) {
-    var t = shared.t;
-    var state = stateName(invite.State);
-    var button = function (action, icon, label) {
-        return '<button is="emby-button" type="button" class="stolon-row-btn" data-action="' + action + '" data-id="' + esc(invite.Id) + '" title="' + esc(label) + '" aria-label="' + esc(label) + '">'
-            + '<span class="material-icons" aria-hidden="true">' + icon + '</span></button>';
-    };
-    var html = '<span data-role="invite-state">' + shared.badge(STATE_COLORS[state], t.tr(STATE_KEYS[state])) + '</span>';
-    if (invite.Token) html += button('copy-link', 'content_copy', t.tr('InvitesButtonCopyLink')) + button('show-qr', 'qr_code_2', t.tr('InvitesButtonShowQr'));
-    return '<div class="necto-row-aside">' + html + '</div>';
-}
-
-// BULK_VERBS
-// The changes the bulk bar offers, each with its button's string key and class.
-export var BULK_VERBS = [['enable', 'EnablePlugin', 'stolon-primary'], ['disable', 'DisablePlugin', 'stolon-secondary'], ['remove', 'ButtonRemove', 'stolon-destructive']];
-
 // canChange
 // Tells whether a bulk change applies to an invite, so Enable skips the invites already enabled and Disable the ones
 // already disabled.
@@ -158,26 +132,6 @@ export function canChange(invite, verb) {
     if (verb === 'enable') return !invite.Enabled;
     if (verb === 'disable') return !!invite.Enabled;
     return true;
-}
-
-// bulkResultText
-// Words what a bulk change did, a sentence for each outcome.
-//
-// Inputs
-// verb [string]: enable, disable, or remove.
-// done [number]: How many it changed.
-// failed [number]: How many the server refused.
-// skipped [number]: How many were already enabled or disabled.
-// t [object]: The strings.
-//
-// Output
-// [object]: text, the sentences, and isError, true when some failed.
-export function bulkResultText(verb, done, failed, skipped, t) {
-    var keys = { enable: ['InvitesBulkEnabledOne', 'InvitesBulkEnabledMany'], disable: ['InvitesBulkDisabledOne', 'InvitesBulkDisabledMany'], remove: ['InvitesBulkRemovedOne', 'InvitesBulkRemovedMany'] }[verb];
-    var text = [t.plural(done, keys[0], keys[1])];
-    if (failed) text.push(t.plural(failed, 'InvitesBulkFailedOne', 'InvitesBulkFailedMany'));
-    if (skipped) text.push(t.plural(skipped, verb === 'enable' ? 'InvitesBulkSkippedEnableOne' : 'InvitesBulkSkippedDisableOne', verb === 'enable' ? 'InvitesBulkSkippedEnableMany' : 'InvitesBulkSkippedDisableMany'));
-    return { text: text.join(' '), isError: !!failed };
 }
 
 // stateCards
@@ -420,74 +374,46 @@ export default function (view) {
         });
     }
 
+    // stateBadge
+    // Gives an invite's state badge.
+    function stateBadge(invite) {
+        var state = stateName(invite.State);
+        return { label: shared.t.tr(STATE_KEYS[state]), color: STATE_COLORS[state] };
+    }
+
     // createTable
     // Builds the list with its search, its state filter, Add invite, and its bulk actions.
     function createTable() {
         var t = shared.t;
-        var bag = Object.create(shared);
-        bag.apiPrefix = '';
-        table = nectoModule.createPaginatedTable(view, bag, {
+        table = nectoModule.createToolTable(view, shared, {
             containerId: 'invitesTable',
             endpoint: 'Invites/All',
-            selection: { enabled: true, idKey: 'Id', onSelectionChange: onSelection },
-            search: { enabled: true, placeholder: t.tr('InvitesSearchPlaceholder') },
-            filters: {
-                label: t.tr('HeaderStatus'),
-                options: stateFilters(t),
-                allValue: 'All',
-                initialValue: 'All',
-                buildParams: function (value) { return { filter: value || null }; }
+            search: t.tr('InvitesSearchPlaceholder'),
+            filters: [{ label: t.tr('HeaderStatus'), options: stateFilters(t) }],
+            pageSize: PAGE_SIZE,
+            empty: { message: t.tr('InvitesEmpty'), filteredMessage: t.tr('InvitesEmptyMatch') },
+            title: function (invite) { return invite.Label || t.tr('InvitesUntitled'); },
+            lines: function (invite) { return [invite.Token ? linkOf(invite) : '', inviteLine(invite, shared)]; },
+            status: stateBadge,
+            buttons: function (invite) {
+                return invite.Token ? [{ action: 'copy-link', icon: 'content_copy', label: t.tr('InvitesButtonCopyLink') }, { action: 'show-qr', icon: 'qr_code_2', label: t.tr('InvitesButtonShowQr') }] : [];
             },
-            pagination: { pageSize: PAGE_SIZE },
-            emptyState: { message: t.tr('InvitesEmpty'), filteredMessage: t.tr('InvitesEmptyMatch') },
-            columns: [
-                {
-                    key: 'Label', type: 'custom',
-                    render: function (invite) {
-                        return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + esc(invite.Label || t.tr('InvitesUntitled')) + '</div>'
-                            + (invite.Token ? '<div class="stolon-table-item-sub" data-role="invite-link">' + esc(linkOf(invite)) + '</div>' : '')
-                            + '<div class="stolon-table-item-sub">' + esc(inviteLine(invite, shared)) + '</div></div>';
-                    }
-                },
-                { key: 'State', type: 'custom', className: 'stolon-table-cell-status', render: function (invite) { return stateCell(invite, shared); } }
-            ],
-            actions: { onRowClick: function (invite) { openInvite(invite); }, onReload: function () { loadCounts(); } }
+            onButton: rowAction,
+            add: [{ id: 'btnAddInvite', icon: 'add', text: t.tr('InvitesButtonAdd'), onClick: function () { openInvite(null); } }],
+            bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
+            onBulk: function (verb) { bulk(verb); },
+            onRowClick: function (invite) { openInvite(invite); },
+            onReload: function () { loadCounts(); }
         });
-
-        var controls = table.getControlsContainer();
-        if (controls) {
-            var add = h('button', { is: 'emby-button', type: 'button', id: 'btnAddInvite', class: 'raised stolon-button stolon-primary' }, [
-                h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
-                h('span', { text: t.tr('InvitesButtonAdd') })
-            ]);
-            add.addEventListener('click', function () { openInvite(null); });
-            controls.appendChild(add);
-        }
-
-        var actions = table.getBulkActionsContainer();
-        if (actions) {
-            BULK_VERBS.forEach(function (b) {
-                actions.appendChild(h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + b[2], 'data-bulk': b[0], disabled: true }, [h('span', { text: t.tr(b[1]) })]));
-            });
-            actions.addEventListener('click', function (e) {
-                var btn = e.target.closest('[data-bulk]');
-                if (btn && !btn.disabled) bulk(btn.getAttribute('data-bulk'));
-            });
-        }
     }
 
     // rowAction
     // Copies an invite's link or opens its QR code, for the buttons at the end of its row.
-    function rowAction(e) {
+    function rowAction(action, invite) {
         var t = shared.t;
-        var btn = e.target.closest('[data-action]');
-        if (!btn || !table) return;
-        var id = btn.getAttribute('data-id');
-        var invite = table.getItems().filter(function (i) { return String(i.Id) === id; })[0];
-        if (!invite) return;
-        if (btn.getAttribute('data-action') === 'copy-link') {
+        if (action === 'copy-link') {
             shared.copyToClipboard(linkOf(invite)).then(function (ok) { report(t.tr(ok ? 'InvitesLinkCopied' : 'InvitesErrorCopyLink'), !ok); });
-        } else if (btn.getAttribute('data-action') === 'show-qr') {
+        } else if (action === 'show-qr') {
             showQr(invite);
         }
     }
@@ -500,19 +426,11 @@ export default function (view) {
         return qr.open();
     }
 
-    // onSelection
-    // Enables the bulk actions while rows are picked.
-    function onSelection(ids) {
-        view.querySelectorAll('[data-bulk]').forEach(function (btn) { btn.disabled = !ids.length; });
-    }
-
     // destroyTable
     // Takes the list and any open QR code down when the page hides.
     function destroyTable() {
         if (qr) { qr.destroy(); qr = null; }
         if (table) { table.destroy(); table = null; }
-        var mount = view.querySelector('#invitesTable');
-        if (mount) mount.innerHTML = '';
     }
 
     // loadInvites
@@ -530,29 +448,19 @@ export default function (view) {
     function bulk(verb) {
         var t = shared.t;
         var picked = table ? table.getSelectedItems() : [];
-        if (!picked.length) return Promise.resolve();
-        var fits = picked.filter(function (invite) { return canChange(invite, verb); });
-        var ask = verb === 'remove'
-            ? nectoModule.confirmDialog(t.tr('InvitesConfirmRemoveMany'), { title: t.plural(picked.length, 'InvitesHeaderRemoveOne', 'InvitesHeaderRemoveMany'), confirmText: t.tr('ButtonRemove'), destructive: true })
-            : Promise.resolve(true);
-        return ask.then(function (ok) {
-            if (!ok) return null;
-            report(t.tr('TextWorking'), false);
-            var done = 0;
-            var failedCount = 0;
-            return fits.reduce(function (chain, invite) {
-                return chain.then(function () {
-                    var call = verb === 'remove'
-                        ? shared.request('Invites/' + invite.Id, 'DELETE')
-                        : shared.request('Invites/' + invite.Id + '/Enabled', 'POST', { Enabled: verb === 'enable' });
-                    return call.then(function () { done += 1; }, function () { failedCount += 1; });
-                });
-            }, Promise.resolve()).then(function () {
-                var said = bulkResultText(verb, done, failedCount, picked.length - fits.length, t);
-                report(said.text, said.isError);
-                return loadInvites();
-            });
-        });
+        return nectoModule.runBulk(shared, {
+            verb: verb,
+            rows: picked,
+            prefix: 'InvitesBulk',
+            fits: function (invite) { return canChange(invite, verb); },
+            confirm: verb === 'remove' ? { text: t.tr('InvitesConfirmRemoveMany'), title: t.plural(picked.length, 'InvitesHeaderRemoveOne', 'InvitesHeaderRemoveMany') } : null,
+            call: function (invite) {
+                return verb === 'remove'
+                    ? shared.request('Invites/' + invite.Id, 'DELETE')
+                    : shared.request('Invites/' + invite.Id + '/Enabled', 'POST', { Enabled: verb === 'enable' });
+            },
+            report: report
+        }).then(function (done) { if (done !== null) return loadInvites(); });
     }
 
     // fail
@@ -620,7 +528,6 @@ export default function (view) {
 
     var made = nectoModule.createNectoPage(view, {
         page: 'necto_invites',
-        bind: function () { view.querySelector('#invitesTable').addEventListener('click', rowAction); },
         load: function () {
             page.addCleanup(destroyTable);
             return loadInvites();

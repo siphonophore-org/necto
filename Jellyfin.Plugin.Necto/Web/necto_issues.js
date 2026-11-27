@@ -6,7 +6,6 @@
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
 var h = nectoModule.h;
-var esc = nectoModule.escapeHtml;
 
 // The rows a page of the list holds, and the most reporters the filter lists.
 export var PAGE_SIZE = 50;
@@ -331,6 +330,8 @@ export default function (view) {
     var shared = null;
     var page = null;
     var table = null;
+    // Whether no one has reported an issue at all, so the table says No issues yet whatever its filter.
+    var none = false;
     var filters = { state: 'Open', type: '', reporter: '' };
     var reporters = [];
     var tableReporters = null;
@@ -348,11 +349,11 @@ export default function (view) {
         return ApiClient.getUrl('Items/' + (issue.SeriesId || issue.ItemId) + '/Images/Primary', { fillHeight: 240, quality: 90 });
     }
 
-    // stateCell
-    // Draws a row's state badge, and File changed when the file changed since the report.
-    function stateCell(issue) {
+    // stateBadges
+    // Gives a row's state badge, and File changed when the file changed since the report.
+    function stateBadges(issue) {
         var s = stateOf(issue.State, shared.t);
-        return shared.badge(s.color, s.label) + (issue.FileChanged ? ' ' + shared.badge('orange', shared.t.tr('IssuesLabelFileChanged')) : '');
+        return [{ label: s.label, color: s.color }, issue.FileChanged ? { label: shared.t.tr('IssuesLabelFileChanged'), color: 'orange' } : null];
     }
 
     // report
@@ -361,20 +362,13 @@ export default function (view) {
         shared.setStatus('issuesStatus', message, !!isError, isError ? { timeout: 0 } : undefined);
     }
 
-    // showEmpty
-    // Keeps the table, its search, filters, and bulk actions in place even with no issues at all. The table says No
-    // issues yet in its own frame.
-    function showEmpty() {
-        var holder = view.querySelector('#issuesTable');
-        if (holder) holder.classList.remove('stolon-hidden');
-    }
-
     // loadStats
     // Reads the counts and draws the cards.
     function loadStats() {
         return shared.request('Issues/Stats').then(function (by) {
             shared.renderCards('issueStats', statCards(by, shared.t));
-            showEmpty(!totalOf(by));
+            none = !totalOf(by);
+            if (table) table.setNone(none);
         }).catch(function () { /* the counts are a nicety */ });
     }
 
@@ -392,84 +386,33 @@ export default function (view) {
     // Builds the list with its search, its state, type, and reporter filters, and its bulk actions.
     function createTable() {
         var t = shared.t;
-        var bag = Object.create(shared);
-        bag.apiPrefix = '';
         tableReporters = JSON.stringify(reporterOptions(reporters));
-        table = nectoModule.createPaginatedTable(view, bag, {
+        table = nectoModule.createToolTable(view, shared, {
             containerId: 'issuesTable',
             endpoint: 'Issues/All',
-            selection: { enabled: true, idKey: 'Id', onSelectionChange: onSelection },
-            search: { enabled: true, placeholder: t.tr('IssuesSearchPlaceholder') },
+            search: t.tr('IssuesSearchPlaceholder'),
             filters: [
-                {
-                    label: t.tr('HeaderStatus'),
-                    options: stateFilters(t),
-                    allValue: 'All',
-                    initialValue: filters.state || 'All',
-                    onChange: function (value) { filters.state = value; keepFilters(storage(), filters); },
-                    buildParams: function (value) { return { filter: value || null }; }
-                },
-                {
-                    name: 'type',
-                    label: t.tr('IssuesLabelType'),
-                    options: issueTypes(t),
-                    allLabel: t.tr('IssuesFilterEveryType'),
-                    initialValue: filters.type,
-                    onChange: function (value) { filters.type = value; keepFilters(storage(), filters); },
-                    buildParams: function (value) { return { type: value }; }
-                },
-                {
-                    name: 'user',
-                    label: t.tr('IssuesLabelReporter'),
-                    options: reporterOptions(reporters),
-                    allLabel: t.tr('GroupEveryone'),
-                    initialValue: filters.reporter,
-                    onChange: function (value) { filters.reporter = value; keepFilters(storage(), filters); },
-                    buildParams: function (value) { return { user: value }; }
-                }
+                { label: t.tr('HeaderStatus'), options: stateFilters(t), initialValue: filters.state, onChange: function (value) { filters.state = value; keepFilters(storage(), filters); } },
+                { name: 'type', label: t.tr('IssuesLabelType'), options: issueTypes(t), allLabel: t.tr('IssuesFilterEveryType'), initialValue: filters.type, onChange: function (value) { filters.type = value; keepFilters(storage(), filters); } },
+                { name: 'user', label: t.tr('IssuesLabelReporter'), options: reporterOptions(reporters), allLabel: t.tr('GroupEveryone'), initialValue: filters.reporter, onChange: function (value) { filters.reporter = value; keepFilters(storage(), filters); } }
             ],
-            pagination: { pageSize: PAGE_SIZE },
-            emptyState: { message: t.tr('IssuesEmpty'), filteredMessage: t.tr('IssuesEmptyMatch') },
-            columns: [
-                {
-                    key: 'Title', type: 'custom', className: 'stolon-table-cell-with-thumb',
-                    image: posterOf,
-                    imageShape: 'portrait',
-                    render: function (issue) {
-                        return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + esc(titleOf(issue, t)) + '</div>'
-                            + '<div class="stolon-table-item-sub">' + esc(subline(issue, t)) + '</div>'
-                            + '<div class="stolon-table-item-sub">' + esc(reportersLine(issue, t)) + '</div></div>';
-                    }
-                },
-                { key: 'State', type: 'custom', className: 'stolon-table-cell-status', render: stateCell }
-            ],
-            actions: { onRowClick: function (issue) { showIssue(issue); } }
+            pageSize: PAGE_SIZE,
+            empty: { message: t.tr('IssuesEmpty'), filteredMessage: t.tr('IssuesEmptyMatch') },
+            image: posterOf,
+            imageShape: 'portrait',
+            title: function (issue) { return titleOf(issue, t); },
+            lines: function (issue) { return [subline(issue, t), reportersLine(issue, t)]; },
+            status: stateBadges,
+            bulk: BULK_VERBS.map(function (b) { return { verb: b[0], text: t.tr(b[1]), variant: b[2].replace('stolon-', '') }; }),
+            onBulk: function (verb) { bulk(verb); },
+            onRowClick: function (issue) { showIssue(issue); }
         });
-
-        var actions = table.getBulkActionsContainer();
-        if (actions) {
-            BULK_VERBS.forEach(function (b) {
-                actions.appendChild(h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + b[2], 'data-bulk': b[0], disabled: true }, [h('span', { text: t.tr(b[1]) })]));
-            });
-            actions.addEventListener('click', function (e) {
-                var btn = e.target.closest('[data-bulk]');
-                if (btn && !btn.disabled) bulk(btn.getAttribute('data-bulk'));
-            });
-        }
-    }
-
-    // onSelection
-    // Turns the bulk actions on while rows are picked.
-    function onSelection(ids) {
-        view.querySelectorAll('[data-bulk]').forEach(function (btn) { btn.disabled = !ids.length; });
     }
 
     // destroyTable
     // Takes the list down when the page hides.
     function destroyTable() {
         if (table) { table.destroy(); table = null; }
-        var mount = view.querySelector('#issuesTable');
-        if (mount) mount.innerHTML = '';
     }
 
     // reload
@@ -478,7 +421,7 @@ export default function (view) {
         nectoModule.usersImageTags().then(function (tags) { imageTags = tags; });
         loadStats();
         return loadReporters().then(function () {
-            if (!table) { createTable(); return table.load(); }
+            if (!table) { createTable(); table.setNone(none); return table.load(); }
             var key = JSON.stringify(reporterOptions(reporters));
             if (key !== tableReporters) { tableReporters = key; table.setFilterOptions(reporterOptions(reporters), 'user'); }
             return table.reload();

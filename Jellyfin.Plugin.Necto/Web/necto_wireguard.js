@@ -10,7 +10,6 @@ import {
 } from './configurationpage?name=necto_wireguard_common.js';
 
 var h = nectoModule.h;
-var esc = nectoModule.escapeHtml;
 
 // TYPE_BADGES
 // The color of each kind of row's type badge, and the key of its word.
@@ -64,47 +63,6 @@ export function tunnelRows(t, cfg, ends, names) {
         });
     });
     return rows;
-}
-
-// pageOf
-// Answers one page of the table from its rows, as the table's route would: rows of the type picked whose name or
-// lines hold the search, then the page asked for.
-//
-// Inputs
-// rows [object[]]: The rows, from tunnelRows.
-// query [object]: skip and take, search, and type, Peer or Connection, or empty for every row.
-//
-// Output
-// [object]: { Items, TotalCount }.
-export function pageOf(rows, query) {
-    var q = String(query.search || '').trim().toLowerCase();
-    var type = query.type && query.type !== 'All' ? query.type : '';
-    var found = rows.filter(function (r) {
-        if (type && r.Kind !== type) return false;
-        return !q || [r.Name, r.Line, r.Detail].join(' ').toLowerCase().indexOf(q) >= 0;
-    });
-    var skip = Number(query.skip) || 0;
-    var take = Number(query.take) || found.length;
-    return { Items: found.slice(skip, skip + take), TotalCount: found.length };
-}
-
-// readQuery
-// Reads the table's request, such as WireGuard/Tunnels?skip=0&take=50&search=phone&type=Peer, into a query.
-//
-// Inputs
-// url [string]: The address the table asked for.
-//
-// Output
-// [object]: { skip, take, search, type }.
-export function readQuery(url) {
-    var query = {};
-    String(url || '').split('?').slice(1).join('?').split('&').forEach(function (pair) {
-        if (!pair) return;
-        var at = pair.indexOf('=');
-        var key = decodeURIComponent(at < 0 ? pair : pair.slice(0, at));
-        query[key] = decodeURIComponent((at < 0 ? '' : pair.slice(at + 1)).replace(/\+/g, ' '));
-    });
-    return query;
 }
 
 // peerLimit
@@ -278,71 +236,79 @@ export default function (view) {
         rows = tunnelRows(t, w, ends, { user: userName, used: usedText, server: serverName });
         if (!table) createTable();
         shared.setVisible('wireguardTable', !bothOff);
-        shared.setVisible('btnAddPeer', on && !!w.HostEnabled);
-        shared.setVisible('btnAddConnection', on && !!w.ConnectEnabled);
+        shared.setVisible(table.addButton('btnAddPeer'), on && !!w.HostEnabled);
+        shared.setVisible(table.addButton('btnAddConnection'), on && !!w.ConnectEnabled);
         table.refresh();
     }
 
-    // typeCell
+    // typeBadge
     // The badge that says whether a row is this server, a peer, or a connection.
-    function typeCell(row) {
+    function typeBadge(row) {
         var type = TYPE_BADGES[row.Kind];
-        return shared.badge(type.color, t.tr(type.key));
+        return { label: t.tr(type.key), color: type.color };
     }
 
     // createTable
-    // Builds the one table of this server, the peers, and the connections, with its search, its type filter, and
-    // Add peer and Add connection. The rows come from what the page loaded, through the bag's apiRequest.
+    // Builds the one table of this server, the peers, and the connections, with its search, its type filter, Add
+    // peer and Add connection, and Enable, Disable, and Remove for the rows picked. The rows come from what the page
+    // loaded.
     function createTable() {
-        var bag = Object.create(shared);
-        bag.apiPrefix = '';
-        bag.apiRequest = function (url) { return Promise.resolve(pageOf(rows, readQuery(url))); };
-        table = nectoModule.createPaginatedTable(view, bag, {
+        table = nectoModule.createToolTable(view, shared, {
             containerId: 'wireguardTable',
-            endpoint: 'WireGuard/Tunnels',
-            search: { enabled: true, placeholder: t.tr('WireGuardSearch') },
-            filters: {
+            rows: function () { return rows; },
+            search: t.tr('WireGuardSearch'),
+            filters: [{
                 name: 'type',
                 label: t.tr('LabelType'),
                 options: [{ value: 'Peer', label: t.tr('HeaderPeers') }, { value: 'Connection', label: t.tr('HeaderConnections') }],
-                allValue: 'All',
-                initialValue: 'All',
-                buildParams: function (value) { return { type: value === 'All' ? null : value }; }
-            },
-            pagination: { pageSize: 50 },
-            emptyState: { message: t.tr('WireGuardEmptyNone'), filteredMessage: t.tr('WireGuardEmptyMatch') },
-            columns: [
-                {
-                    key: 'Name', type: 'custom', label: t.tr('LabelName'),
-                    render: function (row) {
-                        return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + esc(row.Name) + '</div>'
-                            + (row.Line ? '<div class="stolon-table-item-sub">' + esc(row.Line) + '</div>' : '')
-                            + (row.Detail ? '<div class="stolon-table-item-sub">' + esc(row.Detail) + '</div>' : '') + '</div>';
-                    }
-                },
-                { key: 'Kind', type: 'custom', label: t.tr('LabelType'), className: 'stolon-table-cell-status', render: function (row) { return '<span data-role="tunnel-type">' + typeCell(row) + '</span>'; } },
-                { key: 'State', type: 'custom', label: t.tr('LabelStatus'), className: 'stolon-table-cell-status', render: function (row) { return '<span data-role="tunnel-state">' + shared.badge(row.State.color || 'gray', row.State.label) + '</span>'; } }
+                test: function (row, value) { return row.Kind === value; }
+            }],
+            empty: { message: t.tr('WireGuardEmptyNone'), filteredMessage: t.tr('WireGuardEmptyMatch') },
+            title: function (row) { return row.Name; },
+            lines: function (row) { return [row.Line, row.Detail]; },
+            status: function (row) { return [typeBadge(row), { label: row.State.label, color: row.State.color || 'gray' }]; },
+            add: [
+                { id: 'btnAddPeer', icon: 'add', text: t.tr('WireGuardButtonAddPeer'), onClick: function () { editPeer(null); } },
+                { id: 'btnAddConnection', icon: 'add_link', text: t.tr('WireGuardButtonAddConnection'), variant: 'secondary', onClick: function () { editConnection(null); } }
             ],
-            actions: {
-                onRowClick: function (row) {
-                    if (row.Kind === 'Host') nectoModule.openTool(view, 'settings');
-                    else if (row.Kind === 'Peer') openPeer(row.Id);
-                    else openConnection(row.Id);
-                }
-            }
+            bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
+            onBulk: function (verb, picked) { bulk(verb, picked); },
+            onRowClick: function (row) {
+                if (row.Kind === 'Host') nectoModule.openTool(view, 'settings');
+                else if (row.Kind === 'Peer') openPeer(row.Id);
+                else openConnection(row.Id);
+            },
+            onReload: function () { load(); }
         });
-        var controls = table.getControlsContainer();
-        if (controls) {
-            [['btnAddPeer', 'add', 'WireGuardButtonAddPeer', 'stolon-primary', function () { editPeer(null); }],
-                ['btnAddConnection', 'add_link', 'WireGuardButtonAddConnection', 'stolon-secondary', function () { editConnection(null); }]].forEach(function (b) {
-                var button = h('button', { is: 'emby-button', type: 'button', id: b[0], class: 'raised stolon-button ' + b[3] }, [
-                    h('span', { class: 'material-icons', 'aria-hidden': 'true', text: b[1] }),
-                    h('span', { text: t.tr(b[2]) })
-                ]);
-                button.addEventListener('click', b[4]);
-                controls.appendChild(button);
-            });
-        }
+    }
+
+    // bulk
+    // Enables, disables, or removes the peers and connections picked, asking first before a removal. This server's
+    // own row is left out, since Settings turns it on and off.
+    //
+    // Output
+    // [Promise]: Resolves once the page is read again.
+    function bulk(verb, picked) {
+        var chosen = (picked || []).filter(function (row) { return row.Kind !== 'Host'; });
+        var recordOf = function (row) {
+            var list = row.Kind === 'Peer' ? cfg.Peers : cfg.Connections;
+            return (list || []).filter(function (x) { return x.Id === row.Id; })[0] || null;
+        };
+        var routeOf = function (row) { return (row.Kind === 'Peer' ? 'WireGuard/Peers/' : 'WireGuard/Connections/') + row.Id; };
+        return nectoModule.runBulk(shared, {
+            verb: verb,
+            rows: chosen,
+            prefix: 'WireGuardBulk',
+            enabled: function (row) { var r = recordOf(row); return !!(r && r.Enabled !== false); },
+            confirm: verb === 'remove' ? { text: t.tr('WireGuardConfirmRemoveMany'), title: t.plural(chosen.length, 'WireGuardHeaderRemoveOne', 'WireGuardHeaderRemoveMany') } : null,
+            call: function (row) {
+                if (verb === 'remove') return shared.request(routeOf(row), 'DELETE');
+                var record = recordOf(row);
+                if (!record) return Promise.reject(new Error('gone'));
+                return shared.request(routeOf(row), 'PUT', Object.assign({}, record, { Enabled: verb === 'enable' }));
+            },
+            report: report
+        }).then(function (done) { if (done !== null) return load(); });
     }
 
     // load
@@ -755,8 +721,6 @@ export default function (view) {
             p.addCleanup(function () {
                 if (table) table.destroy();
                 table = null;
-                var mount = $('wireguardTable');
-                if (mount) mount.innerHTML = '';
             });
         },
         load: function () { load(); }
