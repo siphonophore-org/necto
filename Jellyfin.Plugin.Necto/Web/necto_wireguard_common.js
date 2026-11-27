@@ -251,7 +251,7 @@ export function stateTag(t, state) {
     if (state === 'Failed') return { label: t.tr('LabelFailed'), icon: 'error', color: 'red' };
     if (state === 'Disabled') return { label: t.tr('Disabled'), icon: 'pause', off: true };
     return state === 'Connected'
-        ? { label: t.tr('ProxyConnected'), icon: 'link', color: 'green' }
+        ? { label: t.tr('StateConnected'), icon: 'link', color: 'green' }
         : { label: t.tr('WireGuardTagOffline'), icon: 'link_off', color: 'gray' };
 }
 
@@ -265,8 +265,8 @@ export function stateTag(t, state) {
 // Output
 // [string]: The state's name.
 export function tunnelStateLabel(t, state) {
-    if (state === 'Running') return t.tr('ProxyCardRunning');
+    if (state === 'Running') return t.tr('StateRunning');
     if (state === 'Starting') return t.tr('WireGuardStatusStarting');
     if (state === 'Failed') return t.tr('LabelFailed');
-    return t.tr('ProxyCardStopped');
+    return t.tr('StateStopped');
 }

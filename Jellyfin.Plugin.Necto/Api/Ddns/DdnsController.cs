@@ -117,7 +117,7 @@ public class DdnsController : ControllerBase
     {
         if (record is null)
         {
-            return BadRequest(Errors(Reply(TranslationKeys.ProxyErrorNothingSent)));
+            return BadRequest(Errors(Reply(TranslationKeys.ErrorNothingSent)));
         }
 
         record.Id = Guid.NewGuid().ToString("N");
@@ -139,7 +139,7 @@ public class DdnsController : ControllerBase
     {
         if (record is null)
         {
-            return BadRequest(Errors(Reply(TranslationKeys.ProxyErrorNothingSent)));
+            return BadRequest(Errors(Reply(TranslationKeys.ErrorNothingSent)));
         }
 
         var existing = Plugin.Instance?.ReadConfiguration(c => c.Ddns.Records.FirstOrDefault(r => string.Equals(r.Id, id, StringComparison.Ordinal))?.Clone());
@@ -215,14 +215,14 @@ public class DdnsController : ControllerBase
         var plugin = Plugin.Instance;
         if (incoming is null || plugin is null)
         {
-            return BadRequest(Errors(Reply(TranslationKeys.ProxyErrorNothingSent)));
+            return BadRequest(Errors(Reply(TranslationKeys.ErrorNothingSent)));
         }
 
         incoming.Records = new List<DNSRecord>();
         DdnsLimits.Clamp(incoming);
         if (XmlText.FindInvalid(incoming) is { } bad)
         {
-            return BadRequest(Errors(Reply(TranslationKeys.DdnsErrorInvalidCharacter, bad)));
+            return BadRequest(Errors(Reply(TranslationKeys.ErrorInvalidCharacter, bad)));
         }
 
         var changed = false;
@@ -338,7 +338,7 @@ public class DdnsController : ControllerBase
         DdnsLimits.Clamp(record);
         if (XmlText.FindInvalid(record) is { } bad)
         {
-            return BadRequest(Errors(Reply(TranslationKeys.DdnsErrorInvalidCharacter, bad)));
+            return BadRequest(Errors(Reply(TranslationKeys.ErrorInvalidCharacter, bad)));
         }
 
         if (record.Hostname.Length == 0 && !record.FollowProxyHosts && NeedsHostname(_providers, record.Provider))

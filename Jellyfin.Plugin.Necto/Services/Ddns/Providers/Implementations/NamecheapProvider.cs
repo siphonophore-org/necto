@@ -45,7 +45,7 @@ public sealed class NamecheapProvider : DNSProviderBase
     public override ProviderFields Fields => new()
     {
         Hostname = TranslationKeys.DdnsLabelHostAndDomain,
-        Login = TranslationKeys.ProxyLabelDomain,
+        Login = TranslationKeys.LabelDomain,
         Password = TranslationKeys.DdnsLabelDdnsPassword,
         Server = true,
     };

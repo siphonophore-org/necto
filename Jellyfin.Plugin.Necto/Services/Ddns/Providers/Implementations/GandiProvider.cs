@@ -56,7 +56,7 @@ public sealed class GandiProvider : DNSProviderBase
         Hostname = TranslationKeys.DdnsLabelRecordName,
         Login = TranslationKeys.DdnsLabelAuthKeyword,
         Password = TranslationKeys.DdnsLabelApiKeyOrToken,
-        Zone = TranslationKeys.ProxyLabelDomain,
+        Zone = TranslationKeys.LabelDomain,
         Server = true,
         Ttl = true,
     };

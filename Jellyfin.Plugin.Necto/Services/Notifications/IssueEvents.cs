@@ -25,8 +25,8 @@ public static class IssueEvents
     /// <returns>The name, or the key for one Issues does not send.</returns>
     public static string Name(string key) => key switch
     {
-        Created => Requests.ServerWording.Get(TranslationKeys.RequestsEventIssueReported),
-        Updated => Requests.ServerWording.Get(TranslationKeys.RequestsEventIssueResolved),
+        Created => Requests.ServerWording.Get(TranslationKeys.IssuesEventReported),
+        Updated => Requests.ServerWording.Get(TranslationKeys.IssuesEventResolved),
         _ => key
     };
 

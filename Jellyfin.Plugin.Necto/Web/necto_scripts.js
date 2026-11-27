@@ -220,7 +220,7 @@ export default function (view) {
         var enabled = scripts.filter(function (s) { return s.Enabled; }).length;
         Shared.renderCards('scriptCounts', [
             { count: scripts.length, label: t.tr('TabScripts'), color: 'blue' },
-            { count: enabled, label: t.tr('ScriptsLabelEnabled'), color: 'green' },
+            { count: enabled, label: t.tr('LabelEnabled'), color: 'green' },
             { count: scripts.length - enabled, label: t.tr('Disabled'), color: 'gray' }
         ]);
     }
@@ -342,7 +342,7 @@ export default function (view) {
         if (!script || !folds.general) return;
 
         folds.general.setSubtitle(script.Description || null);
-        folds.general.setBadge(script.Enabled ? { label: t.tr('ScriptsLabelEnabled'), color: 'green' } : { label: t.tr('Disabled'), color: 'gray' });
+        folds.general.setBadge(script.Enabled ? { label: t.tr('LabelEnabled'), color: 'green' } : { label: t.tr('Disabled'), color: 'gray' });
         folds.triggers.setSubtitle(counted((script.Triggers || []).length, 'ScriptsSummaryNoTriggers', 'ScriptsSummaryTriggersOne', 'ScriptsSummaryTriggersMany'));
         // The item kinds, only while they can matter. Every kind is green, and a chosen few are blue with their count.
         var kinds = (script.ItemKinds || []).length;
@@ -931,15 +931,15 @@ export default function (view) {
                         return { value: k, label: presets[k] };
                     })), { help: t.tr('ScriptsHelpPreset') }) +
                     select(op, 'Method', t.tr('ScriptsLabelMethod'), HTTP_METHODS.map(function (m) { return { value: m, label: m }; })) +
-                    input(op, 'Url', t.tr('PagesLabelUrl'), { placeholder: 'https://example.com/hook?item={{ITEM_NAME:url}}' }) +
+                    input(op, 'Url', t.tr('LabelUrl'), { placeholder: 'https://example.com/hook?item={{ITEM_NAME:url}}' }) +
                     input(op, 'Headers', t.tr('ScriptsLabelHeaders'), { textarea: true, rows: 2, placeholder: 'Authorization: Bearer {{SECRET_TOKEN}}' }) +
                     input(op, 'ContentType', t.tr('LabelContentType'), { placeholder: 'application/json', variables: false }) +
-                    input(op, 'Body', t.tr('NotificationsLabelBody'), { textarea: true, rows: 5, placeholder: '{ "text": "{{USER_NAME:json}} started {{ITEM_NAME:json}}" }' }) +
+                    input(op, 'Body', t.tr('LabelBody'), { textarea: true, rows: 5, placeholder: '{ "text": "{{USER_NAME:json}} started {{ITEM_NAME:json}}" }' }) +
                     input(op, 'Retries', t.tr('ScriptsLabelRetries'), { number: true, help: t.tr('ScriptsHelpRetries') });
             case 'SendMessage':
                 return select(op, 'Target', t.tr('ScriptsLabelSendTo'), messageTargets()) +
                     input(op, 'Title', t.tr('LabelTitle')) +
-                    input(op, 'Text', t.tr('DdnsLabelMessage'), { textarea: true, rows: 2 }) +
+                    input(op, 'Text', t.tr('LabelMessage'), { textarea: true, rows: 2 }) +
                     input(op, 'DisplaySeconds', t.tr('ScriptsLabelShowFor'), { number: true, help: t.tr('ScriptsHelpShowFor') });
             case 'StopPlayback':
                 return input(op, 'Text', t.tr('ScriptsLabelStopMessage'), { textarea: true, rows: 2, help: t.tr('ScriptsHelpOptional') }) +
@@ -964,7 +964,7 @@ export default function (view) {
                 return checkbox(op, 'FullRefresh', t.tr('ScriptsLabelFullRefresh'), t.tr('ScriptsHelpFullRefresh')) +
                     checkbox(op, 'ReplaceAll', t.tr('ScriptsLabelReplaceAll'));
             case 'SetUserDisabled':
-                return select(op, 'Disable', t.tr('ProxyColumnAction'), [{ value: 'true', label: t.tr('ScriptsOptionDisableTheUser') }, { value: 'false', label: t.tr('ScriptsOptionEnableUser') }], { bool: true, help: t.tr('ScriptsHelpSetUserDisabled') });
+                return select(op, 'Disable', t.tr('HeaderAction'), [{ value: 'true', label: t.tr('ScriptsOptionDisableTheUser') }, { value: 'false', label: t.tr('ScriptsOptionEnableUser') }], { bool: true, help: t.tr('ScriptsHelpSetUserDisabled') });
             case 'SignOutUser':
                 return note(t.tr('ScriptsHelpSignOutUser'));
             case 'ScanLibraries':
@@ -979,7 +979,7 @@ export default function (view) {
                 })));
             case 'WriteActivityLog':
                 return input(op, 'Title', t.tr('ScriptsLabelEntryName'), { placeholder: t.tr('ScriptsPlaceholderEntryName') }) +
-                    input(op, 'Text', t.tr('ScriptsLabelDetails'), { textarea: true, rows: 2 });
+                    input(op, 'Text', t.tr('LabelDetails'), { textarea: true, rows: 2 });
             case 'AppendToFile':
                 return input(op, 'FilePath', t.tr('File'), { placeholder: '/config/log/scripts.log', help: t.tr('ScriptsHelpAppendFile'), variables: false }) +
                     input(op, 'Text', t.tr('ScriptsLabelLineToAppend'), { textarea: true, rows: 2, placeholder: '{{LOCAL_DATE}} {{LOCAL_TIME}} {{EVENT}} {{ITEM_NAME}}' });
@@ -1658,7 +1658,7 @@ export default function (view) {
         el('btnTestScript').addEventListener('click', runTest);
         el('testTrigger').addEventListener('change', renderSummaries);
         el('btnRunScript').addEventListener('click', runNow);
-        webhookField = createCopyField({ label: t.tr('NotificationsLabelWebhookUrl') });
+        webhookField = createCopyField({ label: t.tr('LabelWebhookAddress') });
         el('webhookUrlMount').appendChild(webhookField.element);
 
         Shared.initCollapsibles();

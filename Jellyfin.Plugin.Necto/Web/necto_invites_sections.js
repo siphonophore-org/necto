@@ -92,14 +92,14 @@ function buildSettings(content, ctx) {
     link.addEventListener('input', checkHttps);
 
     [
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderLinks') }),
+        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLinks') }),
         el('div', { class: 'inputContainer' }, [
             el('label', { class: 'inputLabel inputLabelUnfocused', for: linkId, text: t.tr('InvitesLabelLinkUrl') }),
             link,
             el('div', { class: 'fieldDescription', text: t.tr('InvitesLinkUrlHelp') })
         ]),
         httpsWarn,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderLimits') }),
+        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLimits') }),
         el('div', { class: 'fieldDescription', text: t.tr('InvitesLimitsHelp') }),
         count.wrap, windowField.wrap, pins.wrap
     ].forEach(function (node) { content.appendChild(node); });

@@ -543,7 +543,7 @@
         <img src="../web/favicons/touchicon.png" alt="" loading="lazy" decoding="async" />
         <h1 id="deniedTitle" data-str="RequestsHeaderRequestsClosed">Requests aren’t open to you</h1>
         <p class="secondaryText" data-str="RequestsMessageAskForAccess">Ask an administrator for access.</p>
-        <a class="emby-button raised rq-home" href="../web/" data-str="InvitesButtonBack">Back to Jellyfin</a>
+        <a class="emby-button raised rq-home" href="../web/" data-str="ButtonBackToJellyfin">Back to Jellyfin</a>
     </div>
 </div>
 
@@ -1733,7 +1733,7 @@
         }
         function openBrowserNotifications() {
             var push = window.StolonPage;
-            openDialog(str('NotificationsChannelBrowsers'), '<div class="pushSettings">' + WC.settingsCheckbox('chkBrowserNotifications', str('RequestsLabelNotifyInThisBrowser'), 'browserNotificationsState') + '</div>', null);
+            openDialog(str('LabelBrowserNotifications'), '<div class="pushSettings">' + WC.settingsCheckbox('chkBrowserNotifications', str('RequestsLabelNotifyInThisBrowser'), 'browserNotificationsState') + '</div>', null);
             var box = el('chkBrowserNotifications');
             function show(state) {
                 box.checked = state === 'on';
@@ -3314,9 +3314,9 @@
             openDialog(str('RequestsHeaderIssueHistory'), WC.paperList(past.map(issueDetails).join(''), 'issueList'), null);
             dialogBack = function () { showIssueDialog(view, typed); };
             if (!me.IsAdministrator || !issue) return;
-            var verbs = [{ id: 'issueDecline', verb: 'Decline', text: str('RequestsButtonDecline'), done: str('RequestsToastIssueDeclined'), type: 'delete' }]
-                .concat(issue.State === 'Reported' ? [{ id: 'issueConfirm', verb: 'Confirm', text: str('RequestsButtonConfirm'), done: str('RequestsToastIssueConfirmed') }] : [])
-                .concat([{ id: 'issueResolve', verb: 'Resolve', text: str('RequestsButtonResolve'), done: str('RequestsToastIssueResolved'), type: 'submit' }]);
+            var verbs = [{ id: 'issueDecline', verb: 'Decline', text: str('ButtonDecline'), done: str('IssuesToastDeclined'), type: 'delete' }]
+                .concat(issue.State === 'Reported' ? [{ id: 'issueConfirm', verb: 'Confirm', text: str('IssuesButtonConfirm'), done: str('IssuesToastConfirmed') }] : [])
+                .concat([{ id: 'issueResolve', verb: 'Resolve', text: str('IssuesButtonResolve'), done: str('IssuesToastResolved'), type: 'submit' }]);
             el('dialogFooter').innerHTML = WC.actionsDialogFooter(verbs);
             el('dialogFooter').classList.add('formDialogFooter-flex');
             show('dialogFooter');
@@ -3327,7 +3327,7 @@
 
         // An administrator's decision on an issue, with a note its reporters see. Dismissing it goes back to the history.
         function decideIssue(issue, v, back) {
-            var body = WC.textareaField({ id: 'issueDecisionNote', label: str('RequestsLabelIssueNoteShown'), rows: 3, maxLength: 1000, placeholder: str('PagesPlaceholderOptional') })
+            var body = WC.textareaField({ id: 'issueDecisionNote', label: str('IssuesLabelNoteShown'), rows: 3, maxLength: 1000, placeholder: str('PlaceholderOptional') })
                 + '<div class="formError" id="dialogError" role="alert"></div>';
             var seq = openIssueDialog(v.text, body, {
                 text: v.text, type: v.type || 'submit',
@@ -3353,10 +3353,10 @@
         var RESOLVED_BADGE_DAYS = 30;
         function issueBadge(open, closed) {
             var chip = function (cls, key) { return WC.infoRow(WC.statusTag(cls, str(key)), 'issueBadge'); };
-            if (open) return open.State === 'Confirmed' ? chip('confirmed', 'IssuesBadgeConfirmed') : chip('reported', 'RequestsEventIssueReported');
+            if (open) return open.State === 'Confirmed' ? chip('confirmed', 'IssuesBadgeConfirmed') : chip('reported', 'IssuesEventReported');
             var since = Date.now() - RESOLVED_BADGE_DAYS * 86400000;
             var resolved = closed.some(function (i) { return i.State === 'Resolved' && new Date(i.UpdatedUtc).getTime() >= since; });
-            return resolved ? chip('resolved', 'RequestsEventIssueResolved') : '';
+            return resolved ? chip('resolved', 'IssuesEventResolved') : '';
         }
 
         // The item's dialog: its poster and title, then its open issue (the viewer's own to change or delete, someone
@@ -3380,12 +3380,12 @@
                 + (past.length ? WC.detailButton('issueHistory', 'history', str('RequestsHeaderIssueHistory')) : '') + '</div>'
                 + (facts ? WC.secondaryText(facts, 'requestFacts') : '') + '</div></div>' + notice;
             if (!refused) {
-                body += WC.selectField('issueType', str('RequestsLabelIssueType'), ISSUE_TYPES.map(function (t) { return { value: t, text: issueTypeName(t) }; }))
-                    + WC.textareaField({ id: 'issueNote', label: str('RequestsLabelRequestNote'), rows: 3, maxLength: 1000, placeholder: str('PagesPlaceholderOptional'), descriptions: [{ text: '', id: 'issueNoteHelp' }] });
+                body += WC.selectField('issueType', str('IssuesLabelType'), ISSUE_TYPES.map(function (t) { return { value: t, text: issueTypeName(t) }; }))
+                    + WC.textareaField({ id: 'issueNote', label: str('RequestsLabelRequestNote'), rows: 3, maxLength: 1000, placeholder: str('PlaceholderOptional'), descriptions: [{ text: '', id: 'issueNoteHelp' }] });
             }
             if (mine) body += WC.blockButton('issueDelete', WC.tr('Delete', 'Delete'), 'delete');
             body += '<div class="formError" id="dialogError" role="alert">' + esc(refused || '') + '</div>';
-            var action = refused ? null : mine ? { text: WC.tr('Save', 'Save'), run: function (btn) { send('/Issues/' + mine.Id, btn, str('RequestsToastSaved')); } }
+            var action = refused ? null : mine ? { text: WC.tr('Save', 'Save'), run: function (btn) { send('/Issues/' + mine.Id, btn, str('ToastSaved')); } }
                 : open ? { text: str('RequestsButtonJoinIssue'), run: function (btn) { send('/Issues/' + open.Id + '/Join', btn, str('RequestsToastIssueJoined')); } }
                 : { text: WC.tr('ButtonSubmit', 'Submit'), run: function (btn) { send('/Issues', btn, str('RequestsToastIssueReported')); } };
             var seq = openIssueDialog(str('RequestsHeaderReportIssue'), body, action);
@@ -3401,13 +3401,13 @@
             function syncNote() {
                 var other = el('issueType').value === 'Other';
                 el('issueNoteHelp').textContent = other ? str('RequestsHelpIssueNoteOther') : '';
-                el('issueNote').placeholder = other ? '' : str('PagesPlaceholderOptional');
+                el('issueNote').placeholder = other ? '' : str('PlaceholderOptional');
             }
             el('issueType').addEventListener('change', syncNote);
             syncNote();
             function send(path, btn, done) {
                 var body = { ItemId: item.Id, Type: el('issueType').value, Note: el('issueNote').value.trim() };
-                if (body.Type === 'Other' && !body.Note) { el('dialogError').textContent = str('RequestsErrorIssueNoteRequired'); el('issueNote').focus(); return; }
+                if (body.Type === 'Other' && !body.Note) { el('dialogError').textContent = str('IssuesErrorNoteRequired'); el('issueNote').focus(); return; }
                 btn.disabled = true;
                 el('dialogError').textContent = '';
                 call(path, 'POST', body).then(function () {
@@ -3652,7 +3652,7 @@
             // button, since a block by genre, rating or word isn't the title's and isn't undone here.
             var titleKnown = typeof r.TitleBlocked === 'boolean', titleBlocked = r.TitleBlocked === true;
             var done = (r.LibraryItemId && !r.Partial) || downloaded(r) || !!r.InArr;
-            if (me.IsAdministrator && titleKnown && (!done || titleBlocked)) b += iconButton('blockButton', titleBlocked ? 'do_not_disturb_off' : 'block', str(titleBlocked ? 'ProxyButtonUnblock' : 'ProxyButtonBlock'));
+            if (me.IsAdministrator && titleKnown && (!done || titleBlocked)) b += iconButton('blockButton', titleBlocked ? 'do_not_disturb_off' : 'block', str(titleBlocked ? 'ButtonUnblock' : 'ButtonBlock'));
             el('detailButtons').innerHTML = b;
 
             var bind = function (id, fn) { var x = el(id); if (x) x.addEventListener('click', fn); };
@@ -3668,8 +3668,8 @@
             // Blocking asks first, as removing does; unblocking needs no asking.
             bind('blockButton', function () {
                 if (titleBlocked) { setBlocked(r, false); return; }
-                openConfirm(str('ProxyButtonBlock'), str('RequestsBlockTitleConfirm', r.Title), {
-                    text: str('ProxyButtonBlock'), type: 'delete', action: function () { closeDialog(); setBlocked(r, true); }
+                openConfirm(str('ButtonBlock'), str('RequestsBlockTitleConfirm', r.Title), {
+                    text: str('ButtonBlock'), type: 'delete', action: function () { closeDialog(); setBlocked(r, true); }
                 });
             });
             // Redrawn under the focus, the focus goes to the first button rather than the page.
@@ -3767,7 +3767,7 @@
                 if (req.DecidedBy) lines += attribute(str(declined ? 'RequestsLabelRejectedBy' : 'RequestsLabelApprovedBy'), esc(req.DecidedBy));
                 if (req.DecidedUtc && longDate(req.DecidedUtc)) lines += attribute(str(declined ? 'RequestsLabelRejectedOn' : 'RequestsLabelApprovedOn'), esc(longDate(req.DecidedUtc)));
             }
-            if (req.Note && (declined || req.Status === 'Failed')) lines += attribute(str(declined ? 'RequestsLabelRequestReason' : 'ProxyLabelProblem'), esc(req.Note));
+            if (req.Note && (declined || req.Status === 'Failed')) lines += attribute(str(declined ? 'RequestsLabelRequestReason' : 'LabelProblem'), esc(req.Note));
             return lines;
         }
 
@@ -3845,7 +3845,7 @@
                     percent: Math.min(100, open / access.MaxOpenRequests * 100)
                 });
             }
-            return rows.length ? WC.limitsBox(str('InvitesHeaderLimits'), rows) : '';
+            return rows.length ? WC.limitsBox(str('HeaderLimits'), rows) : '';
         }
         function quotaSpent(r, access) { var q = r.Type === 'Series' ? access.ShowQuota : access.MovieQuota; return !!q && q.Remaining <= 0; }
         function openSpent(access) { return !!access.MaxOpenRequests && (access.OpenRequests || 0) >= access.MaxOpenRequests; }
@@ -3884,7 +3884,7 @@
                 + (series && !specialsOnly ? WC.checkboxListContainer(WC.tr('HeaderSeasons', 'Seasons'), 'dialogSeasons', '…') : '')
                 + (series && !editing ? '<div id="dialogSpecialsWrap">' + WC.checkboxListContainer(str('OptionSpecialEpisode'), 'dialogSpecials', '…') + '</div>' : '')
                 + (editing ? '' : '<div id="dialogLimits"></div>')
-                + WC.textareaField({ id: 'dialogNote', label: str('RequestsLabelRequestNotes'), rows: 3, maxLength: 500, placeholder: str('PagesPlaceholderOptional'), descriptions: after })
+                + WC.textareaField({ id: 'dialogNote', label: str('LabelNotes'), rows: 3, maxLength: 500, placeholder: str('PlaceholderOptional'), descriptions: after })
                 + '<div class="formError" id="dialogError" role="alert"></div>';
             var mine = editing
                 ? openDialog(str('RequestsHeaderEditRequest'), body, { text: WC.tr('Save', 'Save'), action: function (btn) { submit(btn); } })
@@ -4151,7 +4151,7 @@
                 if (r.Request) dropFromLists(r.Request);
                 clearRequest(r);
                 refreshTitle(r);
-                toast(str('RequestsToastRequestCancelled'), str('ProxyButtonUndo'), function () {
+                toast(str('RequestsToastRequestCancelled'), str('ButtonUndo'), function () {
                     if (!prior) { openRequestDialog(r); return; }
                     if (held) r.Request = prior;
                     sendRequest(r, prior.Seasons || null, prior.RequesterNote, prior.ProfileId).then(function () {

@@ -121,7 +121,7 @@ test('a page or store that clashes, is empty, or takes a reserved slug is refuse
     assert.equal(pages.pageProblem({ Slug: 'Rules' }, list, 1), 'PagesErrorSlugTaken');
     assert.equal(pages.pageProblem({ Slug: 'rules' }, list, 0), null);
     assert.equal(pages.pageProblem({ Slug: 'asset' }, list, -1), 'PagesErrorSlugReservedHere');
-    assert.equal(pages.storeProblem({ Name: '' }, [], -1), 'PagesErrorEnterName');
+    assert.equal(pages.storeProblem({ Name: '' }, [], -1), 'ErrorEnterName');
     assert.equal(pages.storeProblem({ Name: 'Queue' }, [{ Name: 'queue' }], -1), 'PagesErrorStoreNameTaken');
 });
 

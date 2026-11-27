@@ -45,7 +45,7 @@ public sealed class Hosting1984Provider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.ProxyLabelDomain,
+        Hostname = TranslationKeys.LabelDomain,
         Password = TranslationKeys.HeaderApiKey,
         Server = true,
     };

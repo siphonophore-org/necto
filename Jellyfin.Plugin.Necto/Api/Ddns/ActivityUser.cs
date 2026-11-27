@@ -38,6 +38,6 @@ public static class ActivityUser
     public static string NameOf(ClaimsPrincipal? user)
     {
         var name = user?.FindFirst(ClaimTypes.Name)?.Value;
-        return string.IsNullOrWhiteSpace(name) ? ServerText.Get(TranslationKeys.DdnsActivityAnAdministrator) : name;
+        return string.IsNullOrWhiteSpace(name) ? ServerText.Get(TranslationKeys.ActivityAnAdministrator) : name;
     }
 }

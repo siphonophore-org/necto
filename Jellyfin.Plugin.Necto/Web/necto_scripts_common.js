@@ -160,7 +160,7 @@ export function fieldGroups() {
             { key: 'TaskStatus', label: t.tr('ScriptsFieldTaskStatus') },
             { key: 'TaskCategory', label: t.tr('ScriptsFieldTaskCategory') },
             { key: 'PluginName', label: t.tr('ScriptsFieldPluginName') },
-            { key: 'Provider', label: t.tr('DdnsLabelProvider') },
+            { key: 'Provider', label: t.tr('LabelProvider') },
             { key: 'UpdateReason', label: t.tr('ScriptsFieldUpdateReason') },
             { key: 'ActivityType', label: t.tr('ScriptsFieldActivityType') },
             { key: 'ActivitySeverity', label: t.tr('ScriptsFieldActivitySeverity') }
@@ -281,7 +281,7 @@ export function renderRunSteps(shared, run) {
 export function renderRunSummary(shared, run, details) {
     return createDefinitionList({
         layout: 'columns',
-        items: [{ label: t.tr('DdnsLabelResult'), value: { badge: { label: run.Succeeded ? t.tr('ScriptsStatusSucceeded') : t.tr('LabelFailed'), color: run.Succeeded ? 'green' : 'red' } } }]
+        items: [{ label: t.tr('LabelResult'), value: { badge: { label: run.Succeeded ? t.tr('ScriptsStatusSucceeded') : t.tr('LabelFailed'), color: run.Succeeded ? 'green' : 'red' } } }]
             .concat(details || [])
             .concat([{ label: t.tr('ScriptsLabelLength'), value: formatDuration(shared, run.DurationMs) }])
     }).element;

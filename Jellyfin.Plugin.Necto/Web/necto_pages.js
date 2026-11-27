@@ -93,8 +93,8 @@ export function normalizeScope(value) {
 // [string]: The tier's name.
 export function tierLabel(value, t) {
     var v = normalizeVisibility(value);
-    if (v === 'Admin') return t.tr('NotificationsChannelAdministrators');
-    if (v === 'User') return t.tr('PagesTierUser');
+    if (v === 'Admin') return t.tr('LabelAdministrators');
+    if (v === 'User') return t.tr('LabelSignedIn');
     return t.tr('PagesTierAnyone');
 }
 
@@ -318,7 +318,7 @@ export function pageProblem(page, pages, index) {
 // Output
 // [string|null]: The key of the problem, or null.
 export function storeProblem(store, stores, index) {
-    if (!store.Name) return 'PagesErrorEnterName';
+    if (!store.Name) return 'ErrorEnterName';
     var clash = (stores || []).some(function (other, i) {
         return i !== index && (other.Name || '').toLowerCase() === store.Name.toLowerCase();
     });
@@ -420,8 +420,8 @@ export function createPageEditor(page, shared) {
 
     var slug = fieldRow('input', t.tr('PagesLabelSlug'), { 'data-field': 'Slug', autocomplete: 'off' });
     slug.control.value = draft.Slug || '';
-    var url = nectoModule.createCopyField({ label: t.tr('PagesLabelUrl'), copyLabel: t.tr('PagesCopyUrl') });
-    var urlRow = el('div', { class: 'inputContainer', 'data-role': 'url' }, [el('div', { class: 'inputLabel', text: t.tr('PagesLabelUrl') }), url.element]);
+    var url = nectoModule.createCopyField({ label: t.tr('LabelUrl'), copyLabel: t.tr('PagesCopyUrl') });
+    var urlRow = el('div', { class: 'inputContainer', 'data-role': 'url' }, [el('div', { class: 'inputLabel', text: t.tr('LabelUrl') }), url.element]);
     var title = fieldRow('input', t.tr('LabelTitle'), { 'data-field': 'Title', autocomplete: 'off' });
     title.control.value = draft.Title || '';
     var visibility = fieldRow('select', t.tr('PagesLabelVisibility'), { 'data-field': 'Visibility' }, t.tr('PagesVisibilityHelp'));
@@ -440,13 +440,13 @@ export function createPageEditor(page, shared) {
         fields: [
             { key: 'Name', label: t.tr('LabelName'), placeholder: 'name' },
             { key: 'Url', label: t.tr('PagesLabelTargetUrl'), placeholder: 'http://192.168.1.10:8080/path', width: '2fr' },
-            { key: 'Username', label: t.tr('LabelUsername'), placeholder: t.tr('PagesPlaceholderOptional') },
-            { key: 'Password', label: t.tr('LabelPassword'), type: 'secret', placeholder: t.tr('PagesPlaceholderOptional'), clearable: true, clearText: t.tr('PagesButtonClearPassword') }
+            { key: 'Username', label: t.tr('LabelUsername'), placeholder: t.tr('PlaceholderOptional') },
+            { key: 'Password', label: t.tr('LabelPassword'), type: 'secret', placeholder: t.tr('PlaceholderOptional'), clearable: true, clearText: t.tr('PagesButtonClearPassword') }
         ],
         value: (draft.ApiRoutes || []).map(function (r) {
             return { Name: r.Name || '', Url: r.Url || '', Username: r.Username || '', Password: r.Password ? nectoModule.SECRET_KEPT : '' };
         }),
-        addText: t.tr('PagesButtonAddRoute'),
+        addText: t.tr('ButtonAddRoute'),
         rowName: t.tr('PagesRowRoute'),
         emptyText: t.tr('PagesEmptyRoutes')
     });
@@ -563,8 +563,8 @@ export function createStoreEditor(store, count, shared) {
 
     var name = fieldRow('input', t.tr('LabelName'), { 'data-field': 'Name', autocomplete: 'off' });
     name.control.value = draft.Name || '';
-    var url = nectoModule.createCopyField({ label: t.tr('PagesLabelUrl'), copyLabel: t.tr('PagesCopyUrl') });
-    var urlRow = el('div', { class: 'inputContainer', 'data-role': 'url' }, [el('div', { class: 'inputLabel', text: t.tr('PagesLabelUrl') }), url.element]);
+    var url = nectoModule.createCopyField({ label: t.tr('LabelUrl'), copyLabel: t.tr('PagesCopyUrl') });
+    var urlRow = el('div', { class: 'inputContainer', 'data-role': 'url' }, [el('div', { class: 'inputLabel', text: t.tr('LabelUrl') }), url.element]);
     var enabled = checkRow(t.tr('PagesLabelStoreEnabled'), t.tr('PagesStoreEnabledHelp'), 'Enabled');
     enabled.control.checked = draft.Enabled !== false;
     var read = fieldRow('select', t.tr('PagesLabelRead'), { 'data-field': 'ReadAccess' }, t.tr('PagesReadHelp'));
@@ -778,8 +778,8 @@ export default function (view) {
         var c = pageCounts(settings.Pages);
         shared.renderCards(panel.querySelector('[data-role="page-counts"]'), [
             { count: c.anyone, label: t.tr('PagesTierAnyone'), color: 'green' },
-            { count: c.user, label: t.tr('PagesTierUser'), color: 'blue' },
-            { count: c.admin, label: t.tr('NotificationsChannelAdministrators'), color: 'purple' },
+            { count: c.user, label: t.tr('LabelSignedIn'), color: 'blue' },
+            { count: c.admin, label: t.tr('LabelAdministrators'), color: 'purple' },
             { count: c.unpublished, label: t.tr('PagesStatusUnpublished'), color: 'gray' }
         ]);
         var items = pageItems(settings.Pages, t);
@@ -1040,7 +1040,7 @@ export default function (view) {
     function deleteStore(original, close) {
         var t = shared.t;
         nectoModule.confirmDialog(t.tr('PagesConfirmRemoveStore'), {
-            title: t.format('NotificationsRemoveName', original.Name),
+            title: t.format('TitleRemoveName', original.Name),
             confirmText: t.tr('ButtonRemove'),
             destructive: true
         }).then(function (ok) {

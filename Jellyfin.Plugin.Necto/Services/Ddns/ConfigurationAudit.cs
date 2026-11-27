@@ -46,7 +46,7 @@ public static class ConfigurationAudit
 
         // Additions, changes and removals are summed into one entry each per save. A credential change is
         // security relevant, so each gets its own entry.
-        var user = string.IsNullOrWhiteSpace(userName) ? ServerText.Get(TranslationKeys.DdnsActivityAnAdministrator) : userName;
+        var user = string.IsNullOrWhiteSpace(userName) ? ServerText.Get(TranslationKeys.ActivityAnAdministrator) : userName;
         var added = ActivityEntries.RecordsAdded(user);
         var changed = ActivityEntries.RecordsChanged(user);
         var removed = ActivityEntries.RecordsRemoved(user);

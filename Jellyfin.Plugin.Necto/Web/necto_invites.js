@@ -16,7 +16,7 @@ var STATE_COLORS = { Active: 'green', Locked: 'gray', Expired: 'orange', GroupEx
 
 // STATE_KEYS
 // The string key of each state's badge.
-export var STATE_KEYS = { Active: 'InvitesStateActive', Locked: 'InvitesStateLocked', Expired: 'InvitesStateExpired', GroupExpired: 'InvitesStateGroupExpired', UsedUp: 'InvitesStateUsedUp' };
+export var STATE_KEYS = { Active: 'StateActive', Locked: 'InvitesStateLocked', Expired: 'InvitesStateExpired', GroupExpired: 'InvitesStateGroupExpired', UsedUp: 'InvitesStateUsedUp' };
 
 // Ids for the editor's fields, so each label names its own field.
 var fieldSeq = 0;
@@ -205,7 +205,7 @@ export function createInviteEditor(invite, ctx) {
     group.value = invite.GroupId || '';
     var expiredWarn = el('div', { class: 'stolon-warn', 'data-role': 'group-expired', text: t.tr('InvitesGroupExpiredWarning') });
     root.appendChild(el('div', { class: 'selectContainer' }, [
-        el('label', { class: 'selectLabel', for: groupId, text: t.tr('GroupsTemplateGroup') }),
+        el('label', { class: 'selectLabel', for: groupId, text: t.tr('LabelGroup') }),
         group,
         el('div', { class: 'fieldDescription', text: t.tr('InvitesGroupHelp') })
     ]));
@@ -220,7 +220,7 @@ export function createInviteEditor(invite, ctx) {
     group.addEventListener('change', checkGroup);
     checkGroup();
 
-    var uses = input(t.tr('InvitesLabelMaxUses'), 'number', invite.MaxUses == null ? 1 : invite.MaxUses, 'MaxUses', t.tr('GroupsTemplateZeroNoLimit'));
+    var uses = input(t.tr('InvitesLabelMaxUses'), 'number', invite.MaxUses == null ? 1 : invite.MaxUses, 'MaxUses', t.tr('HelpZeroNoLimit'));
     var expiry = input(t.tr('LabelExpiryDate'), 'date', invite.ExpiresAt ? String(invite.ExpiresAt).slice(0, 10) : '', 'ExpiresAt', t.tr('InvitesExpiryAdminHelp'));
     var pin = input(t.tr('InvitesLabelPin'), 'text', '', 'Pin', t.tr('InvitesPinHelp'), '123456');
     pin.setAttribute('inputmode', 'numeric');
@@ -236,7 +236,7 @@ export function createInviteEditor(invite, ctx) {
     var resources = nectoModule.createRepeater({
         fields: [
             { key: 'title', label: t.tr('InvitesLabelResourceTitle'), type: 'text', placeholder: t.tr('InvitesResourceTitlePlaceholder') },
-            { key: 'url', label: t.tr('InvitesLabelResourceUrl'), type: 'text', placeholder: 'https://example.com/guide' }
+            { key: 'url', label: t.tr('LabelAddress'), type: 'text', placeholder: 'https://example.com/guide' }
         ],
         value: (invite.Resources || []).map(function (r) { return { title: r.Title, url: r.Url }; }),
         addText: t.tr('InvitesButtonAddResource'),
@@ -335,7 +335,7 @@ export default function (view) {
                     loadInvites();
                 }).catch(fail(editor, 'InvitesErrorSave'));
             } },
-            { text: t.tr('InvitesButtonDuplicate'), onClick: function (handle) {
+            { text: t.tr('ButtonDuplicate'), onClick: function (handle) {
                 shared.request('Invites/' + invite.Id + '/Duplicate', 'POST').then(function () {
                     handle.close('saved');
                     report(t.tr('InvitesDuplicated'), false);

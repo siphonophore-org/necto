@@ -8,12 +8,12 @@ var el = nectoModule.el;
 // KIND_KEYS
 // The string key of each channel kind's name, as Notifications/Channels names the kinds.
 export var KIND_KEYS = {
-    Browsers: 'NotificationsChannelBrowsers',
+    Browsers: 'LabelBrowserNotifications',
     Apps: 'NotificationsChannelApps',
-    Administrators: 'NotificationsChannelAdministrators',
+    Administrators: 'LabelAdministrators',
     ActivityLog: 'NotificationsChannelActivityLog',
     Discord: 'NotificationsKindDiscord',
-    Webhook: 'NotificationsKindWebhook',
+    Webhook: 'LabelWebhook',
     Email: 'NotificationsKindEmail'
 };
 
@@ -39,7 +39,7 @@ export var KIND_ICONS = {
 // Output
 // [string]: The name.
 export function channelName(channel, t) {
-    return channel.Name || t.tr(KIND_KEYS[channel.Kind] || 'NotificationsKindWebhook');
+    return channel.Name || t.tr(KIND_KEYS[channel.Kind] || 'LabelWebhook');
 }
 
 // channelSummary
@@ -72,10 +72,10 @@ export function channelSummary(channel, shared) {
 export function channelItems(channels, shared, onTest) {
     var t = shared.t;
     return (channels || []).map(function (channel) {
-        var tags = [{ label: t.tr(KIND_KEYS[channel.Kind] || 'NotificationsKindWebhook'), icon: KIND_ICONS[channel.Kind] || 'send' }];
+        var tags = [{ label: t.tr(KIND_KEYS[channel.Kind] || 'LabelWebhook'), icon: KIND_ICONS[channel.Kind] || 'send' }];
         if (!channel.Enabled) tags.push({ label: t.tr('Off'), color: 'gray', off: true });
         else if (!channel.Ready) tags.push({ label: t.tr('NotificationsTagNotSetUp'), color: 'orange' });
-        var button = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'test', 'data-channel': channel.Id }, [el('span', { text: t.tr('NotificationsButtonTest') })]);
+        var button = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'test', 'data-channel': channel.Id }, [el('span', { text: t.tr('ButtonTest') })]);
         button.addEventListener('click', function (e) { e.stopPropagation(); onTest(channel, button); });
         return { id: channel.Id, title: channelName(channel, t), secondary: channelSummary(channel, shared), tags: tags, aside: button, channel: channel };
     });

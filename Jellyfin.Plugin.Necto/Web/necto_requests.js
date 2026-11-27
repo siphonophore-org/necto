@@ -63,7 +63,7 @@ export function statusColor(status) {
 // Output
 // [object[]]: Each one's key, label, color, and for Open the statuses it adds up.
 export function statOrder(t) {
-    return [{ key: 'Open', label: t.tr('RequestsStatusOpen'), color: '', of: OPEN_STATES }].concat(Object.keys(REQUEST_STATES).map(function (key) {
+    return [{ key: 'Open', label: t.tr('StateOpen'), color: '', of: OPEN_STATES }].concat(Object.keys(REQUEST_STATES).map(function (key) {
         return { key: key, label: statusLabel(key, t), color: REQUEST_STATES[key].color };
     }));
 }
@@ -266,7 +266,7 @@ export function when(iso) {
 // Output
 // [string]: The line.
 export function subline(r, t) {
-    var parts = [r.Type === 'Series' ? t.tr('RequestsTypeShow') : t.tr('Movie')];
+    var parts = [r.Type === 'Series' ? t.tr('LabelShow') : t.tr('Movie')];
     if (r.Year) parts.push(r.Year);
     if (r.Type === 'Series') parts.push(describeWanted(r, t));
     return parts.join(' · ');
@@ -321,7 +321,7 @@ export function requestActions(r) {
 // [object]: text, the sentences, and isError, true when some could not be sent.
 export function bulkResultText(action, result, t) {
     result = result || {};
-    var text = [t.format(action === 'approve' ? 'RequestsToastTitleApproved' : action === 'decline' ? 'RequestsToastTitleRejected' : 'RequestsBulkRemoved', result.Done || 0)];
+    var text = [t.format(action === 'approve' ? 'RequestsToastTitleApproved' : action === 'decline' ? 'RequestsToastTitleRejected' : 'ToastRemovedCount', result.Done || 0)];
     if (result.Failed) text.push(t.format('RequestsBulkNotSent', result.Failed));
     if (result.Skipped) text.push(t.format(action === 'remove' ? 'RequestsBulkSkippedRemoved' : 'RequestsBulkSkippedDecided', result.Skipped));
     return { text: text.join(' '), isError: !!result.Failed };
@@ -622,7 +622,7 @@ export default function (view) {
             run = nectoModule.promptSidecar([{ name: 'Reason', label: t.format('RequestsLabelReasonShownTo', r.UserName), type: 'textarea' }], { title: t.format('RequestsLabelRejectTitle', r.Title), submitText: t.tr('RequestsButtonReject') })
                 .then(function (values) { return values && shared.request('Requests/' + r.Id + '/Decline', 'POST', { Reason: values.Reason || '' }); });
         } else if (action === 'remove') {
-            run = nectoModule.confirmDialog(t.format('RequestsConfirmRemoveRequest', r.UserName), { title: t.format('NotificationsRemoveName', r.Title), confirmText: t.tr('ButtonRemove'), destructive: true })
+            run = nectoModule.confirmDialog(t.format('RequestsConfirmRemoveRequest', r.UserName), { title: t.format('TitleRemoveName', r.Title), confirmText: t.tr('ButtonRemove'), destructive: true })
                 .then(function (ok) { return ok ? shared.request('Requests/' + r.Id, 'DELETE').then(function (answer) { return answer || {}; }) : null; });
         } else if (action === 'available') {
             run = nectoModule.confirmDialog(t.format('RequestsConfirmMarkAvailable', r.UserName), { title: t.format('RequestsHeaderMarkAvailable', r.Title), confirmText: t.tr('RequestsButtonMarkAvailable') })
@@ -655,7 +655,7 @@ export default function (view) {
                 : Promise.resolve({});
         return ask.then(function (values) {
             if (!values) return null;
-            report(t.tr('ProxyWorking'), false);
+            report(t.tr('TextWorking'), false);
             return shared.request('Requests/Bulk/' + action, 'POST', { Ids: ids, Reason: values.Reason || '' }).then(function (result) {
                 var said = bulkResultText(action, result, t);
                 report(said.text, said.isError);
@@ -718,7 +718,7 @@ export default function (view) {
         ]);
 
         var labels = {
-            remove: ['ButtonRemove', 'stolon-destructive'], library: ['RequestsButtonOpenInLibrary', 'stolon-secondary'],
+            remove: ['ButtonRemove', 'stolon-destructive'], library: ['ButtonOpenInLibrary', 'stolon-secondary'],
             available: ['RequestsButtonMarkAvailable', 'stolon-secondary'], reject: ['RequestsButtonReject', 'stolon-secondary'],
             edit: ['Edit', 'stolon-secondary'], approve: ['RequestsButtonApprove', 'stolon-primary'], retry: ['Retry', 'stolon-primary']
         };
@@ -746,7 +746,7 @@ export default function (view) {
         if (r.ArrId) {
             shared.request('Requests/' + r.Id + '/ArrLink').then(function (link) {
                 if (!link || !link.Url || !sidecar.isOpen()) return;
-                details.setItems(items.concat([{ label: link.Server, value: { text: t.format('RequestsButtonOpenIn', link.Server), link: link.Url } }]));
+                details.setItems(items.concat([{ label: link.Server, value: { text: t.format('ButtonOpenIn', link.Server), link: link.Url } }]));
             }).catch(function () { /* no link, then */ });
         }
         return sidecar;
@@ -802,7 +802,7 @@ export default function (view) {
                 ProfileId: picker ? picker.value : (placed ? placed.Id : null),
                 Note: note.value
             }).then(function () {
-                report(t.tr('RequestsToastSaved'), false);
+                report(t.tr('ToastSaved'), false);
                 reload();
                 return true;
             }, function (err) {

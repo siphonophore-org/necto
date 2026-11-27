@@ -589,8 +589,8 @@ function buildRequestSettings(content, ctx) {
             return {
                 id: String(i) + ':' + b.Title,
                 title: b.Title + (b.Year ? ' (' + b.Year + ')' : ''),
-                secondary: [enumName(b.Type, TYPES) === 'Series' ? t.tr('RequestsTypeShow') : t.tr('Movie')].concat(ids).join(' · '),
-                aside: el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-unblock': String(i), 'aria-label': t.format('RequestsLabelUnblockTitle', b.Title) }, [el('span', { text: t.tr('ProxyButtonUnblock') })])
+                secondary: [enumName(b.Type, TYPES) === 'Series' ? t.tr('LabelShow') : t.tr('Movie')].concat(ids).join(' · '),
+                aside: el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-unblock': String(i), 'aria-label': t.format('RequestsLabelUnblockTitle', b.Title) }, [el('span', { text: t.tr('ButtonUnblock') })])
             };
         });
         if (blockedList) blockedList.destroy();
@@ -627,7 +627,7 @@ function buildRequestSettings(content, ctx) {
                 id: s.Id || String(i),
                 index: i,
                 title: serverName(s),
-                secondary: (named ? arr.name + ' · ' : '') + (hostOf(s.Url) || t.tr('DdnsResultNoAddress')) + ((s.Profiles || []).length ? '' : ' · ' + t.tr('RequestsValueNoProfiles')),
+                secondary: (named ? arr.name + ' · ' : '') + (hostOf(s.Url) || t.tr('TextNoAddress')) + ((s.Profiles || []).length ? '' : ' · ' + t.tr('RequestsValueNoProfiles')),
                 tags: tags
             };
         });
@@ -672,7 +672,7 @@ function buildRequestSettings(content, ctx) {
             el('h3', { class: 'stolon-subsection-title', text: t.tr('TabServer') }),
             checkField(defaultBox, t.tr('RequestsLabelDefaultServer'), t.tr(isMovie ? 'RequestsHelpDefaultServerMovie' : 'RequestsHelpDefaultServerShow')),
             field(ids.name, t.tr('LabelName'), nameInput, t.format('RequestsHelpServerName', arr.name)),
-            field(ids.url, t.tr('InvitesLabelResourceUrl'), urlInput, t.format('RequestsHelpServerAddress', arr.name)),
+            field(ids.url, t.tr('LabelAddress'), urlInput, t.format('RequestsHelpServerAddress', arr.name)),
             field(ids.ext, t.tr('RequestsLabelExternalUrl'), extInput, t.format('RequestsHelpExternalUrl', arr.name)),
             field(ids.key, sentence(t, 'HeaderApiKey'), keyInput, t.format('RequestsHelpArrApiKey', arr.name)),
             checkField(searchBox, t.tr('RequestsLabelSearchOnAdd'), t.tr('RequestsHelpSearchOnAdd')),
@@ -847,7 +847,7 @@ function buildRequestSettings(content, ctx) {
         // remove
         // Asks first, then takes the server off the page until Save.
         function remove(close) {
-            nectoModule.confirmDialog(t.format('RequestsConfirmRemoveServer', arr.name), { title: t.format('NotificationsRemoveName', serverName(server)), confirmText: t.tr('ButtonRemove'), destructive: true }).then(function (ok) {
+            nectoModule.confirmDialog(t.format('RequestsConfirmRemoveServer', arr.name), { title: t.format('TitleRemoveName', serverName(server)), confirmText: t.tr('ButtonRemove'), destructive: true }).then(function (ok) {
                 if (!ok) return;
                 servers.splice(index, 1);
                 renderServers();
@@ -865,7 +865,7 @@ function buildRequestSettings(content, ctx) {
             title: isNew ? t.tr(isMovie ? 'RequestsButtonAddRadarr' : 'RequestsButtonAddSonarr') : serverName(server),
             body: body,
             isNew: isNew,
-            saveText: t.tr('NotificationsButtonDone'),
+            saveText: t.tr('ButtonDone'),
             deleteText: t.tr('ButtonRemove'),
             serialize: function () { read(); return JSON.stringify([server, shared.readSecretField(keyInput)]); },
             onSave: done,
@@ -1065,7 +1065,7 @@ function buildRequestSettings(content, ctx) {
             body: body,
             size: 'medium',
             isNew: isNew,
-            saveText: t.tr('NotificationsButtonDone'),
+            saveText: t.tr('ButtonDone'),
             deleteText: t.tr('ButtonRemove'),
             serialize: function () { return JSON.stringify([titleInput.value, typeSelect.value, kindSelect.value, sortSelect.value, picks ? picks.getValue() : []]); },
             onSave: done,

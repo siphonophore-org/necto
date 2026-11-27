@@ -314,9 +314,9 @@ public sealed class Notifier : INotifier
 
     private static string ChannelName(NotificationSend send, NotificationChannel? channel, string? language) => send.Target switch
     {
-        NotificationTarget.UserBrowsers => StolonTranslations.Get(TranslationKeys.NotificationsChannelBrowsers, language),
+        NotificationTarget.UserBrowsers => StolonTranslations.Get(TranslationKeys.LabelBrowserNotifications, language),
         NotificationTarget.UserApps => StolonTranslations.Get(TranslationKeys.NotificationsChannelApps, language),
-        NotificationTarget.Administrators => StolonTranslations.Get(TranslationKeys.NotificationsChannelAdministrators, language),
+        NotificationTarget.Administrators => StolonTranslations.Get(TranslationKeys.LabelAdministrators, language),
         NotificationTarget.ActivityLog => StolonTranslations.Get(TranslationKeys.NotificationsChannelActivityLog, language),
         _ => channel?.Name is { Length: > 0 } named ? named : send.ChannelId
     };

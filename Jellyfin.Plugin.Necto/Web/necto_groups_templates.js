@@ -57,7 +57,7 @@ export function accessSpecs(t) {
             { key: 'EnableVideoPlaybackTranscoding', type: 'bool', label: t.tr('OptionAllowVideoPlaybackTranscoding') },
             { key: 'EnablePlaybackRemuxing', type: 'bool', label: t.tr('OptionAllowVideoPlaybackRemuxing') },
             { key: 'ForceRemoteSourceTranscoding', type: 'bool', label: t.tr('OptionForceRemoteSourceTranscoding') },
-            { key: 'RemoteClientBitrateLimit', type: 'bitrate', label: t.tr('LabelRemoteClientBitrateLimit'), help: t.tr('GroupsTemplateZeroNoLimit') },
+            { key: 'RemoteClientBitrateLimit', type: 'bitrate', label: t.tr('LabelRemoteClientBitrateLimit'), help: t.tr('HelpZeroNoLimit') },
             { key: 'SyncPlayAccess', type: 'enum', label: t.tr('LabelSyncPlayAccess'), options: [
                 ['CreateAndJoinGroups', t.tr('LabelSyncPlayAccessCreateAndJoinGroups')],
                 ['JoinGroups', t.tr('LabelSyncPlayAccessJoinGroups')],
@@ -92,7 +92,7 @@ export function accessSpecs(t) {
             { key: 'IsDisabled', type: 'bool', label: t.tr('OptionDisableUser'), help: t.tr('GroupsTemplateDisableHelp') },
             { key: 'IsHidden', type: 'bool', label: t.tr('OptionHideUser') },
             { key: 'LoginAttemptsBeforeLockout', type: 'int', label: t.tr('LabelUserLoginAttemptsBeforeLockout'), min: -1, help: t.tr('GroupsTemplateLockoutHelp') },
-            { key: 'MaxActiveSessions', type: 'int', label: t.tr('LabelUserMaxActiveSessions'), min: 0, help: t.tr('GroupsTemplateZeroNoLimit') }
+            { key: 'MaxActiveSessions', type: 'int', label: t.tr('LabelUserMaxActiveSessions'), min: 0, help: t.tr('HelpZeroNoLimit') }
         ] }
     ];
 }
@@ -305,7 +305,7 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
                     field: field,
                     value: { inherit: !start.manage, value: start.value },
                     inheritText: t.tr('GroupsTemplateMember'),
-                    overrideText: t.tr('GroupsTemplateGroup'),
+                    overrideText: t.tr('LabelGroup'),
                     label: row.label
                 });
                 handles.push(inherit);

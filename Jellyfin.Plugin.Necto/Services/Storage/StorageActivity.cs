@@ -260,10 +260,10 @@ public sealed class StorageActivity
         if (away.TotalHours < 48)
         {
             var hours = (int)Math.Round(away.TotalHours);
-            return hours == 1 ? StolonTranslations.Get(TranslationKeys.StorageDurationHour, language) : StolonTranslations.Format(TranslationKeys.DdnsHoursMany, language, hours);
+            return hours == 1 ? StolonTranslations.Get(TranslationKeys.StorageDurationHour, language) : StolonTranslations.Format(TranslationKeys.HoursMany, language, hours);
         }
 
-        return StolonTranslations.Format(TranslationKeys.RequestsDayCount, language, (int)Math.Round(away.TotalDays));
+        return StolonTranslations.Format(TranslationKeys.DayCount, language, (int)Math.Round(away.TotalDays));
     }
 
     private static string Overview(DiskEventKind kind, List<DiskEvent> events, string? language)

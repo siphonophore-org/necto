@@ -26,10 +26,10 @@ export var ISSUE_STATES = {
 
 // The verbs an administrator decides an issue with, each with its button, its prompt's title, and its result.
 var VERBS = {
-    Confirm: { button: 'RequestsButtonConfirm', title: 'IssuesTitleConfirm', toast: 'RequestsToastIssueConfirmed' },
-    Resolve: { button: 'RequestsButtonResolve', title: 'IssuesTitleResolve', toast: 'RequestsToastIssueResolved' },
-    Decline: { button: 'RequestsButtonDecline', title: 'IssuesTitleDecline', toast: 'RequestsToastIssueDeclined' },
-    Reopen: { button: 'RequestsButtonReopen', title: 'IssuesTitleReopen', toast: 'RequestsToastIssueReopened' }
+    Confirm: { button: 'IssuesButtonConfirm', title: 'IssuesTitleConfirm', toast: 'IssuesToastConfirmed' },
+    Resolve: { button: 'IssuesButtonResolve', title: 'IssuesTitleResolve', toast: 'IssuesToastResolved' },
+    Decline: { button: 'ButtonDecline', title: 'IssuesTitleDecline', toast: 'IssuesToastDeclined' },
+    Reopen: { button: 'IssuesButtonReopen', title: 'IssuesTitleReopen', toast: 'IssuesToastReopened' }
 };
 
 // issueTypes
@@ -94,7 +94,7 @@ export function isOpen(issue) {
 // Output
 // [object[]]: Each choice's value and label.
 export function stateFilters(t) {
-    return [{ value: 'Open', label: t.tr('RequestsStatusOpen') }].concat(Object.keys(ISSUE_STATES).map(function (k) {
+    return [{ value: 'Open', label: t.tr('StateOpen') }].concat(Object.keys(ISSUE_STATES).map(function (k) {
         return { value: k, label: t.tr(ISSUE_STATES[k].key) };
     }));
 }
@@ -110,7 +110,7 @@ export function stateFilters(t) {
 // [object[]]: The cards, each a label, a count, and a color.
 export function statCards(by, t) {
     by = by || {};
-    return [{ label: t.tr('RequestsStatusOpen'), count: (by.Reported || 0) + (by.Confirmed || 0), color: '' }]
+    return [{ label: t.tr('StateOpen'), count: (by.Reported || 0) + (by.Confirmed || 0), color: '' }]
         .concat(['Reported', 'Confirmed', 'Resolved', 'Declined'].map(function (k) {
             var s = stateOf(k, t);
             return { label: s.label, count: by[k] || 0, color: s.color };
@@ -166,7 +166,7 @@ export function keepFilters(storage, filters) {
 // [string]: The title.
 export function titleOf(issue, t) {
     if (issue.ItemType === 'Episode' && issue.SeriesName && issue.SeasonNumber != null && issue.EpisodeNumber != null) {
-        return t.format('RequestsEpisodeTitleFormat', issue.SeriesName, issue.SeasonNumber, issue.EpisodeNumber);
+        return t.format('IssuesEpisodeTitleFormat', issue.SeriesName, issue.SeasonNumber, issue.EpisodeNumber);
     }
     var title = String(issue.Title || '');
     var suffix = issue.Year ? ' (' + issue.Year + ')' : '';
@@ -238,9 +238,9 @@ export function noteItems(notes) {
 // [object[]]: The label and value pairs.
 export function detailItems(issue, t) {
     return [
-        { label: t.tr('RequestsLabelReportedBy'), value: (issue.Reporters || []).map(function (r) { return t.format('RequestsValueReporterType', r.UserName, typeName(r.Type, t)); }).join(', ') },
-        { label: t.tr('RequestsLabelReportedOn'), value: when(issue.CreatedUtc) },
-        issue.DecidedBy ? { label: t.tr('RequestsLabelDecidedBy'), value: issue.DecidedBy } : null,
+        { label: t.tr('IssuesLabelReportedBy'), value: (issue.Reporters || []).map(function (r) { return t.format('IssuesValueReporterType', r.UserName, typeName(r.Type, t)); }).join(', ') },
+        { label: t.tr('IssuesLabelReportedOn'), value: when(issue.CreatedUtc) },
+        issue.DecidedBy ? { label: t.tr('IssuesLabelDecidedBy'), value: issue.DecidedBy } : null,
         issue.Path ? { label: t.tr('File'), value: { text: issue.Path, mono: true } } : null
     ].filter(Boolean);
 }
@@ -269,7 +269,7 @@ export default function (view) {
     // Draws a row's state badge, and File changed when the file changed since the report.
     function stateCell(issue) {
         var s = stateOf(issue.State, shared.t);
-        return shared.badge(s.color, s.label) + (issue.FileChanged ? ' ' + shared.badge('orange', shared.t.tr('RequestsLabelFileChanged')) : '');
+        return shared.badge(s.color, s.label) + (issue.FileChanged ? ' ' + shared.badge('orange', shared.t.tr('IssuesLabelFileChanged')) : '');
     }
 
     // loadStats
@@ -290,7 +290,7 @@ export default function (view) {
             containerId: 'issuesTable',
             endpoint: 'Issues/All',
             selection: { enabled: false, idKey: 'Id' },
-            search: { enabled: true, placeholder: t.tr('RequestsSearchIssuesPlaceholder') },
+            search: { enabled: true, placeholder: t.tr('IssuesSearchPlaceholder') },
             filters: [
                 {
                     label: t.tr('HeaderStatus'),
@@ -302,16 +302,16 @@ export default function (view) {
                 },
                 {
                     name: 'type',
-                    label: t.tr('RequestsLabelIssueType'),
+                    label: t.tr('IssuesLabelType'),
                     options: issueTypes(t),
-                    allLabel: t.tr('RequestsFilterEveryType'),
+                    allLabel: t.tr('IssuesFilterEveryType'),
                     initialValue: filters.type,
                     onChange: function (value) { filters.type = value; keepFilters(storage(), filters); },
                     buildParams: function (value) { return { type: value }; }
                 }
             ],
             pagination: { pageSize: PAGE_SIZE },
-            emptyState: { message: t.tr('RequestsEmptyIssues') },
+            emptyState: { message: t.tr('IssuesEmptyMatch') },
             columns: [
                 {
                     key: 'Title', type: 'custom', className: 'stolon-table-cell-with-thumb',
@@ -325,7 +325,7 @@ export default function (view) {
                 {
                     key: 'Reporters', type: 'custom', render: function (issue) {
                         return '<div class="stolon-table-item-info"><div>' + esc((issue.Reporters || []).map(function (r) { return r.UserName; }).join(', ')) + '</div>'
-                            + '<div class="stolon-table-item-sub">' + esc(t.format('RequestsValueUpdatedOn', when(issue.UpdatedUtc))) + '</div></div>';
+                            + '<div class="stolon-table-item-sub">' + esc(t.format('IssuesValueUpdatedOn', when(issue.UpdatedUtc))) + '</div></div>';
                     }
                 },
                 { key: 'State', type: 'custom', className: 'stolon-table-cell-status', render: stateCell }
@@ -360,7 +360,7 @@ export default function (view) {
     // status [HTMLElement]: Where the sidecar says what went wrong.
     function act(issue, verb, close, status) {
         var t = shared.t;
-        return nectoModule.promptSidecar([{ name: 'Note', label: t.tr('RequestsLabelIssueNoteShown'), type: 'textarea', placeholder: t.tr('PagesPlaceholderOptional') }], {
+        return nectoModule.promptSidecar([{ name: 'Note', label: t.tr('IssuesLabelNoteShown'), type: 'textarea', placeholder: t.tr('PlaceholderOptional') }], {
             title: t.format(VERBS[verb].title, titleOf(issue, t)),
             submitText: t.tr(VERBS[verb].button)
         }).then(function (values) {
@@ -388,7 +388,7 @@ export default function (view) {
             title: titleOf(issue, t),
             subtitle: subline(issue, t),
             status: { label: s.label, color: s.color },
-            badges: issue.FileChanged ? [{ label: t.tr('RequestsLabelFileChanged'), color: 'orange' }] : []
+            badges: issue.FileChanged ? [{ label: t.tr('IssuesLabelFileChanged'), color: 'orange' }] : []
         });
         var items = detailItems(issue, t);
         var details = nectoModule.createDefinitionList({ items: items });
@@ -396,14 +396,14 @@ export default function (view) {
         var status = el('div', { class: 'stolon-status-text', role: 'alert', 'data-role': 'status' });
         var body = el('div', { class: 'necto-detail', 'data-role': 'issue-detail' }, [
             card.element,
-            issue.FileChanged ? el('div', { class: 'stolon-warn', text: t.tr('RequestsHelpFileChanged') }) : null,
+            issue.FileChanged ? el('div', { class: 'stolon-warn', text: t.tr('IssuesHelpFileChanged') }) : null,
             details.element,
-            notes ? el('h3', { class: 'stolon-subsection-title', text: t.tr('RequestsLabelRequestNotes') }) : null,
+            notes ? el('h3', { class: 'stolon-subsection-title', text: t.tr('LabelNotes') }) : null,
             notes ? notes.element : null,
             status
         ]);
         var buttons = [];
-        if (issue.ItemId) buttons.push({ text: t.tr('RequestsButtonOpenInLibrary'), className: 'stolon-button stolon-secondary', action: function (close) { close(); Dashboard.navigate('details?id=' + issue.ItemId); } });
+        if (issue.ItemId) buttons.push({ text: t.tr('ButtonOpenInLibrary'), className: 'stolon-button stolon-secondary', action: function (close) { close(); Dashboard.navigate('details?id=' + issue.ItemId); } });
         issueActions(issue).forEach(function (verb) {
             var kind = verb === 'Decline' ? 'stolon-destructive' : verb === 'Confirm' ? 'stolon-secondary' : 'stolon-primary';
             var button = { text: t.tr(VERBS[verb].button), className: 'stolon-button ' + kind, action: function (close) { act(issue, verb, close, status); } };
@@ -422,7 +422,7 @@ export default function (view) {
 
         shared.request('Issues/' + issue.Id + '/ArrLink').then(function (link) {
             if (!link || !link.Url || !sidecar.isOpen()) return;
-            details.setItems(items.concat([{ label: link.Server, value: { text: t.format('RequestsButtonOpenIn', link.Server), link: link.Url } }]));
+            details.setItems(items.concat([{ label: link.Server, value: { text: t.format('ButtonOpenIn', link.Server), link: link.Url } }]));
         }).catch(function () { /* no link, then */ });
         return sidecar;
     }

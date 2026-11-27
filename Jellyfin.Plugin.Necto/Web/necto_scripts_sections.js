@@ -205,14 +205,14 @@ export function buildTroubleshooting(content, ctx) {
     // clearHistory
     // Asks first, then deletes every recorded run.
     function clearHistory() {
-        confirmDialog(t.tr('ScriptsConfirmClearHistory'), { title: t.tr('ScriptsTitleClearHistory'), confirmText: t.tr('NotificationsButtonClear'), destructive: true }).then(function (ok) {
+        confirmDialog(t.tr('ScriptsConfirmClearHistory'), { title: t.tr('ScriptsTitleClearHistory'), confirmText: t.tr('ButtonClear'), destructive: true }).then(function (ok) {
             if (!ok) return;
             Shared.request('Scripts/History', 'DELETE').then(function () {
-                Shared.setStatus(status, t.tr('ProxyToastHistoryCleared'), false);
+                Shared.setStatus(status, t.tr('ToastHistoryCleared'), false);
                 if (table) table.reload();
                 loadChart();
             }).catch(function () {
-                Shared.setStatus(status, t.tr('ProxyErrorClearHistory'), true);
+                Shared.setStatus(status, t.tr('ErrorClearHistory'), true);
             });
         });
     }
@@ -237,7 +237,7 @@ export function buildTroubleshooting(content, ctx) {
                 label: t.tr('ScriptsLabelRuns'),
                 options: [
                     { value: 'failed', label: t.tr('LabelFailed') },
-                    { value: 'test', label: t.tr('NotificationsHeaderTests') }
+                    { value: 'test', label: t.tr('HeaderTests') }
                 ].concat(scripts.map(function (s) { return { value: s.Id, label: s.Name }; }))
             }],
             actions: [{ id: 'clear', label: t.tr('ScriptsTitleClearHistory'), icon: 'delete', variant: 'destructive', onClick: clearHistory }],
@@ -249,7 +249,7 @@ export function buildTroubleshooting(content, ctx) {
                 { key: 'StartedUtc', label: t.tr('ScriptsLabelStarted'), width: '1.5fr', sortable: false, render: function (run) { return when(run.StartedUtc); } },
                 { key: 'DurationMs', label: t.tr('LabelDuration'), align: 'end', sortable: false, render: function (run) { return formatDuration(Shared, run.DurationMs); } },
                 {
-                    key: 'Succeeded', label: t.tr('DdnsLabelResult'), width: '8rem', sortable: false, render: function (run) {
+                    key: 'Succeeded', label: t.tr('LabelResult'), width: '8rem', sortable: false, render: function (run) {
                         var cell = document.createElement('span');
                         cell.innerHTML = Shared.badge(run.Succeeded ? 'green' : 'red', run.Succeeded ? t.tr('ScriptsStatusSucceeded') : t.tr('LabelFailed'));
                         return cell;

@@ -11,7 +11,7 @@ var el = nectoModule.el;
 var ACTIONS = {
     'Updated': { key: 'DdnsResultUpdated', state: 'success' },
     'IP Unchanged': { key: 'DdnsResultUnchanged', state: 'success' },
-    'No address': { key: 'DdnsResultNoAddress', state: 'warning' },
+    'No address': { key: 'TextNoAddress', state: 'warning' },
     'Backing off': { key: 'DdnsResultPaused', state: 'warning' },
     'Failed': { key: 'LabelFailed', state: 'error' }
 };
@@ -141,8 +141,8 @@ export function statusItems(record, shared) {
     var t = shared.t;
     var items = [];
     var tag = resultTag(record, t);
-    items.push({ label: t.tr('DdnsLabelResult'), value: tag ? tag.label : t.tr('DdnsResultNotChecked') });
-    if (record.LastStatus) items.push({ label: t.tr('DdnsLabelMessage'), value: record.LastStatus });
+    items.push({ label: t.tr('LabelResult'), value: tag ? tag.label : t.tr('DdnsResultNotChecked') });
+    if (record.LastStatus) items.push({ label: t.tr('LabelMessage'), value: record.LastStatus });
     if (record.LastCheckedUtc) items.push({ label: t.tr('DdnsLabelLastCheck'), value: shared.formatDate(record.LastCheckedUtc) });
     if (record.LastUpdateUtc) items.push({ label: t.tr('DdnsLabelLastUpdate'), value: shared.formatDate(record.LastUpdateUtc) });
     if (record.LastIPv4) items.push({ label: 'IPv4', value: record.LastIPv4 });
@@ -173,15 +173,15 @@ export function createRecordEditor(record, ctx) {
     var name = fields.inputField({ label: t.tr('LabelName'), field: 'Name', value: draft.Name, help: t.tr('DdnsNameHelp') });
     var enabled = fields.checkField({ label: t.tr('DdnsLabelEnabled'), field: 'Enabled', checked: draft.Enabled !== false, help: t.tr('DdnsEnabledHelp') });
     var provider = fields.selectField({
-        label: t.tr('DdnsLabelProvider'),
+        label: t.tr('LabelProvider'),
         field: 'Provider',
         options: (ctx.providers || []).map(function (p) { return { value: p.Value, label: p.Label }; }),
         value: draft.Provider
     });
     var follow = fields.checkField({ label: t.tr('DdnsLabelFollowProxy'), field: 'FollowProxyHosts', checked: !!draft.FollowProxyHosts, help: t.tr('DdnsFollowProxyHelp') });
     var hostname = fields.inputField({ label: t.tr('DdnsLabelHostname'), field: 'Hostname', value: draft.Hostname, placeholder: 'home.example.com' });
-    var login = fields.secretField({ label: t.tr('GuideProviderLogin'), field: 'Login', clearText: t.tr('DdnsButtonClearSaved') });
-    var password = fields.secretField({ label: t.tr('LabelPassword'), field: 'Password', help: t.tr('DdnsLimitedTokenHelp'), clearText: t.tr('DdnsButtonClearSaved') });
+    var login = fields.secretField({ label: t.tr('GuideProviderLogin'), field: 'Login', clearText: t.tr('ButtonClearSaved') });
+    var password = fields.secretField({ label: t.tr('LabelPassword'), field: 'Password', help: t.tr('DdnsLimitedTokenHelp'), clearText: t.tr('ButtonClearSaved') });
     var zone = fields.inputField({ label: t.tr('DdnsLabelZone'), field: 'Zone', value: draft.Zone, placeholder: 'example.com' });
     var ipv4 = fields.checkField({ label: t.tr('DdnsLabelUpdateIpv4'), field: 'UpdateIPv4', checked: draft.UpdateIPv4 !== false });
     var ipv6 = fields.checkField({ label: t.tr('DdnsLabelUpdateIpv6'), field: 'UpdateIPv6', checked: !!draft.UpdateIPv6, help: t.tr('DdnsUpdateFamiliesHelp') });
@@ -346,8 +346,8 @@ export default function (view) {
         if (data.SecretsPlaintext) notices.appendChild(el('div', { class: 'stolon-warn', text: t.tr('DdnsKeyStoreUnavailable') }));
         if (data.DetectionMessage) notices.appendChild(el('div', { class: 'stolon-warn', text: data.DetectionMessage }));
         var items = [
-            { label: t.tr('DdnsLabelPublicIpv4'), value: data.DetectedIPv4 || t.tr('DdnsNotDetected') },
-            { label: t.tr('DdnsLabelPublicIpv6'), value: data.DetectedIPv6 || t.tr('DdnsNotDetected') }
+            { label: t.tr('DdnsLabelPublicIpv4'), value: data.DetectedIPv4 || t.tr('TextNotFound') },
+            { label: t.tr('DdnsLabelPublicIpv6'), value: data.DetectedIPv6 || t.tr('TextNotFound') }
         ];
         if (addressList) addressList.setItems(items);
         else {
@@ -413,7 +413,7 @@ export default function (view) {
     function removeRecord(record, close) {
         var t = shared.t;
         nectoModule.confirmDialog(t.tr('DdnsConfirmRemoveRecord'), {
-            title: t.format('NotificationsRemoveName', recordName(record, providers)),
+            title: t.format('TitleRemoveName', recordName(record, providers)),
             confirmText: t.tr('ButtonRemove'),
             destructive: true
         }).then(function (confirmed) {

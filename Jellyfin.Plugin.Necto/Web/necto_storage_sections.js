@@ -184,7 +184,7 @@ export function createAlertEditor(t, options) {
     var ordering = false;
     var checks = el('div', { class: 'stolon-field-row necto-storage-alert-checks', role: 'group', 'aria-label': t.tr('TabStorage') });
     var pillGroup = el('div', { class: 'stolon-pill-group', role: 'group', 'aria-label': t.tr('StorageLabelMeasurement') }, [
-        el('button', { type: 'button', class: 'stolon-pill', 'data-value': 'Percent', 'aria-pressed': 'false', text: t.tr('StorageLabelUsage') }),
+        el('button', { type: 'button', class: 'stolon-pill', 'data-value': 'Percent', 'aria-pressed': 'false', text: t.tr('LabelUsage') }),
         el('button', { type: 'button', class: 'stolon-pill', 'data-value': 'Gigabytes', 'aria-pressed': 'false', text: t.tr('LabelSize') })
     ]);
     var unitField = el('div', { class: 'stolon-field necto-storage-alert-unit' }, [el('label', { text: t.tr('StorageLabelMeasurement') }), pillGroup]);

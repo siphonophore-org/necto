@@ -29,7 +29,7 @@ export function hourOptions(hours, current, t, offKey) {
     var list = hours.slice();
     if (current != null && list.indexOf(current) < 0) list.push(current);
     return list.sort(function (a, b) { return a - b; }).map(function (h) {
-        var label = h === 0 && offKey ? t.tr(offKey) : t.format(h === 1 ? 'DdnsHoursOne' : 'DdnsHoursMany', h);
+        var label = h === 0 && offKey ? t.tr(offKey) : t.format(h === 1 ? 'HoursOne' : 'HoursMany', h);
         return { value: String(h), label: label };
     });
 }
@@ -153,9 +153,9 @@ function buildTroubleshooting(content, ctx) {
         status,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderPublicIp') }),
         addresses,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderChecks') }),
+        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderChecks') }),
         rows,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderRepairs') }),
+        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
         record.element,
         el('div', { class: 'stolon-reset-group' }, [resetRow])
     ].forEach(function (node) { content.appendChild(node); });
@@ -177,8 +177,8 @@ function buildTroubleshooting(content, ctx) {
     function load() {
         return shared.request('Ddns/Records').then(function (data) {
             var items = [
-                { label: t.tr('DdnsLabelPublicIpv4'), value: data.DetectedIPv4 || t.tr('DdnsNotDetected') },
-                { label: t.tr('DdnsLabelPublicIpv6'), value: data.DetectedIPv6 || t.tr('DdnsNotDetected') }
+                { label: t.tr('DdnsLabelPublicIpv4'), value: data.DetectedIPv4 || t.tr('TextNotFound') },
+                { label: t.tr('DdnsLabelPublicIpv6'), value: data.DetectedIPv6 || t.tr('TextNotFound') }
             ];
             if (data.DetectionMessage) items.push({ label: t.tr('DdnsLabelDetection'), value: data.DetectionMessage });
             addressList.setItems(items);

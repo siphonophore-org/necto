@@ -276,7 +276,7 @@ function buildTroubleshooting(content, ctx) {
         status,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderState') }),
         state.element,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderChecks') }),
+        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderChecks') }),
         el('div', { class: 'stolon-reset-group' }, [
             fields.resetRow(t.tr('ProxyTestOutside'), t.tr('ProxyTestOutsideHelp'), t.tr('ProxyButtonTest'), 'reach'),
             fields.resetRow(t.tr('ProxyTaskExternal'), t.tr('ProxyTaskExternalHelp'), t.tr('ButtonRunTask'), 'task-external'),
@@ -284,12 +284,12 @@ function buildTroubleshooting(content, ctx) {
             fields.resetRow(t.tr('ProxyTaskLocations'), t.tr('ProxyTaskLocationsHelp'), t.tr('ButtonRunTask'), 'task-locations')
         ]),
         reach.element,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderRepairs') }),
+        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
         el('div', { class: 'stolon-reset-group' }, [
             fields.resetRow(t.tr('ProxyRestart'), t.tr('ProxyRestartHelp'), t.tr('Restart'), 'restart'),
-            fields.resetRow(t.tr('ProxyUndoTrust'), t.tr('ProxyUndoTrustHelp'), t.tr('ProxyButtonUndo'), 'undo', true),
+            fields.resetRow(t.tr('ProxyUndoTrust'), t.tr('ProxyUndoTrustHelp'), t.tr('ButtonUndo'), 'undo', true),
             fields.resetRow(t.tr('ProxyResetDefaults'), t.tr('ProxyResetDefaultsHelp'), t.tr('Reset'), 'reset', true),
-            fields.resetRow(t.tr('ProxyClearHistory'), t.tr('ProxyClearHistoryHelp'), t.tr('NotificationsButtonClear'), 'clear', true)
+            fields.resetRow(t.tr('ProxyClearHistory'), t.tr('ProxyClearHistoryHelp'), t.tr('ButtonClear'), 'clear', true)
         ]),
         el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderRecovery') }),
         recovery
@@ -322,8 +322,8 @@ function buildTroubleshooting(content, ctx) {
         if (result && result.CheckedUtc) {
             items.push({ label: t.tr('ProxyLabelChecked'), value: shared.formatDate(result.CheckedUtc) });
             items.push({ label: t.tr('ProxyLabelReachable'), value: result.Reachable === true ? t.tr('Yes') : result.Reachable === false ? t.tr('No') : t.tr('Unknown') });
-            if (result.Error) items.push({ label: t.tr('ProxyLabelProblem'), value: result.Error });
-            (result.Nodes || []).forEach(function (n) { items.push({ label: n.Location || t.tr('Unknown'), value: n.Ok ? t.tr('ProxyConnected') : n.Error }); });
+            if (result.Error) items.push({ label: t.tr('LabelProblem'), value: result.Error });
+            (result.Nodes || []).forEach(function (n) { items.push({ label: n.Location || t.tr('Unknown'), value: n.Ok ? t.tr('StateConnected') : n.Error }); });
         }
         reach.setItems(items);
     }
@@ -335,16 +335,16 @@ function buildTroubleshooting(content, ctx) {
             var s = answers[0] || {};
             var d = answers[1] || {};
             var items = [
-                { label: t.tr('TabProxy'), value: t.tr(s.Running ? 'ProxyCardRunning' : 'ProxyCardStopped') },
+                { label: t.tr('TabProxy'), value: t.tr(s.Running ? 'StateRunning' : 'StateStopped') },
                 { label: t.tr('ProxyLabelListening'), value: (s.Addresses || []).join(', ') || t.tr('None') },
-                { label: t.tr('ProxyCardJellyfin'), value: s.Backend },
+                { label: t.tr('LabelJellyfin'), value: s.Backend },
                 { label: t.tr('ProxyLabelJellyfinTrusts'), value: t.tr(s.JellyfinTrustsProxy ? 'Yes' : 'No') },
                 { label: t.tr('ProxyLabelLan'), value: s.LanAddress || s.DetectedLanAddress || t.tr('Unknown') },
                 { label: t.tr('ProxyLabelLocationDatabase'), value: t.tr(s.CountryDatabaseLoaded ? 'ProxyLoaded' : 'ProxyNotLoaded') },
                 { label: t.tr('ProxyLabelServerCountry'), value: s.ServerCountry || t.tr('Unknown') },
                 { label: t.tr('ProxyLabelMemory'), value: t.format(d.IsLowMemory ? 'ProxyMemoryLow' : 'ProxyMemoryStandard', d.MemoryMb) }
             ];
-            if (s.Error) items.push({ label: t.tr('ProxyLabelProblem'), value: s.Error });
+            if (s.Error) items.push({ label: t.tr('LabelProblem'), value: s.Error });
             state.setItems(items);
             showReach(s.Reachability);
             recovery.textContent = t.format('ProxyRecoveryHelp', s.DisableFlagPath || 'DISABLE');
@@ -375,12 +375,12 @@ function buildTroubleshooting(content, ctx) {
     button('task-locations').addEventListener('click', function () { runTask('task-locations', LOCATION_TASK); });
     button('restart').addEventListener('click', function () {
         shared.request('Proxy/Restart', 'POST').then(function (s) {
-            report(s.Running ? t.tr('ProxyRestarted') : (s.Error || t.tr('ProxyCardStopped')), !s.Running);
+            report(s.Running ? t.tr('ProxyRestarted') : (s.Error || t.tr('StateStopped')), !s.Running);
             load();
         }).catch(fail('ProxyErrorRestart'));
     });
     button('undo').addEventListener('click', function () {
-        confirmThen('ProxyConfirmUndoTrust', 'ProxyUndoTrust', 'ProxyButtonUndo', function () {
+        confirmThen('ProxyConfirmUndoTrust', 'ProxyUndoTrust', 'ButtonUndo', function () {
             shared.request('Proxy/Trust/Undo', 'POST').then(function (r) { report(r.Message || t.tr('ProxyDone'), !r.Success); load(); }).catch(fail('ProxyErrorTrust'));
         });
     });
@@ -394,8 +394,8 @@ function buildTroubleshooting(content, ctx) {
         });
     });
     button('clear').addEventListener('click', function () {
-        confirmThen('ProxyConfirmClearHistory', 'ProxyTitleClearHistory', 'NotificationsButtonClear', function () {
-            shared.request('Proxy/Visitors/History', 'DELETE').then(function () { report(t.tr('ProxyToastHistoryCleared'), false); }).catch(fail('ProxyErrorClearHistory'));
+        confirmThen('ProxyConfirmClearHistory', 'ProxyTitleClearHistory', 'ButtonClear', function () {
+            shared.request('Proxy/Visitors/History', 'DELETE').then(function () { report(t.tr('ToastHistoryCleared'), false); }).catch(fail('ErrorClearHistory'));
         });
     });
 

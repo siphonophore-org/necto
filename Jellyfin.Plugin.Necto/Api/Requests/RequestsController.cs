@@ -1779,7 +1779,7 @@ public partial class RequestsController : ControllerBase, IActionFilter
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<RequestItemDto> MarkAvailable([FromRoute(Name = "requestId")] Guid id)
     {
-        var request = _requests.MarkAvailable(id, GetAccess(asCaller: true)?.UserName ?? ServerWording.Get(TranslationKeys.DdnsActivityAnAdministrator));
+        var request = _requests.MarkAvailable(id, GetAccess(asCaller: true)?.UserName ?? ServerWording.Get(TranslationKeys.ActivityAnAdministrator));
         return request is null ? NotFound() : Ok(_items.For(request, null));
     }
 
@@ -1882,7 +1882,7 @@ public partial class RequestsController : ControllerBase, IActionFilter
         }
 
         title.Title = Cap(title.Title, 300);
-        _requests.SetBlocked(title, verb == "block", GetAccess(asCaller: true)?.UserName ?? ServerWording.Get(TranslationKeys.DdnsActivityAnAdministrator));
+        _requests.SetBlocked(title, verb == "block", GetAccess(asCaller: true)?.UserName ?? ServerWording.Get(TranslationKeys.ActivityAnAdministrator));
         return NoContent();
     }
 

@@ -44,7 +44,7 @@ public sealed class DdnsFmProvider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.ProxyLabelDomain,
+        Hostname = TranslationKeys.LabelDomain,
         Password = TranslationKeys.DdnsLabelKey,
         Server = true,
     };

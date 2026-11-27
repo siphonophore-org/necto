@@ -191,7 +191,7 @@ public sealed partial class RequestNotifier
             ["title"] = RequestService.Describe(request),
             ["name"] = request.Title ?? string.Empty,
             ["year"] = request.Year?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
-            ["type"] = ServerWording.Get(request.Type == RequestType.Series ? TranslationKeys.RequestsTypeShow : TranslationKeys.Movie),
+            ["type"] = ServerWording.Get(request.Type == RequestType.Series ? TranslationKeys.LabelShow : TranslationKeys.Movie),
             ["seasons"] = request.Type == RequestType.Series ? RequestService.DescribeSeasons(request.Seasons) : string.Empty,
             ["user"] = string.IsNullOrEmpty(request.UserName) ? UnnamedRequester : request.UserName,
             ["joined"] = (request.Joined?.Count ?? 0).ToString(CultureInfo.InvariantCulture),
@@ -199,7 +199,7 @@ public sealed partial class RequestNotifier
             ["reason"] = reason,
             ["decidedBy"] = request.DecidedBy ?? string.Empty,
             ["overview"] = request.Overview ?? string.Empty,
-            ["days"] = days == 1 ? ServerWording.Get(TranslationKeys.RequestsDayCountOne) : ServerWording.Format(TranslationKeys.RequestsDayCount, days)
+            ["days"] = days == 1 ? ServerWording.Get(TranslationKeys.DayCountOne) : ServerWording.Format(TranslationKeys.DayCount, days)
         };
     }
 

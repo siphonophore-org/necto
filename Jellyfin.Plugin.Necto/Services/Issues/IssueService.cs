@@ -242,7 +242,7 @@ public sealed class IssueService
         ArgumentNullException.ThrowIfNull(issue);
         if (issue.ItemType == nameof(BaseItemKind.Episode) && !string.IsNullOrEmpty(issue.SeriesName) && issue.SeasonNumber is { } season && issue.EpisodeNumber is { } number)
         {
-            return StolonTranslations.Format(TranslationKeys.RequestsEpisodeTitleFormat, language, issue.SeriesName, season, number);
+            return StolonTranslations.Format(TranslationKeys.IssuesEpisodeTitleFormat, language, issue.SeriesName, season, number);
         }
 
         // A name that already ends in its year, as one read from its file's name can, isn't given it twice.
@@ -347,7 +347,7 @@ public sealed class IssueService
         ArgumentNullException.ThrowIfNull(access);
         if (!access.ReportIssues)
         {
-            return Say(access, TranslationKeys.RequestsErrorCannotReportIssues);
+            return Say(access, TranslationKeys.IssuesErrorCannotReport);
         }
 
         var permissions = access.Permissions;
@@ -357,7 +357,7 @@ public sealed class IssueService
         }
 
         var since = _time.GetUtcNow().UtcDateTime.AddDays(-permissions.IssueQuotaDays);
-        return _db.CountReportsSince(access.UserId, since) >= permissions.IssueQuotaLimit ? Say(access, TranslationKeys.RequestsErrorIssueLimit) : null;
+        return _db.CountReportsSince(access.UserId, since) >= permissions.IssueQuotaLimit ? Say(access, TranslationKeys.IssuesErrorLimit) : null;
     }
 
     /// <summary>Reports a new issue with an item. Refused when the item already has an open issue.</summary>
@@ -375,7 +375,7 @@ public sealed class IssueService
 
         if (Find(submit.ItemId, access) is not { } item)
         {
-            return (null, Say(access, TranslationKeys.RequestsErrorIssueItemNotFound));
+            return (null, Say(access, TranslationKeys.IssuesErrorItemNotFound));
         }
 
         var now = _time.GetUtcNow().UtcDateTime;
@@ -384,7 +384,7 @@ public sealed class IssueService
         {
             if (_db.IssuesForItem(item.Id).FirstOrDefault(i => i.IsOpen) is { } open)
             {
-                return (null, Say(access, open.HasReporter(access.UserId) ? TranslationKeys.RequestsErrorIssueAlreadyReported : TranslationKeys.RequestsErrorIssueJoinInstead));
+                return (null, Say(access, open.HasReporter(access.UserId) ? TranslationKeys.IssuesErrorAlreadyReported : TranslationKeys.IssuesErrorJoinInstead));
             }
 
             if (Refusal(access) is { } refused)
@@ -412,7 +412,7 @@ public sealed class IssueService
             return (null, error);
         }
 
-        Log(TranslationKeys.RequestsEventIssueReported, "IssueReported", TranslationKeys.RequestsActivityIssueReported, access, issue, KindName(submit.Type));
+        Log(TranslationKeys.IssuesEventReported, "IssueReported", TranslationKeys.IssuesActivityReported, access, issue, KindName(submit.Type));
         _notifier.NotifyIssue(NotificationEvent.IssueReported, issue);
         return (issue, null);
     }
@@ -437,17 +437,17 @@ public sealed class IssueService
         {
             if (Visible(issueId, access) is not { } found)
             {
-                return (null, Say(access, TranslationKeys.RequestsErrorIssueNotFound));
+                return (null, Say(access, TranslationKeys.IssuesErrorNotFound));
             }
 
             if (!found.IsOpen)
             {
-                return (null, Say(access, TranslationKeys.RequestsErrorIssueClosed));
+                return (null, Say(access, TranslationKeys.IssuesErrorClosed));
             }
 
             if (found.HasReporter(access.UserId))
             {
-                return (null, Say(access, TranslationKeys.RequestsErrorIssueAlreadyReported));
+                return (null, Say(access, TranslationKeys.IssuesErrorAlreadyReported));
             }
 
             if (Refusal(access) is { } refused)
@@ -468,7 +468,7 @@ public sealed class IssueService
 
         if (issue is not null)
         {
-            Log(TranslationKeys.RequestsEventIssueReported, "IssueReported", TranslationKeys.RequestsActivityIssueJoined, access, issue, KindName(submit.Type));
+            Log(TranslationKeys.IssuesEventReported, "IssueReported", TranslationKeys.IssuesActivityJoined, access, issue, KindName(submit.Type));
         }
 
         return (issue, error);
@@ -494,12 +494,12 @@ public sealed class IssueService
         {
             if (Visible(issueId, access) is not { } found || !found.HasReporter(access.UserId))
             {
-                return (null, Say(access, TranslationKeys.RequestsErrorIssueNotFound));
+                return (null, Say(access, TranslationKeys.IssuesErrorNotFound));
             }
 
             if (!found.IsOpen)
             {
-                return (null, Say(access, TranslationKeys.RequestsErrorIssueClosed));
+                return (null, Say(access, TranslationKeys.IssuesErrorClosed));
             }
 
             found.Reporters.First(r => r.UserId == access.UserId).Type = submit.Type;
@@ -540,12 +540,12 @@ public sealed class IssueService
         {
             if (Visible(issueId, access) is not { } found || !found.HasReporter(access.UserId))
             {
-                return (null, false, Say(access, TranslationKeys.RequestsErrorIssueNotFound));
+                return (null, false, Say(access, TranslationKeys.IssuesErrorNotFound));
             }
 
             if (!found.IsOpen)
             {
-                return (null, false, Say(access, TranslationKeys.RequestsErrorIssueClosed));
+                return (null, false, Say(access, TranslationKeys.IssuesErrorClosed));
             }
 
             var alone = found.Reporters.All(r => r.UserId == access.UserId);
@@ -567,9 +567,9 @@ public sealed class IssueService
         if (issue is not null && rescinded)
         {
             _activity.Log(
-                ServerWording.Get(TranslationKeys.RequestsActivityIssueRescindedName),
+                ServerWording.Get(TranslationKeys.IssuesActivityRescindedName),
                 RequestService.ActivityType + ".IssueRescinded",
-                ActivityText.Sentence(ServerWording.Format(TranslationKeys.RequestsActivityIssueRescinded, access.UserName, Describe(issue, ServerWording.Language))),
+                ActivityText.Sentence(ServerWording.Format(TranslationKeys.IssuesActivityRescinded, access.UserName, Describe(issue, ServerWording.Language))),
                 userId: access.UserId);
         }
 
@@ -581,15 +581,15 @@ public sealed class IssueService
     {
         if (!access.ReportIssues && !editing)
         {
-            return Say(access, TranslationKeys.RequestsErrorCannotReportIssues);
+            return Say(access, TranslationKeys.IssuesErrorCannotReport);
         }
 
         if (!Enum.IsDefined(submit.Type))
         {
-            return Say(access, TranslationKeys.RequestsErrorIssueType);
+            return Say(access, TranslationKeys.IssuesErrorType);
         }
 
-        return submit.Type == IssueType.Other && Clip(submit.Note) is null ? Say(access, TranslationKeys.RequestsErrorIssueNoteRequired) : null;
+        return submit.Type == IssueType.Other && Clip(submit.Note) is null ? Say(access, TranslationKeys.IssuesErrorNoteRequired) : null;
     }
 
     // An issue whose item the user may see, or one whose item is gone, which hides nothing.
@@ -625,7 +625,7 @@ public sealed class IssueService
         {
             if (_db.GetIssue(issueId) is not { } found)
             {
-                return (null, Say(admin, TranslationKeys.RequestsErrorIssueNotFound));
+                return (null, Say(admin, TranslationKeys.IssuesErrorNotFound));
             }
 
             var allowed = action switch
@@ -638,9 +638,9 @@ public sealed class IssueService
             {
                 return (null, Say(admin, action switch
                 {
-                    IssueAction.Reopen => TranslationKeys.RequestsErrorIssueAlreadyOpen,
-                    IssueAction.Confirm when found.State == IssueState.Confirmed => TranslationKeys.RequestsErrorIssueAlreadyConfirmed,
-                    _ => TranslationKeys.RequestsErrorIssueNotOpen
+                    IssueAction.Reopen => TranslationKeys.IssuesErrorAlreadyOpen,
+                    IssueAction.Confirm when found.State == IssueState.Confirmed => TranslationKeys.IssuesErrorAlreadyConfirmed,
+                    _ => TranslationKeys.IssuesErrorNotOpen
                 }));
             }
 
@@ -648,7 +648,7 @@ public sealed class IssueService
             {
                 if (_db.IssuesForItem(found.ItemId).Any(i => i.IsOpen && i.Id != found.Id))
                 {
-                    return (null, Say(admin, TranslationKeys.RequestsErrorIssueOpenOnItem));
+                    return (null, Say(admin, TranslationKeys.IssuesErrorOpenOnItem));
                 }
 
                 // Open again, it is about the file as it is now.
@@ -685,10 +685,10 @@ public sealed class IssueService
 
         var (name, type, overview) = action switch
         {
-            IssueAction.Confirm => (TranslationKeys.IssuesBadgeConfirmed, "IssueConfirmed", TranslationKeys.RequestsActivityIssueConfirmed),
-            IssueAction.Resolve => (TranslationKeys.RequestsEventIssueResolved, "IssueResolved", TranslationKeys.RequestsActivityIssueResolved),
-            IssueAction.Decline => (TranslationKeys.RequestsActivityIssueDeclinedName, "IssueDeclined", TranslationKeys.RequestsActivityIssueDeclined),
-            _ => (TranslationKeys.RequestsActivityIssueReopenedName, "IssueReopened", TranslationKeys.RequestsActivityIssueReopened)
+            IssueAction.Confirm => (TranslationKeys.IssuesBadgeConfirmed, "IssueConfirmed", TranslationKeys.IssuesActivityConfirmed),
+            IssueAction.Resolve => (TranslationKeys.IssuesEventResolved, "IssueResolved", TranslationKeys.IssuesActivityResolved),
+            IssueAction.Decline => (TranslationKeys.IssuesActivityDeclinedName, "IssueDeclined", TranslationKeys.IssuesActivityDeclined),
+            _ => (TranslationKeys.IssuesActivityReopenedName, "IssueReopened", TranslationKeys.IssuesActivityReopened)
         };
         Log(name, type, overview, admin, issue, null);
         if (action is IssueAction.Resolve or IssueAction.Decline)
@@ -810,12 +810,12 @@ public sealed class IssueService
     private static string KindName(IssueType type) => ServerWording.Get(
         type switch
         {
-            IssueType.Video => TranslationKeys.RequestsActivityIssueKindVideo,
-            IssueType.Audio => TranslationKeys.RequestsActivityIssueKindAudio,
-            IssueType.Subtitles => TranslationKeys.RequestsActivityIssueKindSubtitles,
-            IssueType.Metadata => TranslationKeys.RequestsActivityIssueKindMetadata,
-            IssueType.WontPlay => TranslationKeys.RequestsActivityIssueKindWontPlay,
-            _ => TranslationKeys.RequestsActivityIssueKindOther
+            IssueType.Video => TranslationKeys.IssuesActivityKindVideo,
+            IssueType.Audio => TranslationKeys.IssuesActivityKindAudio,
+            IssueType.Subtitles => TranslationKeys.IssuesActivityKindSubtitles,
+            IssueType.Metadata => TranslationKeys.IssuesActivityKindMetadata,
+            IssueType.WontPlay => TranslationKeys.IssuesActivityKindWontPlay,
+            _ => TranslationKeys.IssuesActivityKindOther
         });
 
     private static string Say(UserAccess access, string key) => StolonTranslations.Get(key, access.Language);

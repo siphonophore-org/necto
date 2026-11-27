@@ -11,7 +11,7 @@ var KIND_NAMES = ['Discord', 'Webhook', 'Email', 'Administrators', 'ActivityLog'
 
 // KIND_KEYS
 // The string key of each kind's name, and of the button that adds one.
-export var KIND_KEYS = { Discord: 'NotificationsKindDiscord', Webhook: 'NotificationsKindWebhook', Email: 'NotificationsKindEmail', Administrators: 'NotificationsKindAdministrators', ActivityLog: 'NotificationsKindActivityLog' };
+export var KIND_KEYS = { Discord: 'NotificationsKindDiscord', Webhook: 'LabelWebhook', Email: 'NotificationsKindEmail', Administrators: 'NotificationsKindAdministrators', ActivityLog: 'NotificationsKindActivityLog' };
 var ADD_KEYS = { Discord: 'NotificationsButtonAddDiscord', Webhook: 'NotificationsButtonAddWebhook', Email: 'NotificationsButtonAddEmail' };
 
 // Ids for fields, so two sections never share one.
@@ -79,7 +79,7 @@ export function newChannel(kind, name) {
 // [string]: The name.
 export function channelTitle(channel, t) {
     var kind = kindName(channel.Kind);
-    if (kind === 'Administrators') return t.tr('NotificationsChannelAdministrators');
+    if (kind === 'Administrators') return t.tr('LabelAdministrators');
     if (kind === 'ActivityLog') return t.tr('NotificationsChannelActivityLog');
     return channel.Name || t.tr(KIND_KEYS[kind]);
 }
@@ -131,7 +131,7 @@ function field(opts) {
 // Output
 // [HTMLButtonElement]: The button, for bindSecretField's clearButton.
 function clearButton(wrap, t) {
-    var button = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'clear-secret' }, [el('span', { text: t.tr('NotificationsButtonClear') })]);
+    var button = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'clear-secret' }, [el('span', { text: t.tr('ButtonClear') })]);
     wrap.appendChild(button);
     return button;
 }
@@ -173,7 +173,7 @@ function buildSettings(content, ctx) {
     var list = null;
     var status = el('div', { class: 'stolon-status-text', role: 'status' });
 
-    var browsers = check({ label: t.tr('NotificationsChannelBrowsers'), help: t.tr('NotificationsBrowsersHelp'), data: 'BrowserNotifications' });
+    var browsers = check({ label: t.tr('LabelBrowserNotifications'), help: t.tr('NotificationsBrowsersHelp'), data: 'BrowserNotifications' });
     var apps = check({ label: t.tr('NotificationsChannelApps'), help: t.tr('NotificationsAppsHelp'), data: 'JellyfinMessages' });
     var server = field({ label: t.tr('NotificationsLabelServerUrl'), help: t.tr('NotificationsServerUrlHelp'), placeholder: 'https://jellyfin.example.com', data: 'ServerUrl' });
     var contact = field({ label: t.tr('NotificationsLabelPushContact'), help: t.tr('NotificationsPushContactHelp'), placeholder: 'mailto:admin@example.com', data: 'PushContact' });
@@ -200,7 +200,7 @@ function buildSettings(content, ctx) {
         el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderUsers') }),
         el('div', { class: 'fieldDescription', text: t.tr('NotificationsUsersHelp') }),
         browsers.wrap, apps.wrap,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderLinks') }),
+        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLinks') }),
         server.wrap, contact.wrap,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderEmail') }),
         host.wrap, port.wrap, tls.wrap, user.wrap, password.wrap, from.wrap, fromName.wrap,
@@ -240,7 +240,7 @@ function buildSettings(content, ctx) {
             page: ctx.page,
             isNew: isNew || isBuiltIn(channel),
             serialize: function () { return JSON.stringify(editor.getValue()); },
-            saveText: t.tr('NotificationsButtonDone'),
+            saveText: t.tr('ButtonDone'),
             deleteText: t.tr('ButtonRemove'),
             actions: kindName(channel.Kind) === 'Administrators' ? [] : [{ text: t.tr('Preview'), onClick: function () { editor.preview(); } }],
             onSave: function () {
@@ -254,7 +254,7 @@ function buildSettings(content, ctx) {
                 return true;
             },
             onDelete: function (close) {
-                nectoModule.confirmDialog(t.tr('NotificationsConfirmRemove'), { title: t.format('NotificationsRemoveName', channelTitle(channel, t)), confirmText: t.tr('ButtonRemove'), destructive: true }).then(function (ok) {
+                nectoModule.confirmDialog(t.tr('NotificationsConfirmRemove'), { title: t.format('TitleRemoveName', channelTitle(channel, t)), confirmText: t.tr('ButtonRemove'), destructive: true }).then(function (ok) {
                     if (!ok) return;
                     settings.Channels = settings.Channels.filter(function (c) { return c !== channel; });
                     drawChannels();
@@ -380,7 +380,7 @@ export function createChannelEditor(channel, ctx) {
     readers.push(function (out) { out.Enabled = !!on.input.checked; });
 
     if (kind === 'Discord' || kind === 'Webhook') {
-        var url = field({ label: t.tr(kind === 'Discord' ? 'NotificationsLabelDiscordUrl' : 'NotificationsLabelWebhookUrl'), placeholder: kind === 'Discord' ? 'https://discord.com/api/webhooks/...' : 'https://hooks.example.com/jellyfin', data: 'Url', help: t.tr('NotificationsUrlHelp') });
+        var url = field({ label: t.tr(kind === 'Discord' ? 'NotificationsLabelDiscordUrl' : 'LabelWebhookAddress'), placeholder: kind === 'Discord' ? 'https://discord.com/api/webhooks/...' : 'https://hooks.example.com/jellyfin', data: 'Url', help: t.tr('NotificationsUrlHelp') });
         root.appendChild(url.wrap);
         nectoModule.bindSecretField(url.input, channel.Url === nectoModule.SECRET_KEPT);
         readers.push(function (out) { out.Url = nectoModule.readSecretField(url.input); });
@@ -397,7 +397,7 @@ export function createChannelEditor(channel, ctx) {
             readers.push(function (out) { out.Headers = nectoModule.readSecretField(headers.input); });
         }
         var custom = check({ label: t.tr('NotificationsLabelCustomBody'), help: t.tr('NotificationsCustomBodyHelp'), checked: channel.UseCustomBody, data: 'UseCustomBody' });
-        var body = field({ label: t.tr('NotificationsLabelBody'), type: 'textarea', value: channel.Body, data: 'Body', help: t.tr('NotificationsBodyHelp') });
+        var body = field({ label: t.tr('LabelBody'), type: 'textarea', value: channel.Body, data: 'Body', help: t.tr('NotificationsBodyHelp') });
         var hint = el('div');
         hint.innerHTML = nectoModule.placeholderHint(bodyPlaceholders(t));
         while (hint.firstChild) body.wrap.appendChild(hint.firstChild);
@@ -486,7 +486,7 @@ export function logItems(entries, shared) {
     var t = shared.t;
     return (entries || []).map(function (e, i) {
         var tags = [{ label: e.Ok ? t.tr('NotificationsTagSent') : t.tr('LabelFailed'), color: e.Ok ? 'green' : 'red' }];
-        if (e.Test) tags.push({ label: t.tr('NotificationsButtonTest'), color: 'blue' });
+        if (e.Test) tags.push({ label: t.tr('ButtonTest'), color: 'blue' });
         return {
             id: String(i),
             title: e.Title || e.EventKey,
@@ -552,9 +552,9 @@ function buildTroubleshooting(content, ctx) {
 
     [
         status,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderTests') }),
+        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderTests') }),
         el('div', { class: 'stolon-reset-group' }, [
-            resetRow(t.tr('NotificationsTestMe'), t.tr('NotificationsTestMeHelp'), t.tr('NotificationsButtonTest'), 'test-me', false)
+            resetRow(t.tr('NotificationsTestMe'), t.tr('NotificationsTestMeHelp'), t.tr('ButtonTest'), 'test-me', false)
         ]),
         el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderLog') }),
         el('div', { class: 'fieldDescription', text: t.tr('NotificationsLogHelp') }),
@@ -567,7 +567,7 @@ function buildTroubleshooting(content, ctx) {
         browserBox,
         heldLine,
         el('div', { class: 'stolon-reset-group' }, [
-            resetRow(t.tr('NotificationsClearHeld'), t.tr('NotificationsClearHeldHelp'), t.tr('NotificationsButtonClear'), 'clear-held', true),
+            resetRow(t.tr('NotificationsClearHeld'), t.tr('NotificationsClearHeldHelp'), t.tr('ButtonClear'), 'clear-held', true),
             resetRow(t.tr('NotificationsResetKeys'), t.tr('NotificationsResetKeysHelp'), t.tr('NotificationsButtonResetKeys'), 'reset-keys', true)
         ])
     ].forEach(function (node) { content.appendChild(node); });
@@ -629,7 +629,7 @@ function buildTroubleshooting(content, ctx) {
         Promise.all(['browsers', 'apps'].map(function (id) {
             return shared.request('Notifications/Channels/' + id + '/Test', 'POST').catch(function () { return { Ok: false, Message: t.tr('NotificationsErrorTest') }; });
         })).then(function (results) {
-            report(t.tr('NotificationsChannelBrowsers') + ': ' + results[0].Message + ' ' + t.tr('NotificationsChannelApps') + ': ' + results[1].Message, !(results[0].Ok || results[1].Ok));
+            report(t.tr('LabelBrowserNotifications') + ': ' + results[0].Message + ' ' + t.tr('NotificationsChannelApps') + ': ' + results[1].Message, !(results[0].Ok || results[1].Ok));
             loadLog();
         });
     });
@@ -638,7 +638,7 @@ function buildTroubleshooting(content, ctx) {
         shared.request('Notifications/Log', 'DELETE').then(function () { report(t.tr('NotificationsLogCleared'), false); loadLog(); }).catch(fail('NotificationsErrorClear'));
     });
     button('clear-held').addEventListener('click', function () {
-        confirmThen(t.tr('NotificationsConfirmClearHeld'), t.tr('NotificationsClearHeld'), t.tr('NotificationsButtonClear'), function () {
+        confirmThen(t.tr('NotificationsConfirmClearHeld'), t.tr('NotificationsClearHeld'), t.tr('ButtonClear'), function () {
             return shared.request('Notifications/Held', 'DELETE').then(function (r) {
                 report(shared.plural((r && r.Count) || 0, 'NotificationsHeldClearedOne', 'NotificationsHeldClearedMany'), false);
                 loadPush();

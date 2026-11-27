@@ -77,7 +77,7 @@ public partial class RequestsController
             return Forbid();
         }
 
-        return _issues!.Find(itemId, access) is { } item ? Ok(_issues.View(access, item)) : NotFound(new { Error = StolonTranslations.Get(TranslationKeys.RequestsErrorIssueItemNotFound, Language) });
+        return _issues!.Find(itemId, access) is { } item ? Ok(_issues.View(access, item)) : NotFound(new { Error = StolonTranslations.Get(TranslationKeys.IssuesErrorItemNotFound, Language) });
     }
 
     /// <summary>Reports an issue with an item, refused when the item already has an open one.</summary>
@@ -90,7 +90,7 @@ public partial class RequestsController
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<Issue> ReportIssue([FromBody] IssueSubmit body)
-        => IssueChange(access => body is null ? (null, StolonTranslations.Get(TranslationKeys.RequestsErrorIssueType, Language)) : _issues!.Report(access, body));
+        => IssueChange(access => body is null ? (null, StolonTranslations.Get(TranslationKeys.IssuesErrorType, Language)) : _issues!.Report(access, body));
 
     /// <summary>Joins someone else's open issue.</summary>
     /// <param name="issueId">The issue.</param>
@@ -253,7 +253,7 @@ public partial class RequestsController
 
     // The 404 every issue route answers while issues are off, or null while they are on.
     private NotFoundObjectResult? IssuesOff()
-        => _issues is not null && IssueService.Enabled ? null : NotFound(new { Error = StolonTranslations.Get(TranslationKeys.RequestsErrorIssuesOff, Language) });
+        => _issues is not null && IssueService.Enabled ? null : NotFound(new { Error = StolonTranslations.Get(TranslationKeys.IssuesErrorOff, Language) });
 
     // A change a user makes to an issue: refused while issues are off, to anyone who may not report (unless changing or
     // withdrawing their own), and to an API key, which is no one.

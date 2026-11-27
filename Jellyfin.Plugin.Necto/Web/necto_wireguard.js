@@ -112,7 +112,7 @@ export default function (view) {
     function usageAside(id, limit) {
         if (!(limit.bytes > 0)) return null;
         var meter = nectoModule.createUsageMeter({
-            label: t.tr('StorageLabelUsage'),
+            label: t.tr('LabelUsage'),
             used: bytesOf(id, limit.period),
             total: limit.bytes,
             bytes: true,
@@ -153,10 +153,10 @@ export default function (view) {
         var host = ends.filter(function (e) { return e.Kind === 'Host'; })[0];
         var cards = [];
         if (w.HostEnabled) cards.push({ count: tunnelStateLabel(t, host ? host.State : 'Stopped'), label: t.tr('LabelServerHost'), color: host && host.State === 'Running' ? 'green' : host && host.State === 'Failed' ? 'red' : 'gray' });
-        if (w.ConnectEnabled || (w.Connections || []).length) cards.push({ count: t.tr(w.ConnectEnabled ? 'InvitesStateActive' : 'WireGuardStatusInactive'), label: t.tr('WireGuardLabelConnectEnabled'), color: w.ConnectEnabled ? 'green' : 'gray' });
+        if (w.ConnectEnabled || (w.Connections || []).length) cards.push({ count: t.tr(w.ConnectEnabled ? 'StateActive' : 'WireGuardStatusInactive'), label: t.tr('WireGuardLabelConnectEnabled'), color: w.ConnectEnabled ? 'green' : 'gray' });
         cards.push({ count: counts.peers, label: t.tr('WireGuardHeaderPeers') });
         cards.push({ count: counts.connections, label: t.tr('WireGuardHeaderConnections') });
-        cards.push({ count: counts.connected, label: t.tr('ProxyConnected'), color: counts.connected ? 'green' : 'gray' });
+        cards.push({ count: counts.connected, label: t.tr('StateConnected'), color: counts.connected ? 'green' : 'gray' });
         cards.push({ count: counts.over, label: t.tr('WireGuardTagOverLimit'), color: counts.over ? 'red' : 'gray' });
         if (counts.refused) cards.push({ count: counts.refused, label: t.tr('WireGuardCardLeftOut'), color: 'orange' });
         shared.renderCards('wireguardCards', cards);
@@ -258,17 +258,17 @@ export default function (view) {
         var end = endOf(peer.Id);
         var tag = stateTag(t, end.State || 'Offline');
         var body = el('div');
-        body.appendChild(subsection('ScriptsLabelDetails'));
+        body.appendChild(subsection('LabelDetails'));
         body.appendChild(nectoModule.createDefinitionList({
             emptyText: '-',
             items: [
                 { label: t.tr('LabelStatus'), value: { text: '', badge: { label: tag.label, color: tag.color || 'gray' } } },
                 { label: t.tr('WireGuardLabelOwner'), value: userName(peer.UserId) },
-                { label: t.tr('InvitesLabelResourceUrl'), value: peer.Address, mono: true },
+                { label: t.tr('LabelAddress'), value: peer.Address, mono: true },
                 { label: t.tr('WireGuardLabelRoutedSubnets'), value: (peer.RoutedSubnets || []).join(', ') || null, mono: true },
                 { label: t.tr('WireGuardLabelLastHandshake'), value: state.LastHandshakeUtc ? shared.formatDate(state.LastHandshakeUtc) : null },
                 { label: t.tr('LabelSource'), value: state.Endpoint || null, mono: true },
-                { label: t.tr('StorageLabelUsage'), value: usedText(peer.Id, peerLimit(cfg, peer)) },
+                { label: t.tr('LabelUsage'), value: usedText(peer.Id, peerLimit(cfg, peer)) },
                 { label: t.tr('WireGuardLabelSpeedLimit'), value: speedText(peer.DownloadMbps, cfg.PeerDownloadMbps, peer.UploadMbps, cfg.PeerUploadMbps) }
             ]
         }).element);
@@ -396,7 +396,7 @@ export default function (view) {
     function saveRecord(route, isNew, id, values, status) {
         var request = isNew ? shared.request(route, 'POST', values) : shared.request(route + '/' + id, 'PUT', values);
         return request.then(function () {
-            report(t.tr('RequestsToastSaved'), false);
+            report(t.tr('ToastSaved'), false);
             load();
             return true;
         }).catch(function (err) {
@@ -411,14 +411,14 @@ export default function (view) {
     // Asks first, then removes a peer or connection and closes its sidecar.
     function removeRecord(route, id, name, messageKey, close) {
         nectoModule.confirmDialog(t.tr(messageKey), {
-            title: t.format('NotificationsRemoveName', name),
+            title: t.format('TitleRemoveName', name),
             confirmText: t.tr('ButtonRemove'),
             destructive: true
         }).then(function (yes) {
             if (!yes) return;
             shared.request(route + '/' + id, 'DELETE').then(function () {
                 close('removed');
-                report(t.format('RequestsBulkRemoved', name), false);
+                report(t.format('ToastRemovedCount', name), false);
                 load();
             }).catch(function (err) {
                 shared.errorText(err, t.tr('WireGuardErrorSave')).then(function (text) { report(text, true); });
@@ -434,9 +434,9 @@ export default function (view) {
         var status = el('div', { class: 'stolon-status-text', role: 'status' });
         var name = field('LabelName', 'text', peer.Name, null, t.tr('WireGuardPlaceholderPeerName'));
         var owner = shared.createUserSelector({ value: peer.UserId, includeEmptyOption: false });
-        var address = field('InvitesLabelResourceUrl', 'text', peer.Address, null, t.tr('WireGuardPlaceholderNextFree'));
+        var address = field('LabelAddress', 'text', peer.Address, null, t.tr('WireGuardPlaceholderNextFree'));
         var subnets = field('WireGuardLabelRoutedSubnets', 'text', (peer.RoutedSubnets || []).join(', '), 'WireGuardRoutedSubnetsHelp', '192.168.1.0/24');
-        var enabled = nectoModule.createCheckbox({ label: t.tr('ScriptsLabelEnabled'), checked: peer.Enabled !== false });
+        var enabled = nectoModule.createCheckbox({ label: t.tr('LabelEnabled'), checked: peer.Enabled !== false });
         var publicKey = field('WireGuardLabelPublicKey', 'text', isNew ? '' : peer.PublicKey, isNew ? 'WireGuardPublicKeyHelp' : null, isNew ? t.tr('WireGuardPlaceholderMadeForYou') : '');
         publicKey.input.readOnly = !isNew;
         var down = inheritSpeed('WireGuardLabelDownloadMbps', peer.DownloadMbps, cfg.PeerDownloadMbps);
@@ -445,7 +445,7 @@ export default function (view) {
         var body = el('div', {}, [
             status,
             collapsible('WireGuardHeaderPeer', [name, labelled('WireGuardLabelOwner', owner.element, 'WireGuardOwnerHelp'), address, publicKey, enabled], true),
-            collapsible('InvitesHeaderLimits', [down, up, data]),
+            collapsible('HeaderLimits', [down, up, data]),
             collapsible('TabAdvanced', [subnets])
         ]);
 
@@ -477,7 +477,7 @@ export default function (view) {
             onSave: function () {
                 var values = read();
                 if (!values.Name) {
-                    shared.setStatus(status, t.tr('PagesErrorEnterName'), true);
+                    shared.setStatus(status, t.tr('ErrorEnterName'), true);
                     return false;
                 }
                 return saveRecord('WireGuard/Peers', isNew, peer.Id, values, status);
@@ -496,7 +496,7 @@ export default function (view) {
         var end = endOf(c.Id);
         var tag = stateTag(t, end.State || 'Offline');
         var body = el('div');
-        body.appendChild(subsection('ScriptsLabelDetails'));
+        body.appendChild(subsection('LabelDetails'));
         body.appendChild(nectoModule.createDefinitionList({
             emptyText: '-',
             items: [
@@ -506,7 +506,7 @@ export default function (view) {
                 { label: t.tr('WireGuardLabelForwards'), value: (c.Forwards || []).map(function (f) { return '127.0.0.1:' + f.LocalPort + ' → ' + f.RemoteHost + ':' + f.RemotePort; }).join('\n') || null, mono: true },
                 { label: t.tr('WireGuardLabelLastHandshake'), value: state.LastHandshakeUtc ? shared.formatDate(state.LastHandshakeUtc) : null },
                 { label: t.tr('WireGuardLabelLastError'), value: state.State === 'Failed' ? state.Error : null },
-                { label: t.tr('StorageLabelUsage'), value: usedText(c.Id, connectionLimit(cfg, c)) },
+                { label: t.tr('LabelUsage'), value: usedText(c.Id, connectionLimit(cfg, c)) },
                 { label: t.tr('WireGuardLabelSpeedLimit'), value: speedText(c.DownloadMbps, cfg.ConnectionDownloadMbps, c.UploadMbps, cfg.ConnectionUploadMbps) }
             ]
         }).element);
@@ -534,11 +534,11 @@ export default function (view) {
         var name = field('LabelName', 'text', c.Name, null, t.tr('WireGuardPlaceholderConnectionName'));
         var endpoint = field('WireGuardLabelRemoteHost', 'text', c.Endpoint, null, 'vpn.example.com:51820');
         var peerKey = field('WireGuardLabelRemotePublicKey', 'text', c.PeerPublicKey, null, '');
-        var psk = field('WireGuardLabelPresharedKey', 'password', '', null, c.PresharedKey ? t.tr('WireGuardPlaceholderKept') : t.tr('PagesPlaceholderOptional'));
+        var psk = field('WireGuardLabelPresharedKey', 'password', '', null, c.PresharedKey ? t.tr('WireGuardPlaceholderKept') : t.tr('PlaceholderOptional'));
         var address = field('WireGuardLabelOurAddress', 'text', c.Address, null, '10.0.0.5');
-        var privateKey = field('ProxyLabelUploadKey', 'password', '', 'WireGuardPrivateKeyHelp', c.PrivateKey ? t.tr('WireGuardPlaceholderKept') : t.tr('WireGuardPlaceholderMadeForYou'));
+        var privateKey = field('LabelPrivateKey', 'password', '', 'WireGuardPrivateKeyHelp', c.PrivateKey ? t.tr('WireGuardPlaceholderKept') : t.tr('WireGuardPlaceholderMadeForYou'));
         var forwards = textArea('WireGuardLabelForwards', 'WireGuardForwardsHelp', (c.Forwards || []).map(function (f) { return f.LocalPort + ' ' + f.RemoteHost + ':' + f.RemotePort; }).join('\n'), '18096 10.0.0.1:8096', 3);
-        var enabled = nectoModule.createCheckbox({ label: t.tr('ScriptsLabelEnabled'), checked: c.Enabled !== false });
+        var enabled = nectoModule.createCheckbox({ label: t.tr('LabelEnabled'), checked: c.Enabled !== false });
         var keepalive = field('WireGuardLabelKeepalive', 'number', c.Keepalive, null, '25');
         var down = inheritSpeed('WireGuardLabelDownloadMbps', c.DownloadMbps, cfg.ConnectionDownloadMbps);
         var up = inheritSpeed('WireGuardLabelUploadMbps', c.UploadMbps, cfg.ConnectionUploadMbps);
@@ -548,7 +548,7 @@ export default function (view) {
             collapsible('WireGuardHeaderImport', [importArea]),
             collapsible('WireGuardHeaderConnection', [name, endpoint, peerKey, psk, address, privateKey, enabled], true),
             collapsible('WireGuardLabelForwards', [forwards]),
-            collapsible('InvitesHeaderLimits', [down, up, data]),
+            collapsible('HeaderLimits', [down, up, data]),
             collapsible('TabAdvanced', [keepalive])
         ]);
 

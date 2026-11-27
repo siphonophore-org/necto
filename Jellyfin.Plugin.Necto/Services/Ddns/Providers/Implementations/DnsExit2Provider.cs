@@ -67,7 +67,7 @@ public sealed class DnsExit2Provider : DNSProviderBase
     {
         Hostname = TranslationKeys.DdnsLabelRecordName,
         Password = TranslationKeys.HeaderApiKey,
-        Zone = TranslationKeys.ProxyLabelDomain,
+        Zone = TranslationKeys.LabelDomain,
         Server = true,
         Ttl = true,
     };

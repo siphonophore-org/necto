@@ -109,7 +109,7 @@ public sealed class RequestActivity : IDisposable
     internal static string ExpiredOverview(int days, IReadOnlyList<string> requesters)
     {
         ArgumentNullException.ThrowIfNull(requesters);
-        var waited = days == 1 ? ServerWording.Get(TranslationKeys.RequestsDayCountOne) : ServerWording.Format(TranslationKeys.RequestsDayCount, days);
+        var waited = days == 1 ? ServerWording.Get(TranslationKeys.DayCountOne) : ServerWording.Format(TranslationKeys.DayCount, days);
         var key = requesters.Count == 1 ? TranslationKeys.RequestsActivityRunExpiredOverviewOne : TranslationKeys.RequestsActivityRunExpiredOverviewMany;
         return RunEnding(ServerWording.Format(key, requesters.Count, waited, Requesters(requesters)), 0);
     }

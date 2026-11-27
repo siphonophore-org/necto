@@ -97,7 +97,7 @@ export function buildSettings(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var enabled = checkbox(t, 'ScriptsLabelEnabled', 'WireGuardEnabledHelp');
+    var enabled = checkbox(t, 'LabelEnabled', 'WireGuardEnabledHelp');
     var sidecarLine = el('div', { class: 'fieldDescription', 'data-role': 'sidecar' });
     var replace = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button secondary small', 'data-action': 'replace-sidecar' }, [el('span', { text: t.tr('WireGuardButtonReplace') })]);
     var info = null;
@@ -323,7 +323,7 @@ export function buildTroubleshooting(content, ctx) {
     var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var restart = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button secondary small', 'data-action': 'restart' }, [el('span', { text: t.tr('Restart') })]);
     var tunnelList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderTunnels'), emptyText: t.tr('WireGuardEmptyTunnels') });
-    var userList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderPeersByUser'), emptyText: t.tr('ScriptsEmptyUsers') });
+    var userList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderPeersByUser'), emptyText: t.tr('EmptyUsers') });
 
     [
         status,

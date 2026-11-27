@@ -98,7 +98,7 @@ public class ProxyController : ControllerBase
     {
         if (incoming is null)
         {
-            return BadRequest(Errors(Reply(TranslationKeys.ProxyErrorNothingSent)));
+            return BadRequest(Errors(Reply(TranslationKeys.ErrorNothingSent)));
         }
 
         var stored = Read();
@@ -148,7 +148,7 @@ public class ProxyController : ControllerBase
     {
         if (route is null)
         {
-            return BadRequest(Errors(Reply(TranslationKeys.ProxyErrorNothingSent)));
+            return BadRequest(Errors(Reply(TranslationKeys.ErrorNothingSent)));
         }
 
         route.Id = Guid.NewGuid().ToString("N");
@@ -169,7 +169,7 @@ public class ProxyController : ControllerBase
     {
         if (route is null)
         {
-            return BadRequest(Errors(Reply(TranslationKeys.ProxyErrorNothingSent)));
+            return BadRequest(Errors(Reply(TranslationKeys.ErrorNothingSent)));
         }
 
         var existing = Read().Routes.FirstOrDefault(r => string.Equals(r.Id, id, StringComparison.Ordinal));
@@ -402,7 +402,7 @@ public class ProxyController : ControllerBase
         route.Id = existing?.Id ?? route.Id;
         if (XmlText.FindInvalid(route) is { } bad)
         {
-            return BadRequest(Errors(Reply(TranslationKeys.DdnsErrorInvalidCharacter, bad)));
+            return BadRequest(Errors(Reply(TranslationKeys.ErrorInvalidCharacter, bad)));
         }
 
         if (!passwordResolved)
@@ -469,7 +469,7 @@ public class ProxyController : ControllerBase
         incoming.Visitors ??= new VisitorSettings();
         if (XmlText.FindInvalid(incoming) is { } bad)
         {
-            return BadRequest(Errors(Reply(TranslationKeys.DdnsErrorInvalidCharacter, bad)));
+            return BadRequest(Errors(Reply(TranslationKeys.ErrorInvalidCharacter, bad)));
         }
 
         ProxySettingsValidator.Normalize(incoming);
