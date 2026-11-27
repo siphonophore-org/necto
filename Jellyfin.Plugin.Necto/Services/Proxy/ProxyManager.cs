@@ -284,18 +284,19 @@ public sealed class ProxyManager : IAsyncDisposable
     }
 
     /// <summary>
-    /// The names of the enabled routes that reach this Jellyfin from the internet, for the address Jellyfin gives
-    /// its clients and for the share card.
+    /// The names of the enabled routes that reach this Jellyfin, the internet ones first and the local ones and local
+    /// addresses after, for the address Jellyfin gives its clients and for the share card.
     /// </summary>
     /// <param name="settings">The proxy settings.</param>
     /// <returns>The normalized names, wildcards included.</returns>
     public static List<string> JellyfinHostnames(ProxySettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        return settings.Routes
-            .Where(r => r.Enabled && r.IsJellyfin)
-            .OrderBy(r => r.LocalOnly)
-            .Select(r => HostnameMatcher.Normalize(r.Host))
+        var routes = settings.Routes.Where(r => r.Enabled && r.IsJellyfin).ToList();
+        return routes.Where(r => !r.LocalOnly).Select(r => r.Host)
+            .Concat(routes.Where(r => r.LocalOnly).Select(r => r.Host))
+            .Concat(routes.Select(r => r.LocalHost))
+            .Select(HostnameMatcher.Normalize)
             .Where(h => h.Length > 0)
             .Distinct(StringComparer.Ordinal)
             .ToList();
@@ -506,7 +507,7 @@ public sealed class ProxyManager : IAsyncDisposable
     }
 
     private static List<ProxyRoute> AutomaticRoutes(ProxySettings settings)
-        => settings.Routes.Where(r => r.Enabled && r.Certificate.Mode == CertificateMode.Automatic && HostnameMatcher.Normalize(r.Host).Length > 0).ToList();
+        => settings.Routes.Where(r => r.Enabled && r.Certificate.Mode == CertificateMode.Automatic && HostnameMatcher.Normalize(r.Host).Length > 0 && RouteCertificates.CoveredBy(settings.Routes, r) is null).ToList();
 
     // After a failure the planner waits out a backoff, and after a success the certificate is due for renewal at
     // a known time. Nothing else would ask at either time except the daily task, so a timer does.
@@ -568,13 +569,8 @@ public sealed class ProxyManager : IAsyncDisposable
         }
     }
 
-    // The names Let's Encrypt is asked for, leaving out names it can never check, such as nas.lan. An HTTP
-    // challenge also needs a name the internet can reach, which a DNS challenge does not.
-    private static List<string> CertificateHostnames(ProxyRoute route)
-    {
-        var host = HostnameMatcher.Normalize(route.Host);
-        return host.Length > 0 && HostnameMatcher.IsPublicName(host) ? new List<string> { host } : new List<string>();
-    }
+    // The names Let's Encrypt is asked for, leaving out names it can never check, such as nas.lan.
+    private static List<string> CertificateHostnames(ProxyRoute route) => RouteCertificates.Names(route);
 
     // The names a route's certificate is checked against. An automatic one only ever covers what Let's Encrypt can check.
     private static IReadOnlyList<string> CoveredHostnames(ProxyRoute route)
@@ -584,8 +580,11 @@ public sealed class ProxyManager : IAsyncDisposable
             return CertificateHostnames(route);
         }
 
-        var host = HostnameMatcher.Normalize(route.Host);
-        return host.Length > 0 ? new List<string> { host } : new List<string>();
+        return new[] { route.Host, route.IsJellyfin ? route.LocalHost : string.Empty }
+            .Select(HostnameMatcher.Normalize)
+            .Where(h => h.Length > 0)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
     }
 
     /// <summary>
@@ -598,13 +597,20 @@ public sealed class ProxyManager : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(settings);
         var records = ReadRecords();
         var active = Volatile.Read(ref _host) is null ? new HashSet<string>(StringComparer.Ordinal) : (_holder?.Current.Routes.Select(r => r.Id).ToHashSet(StringComparer.Ordinal) ?? new HashSet<string>(StringComparer.Ordinal));
-        return settings.Routes.Select(route => new RouteStatus
+        return settings.Routes.Select(route =>
         {
-            Id = route.Id,
-            Host = HostnameMatcher.Normalize(route.Host),
-            Active = active.Contains(route.Id),
-            Certificate = _certificates.StatusOf(route.Id),
-            Acme = route.Certificate.Mode == CertificateMode.Automatic ? _acme.Describe(RequestFor(route), records) : new AcmeStatus()
+            // A route under another's wildcard shows that certificate as its own.
+            var shared = RouteCertificates.CoveredBy(settings.Routes, route);
+            var owner = shared ?? route;
+            return new RouteStatus
+            {
+                Id = route.Id,
+                Host = HostnameMatcher.Normalize(route.Host),
+                Active = active.Contains(route.Id),
+                Certificate = _certificates.StatusOf(owner.Id),
+                Acme = owner.Certificate.Mode == CertificateMode.Automatic ? _acme.Describe(RequestFor(owner), records) : new AcmeStatus(),
+                SharedFrom = shared is null ? string.Empty : RouteCertificates.WildcardDomain(shared)
+            };
         }).ToList();
     }
 
@@ -767,7 +773,8 @@ public sealed class ProxyManager : IAsyncDisposable
 
     private ProxyRuntime BuildRuntime(ProxySettings settings)
     {
-        _certificates.Configure(settings.Routes, CoveredHostnames);
+        // A route under another's wildcard certificate uses that one, so it keeps no store of its own.
+        _certificates.Configure(settings.Routes.Where(r => RouteCertificates.CoveredBy(settings.Routes, r) is null).ToList(), CoveredHostnames);
         return ProxyRuntimeFactory.Build(settings, _jellyfin, IsLan, _certificates.HasCertificate);
     }
 

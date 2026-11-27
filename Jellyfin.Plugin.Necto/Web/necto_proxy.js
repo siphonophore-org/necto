@@ -23,7 +23,6 @@ export var VISITORS_POLL_MS = 30000;
 // The keys of the route templates, in the order the picker shows them.
 export var TEMPLATES = [
     { key: 'jellyfin', title: 'LabelJellyfin', help: 'ProxyTemplateJellyfinHelp' },
-    { key: 'jellyfin-lan', title: 'ProxyTemplateJellyfinLan', help: 'ProxyTemplateJellyfinLanHelp' },
     { key: 'blank', title: 'ProxyTemplateBlank', help: 'ProxyTemplateBlankHelp' }
 ];
 
@@ -61,7 +60,8 @@ export function certificateTag(status, route, t) {
 // Output
 // [string]: Jellyfin, or the upstream address.
 export function upstreamText(route, t) {
-    return route.Upstream ? route.Upstream : t.tr('LabelJellyfin');
+    if (route.Upstream) return route.Upstream;
+    return route.LocalHost ? t.format('ProxyJellyfinWithLocal', route.LocalHost) : t.tr('LabelJellyfin');
 }
 
 // routeState
@@ -299,6 +299,7 @@ export function createRouteEditor(route, ctx) {
     });
     var upstream = nectoModule.createInputField({ label: t.tr('ProxyLabelUpstream'), field: 'Upstream', value: draft.Upstream, placeholder: 'http://192.168.1.20:8096', help: t.tr('ProxyUpstreamHelp') });
     var localOnly = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelLocalOnly'), field: 'LocalOnly', checked: !!draft.LocalOnly, help: t.tr('ProxyLocalOnlyHelp') });
+    var localHost = nectoModule.createInputField({ label: t.tr('ProxyLabelLocalAddress'), field: 'LocalHost', value: draft.LocalHost || '', placeholder: 'home.example.com', help: t.tr('ProxyLocalAddressHelp') });
 
     // A route to Jellyfin forwards with a preset, and a route to another service with each setting shown as it is.
     var opts = Object.assign(defaultOptions(), draft.Options || {});
@@ -435,6 +436,8 @@ export function createRouteEditor(route, ctx) {
         ],
         value: fields.enumName(draft.Certificate.Challenge, CHALLENGES)
     });
+    var wildcard = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelWildcard'), field: 'Certificate.Wildcard', checked: !!draft.Certificate.Wildcard, help: t.format('ProxyWildcardHelp', (draft.Host || '').replace(/^\*\./, '') || 'example.com') });
+    var sharedNote = h('div', { class: 'fieldDescription', 'data-role': 'shared-certificate' });
     var record = nectoModule.createSelectField({
         label: t.tr('ProxyLabelDnsRecord'),
         field: 'Certificate.DnsRecordId',
@@ -483,11 +486,12 @@ export function createRouteEditor(route, ctx) {
     if (names.length) routePart.appendChild(ddnsNames.element);
     routePart.appendChild(subdomain.element);
     routePart.appendChild(host.element);
-    [enabled, target, upstream, localOnly].forEach(function (f) { routePart.appendChild(f.element); });
+    [enabled, target, upstream, localHost, localOnly].forEach(function (f) { routePart.appendChild(f.element); });
     var forwarding = nectoModule.createCollapsibleSection({ title: t.tr('ProxyHeaderForwarding'), icon: 'tune', collapsible: false, content: forwardingPart });
     forwarding.element.setAttribute('data-section', 'forwarding');
     var certPart = h('div', { class: 'stolon-stack' });
-    [mode, challenge, record, path, keyPath, password].forEach(function (f) { certPart.appendChild(f.element); });
+    certPart.appendChild(sharedNote);
+    [mode, wildcard, challenge, record, path, keyPath, password].forEach(function (f) { certPart.appendChild(f.element); });
     [certStatus, upload, actions].forEach(function (n) { certPart.appendChild(n); });
     [
         nectoModule.createCollapsibleSection({ title: t.tr('PagesRowRoute'), icon: 'alt_route', collapsible: false, content: routePart }),
@@ -504,13 +508,22 @@ export function createRouteEditor(route, ctx) {
         var m = mode.input.value;
         var other = target.input.value === 'other';
         upstream.element.classList.toggle('stolon-hidden', !other);
+        localHost.element.classList.toggle('stolon-hidden', other);
+        // A route under another route's wildcard uses that certificate, so its own source is hidden.
+        var shared = !!(lastStatus && lastStatus.SharedFrom);
+        sharedNote.textContent = shared ? t.format('ProxyCertificateShared', lastStatus.SharedFrom) : '';
+        sharedNote.classList.toggle('stolon-hidden', !shared);
+        [mode, wildcard, challenge, record, path, keyPath, password].forEach(function (f) { f.element.classList.toggle('stolon-hidden', shared); });
+        wildcard.element.classList.toggle('stolon-hidden', shared || m !== 'Automatic');
+        var domain = host.input.value.trim().toLowerCase().replace(/^\*\./, '') || 'example.com';
+        if (wildcard.help) wildcard.help.textContent = t.format('ProxyWildcardHelp', domain);
         jellyfinPart.classList.toggle('stolon-hidden', other);
         otherPart.classList.toggle('stolon-hidden', !other);
-        challenge.element.classList.toggle('stolon-hidden', m !== 'Automatic');
-        record.element.classList.toggle('stolon-hidden', m !== 'Automatic' || challenge.input.value === 'Http');
-        path.element.classList.toggle('stolon-hidden', m !== 'Pkcs12File' && m !== 'PemFiles');
-        keyPath.element.classList.toggle('stolon-hidden', m !== 'PemFiles');
-        password.element.classList.toggle('stolon-hidden', m !== 'Pkcs12File' && m !== 'PemFiles');
+        challenge.element.classList.toggle('stolon-hidden', shared || m !== 'Automatic');
+        record.element.classList.toggle('stolon-hidden', shared || m !== 'Automatic' || challenge.input.value === 'Http');
+        path.element.classList.toggle('stolon-hidden', shared || (m !== 'Pkcs12File' && m !== 'PemFiles'));
+        keyPath.element.classList.toggle('stolon-hidden', shared || m !== 'PemFiles');
+        password.element.classList.toggle('stolon-hidden', shared || (m !== 'Pkcs12File' && m !== 'PemFiles'));
         upload.classList.toggle('stolon-hidden', !draft.Id || (m !== 'Pkcs12File' && m !== 'PemFiles'));
         requestBtn.classList.toggle('stolon-hidden', !draft.Id || m !== 'Automatic');
         rootBtn.classList.toggle('stolon-hidden', !draft.Id || m !== 'SelfSigned');
@@ -539,6 +552,7 @@ export function createRouteEditor(route, ctx) {
         lockHost();
     });
     subdomain.input.addEventListener('input', lockHost);
+    host.input.addEventListener('input', function () { reflect(); });
     lockHost();
     [mode, challenge, target].forEach(function (f) { f.input.addEventListener('change', reflect); });
     mode.input.addEventListener('change', function () { if (handle) handle.setRouteStatus(lastStatus); });
@@ -555,10 +569,12 @@ export function createRouteEditor(route, ctx) {
             out.Enabled = !!enabled.input.checked;
             out.Upstream = target.input.value === 'other' ? upstream.input.value.trim() : '';
             out.LocalOnly = !!localOnly.input.checked;
+            out.LocalHost = target.input.value === 'other' ? '' : localHost.input.value.trim().toLowerCase();
             out.Options = readOptions(target.input.value !== 'other');
             out.Certificate = {
                 Mode: m,
                 Challenge: challenge.input.value,
+                Wildcard: m === 'Automatic' && !!wildcard.input.checked,
                 DnsRecordId: record.input.value,
                 Path: m === 'Pkcs12File' || m === 'PemFiles' ? path.input.value.trim() : '',
                 KeyPath: m === 'PemFiles' ? keyPath.input.value.trim() : '',
@@ -580,6 +596,7 @@ export function createRouteEditor(route, ctx) {
         },
         setRouteStatus: function (next) {
             lastStatus = next;
+            reflect();
             var shownRoot = mode.input.value === 'SelfSigned' ? rootCert : null;
             var items = certificateItems(next, shared, shownRoot);
             certList.setItems(items);
@@ -1101,8 +1118,7 @@ export default function (view) {
                             var built = (data.Templates || []).find(function (x) { return x.Key === key; });
                             var route = JSON.parse(JSON.stringify((built && built.Route) || newRoute()));
                             route.Id = '';
-                            if (key === 'jellyfin') route.Host = zone;
-                            if (key === 'jellyfin-lan') route.Host = zone ? 'home.' + zone : '';
+                            if (key === 'jellyfin') { route.Host = zone; route.LocalHost = zone ? 'home.' + zone : ''; }
                             close();
                             openRoute(route, null);
                         }

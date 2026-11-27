@@ -54,7 +54,7 @@ public static class ProxyRuntimeFactory
 
             if (route.IsJellyfin)
             {
-                routes.Add(new RuntimeRoute(route.Id, host, jellyfin.Backend, true, route.LocalOnly, RouteProfiles.ForJellyfin(route.Options)));
+                routes.Add(new RuntimeRoute(route.Id, host, jellyfin.Backend, true, route.LocalOnly, RouteProfiles.ForJellyfin(route.Options), HostnameMatcher.Normalize(route.LocalHost)));
             }
             else if (ProxySettingsValidator.ParseUpstream(route.Upstream) is { } upstream)
             {

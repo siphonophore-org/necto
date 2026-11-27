@@ -37,6 +37,8 @@ public static partial class ProxySettingsValidator
             NormalizeRoute(route);
         }
 
+        MergeJellyfinRoutes(settings);
+
         settings.Visitors ??= new VisitorSettings();
         settings.Visitors.HistoryDays = Math.Clamp(settings.Visitors.HistoryDays, 1, 3650);
         var a = settings.Advanced ??= new ProxyAdvancedSettings();
@@ -63,6 +65,45 @@ public static partial class ProxySettingsValidator
         a.BackendActivityTimeoutSeconds = ClampOptional(a.BackendActivityTimeoutSeconds, 61, 86400);
     }
 
+    // The names a route answers for: its host and, for Jellyfin, its local address.
+    private static List<string> NamesOf(ProxyRoute route)
+        => new[] { route.Host, route.IsJellyfin ? route.LocalHost : string.Empty }.Select(HostnameMatcher.Normalize).Where(n => n.Length > 0).ToList();
+
+    /// <summary>
+    /// Folds a stored route to Jellyfin that answers only the local network into the internet route to Jellyfin, as its
+    /// local address, so Jellyfin is one route with a remote and a local address. It runs only while there is exactly
+    /// one internet route to Jellyfin with no local address yet, and takes the first local route.
+    /// </summary>
+    /// <param name="settings">The settings, changed in place.</param>
+    /// <returns><c>true</c> when a route was folded in.</returns>
+    public static bool MergeJellyfinRoutes(ProxySettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        var jellyfin = settings.Routes.Where(r => r.IsJellyfin).ToList();
+        var remote = jellyfin.Where(r => !r.LocalOnly).ToList();
+        var local = jellyfin.FirstOrDefault(r => r.LocalOnly && !HostnameMatcher.Normalize(r.Host).StartsWith('*') && HostnameMatcher.Normalize(r.Host).Length > 0);
+        if (remote.Count != 1 || local is null || HostnameMatcher.Normalize(remote[0].LocalHost).Length > 0)
+        {
+            return false;
+        }
+
+        remote[0].LocalHost = HostnameMatcher.Normalize(local.Host);
+
+        // The local name was proved over DNS, so the merged route keeps a DNS challenge for both names.
+        if (remote[0].Certificate.Mode == CertificateMode.Automatic && local.Certificate.Mode == CertificateMode.Automatic
+            && local.Certificate.Challenge == CertificateChallenge.Dns && remote[0].Certificate.Challenge != CertificateChallenge.Dns)
+        {
+            remote[0].Certificate.Challenge = CertificateChallenge.Dns;
+            if (string.IsNullOrEmpty(remote[0].Certificate.DnsRecordId))
+            {
+                remote[0].Certificate.DnsRecordId = local.Certificate.DnsRecordId;
+            }
+        }
+
+        settings.Routes.Remove(local);
+        return true;
+    }
+
     /// <summary>
     /// Cleans one route: the host lower-cased, the upstream and file paths trimmed, and a missing id or
     /// certificate filled in.
@@ -81,6 +122,7 @@ public static partial class ProxySettingsValidator
         route.Host = normalized.Length > 0 ? normalized : (route.Host ?? string.Empty).Trim();
         route.Upstream = (route.Upstream ?? string.Empty).Trim().TrimEnd('/');
         route.DdnsHostname = HostnameMatcher.Normalize(route.DdnsHostname);
+        route.LocalHost = route.IsJellyfin ? HostnameMatcher.Normalize(route.LocalHost) : string.Empty;
         NormalizeOptions(route.Options ??= new RouteOptions());
         var c = route.Certificate ??= new ProxyCertificateSettings();
         c.Path = (c.Path ?? string.Empty).Trim();
@@ -122,6 +164,7 @@ public static partial class ProxySettingsValidator
     {
         ArgumentNullException.ThrowIfNull(route);
         ArgumentNullException.ThrowIfNull(others);
+        var rest = others.Where(o => !string.Equals(o.Id, route.Id, StringComparison.Ordinal)).ToList();
         var errors = new List<string>();
         if (route.Host.Length == 0)
         {
@@ -131,9 +174,22 @@ public static partial class ProxySettingsValidator
         {
             errors.Add(Text(language, TranslationKeys.ProxyErrorHostname, route.Host));
         }
-        else if (others.Any(o => !string.Equals(o.Id, route.Id, StringComparison.Ordinal) && string.Equals(HostnameMatcher.Normalize(o.Host), route.Host, StringComparison.Ordinal)))
+        else if (rest.Any(o => NamesOf(o).Contains(route.Host)))
         {
             errors.Add(Text(language, TranslationKeys.ProxyErrorRouteHostTaken, route.Host));
+        }
+
+        if (route.LocalHost.Length > 0)
+        {
+            // The local address is one exact name of its own, so a wildcard or the route's own host is refused.
+            if (route.LocalHost.StartsWith('*') || string.Equals(route.LocalHost, route.Host, StringComparison.Ordinal) || !HostnameMatcher.IsValidPattern(route.LocalHost))
+            {
+                errors.Add(Text(language, TranslationKeys.ProxyErrorLocalHost, route.LocalHost));
+            }
+            else if (rest.Any(o => NamesOf(o).Contains(route.LocalHost)))
+            {
+                errors.Add(Text(language, TranslationKeys.ProxyErrorRouteHostTaken, route.LocalHost));
+            }
         }
 
         if (route.Host.Length > 0 && !FitsDdnsName(route.Host, route.DdnsHostname))
@@ -163,9 +219,14 @@ public static partial class ProxySettingsValidator
 
         // A wildcard can only be proved over DNS, and so can a name the internet cannot reach.
         if (route.Certificate.Mode == CertificateMode.Automatic && route.Certificate.Challenge == CertificateChallenge.Http
-            && (route.Host.StartsWith('*') || route.LocalOnly))
+            && (route.Host.StartsWith('*') || route.LocalOnly || route.LocalHost.Length > 0 || route.Certificate.Wildcard))
         {
             errors.Add(Text(language, TranslationKeys.ProxyErrorHttpChallengeNeedsInternet));
+        }
+
+        if (route.Certificate.Wildcard && route.Certificate.Mode != CertificateMode.Automatic)
+        {
+            errors.Add(Text(language, TranslationKeys.ProxyErrorWildcardNeedsLetsEncrypt));
         }
 
         return errors;

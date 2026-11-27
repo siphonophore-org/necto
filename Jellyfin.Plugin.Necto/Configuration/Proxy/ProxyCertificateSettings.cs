@@ -13,6 +13,13 @@ public class ProxyCertificateSettings
     /// <summary>Gets or sets how Let's Encrypt checks the name, for <see cref="CertificateMode.Automatic"/>.</summary>
     public CertificateChallenge Challenge { get; set; } = CertificateChallenge.Auto;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether a Let's Encrypt certificate covers the route's domain and every name
+    /// under it, such as <c>example.com</c> and <c>*.example.com</c>, which needs a DNS challenge. Every other route
+    /// under the domain uses it.
+    /// </summary>
+    public bool Wildcard { get; set; }
+
     /// <summary>Gets or sets the id of the DDNS record whose provider publishes the TXT record for a DNS challenge. Empty picks the record whose zone covers the name.</summary>
     public string DnsRecordId { get; set; } = string.Empty;
 

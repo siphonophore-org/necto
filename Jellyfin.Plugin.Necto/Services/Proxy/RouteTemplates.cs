@@ -8,16 +8,13 @@ using Jellyfin.Plugin.Necto.Services.Ddns;
 namespace Jellyfin.Plugin.Necto.Services.Proxy;
 
 /// <summary>
-/// The starting points for a new route: Jellyfin open to the internet, Jellyfin for the local network only, and a
-/// blank route for any other service.
+/// The starting points for a new route: Jellyfin, with the domain for the internet and home under it for the local
+/// network, and a blank route for any other service.
 /// </summary>
 public static class RouteTemplates
 {
     /// <summary>The key of the template that opens this Jellyfin to the internet.</summary>
     public const string Jellyfin = "jellyfin";
-
-    /// <summary>The key of the template that serves this Jellyfin to the local network only.</summary>
-    public const string JellyfinLan = "jellyfin-lan";
 
     /// <summary>The key of the empty template.</summary>
     public const string Blank = "blank";
@@ -33,19 +30,13 @@ public static class RouteTemplates
         var zone = (domain ?? string.Empty).Trim().TrimEnd('.').ToLowerInvariant();
         return key switch
         {
-            // The public name the internet uses, with a certificate Let's Encrypt checks over port 80 or DNS.
+            // The domain for the internet and home under it for the house, on one certificate. Let's Encrypt
+            // cannot reach a name inside the house, so a DDNS record that covers both lets it check them over DNS.
             Jellyfin => new ProxyRoute
             {
                 Host = zone,
+                LocalHost = zone.Length > 0 ? "home." + zone : string.Empty,
                 Certificate = new ProxyCertificateSettings { Mode = CertificateMode.Automatic, Challenge = CertificateChallenge.Auto }
-            },
-
-            // A name inside the house. Let's Encrypt cannot reach it, so it is checked over DNS.
-            JellyfinLan => new ProxyRoute
-            {
-                Host = zone.Length > 0 ? "home." + zone : string.Empty,
-                LocalOnly = true,
-                Certificate = new ProxyCertificateSettings { Mode = CertificateMode.Automatic, Challenge = CertificateChallenge.Dns }
             },
             Blank => new ProxyRoute
             {

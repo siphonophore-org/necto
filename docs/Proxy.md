@@ -16,7 +16,7 @@ The page reads the proxy's status and routes again every 10 seconds, and the vis
 
 ## Routes
 
-Each row shows the route's host name, where it forwards, and **Local only** where it applies. Its state sits at the row's end, **Off** for a route that is off, else its certificate's, such as **HTTPS ready**, **Expires soon**, or **Certificate failed**. Select a row to open the route in a sidecar. **Add route** starts from a template: **Jellyfin**, **Jellyfin LAN**, or **Blank**.
+Each row shows the route's host name, where it forwards with a Jellyfin route's local address, and **Local only** where it applies. Its state sits at the row's end, **Off** for a route that is off, else its certificate's, such as **HTTPS ready**, **Expires soon**, or **Certificate failed**. Select a row to open the route in a sidecar. **Add route** starts from a template: **Jellyfin**, with your domain for the internet and `home` under it as its local address, or **Blank**.
 
 ![Route editor](screenshots/Route%20Editor.png)
 
@@ -25,6 +25,7 @@ Each row shows the route's host name, where it forwards, and **Local only** wher
 * **Answer for this route** turns the route on or off.
 * **Forward to** picks **Jellyfin** or **Another service**. **Service address** is the other service's `http` or `https` address and port, such as `http://192.168.1.20:8096`. Paths are forwarded as they come.
 * **Local network only** answers only the local network and **Trusted networks**. The internet gets nothing.
+* **Local address**, on a route to Jellyfin, is a second name that answers only the local network and **Trusted networks**, such as `home.example.com` beside `example.com`. See [Remote and Local Addresses](#remote-and-local-addresses).
 
 **Forwarding** sets how the route forwards.
 
@@ -73,13 +74,38 @@ Every example passes WebSockets and leaves **Buffer answers** off. Home Assistan
 
 A local client that asks by this server's address, or by a name no route has, reaches the first Jellyfin route. The internet must ask for a route's name, and the bare address or a scanner's guess gets nothing. Plain HTTP from the internet is sent on to HTTPS for a route's name once it has a certificate.
 
+## Remote and Local Addresses
+
+One route to Jellyfin carries both of its addresses. **Host name** is the remote address, such as `kelp.ink`, which answers the internet. **Local address**, such as `home.kelp.ink`, answers only the local network and **Trusted networks**, and the internet gets nothing for it, over HTTPS or plain HTTP. Both forward to Jellyfin with the route's preset, and both go on its one certificate.
+
+* Point the local address at this server's LAN address inside the house, in your router's or your DNS server's local records.
+* Let's Encrypt never reaches a local name, so a route with a local address needs a DNS challenge, through a DDNS record that covers both names. **Pick for me** picks it when one does.
+* A route to Jellyfin saved with **Local network only** beside another route to Jellyfin becomes that route's local address, so the two show as one row. It keeps its DNS challenge and its DNS record.
+
+## Wildcard Certificates
+
+**Wildcard certificate**, under **Let's Encrypt**, asks for one certificate that covers the route's domain and every name one level under it, such as `kelp.ink` and `*.kelp.ink`. The editor says so: "Covers kelp.ink and every name under it. Every route under kelp.ink uses this certificate."
+
+* Every other route under the domain, such as `app.kelp.ink`, uses it in place of its own, and its editor says "Uses the wildcard certificate of kelp.ink." A name two levels down, such as `a.b.kelp.ink`, is not covered and keeps its own.
+* A wildcard needs a DNS challenge. Let's Encrypt checks `_acme-challenge.kelp.ink` once for the domain and once for the wildcard, one after the other, so a provider that keeps one TXT value per name still works.
+* It renews with the other certificates, and **Request certificate** on its route orders it now.
+
+These DDNS providers can publish the TXT record a DNS challenge needs, through the credentials of a DDNS record already set up. Any other provider is refused with a line that names the record it lacks.
+
+| Provider | Needs |
+| :--- | :--- |
+| [Cloudflare](providers/Cloudflare.md) | An API token with DNS edit permission, and the zone |
+| [DigitalOcean](providers/DigitalOcean.md) | An API token with write access, and the zone |
+| [Duck DNS](providers/DuckDns.md) | The token. It covers `name.duckdns.org` and the names under it |
+| [Porkbun](providers/Porkbun.md) | API access turned on for the domain, the API key and secret API key, and the root domain |
+
 ## Certificates
 
-Each route has its own certificate, and a handshake is served the one whose name it asked for.
+Each route has its own certificate, unless a [wildcard](#wildcard-certificates) covers it, and a handshake is served the one whose name it asked for.
 
 * **Let's Encrypt** issues and renews a certificate. **Challenge** picks how Let's Encrypt checks the name.
     * **HTTP challenge** answers on port 80, so the name must reach this server from the internet.
-    * **DNS challenge** publishes a TXT record through a DDNS provider that can, Cloudflare or Duck DNS. It needs no open port and covers wildcards and **Local network only** routes. **DNS record** picks the DDNS record whose credentials publish it, or the record whose zone covers the name.
+    * **DNS challenge** publishes a TXT record through a DDNS provider that can, as [Wildcard Certificates](#wildcard-certificates) lists. It needs no open port and covers wildcards, **Local network only** routes, and local addresses. **DNS record** picks the DDNS record whose credentials publish it, or the record whose zone covers the name.
     * **Pick for me** uses a DNS challenge when a DDNS record covers the name, and an HTTP challenge otherwise.
 * **PKCS#12 file** and **PEM files** load a certificate from files on this server and reload it when the files change. **Upload a certificate** takes a `.pfx` with its password, or a PEM chain with its key, and keeps them in the route's folder, readable only by Jellyfin's account.
 * **Self-signed** issues a certificate from Necto's own root. **Download root** saves the root, to install once on each device. The root vouches only for the self-signed routes' names and private addresses.

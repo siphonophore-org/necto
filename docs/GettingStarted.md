@@ -5,7 +5,7 @@ This page sets up remote access with **DDNS** and **Proxy**, through the three r
 ## Before You Start
 
 * Remove the Remote Access plugin first. It answers at the same routes, and two plugins on one route break both.
-* Own a domain, such as `example.com`, at a DNS provider [DDNS](DDNS.md#providers) supports. A DNS challenge needs Cloudflare or Duck DNS.
+* Own a domain, such as `example.com`, at a DNS provider [DDNS](DDNS.md#providers) supports. A DNS challenge needs Cloudflare, DigitalOcean, Duck DNS, or Porkbun.
 * Know your router's port forwarding page. The internet reaches the proxy on ports 80 and 443.
 
 ## 1. Keep Your Name Pointed Here
@@ -27,20 +27,14 @@ Open **Proxy** and select **Add route**. The picker suggests your domain from th
 
 ### Jellyfin
 
-`example.com` to this Jellyfin, open to the internet, with a public certificate.
+`example.com` to this Jellyfin, open to the internet, and `home.example.com` beside it for the local network, on one route with a public certificate.
 
 * **Forward to** is **Jellyfin**, and **Local network only** is off.
-* **Certificate** is **Let's Encrypt** with **Pick for me**, which uses a DNS challenge through the DDNS record and an HTTP challenge on port 80 otherwise.
+* **Local address** is `home.example.com`. Point it at this server's LAN address inside the house, in your router's or your DNS server's local records. Clear it for no local address.
+* **Certificate** is **Let's Encrypt** with **Pick for me**, which uses a DNS challenge through a DDNS record that covers both names. Let's Encrypt never reaches a local name, so a local address needs one.
+* Turn on **Wildcard certificate** to cover `example.com` and every name under it, so every other route under `example.com` shares the one certificate.
 
 Once saved, the row shows **HTTPS ready** within a minute or two. Then trust the proxy, below, so visitors from the internet get in.
-
-### Jellyfin LAN
-
-`home.example.com` to this Jellyfin, answered only from the local network, with a certificate by DNS challenge so HTTPS works inside the house.
-
-* **Local network only** is on, so the internet gets nothing for this name.
-* **Challenge** is **DNS challenge**. Let's Encrypt never reaches a local name, so it checks a TXT record the DDNS provider publishes instead. **DNS record** picks the record whose credentials publish it.
-* Point `home.example.com` at this server's LAN address inside the house, in your router's or your DNS server's local records.
 
 ### Blank
 

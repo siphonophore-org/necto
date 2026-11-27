@@ -100,9 +100,11 @@ public sealed class CertificateSet : IDisposable
                     entry = new Entry(store);
                 }
 
+                var names = hostsOf(route);
                 entry.Host = HostnameMatcher.Normalize(route.Host);
+                entry.Names = names.Append(entry.Host).Where(n => n.Length > 0).Distinct(StringComparer.Ordinal).ToList();
                 entry.IsJellyfin = route.IsJellyfin;
-                entry.Store.Configure(route.Certificate, hostsOf(route), rootNames);
+                entry.Store.Configure(route.Certificate, names, rootNames);
                 next[route.Id] = entry;
             }
 
@@ -138,7 +140,8 @@ public sealed class CertificateSet : IDisposable
     public CertificateStatus StatusOf(string routeId) => For(routeId)?.Status ?? new CertificateStatus { Mode = CertificateMode.None };
 
     /// <summary>
-    /// Picks the certificate for a TLS handshake. A route whose name matches the one asked for is first. A local
+    /// Picks the certificate for a TLS handshake. A route whose name matches the one asked for is first, then a
+    /// certificate that covers it, such as a wildcard another route shares. A local
     /// client that names no route, such as one using this server's address, gets the first Jellyfin route's
     /// certificate, then any certificate loaded.
     /// </summary>
@@ -154,8 +157,9 @@ public sealed class CertificateSet : IDisposable
         }
 
         var host = HostnameMatcher.Normalize(serverName);
-        var match = entries.Where(e => host.Length > 0 && HostnameMatcher.Matches(host, e.Host))
-            .OrderBy(e => e.Host.StartsWith('*') ? 1 : 0)
+        // A route's own name first, then a name its certificate covers, such as one under a wildcard.
+        var match = entries.Where(e => host.Length > 0 && e.Names.Any(n => HostnameMatcher.Matches(host, n)))
+            .OrderBy(e => HostnameMatcher.Matches(host, e.Host) && !e.Host.StartsWith('*') ? 0 : e.Names.Any(n => n == host) ? 1 : 2)
             .Select(e => e.Store.Select(serverName, local))
             .FirstOrDefault(c => c is not null);
         if (match is not null || !local)
@@ -212,6 +216,8 @@ public sealed class CertificateSet : IDisposable
         public CertificateStore Store { get; }
 
         public string Host { get; set; } = string.Empty;
+
+        public List<string> Names { get; set; } = new();
 
         public bool IsJellyfin { get; set; }
     }

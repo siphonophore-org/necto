@@ -48,7 +48,7 @@ public static class RequestPolicy
         // The internet must ask for a configured name. The bare IP or a scanner's guess gets nothing. A local
         // client asking by address reaches the first Jellyfin route.
         var route = facts.Local ? runtime.RouteForLocal(facts.Host) : runtime.RouteFor(facts.Host);
-        if (route is null || (route.LocalOnly && !facts.Local))
+        if (route is null || (route.LocalOnlyFor(facts.Host) && !facts.Local))
         {
             return new RequestDecision(RequestAction.Drop);
         }
@@ -100,7 +100,7 @@ public static class RequestPolicy
     // links still work; anything else, such as the bare IP, is dropped.
     private static RequestDecision DecideWanHttp(ProxyRuntime runtime, RequestFacts facts)
     {
-        if (runtime.RouteFor(facts.Host) is not { LocalOnly: false } || facts.Path.StartsWithSegments(ChallengePrefix, StringComparison.Ordinal))
+        if (runtime.RouteFor(facts.Host) is not { } route || route.LocalOnlyFor(facts.Host) || facts.Path.StartsWithSegments(ChallengePrefix, StringComparison.Ordinal))
         {
             return new RequestDecision(RequestAction.Drop);
         }

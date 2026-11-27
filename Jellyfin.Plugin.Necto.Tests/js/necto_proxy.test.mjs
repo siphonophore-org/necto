@@ -629,3 +629,31 @@ test('the Proxy section of Settings folds each group of settings into its own pa
     assert.equal(opened.section.querySelectorAll('.stolon-subsection-title').length, 0);
     assert.ok(opened.section.querySelector('[data-part="HeaderLocations"] [data-field="CountryMode"]'));
 });
+
+test('a route to Jellyfin takes a local address, a wildcard certificate names its domain, and a route under another wildcard shows it uses that', async function () {
+    var bag = await strings();
+    var proxy = await loadScript('necto_proxy.js');
+    var route = Object.assign({}, ROUTES[0], { Host: 'kelp.ink', LocalHost: 'home.kelp.ink', Certificate: { Mode: 'Automatic', Challenge: 'Dns', Wildcard: true } });
+    var editor = proxy.createRouteEditor(route, { shared: bag, status: null, records: [], hostnames: [] });
+    var field = function (name) { return editor.element.querySelector('[data-field="' + name + '"]'); };
+    var hidden = function (node) { return node.closest('.stolon-hidden') !== null; };
+
+    assert.equal(field('LocalHost').value, 'home.kelp.ink');
+    assert.equal(hidden(field('LocalHost')), false);
+    assert.equal(field('Certificate.Wildcard').checked, true);
+    assert.match(field('Certificate.Wildcard').closest('.checkboxContainer, .inputContainer, div').parentNode.textContent, /Covers kelp\.ink and every name under it\. Every route under kelp\.ink uses this certificate\./);
+    var value = editor.getValue();
+    assert.deepEqual([value.LocalHost, value.Certificate.Wildcard], ['home.kelp.ink', true]);
+    assert.equal(proxy.upstreamText(value, bag.t), 'Jellyfin, and home.kelp.ink at home');
+
+    field('Target').value = 'other';
+    field('Target').dispatchEvent(new globalThis.Event('change'));
+    assert.equal(hidden(field('LocalHost')), true);
+    assert.equal(editor.getValue().LocalHost, '');
+
+    var app = proxy.createRouteEditor(Object.assign({}, ROUTES[0], { Id: 'a', Host: 'app.kelp.ink' }), { shared: bag, status: { Id: 'a', SharedFrom: 'kelp.ink', Certificate: {}, Acme: {} }, records: [], hostnames: [] });
+    var note = app.element.querySelector('[data-role="shared-certificate"]');
+    assert.equal(note.textContent, 'Uses the wildcard certificate of kelp.ink.');
+    assert.equal(hidden(note), false);
+    assert.equal(hidden(app.element.querySelector('[data-field="Certificate.Mode"]')), true);
+});

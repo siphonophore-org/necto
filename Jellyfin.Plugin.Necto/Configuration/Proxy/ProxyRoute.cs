@@ -22,6 +22,12 @@ public class ProxyRoute
     /// </summary>
     public string DdnsHostname { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the local address of a route to Jellyfin, such as <c>home.example.com</c>, which answers only the
+    /// local network and trusted networks beside <see cref="Host"/>. Empty for none. A route to another service ignores it.
+    /// </summary>
+    public string LocalHost { get; set; } = string.Empty;
+
     /// <summary>Gets or sets the address forwarded to, such as <c>http://192.168.1.20:8096</c>. Empty forwards to this Jellyfin.</summary>
     public string Upstream { get; set; } = string.Empty;
 

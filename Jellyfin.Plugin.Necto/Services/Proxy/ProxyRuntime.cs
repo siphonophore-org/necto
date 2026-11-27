@@ -58,14 +58,14 @@ public sealed class ProxyRuntime
     public bool IsConfiguredHost(string? host) => RouteFor(host) is not null;
 
     /// <summary>
-    /// Finds the route that answers a host. An exact name beats a wildcard, so <c>media.example.com</c> wins over
-    /// <c>*.example.com</c>.
+    /// Finds the route that answers a host, by its own name or its local address. An exact name beats a wildcard, so
+    /// <c>media.example.com</c> wins over <c>*.example.com</c>.
     /// </summary>
     /// <param name="host">The request host, without port.</param>
     /// <returns>The route, or <c>null</c> when none answers it.</returns>
     public RuntimeRoute? RouteFor(string? host)
-        => Routes.Where(r => HostnameMatcher.Matches(host, r.Host))
-            .OrderBy(r => r.Host.StartsWith('*') ? 1 : 0)
+        => Routes.Where(r => r.Answers(host))
+            .OrderBy(r => HostnameMatcher.Matches(host, r.Host) && r.Host.StartsWith('*') ? 1 : 0)
             .FirstOrDefault();
 
     /// <summary>

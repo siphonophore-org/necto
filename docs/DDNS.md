@@ -43,7 +43,7 @@ Each provider has a [setup guide](providers/index.md) that lists its fields and 
 
 1984 Hosting, ChangeIP, Cloudflare, ClouDNS, DDNS.fm, DDNSS.de, DigitalOcean, Dinahosting, Directnic, DNS Made Easy, DNSExit, Domeneshop, DonDominio, DSLReports, Duck DNS, Dynadot, DynDNS v1, DynDNS v2, Dynu, easyDNS, eNom, FreeDNS, freemyip.com, Gandi LiveDNS, GoDaddy, Hetzner DNS, Hurricane Electric, Infomaniak, INWX, IONOS, Key-Systems, Mythic Beasts, Namecheap, NearlyFreeSpeech.NET, Njalla, No-IP, NS1, OVH, Porkbun, regfish.de, Simply.com, Sitelutions, Spaceship, Yandex PDD, and ZoneEdit.
 
-Cloudflare and Duck DNS can also publish the TXT record Let's Encrypt checks, so a [Proxy](Proxy.md) route can get its certificate by DNS challenge through them.
+Cloudflare, DigitalOcean, Duck DNS, and Porkbun can also publish the TXT record Let's Encrypt checks, so a [Proxy](Proxy.md) route can get its certificate by DNS challenge through them, a [wildcard certificate](Proxy.md#wildcard-certificates) and a [local address](Proxy.md#remote-and-local-addresses) included.
 
 ## Settings
 

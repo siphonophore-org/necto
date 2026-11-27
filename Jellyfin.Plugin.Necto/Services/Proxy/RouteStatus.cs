@@ -21,4 +21,7 @@ public sealed class RouteStatus
 
     /// <summary>Gets or sets the state of the route's Let's Encrypt certificate, when it uses one.</summary>
     public AcmeStatus Acme { get; set; } = new();
+
+    /// <summary>Gets or sets the domain of the wildcard certificate the route uses in place of its own, or empty.</summary>
+    public string SharedFrom { get; set; } = string.Empty;
 }

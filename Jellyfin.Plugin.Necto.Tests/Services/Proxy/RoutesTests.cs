@@ -56,8 +56,8 @@ public sealed class RoutesTests : IDisposable
         => RequestPolicy.Decide(runtime, new RequestFacts(local, true, host, "GET", path, QueryString.Empty), new Http01ChallengeStore());
 
     /// <summary>
-    /// The Jellyfin template opens the domain to the internet, the LAN one puts home under it for the local network
-    /// with a DNS challenge, and Blank forwards to another service.
+    /// The Jellyfin template opens the domain to the internet with home under it as its local address, and Blank
+    /// forwards to another service.
     /// True: each template starts the route the Plan describes.
     /// False: the LAN route would ask for an HTTP challenge Let's Encrypt can never reach.
     /// </summary>
@@ -69,12 +69,8 @@ public sealed class RoutesTests : IDisposable
         Assert.True(jellyfin.IsJellyfin);
         Assert.False(jellyfin.LocalOnly);
         Assert.Equal(CertificateMode.Automatic, jellyfin.Certificate.Mode);
-
-        var lan = RouteTemplates.Build(RouteTemplates.JellyfinLan, "example.com")!;
-        Assert.Equal("home.example.com", lan.Host);
-        Assert.True(lan.IsJellyfin);
-        Assert.True(lan.LocalOnly);
-        Assert.Equal(CertificateChallenge.Dns, lan.Certificate.Challenge);
+        Assert.Equal("home.example.com", jellyfin.LocalHost);
+        Assert.Equal(string.Empty, RouteTemplates.Build(RouteTemplates.Jellyfin, string.Empty)!.LocalHost);
 
         var blank = RouteTemplates.Build(RouteTemplates.Blank, "example.com")!;
         Assert.False(blank.IsJellyfin);
@@ -300,6 +296,133 @@ public sealed class RoutesTests : IDisposable
 
         Assert.Equal(new[] { "media.example.com", "home.example.com" }, ProxyManager.JellyfinHostnames(settings));
         Assert.Equal("media.example.com", ProxyManager.PublicHostname(settings));
+    }
+
+    /// <summary>
+    /// A route to Jellyfin answers its remote address from anywhere and its local address only from the local network.
+    /// True: kelp.ink reaches Jellyfin from the internet and home.kelp.ink only from home, as one route.
+    /// False: the local address would be open to the internet, or would need a route of its own.
+    /// </summary>
+    [Fact]
+    public void Policy_LocalAddress_AnswersOnlyTheLocalNetwork()
+    {
+        var runtime = Runtime(Settings(new ProxyRoute { Id = "j", Host = "kelp.ink", LocalHost = "Home.Kelp.Ink" }));
+
+        Assert.Equal("home.kelp.ink", Assert.Single(runtime.Routes).LocalHost);
+        Assert.Equal(RequestAction.Forward, Decide(runtime, false, "kelp.ink").Action);
+        Assert.Equal(RequestAction.Forward, Decide(runtime, true, "home.kelp.ink").Action);
+        Assert.Equal(RequestAction.Drop, Decide(runtime, false, "home.kelp.ink").Action);
+        Assert.Equal("j", Decide(runtime, true, "home.kelp.ink").Route!.Id);
+        var http = RequestPolicy.Decide(runtime, new RequestFacts(false, false, "home.kelp.ink", "GET", "/", QueryString.Empty), new Http01ChallengeStore());
+        Assert.Equal(RequestAction.Drop, http.Action);
+    }
+
+    /// <summary>
+    /// A local address must be one name of its own, never the route's host, a wildcard, or another route's name, and
+    /// it cannot be proved over HTTP.
+    /// True: the editor refuses a local address that could never work.
+    /// False: two routes could answer one name, or Let's Encrypt would be sent to a name it cannot reach.
+    /// </summary>
+    [Fact]
+    public void Validate_LocalAddress_IsOneNameOfItsOwn()
+    {
+        var other = new ProxyRoute { Id = "o", Host = "app.kelp.ink", Upstream = "http://h:1" };
+        static List<string> Errors(ProxyRoute route, params ProxyRoute[] others)
+        {
+            ProxySettingsValidator.NormalizeRoute(route);
+            return ProxySettingsValidator.ValidateRoute(route, others);
+        }
+
+        Assert.Empty(Errors(new ProxyRoute { Id = "j", Host = "kelp.ink", LocalHost = "home.kelp.ink" }, other));
+        Assert.NotEmpty(Errors(new ProxyRoute { Id = "j", Host = "kelp.ink", LocalHost = "kelp.ink" }));
+        Assert.NotEmpty(Errors(new ProxyRoute { Id = "j", Host = "kelp.ink", LocalHost = "*.kelp.ink" }));
+        Assert.NotEmpty(Errors(new ProxyRoute { Id = "j", Host = "kelp.ink", LocalHost = "app.kelp.ink" }, other));
+        Assert.NotEmpty(Errors(new ProxyRoute { Id = "j", Host = "kelp.ink", LocalHost = "home.kelp.ink", Certificate = new ProxyCertificateSettings { Challenge = CertificateChallenge.Http } }));
+        Assert.NotEmpty(Errors(new ProxyRoute { Id = "j", Host = "kelp.ink", Certificate = new ProxyCertificateSettings { Mode = CertificateMode.SelfSigned, Wildcard = true } }));
+
+        var service = new ProxyRoute { Id = "s", Host = "app.kelp.ink", Upstream = "http://h:1", LocalHost = "home.kelp.ink" };
+        ProxySettingsValidator.NormalizeRoute(service);
+        Assert.Empty(service.LocalHost);
+    }
+
+    /// <summary>
+    /// A stored local only route to Jellyfin folds into the internet one as its local address, keeping the DNS
+    /// challenge it was proved with, and nothing changes without exactly one internet route to Jellyfin.
+    /// True: an upgrade turns the two Jellyfin routes into one route with a remote and a local address.
+    /// False: the local name would be lost, or a route to another service would be folded in.
+    /// </summary>
+    [Fact]
+    public void Normalize_FoldsTheLocalJellyfinRouteIntoTheRemoteOne()
+    {
+        var settings = new ProxySettings
+        {
+            Routes =
+            {
+                new ProxyRoute { Id = "m", Host = "kelp.ink" },
+                new ProxyRoute { Id = "h", Host = "home.kelp.ink", LocalOnly = true, Certificate = new ProxyCertificateSettings { Challenge = CertificateChallenge.Dns, DnsRecordId = "r1" } },
+                new ProxyRoute { Id = "a", Host = "app.kelp.ink", Upstream = "http://h:1", LocalOnly = true }
+            }
+        };
+
+        ProxySettingsValidator.Normalize(settings);
+
+        Assert.Equal(new[] { "m", "a" }, settings.Routes.Select(r => r.Id));
+        Assert.Equal("home.kelp.ink", settings.Routes[0].LocalHost);
+        Assert.Equal(CertificateChallenge.Dns, settings.Routes[0].Certificate.Challenge);
+        Assert.Equal("r1", settings.Routes[0].Certificate.DnsRecordId);
+        Assert.False(ProxySettingsValidator.MergeJellyfinRoutes(settings));
+
+        var onlyLocal = new ProxySettings { Routes = { new ProxyRoute { Id = "h", Host = "home.kelp.ink", LocalOnly = true } } };
+        Assert.False(ProxySettingsValidator.MergeJellyfinRoutes(onlyLocal));
+        Assert.Single(onlyLocal.Routes);
+    }
+
+    /// <summary>
+    /// A wildcard certificate asks for the domain and every name under it, adds a local address it does not cover,
+    /// and every other route under the domain shares it.
+    /// True: one certificate for kelp.ink covers kelp.ink, home.kelp.ink, and every route under kelp.ink.
+    /// False: each route would ask Let's Encrypt for its own, or a route outside the domain would use the wildcard.
+    /// </summary>
+    [Fact]
+    public void RouteCertificates_WildcardCoversTheDomainAndIsShared()
+    {
+        var jellyfin = new ProxyRoute { Id = "j", Host = "kelp.ink", LocalHost = "home.kelp.ink", Certificate = new ProxyCertificateSettings { Wildcard = true, Challenge = CertificateChallenge.Dns } };
+        var app = new ProxyRoute { Id = "a", Host = "app.kelp.ink", Upstream = "http://h:1" };
+        var deep = new ProxyRoute { Id = "d", Host = "a.b.kelp.ink", Upstream = "http://h:1" };
+        var elsewhere = new ProxyRoute { Id = "e", Host = "media.example.com", Upstream = "http://h:1" };
+        var routes = new[] { jellyfin, app, deep, elsewhere };
+
+        Assert.Equal(new[] { "kelp.ink", "*.kelp.ink" }, RouteCertificates.Names(jellyfin));
+        Assert.Equal(new[] { "kelp.ink" }, RouteCertificates.Names(new ProxyRoute { Host = "kelp.ink", LocalHost = "home.lan" }));
+        Assert.Equal(new[] { "kelp.ink", "home.kelp.ink" }, RouteCertificates.Names(new ProxyRoute { Host = "kelp.ink", LocalHost = "home.kelp.ink" }));
+        Assert.Same(jellyfin, RouteCertificates.CoveredBy(routes, app));
+        Assert.Null(RouteCertificates.CoveredBy(routes, deep));
+        Assert.Null(RouteCertificates.CoveredBy(routes, elsewhere));
+        Assert.Null(RouteCertificates.CoveredBy(routes, jellyfin));
+        Assert.Equal("kelp.ink", RouteCertificates.WildcardDomain(new ProxyRoute { Host = "*.kelp.ink" }));
+
+        var plan = AcmePlan.For(RouteCertificates.Names(jellyfin), new[] { new DNSRecord { Id = "r", Provider = DNSProviderKind.Porkbun, Hostname = "kelp.ink", Zone = "kelp.ink" } }, kind => kind == DNSProviderKind.Porkbun, CertificateChallenge.Dns);
+        Assert.Equal(AcmeMethod.Dns, plan.Method);
+        Assert.Equal(new[] { "*.kelp.ink", "kelp.ink" }, plan.Names);
+        Assert.Equal("_acme-challenge.kelp.ink", AcmePlan.TxtName(plan.Names[0]));
+        Assert.Equal("_acme-challenge.kelp.ink", AcmePlan.TxtName(plan.Names[1]));
+    }
+
+    /// <summary>
+    /// A handshake for a name under a wildcard certificate gets it, though the name belongs to another route.
+    /// True: app.kelp.ink is served the kelp.ink wildcard, which covers it.
+    /// False: every route under the domain would need its own certificate.
+    /// </summary>
+    [Fact]
+    public void CertificateSet_ServesTheWildcardForNamesUnderIt()
+    {
+        var paths = new ProxyPaths(_dir);
+        WriteIssued(paths.ForRoute("j"), "*.kelp.ink");
+        using var set = new CertificateSet(paths, new SecretProtector("test", NullLogger.Instance), NullLoggerFactory.Instance);
+        set.Configure(new[] { new ProxyRoute { Id = "j", Host = "kelp.ink", Certificate = new ProxyCertificateSettings { Wildcard = true, Mode = CertificateMode.Automatic } } }, r => new[] { "kelp.ink", "*.kelp.ink" });
+
+        Assert.NotNull(set.Select("app.kelp.ink", false));
+        Assert.Null(set.Select("media.example.com", false));
     }
 
     private static void WriteIssued(CertificatePaths slot, string name)

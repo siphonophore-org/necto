@@ -100,10 +100,9 @@ Groups are where a permission is set, except a script's users, which the script 
 The proxy forwards to any service, not only Jellyfin. A route is a host name, an upstream address, a certificate, and its protection.
 
 * **Templates** for a new route:
-  * **Jellyfin:** `domain.ext` to this Jellyfin, open to the internet, with a public certificate.
-  * **Jellyfin LAN:** `home.domain.ext` to this Jellyfin, answered only from the local network, with a certificate by DNS challenge so HTTPS works inside the house.
+  * **Jellyfin:** `domain.ext` to this Jellyfin, open to the internet, with `home.domain.ext` as its local address, answered only from the local network, on one certificate by DNS challenge so HTTPS works inside the house.
   * **Blank:** an empty route for any other service.
-* **Certificates:** ACME by HTTP or DNS challenge, using the DDNS providers' credentials for DNS, or an uploaded certificate. Renewal is a scheduled task.
+* **Certificates:** ACME by HTTP or DNS challenge, using the DDNS providers' credentials for DNS, or an uploaded certificate. A wildcard certificate covers a domain and every route under it. Renewal is a scheduled task.
 * **Protection:** bans, rate limits, locations, trusted proxies, and the Jellyfin side settings Remote Access checked.
 * Dropped: automatic port forwarding (UPnP and NAT-PMP), router steps, and the step by step setup. The docs carry a Getting Started page for the templates instead.
 * Protection is set once for the proxy, and a route chooses only **Local network only**. The Jellyfin side checks, trusting the proxy, sign-in bans, and refusing the startup wizard and API docs, apply to the routes that forward to this Jellyfin. **Review**

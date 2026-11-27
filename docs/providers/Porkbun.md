@@ -9,3 +9,5 @@ Open a record on the **DDNS** page, or select **Add record**, set **Provider** t
 - **Server override**: leave blank to use Porkbun's own server.
 
 _Ported from ddclient's `nic_porkbun_update`._
+
+This record can also publish the TXT record Let's Encrypt checks for a [Proxy](../Proxy.md#wildcard-certificates) route's DNS challenge, so no port has to be open and wildcards and local addresses are covered. Fill in **Root domain**, and turn on API access for the domain in Porkbun.

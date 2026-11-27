@@ -130,7 +130,7 @@ public class ProxyController : ControllerBase
         return Ok(new
         {
             Domain = domain,
-            Templates = new[] { RouteTemplates.Jellyfin, RouteTemplates.JellyfinLan, RouteTemplates.Blank }
+            Templates = new[] { RouteTemplates.Jellyfin, RouteTemplates.Blank }
                 .Select(key => new { Key = key, Route = RouteTemplates.Build(key, domain) })
                 .ToList()
         });
