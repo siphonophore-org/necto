@@ -1,12 +1,34 @@
 <!-- necto_proxy.html -->
-<!-- The Proxy tool. It shows an empty state that says the tool is coming. -->
+<!-- The Proxy tool. It shows how the proxy stands, lists its routes, lets Jellyfin trust it, and shows its visitors. -->
 
 <div id="NectoProxyPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox"
      data-controller="__plugin/necto_proxy.js">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+                <div class="fieldDescription" data-str="ProxyHelpPage">Forwards each host name to its service, with HTTPS and protection in front.</div>
+                <div id="proxyNotices"></div>
+                <div id="proxyCards" class="stolon-cards"></div>
+
+                <!-- Routes -->
+                <!-- Every route, each opening its editor. -->
+                <div id="proxyRoutes"></div>
+                <div class="stolon-card-list-actions">
+                    <button is="emby-button" type="button" id="btnAddRoute" class="raised stolon-button stolon-primary">
+                        <span class="material-icons" aria-hidden="true">add</span>
+                        <span data-str="ProxyButtonAddRoute">Add route</span>
+                    </button>
+                    <span id="proxyStatus" class="stolon-status-text" role="status"></span>
+                </div>
+
+                <!-- Jellyfin -->
+                <!-- Lets Jellyfin trust the proxy, so it sees each visitor's address, and puts it back. -->
+                <div id="proxyJellyfin"></div>
+
+                <!-- Visitors -->
+                <!-- Who reached the proxy from where, the bans, and the block list. -->
+                <div id="proxyVisitors"></div>
             </div>
         </div>
     </div>

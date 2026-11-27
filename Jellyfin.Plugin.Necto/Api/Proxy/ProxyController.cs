@@ -432,7 +432,7 @@ public class ProxyController : ControllerBase
         var errors = ProxySettingsValidator.ValidateRoute(route, stored.Routes, ServerText.LanguageOf(Request));
         if (errors.Count > 0)
         {
-            return BadRequest(new { Errors = errors });
+            return BadRequest(new ApiError(string.Join(" ", errors)));
         }
 
         var incoming = ProxyRuntimeFactory.Clone(stored);
@@ -487,7 +487,7 @@ public class ProxyController : ControllerBase
 
         if (errors.Count > 0)
         {
-            return BadRequest(new { Errors = errors });
+            return BadRequest(new ApiError(string.Join(" ", errors)));
         }
 
         // Binding Jellyfin to this machine is part of trusting the proxy, so while it is trusted a change to it is
@@ -721,5 +721,5 @@ public class ProxyController : ControllerBase
 
     private string Reply(string key, params object?[] args) => ServerText.Reply(Request, key, args);
 
-    private static object Errors(string error) => new { Errors = new List<string> { error } };
+    private static ApiError Errors(string error) => new(error);
 }

@@ -64,6 +64,24 @@
     <JellyfinString Include="Settings" />
     <JellyfinString Include="TabDashboard" />
     <JellyfinString Include="Unknown" />
+    <JellyfinString Include="Auto" />
+    <JellyfinString Include="ButtonCancel" />
+    <JellyfinString Include="ButtonRemove" />
+    <JellyfinString Include="GuideProviderLogin" />
+    <JellyfinString Include="HeaderActivity" />
+    <JellyfinString Include="LabelCertificatePassword" />
+    <JellyfinString Include="LabelDevice" />
+    <JellyfinString Include="LabelFailed" />
+    <JellyfinString Include="LabelSource" />
+    <JellyfinString Include="Next" />
+    <JellyfinString Include="No" />
+    <JellyfinString Include="None" />
+    <JellyfinString Include="Off" />
+    <JellyfinString Include="People" />
+    <JellyfinString Include="Reset" />
+    <JellyfinString Include="Restart" />
+    <JellyfinString Include="Upload" />
+    <JellyfinString Include="Yes" />
     <!-- The plugin's own key keeps English Jellyfin also says, with another meaning. -->
     <JellyfinTextMatch Include="TitleNewGroup" />
     <!-- A DNS record, not a TV recording. -->

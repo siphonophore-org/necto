@@ -35,6 +35,9 @@ import {
 // The Stolon builders a tool page uses, so a page takes everything from this one module.
 export { openTool, confirmDialog, openEditorSidecar, createRecordList, createCollapsibleSection, createRepeater, createChipSelect, createCheckboxList, createSaveBar, createCopyField };
 
+// The Stolon builders the DDNS and Proxy pages use besides.
+export { createDefinitionList, createDataTable, openSidecar, createChoiceGroup, COUNTRY_CODES } from './configurationpage?name=necto_stolon.js';
+
 var PLUGIN_ID = 'a8b5ecb0-fc00-428b-85e8-74b85820166d';
 
 // TRANSLATIONS_URL
@@ -117,7 +120,8 @@ var sectionRegistry = { settings: {}, troubleshooting: {} };
 // kind [string]: settings or troubleshooting.
 // key [string]: The tool's key, as nectoTools lists it.
 // section [object]: build(content, ctx) fills the section's content and returns a handle. ctx holds shared and
-//   page. A Settings handle has load(config) and apply(config), which writes its fields into a config. A
+//   page. A Settings handle has load(config) and apply(config), which writes its fields into a config, or save()
+//   in place of apply for a tool that saves through its own route. A
 //   Troubleshooting handle has load(), and either may have destroy().
 export function registerSection(kind, key, section) {
     if (!sectionRegistry[kind]) throw new Error('No section kind ' + kind);

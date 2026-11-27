@@ -424,5 +424,5 @@ public class DdnsController : ControllerBase
 
     private string Reply(string key, params object?[] args) => ServerText.Reply(Request, key, args);
 
-    private static object Errors(string error) => new { Errors = new List<string> { error } };
+    private static ApiError Errors(string error) => new(error);
 }

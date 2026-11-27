@@ -61,7 +61,7 @@ public sealed class SpaceshipProvider : DNSProviderBase
         Hostname = TranslationKeys.DdnsLabelHostname,
         Login = TranslationKeys.HeaderApiKey,
         Password = TranslationKeys.DdnsLabelApiSecret,
-        Zone = TranslationKeys.DdnsLabelDomain,
+        Zone = TranslationKeys.ProxyLabelDomain,
         Server = true,
         Ttl = true,
     };

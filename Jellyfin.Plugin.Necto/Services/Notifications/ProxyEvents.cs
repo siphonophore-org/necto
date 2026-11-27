@@ -35,7 +35,7 @@ public static class ProxyEvents
     {
         [Banned] = "ProxyEventBanned",
         [CertificateExpiring] = "ProxyEventCertificateExpiring",
-        [CertificateFailed] = "ProxyEventCertificateFailed",
+        [CertificateFailed] = "ProxyTagCertificateFailed",
         [CertificateIssued] = "ProxyEventCertificateIssued",
         [StartFailed] = "ProxyEventStartFailed",
         [Unreachable] = "ProxyEventUnreachable",

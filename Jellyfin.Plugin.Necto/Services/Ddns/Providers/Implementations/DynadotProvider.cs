@@ -50,7 +50,7 @@ public sealed class DynadotProvider : DNSProviderBase
     {
         Hostname = TranslationKeys.DdnsLabelHostname,
         Password = TranslationKeys.DdnsLabelDdnsPassword,
-        Zone = TranslationKeys.DdnsLabelDomain,
+        Zone = TranslationKeys.ProxyLabelDomain,
         Server = true,
         Ttl = true,
     };

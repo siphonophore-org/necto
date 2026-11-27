@@ -48,7 +48,7 @@ public sealed class FreeMyIpProvider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.DdnsLabelDomain,
+        Hostname = TranslationKeys.ProxyLabelDomain,
         Password = TranslationKeys.DdnsLabelToken,
         Server = true,
     };

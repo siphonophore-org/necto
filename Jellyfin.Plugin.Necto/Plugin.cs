@@ -136,8 +136,8 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
             EmbeddedResourcePath = $"{ns}.Web.necto_groups_sections.js"
         };
 
-        // The DDNS and Proxy sections of Settings and Troubleshooting.
-        foreach (var module in new[] { "necto_ddns_sections.js", "necto_proxy_sections.js" })
+        // The DDNS and Proxy sections of Settings and Troubleshooting, and the field builders they share.
+        foreach (var module in new[] { "necto_netfields.js", "necto_ddns_sections.js", "necto_proxy_sections.js" })
         {
             yield return new PluginPageInfo { Name = module, EmbeddedResourcePath = $"{ns}.Web.{module}" };
         }

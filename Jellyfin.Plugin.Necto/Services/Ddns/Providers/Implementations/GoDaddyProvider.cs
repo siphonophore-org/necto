@@ -59,7 +59,7 @@ public sealed class GoDaddyProvider : DNSProviderBase
         Hostname = TranslationKeys.DdnsLabelRecordName,
         Login = TranslationKeys.HeaderApiKey,
         Password = TranslationKeys.DdnsLabelApiSecret,
-        Zone = TranslationKeys.DdnsLabelDomain,
+        Zone = TranslationKeys.ProxyLabelDomain,
         Server = true,
         Ttl = true,
     };

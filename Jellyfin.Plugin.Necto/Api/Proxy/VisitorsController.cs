@@ -418,7 +418,7 @@ public class VisitorsController : ControllerBase
     // response as JSON, which would show a successful action as failed.
     private OkObjectResult Done() => Ok(new { });
 
-    private BadRequestObjectResult Refuse(string message) => BadRequest(new { Errors = new List<string> { message } });
+    private BadRequestObjectResult Refuse(string message) => BadRequest(new ApiError(message));
 
     /// <summary>
     /// Deletes all People history.

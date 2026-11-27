@@ -171,8 +171,8 @@ public static class ProxySettingsValidator
         CheckEnum(errors, language, Text(language, TranslationKeys.ProxyLabelCountryRule), settings.Advanced.CountryMode ?? CountryRuleMode.Off);
 
         var o = ProxyOptions.From(settings.Advanced);
-        CheckPort(errors, language, Text(language, TranslationKeys.ProxyErrorFieldHttpPort), o.HttpPort);
-        CheckPort(errors, language, Text(language, TranslationKeys.ProxyErrorFieldHttpsPort), o.HttpsPort);
+        CheckPort(errors, language, Text(language, TranslationKeys.ProxyLabelHttpPort), o.HttpPort);
+        CheckPort(errors, language, Text(language, TranslationKeys.ProxyLabelHttpsPort), o.HttpsPort);
         if (o.HttpPort == o.HttpsPort)
         {
             errors.Add(Text(language, TranslationKeys.ProxyErrorSamePorts));

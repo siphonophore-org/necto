@@ -4,6 +4,8 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import './configurationpage?name=necto_groups_sections.js';
+import './configurationpage?name=necto_ddns_sections.js';
+import './configurationpage?name=necto_proxy_sections.js';
 
 export default function (view) {
     'use strict';
@@ -12,7 +14,8 @@ export default function (view) {
     var bars = [];
 
     // saveSection
-    // Saves one section's fields into a fresh copy of the config.
+    // Saves one section's fields, through the section's own save when it has one, such as a tool whose settings
+    // save through its own route, and otherwise into a fresh copy of the config.
     //
     // Inputs
     // shared [object]: The Necto helper bag.
@@ -21,6 +24,7 @@ export default function (view) {
     // Output
     // [Promise]: Resolves once the save landed.
     function saveSection(shared, handle) {
+        if (handle.save) return handle.save();
         return shared.saveConfigWith(function (config) { handle.apply(config); });
     }
 

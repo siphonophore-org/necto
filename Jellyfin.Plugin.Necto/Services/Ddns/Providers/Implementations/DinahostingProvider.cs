@@ -57,7 +57,7 @@ public sealed class DinahostingProvider : DNSProviderBase
         Hostname = TranslationKeys.DdnsLabelHostAndDomain,
         Login = TranslationKeys.LabelUsername,
         Password = TranslationKeys.LabelPassword,
-        Zone = TranslationKeys.DdnsLabelDomain,
+        Zone = TranslationKeys.ProxyLabelDomain,
         Server = true,
     };
 

@@ -56,7 +56,7 @@ public sealed class YandexProvider : DNSProviderBase
     public override ProviderFields Fields => new()
     {
         Hostname = TranslationKeys.DdnsLabelFqdn,
-        Login = TranslationKeys.DdnsLabelDomain,
+        Login = TranslationKeys.ProxyLabelDomain,
         Password = TranslationKeys.DdnsLabelPddToken,
         Server = true,
     };
