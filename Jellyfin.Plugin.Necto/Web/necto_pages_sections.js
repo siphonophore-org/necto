@@ -62,8 +62,7 @@ function buildSettings(content, ctx) {
     var retention = h('input', { is: 'emby-input', type: 'number', id: retentionId, min: '0', max: String(RETENTION_CEILING), 'data-field': 'NewStoreRetentionDays' });
     var notify = h('input', { type: 'checkbox', is: 'emby-checkbox', id: fieldId('notify'), 'data-field': 'NewStoreNotifyOnWrite' });
 
-    var enabled = nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), help: t.tr('PagesHelpEnabled'), field: 'Enabled' });
-    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('PagesSettingsIntro') }));
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('PagesLabelEnable'), help: t.tr('PagesHelpEnabled'), field: 'Enabled' });
     content.appendChild(enabled.element);
     content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('PagesHeaderNewStores') }));
     content.appendChild(h('div', { class: 'inputContainer' }, [
@@ -193,7 +192,7 @@ function buildTroubleshooting(content, ctx) {
                 var help = typeof row.count === 'number'
                     ? t.format('PagesUsageRecords', row.count, row.limit || row.store.MaxRecords || 1000)
                     : t.tr('PagesStoreDisabledHelp');
-                var node = nectoModule.createResetRow({ icon: 'delete_sweep', label: row.store.Name, help: help, button: t.tr('ButtonClear'), action: 'clear-store', destructive: true, empty: row.count === 0 }).element;
+                var node = nectoModule.createResetRow({ icon: 'layers_clear', label: row.store.Name, help: help, button: t.tr('ButtonClear'), action: 'clear-store', destructive: true, empty: row.count === 0 }).element;
                 node.setAttribute('data-store', row.store.Name);
                 var btn = node.querySelector('button');
                 btn.disabled = typeof row.count !== 'number';

@@ -82,7 +82,7 @@ test('Troubleshooting draws a section per tool, Groups with its repairs', async 
     assert.deepEqual(texts(opened.view, '.stolon-collapsible-title').filter(function (t) { return TOOLS.indexOf(t) >= 0; }), TOOLS);
     var groups = opened.section('groups');
     assert.deepEqual(texts(groups, '.stolon-subsection-title'), ['Password requirements', 'Templates', 'Scheduled checks', 'Password resets']);
-    assert.deepEqual(texts(groups, '[data-action]'), ['Apply rules', 'Apply templates', 'Run now', 'Run now']);
+    assert.deepEqual(texts(groups, '[data-action]'), ['Apply', 'Apply', 'Run now', 'Run now']);
     assert.match(groups.textContent, /Reset codes are off\. Turn on Show reset codes in Settings to list them\./);
 });
 
@@ -90,7 +90,7 @@ test('Apply rules posts to the password rules route and reports how many users m
     var opened = await openTool('troubleshooting', { answers: { 'POST Groups/PasswordRules/Apply': { Moved: 1 }, 'GET Groups/ResetCodes': { Enabled: false } } });
     var groups = opened.section('groups');
 
-    clickButton(groups, 'Apply rules');
+    groups.querySelector('[data-action="apply-rules"]').click();
     await settle(50);
 
     assert.ok(opened.page.requests.some(function (r) { return r.type === 'POST' && r.url === 'Groups/PasswordRules/Apply'; }));

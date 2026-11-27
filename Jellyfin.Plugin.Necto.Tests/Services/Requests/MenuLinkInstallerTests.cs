@@ -28,6 +28,7 @@ public class MenuLinkInstallerTests
         Assert.True(MenuLinkInstaller.AddLink(web));
 
         Assert.Equal(new[] { "https://example.com", "../requests/" }, web["menuLinks"]!.AsArray().Select(l => l!["url"]!.GetValue<string>()).ToArray());
+        Assert.Equal("movie_filter", web["menuLinks"]![1]!["icon"]!.GetValue<string>());
         Assert.NotNull(web["themes"]);
     }
 
@@ -154,7 +155,7 @@ public class MenuLinkInstallerTests
         Assert.False(MenuLinkInstaller.AddIssuesLink(web));
         Assert.Equal(new[] { "../requests/", "../issues/" }, web["menuLinks"]!.AsArray().Select(l => l!["url"]!.GetValue<string>()));
         Assert.Equal("Issues", web["menuLinks"]![1]!["name"]!.GetValue<string>());
-        Assert.Equal("bug_report", web["menuLinks"]![1]!["icon"]!.GetValue<string>());
+        Assert.Equal("report_problem", web["menuLinks"]![1]!["icon"]!.GetValue<string>());
 
         web["menuLinks"]!.AsArray().Add(new JsonObject { ["name"] = "Report", ["url"] = "/jellyfin/issues" });
         Assert.True(MenuLinkInstaller.RemoveIssuesLink(web));
@@ -190,7 +191,7 @@ public class MenuLinkInstallerTests
 
         var links = web["menuLinks"]!.AsArray();
         Assert.Equal(new[] { "Ask for it", "Issues" }, links.Select(l => l!["name"]!.GetValue<string>()));
-        Assert.Equal(new[] { "movie", "bug_report" }, links.Select(l => l!["icon"]!.GetValue<string>()));
+        Assert.Equal(new[] { "movie", "report_problem" }, links.Select(l => l!["icon"]!.GetValue<string>()));
     }
 
     /// <summary>

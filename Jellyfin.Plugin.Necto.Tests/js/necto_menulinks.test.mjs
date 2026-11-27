@@ -76,7 +76,7 @@ test('Settings draws Menu links after the tools, with each link as a row with it
     var section = opened.section;
     assert.ok(section);
     assert.equal(section.querySelector('.stolon-collapsible-title').textContent, 'Menu links');
-    assert.equal(section.querySelector('.stolon-collapsible-tile .material-icons').textContent, 'menu_open');
+    assert.equal(section.querySelector('.stolon-collapsible-tile .material-icons').textContent, 'add_link');
     var rows = section.querySelectorAll('.necto-menu-link');
     assert.equal(rows.length, 3);
     assert.deepEqual(texts(section, '.necto-menu-link-url'), ['../requests/', 'https://wiki.example.com', '../pages/rules']);

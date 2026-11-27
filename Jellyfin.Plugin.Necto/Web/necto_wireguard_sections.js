@@ -68,7 +68,7 @@ export function buildSettings(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var enabled = nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), help: t.tr('WireGuardEnabledHelp') });
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('WireGuardLabelEnable'), help: t.tr('WireGuardEnabledHelp') });
     var sidecarLine = h('div', { class: 'fieldDescription', 'data-role': 'sidecar' });
     var replace = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button secondary small', 'data-action': 'replace-sidecar' }, [h('span', { text: t.tr('WireGuardButtonReplace') })]);
     var info = null;
@@ -300,7 +300,7 @@ export function buildTroubleshooting(content, ctx) {
         h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderTunnels') }),
         tunnelList.element,
         nectoModule.createResetGroup([
-            nectoModule.createResetRow({ icon: 'restart_alt', label: t.tr('WireGuardRestartTitle'), help: t.tr('WireGuardRestartHelp'), button: restart })
+            nectoModule.createResetRow({ icon: 'autorenew', label: t.tr('WireGuardRestartTitle'), help: t.tr('WireGuardRestartHelp'), button: restart })
         ]).element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderPeersByUser') }),
         h('div', { class: 'fieldDescription', text: t.tr('WireGuardPeersByUserHelp') }),

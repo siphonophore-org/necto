@@ -82,7 +82,9 @@ test('the Scripts section of Troubleshooting reads the run history and its chart
         'GET Scripts/Catalog': { Triggers: [{ Key: 'ItemAdded', Label: 'Item added' }] }
     });
 
-    assert.deepEqual(texts(opened.section, '.stolon-subsection-title'), ['History']);
+    assert.deepEqual(texts(opened.section, '.stolon-subsection-title'), ['History', 'Repairs']);
+    var clear = opened.section.querySelector('[data-action="clear-history"]').closest('.stolon-reset-row');
+    assert.equal(clear.querySelector('.stolon-collapsible-tile').textContent, 'history_toggle_off');
     assert.ok(opened.page.requests.some(function (r) { return r.url === 'Scripts/History/Days'; }));
     assert.ok(opened.page.requests.some(function (r) { return r.url === 'Scripts/Catalog'; }));
 });

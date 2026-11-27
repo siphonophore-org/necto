@@ -53,7 +53,7 @@ export function advancedSpecs() {
         },
         {
             title: 'HeaderLocations', fields: [
-                { key: 'CountryMode', kind: 'enum', label: 'ProxyLabelCountryRule', help: 'ProxyCountryRuleHelp', names: COUNTRY_MODES, options: ['Off', 'ProxyOptionServerCountry', 'ProxyOptionBlockCountries', 'ProxyOptionAllowCountries'] },
+                { key: 'CountryMode', kind: 'enum', label: 'ProxyLabelCountryRule', help: 'ProxyCountryModeOff', names: COUNTRY_MODES, options: ['Off', 'ProxyOptionServerCountry', 'ProxyOptionBlockCountries', 'ProxyOptionAllowCountries'] },
                 { key: 'Countries', kind: 'countries', label: 'HeaderCountries', help: 'ProxyCountriesHelp' },
                 { key: 'BlockUnknownCountries', kind: 'bool', label: 'ProxyLabelBlockUnknown', help: 'ProxyBlockUnknownHelp' },
                 { key: 'BlockWithoutDatabase', kind: 'bool', label: 'ProxyLabelBlockWithoutDatabase', help: 'ProxyBlockWithoutDatabaseHelp' }
@@ -299,23 +299,20 @@ function buildSettings(content, ctx) {
     var proxyStatus = null;
     var inputs = {};
     var countries = null;
-    var countryText = h('div', { class: 'fieldDescription', 'data-role': 'country-note' });
-    var refusedLine = h('div', { class: 'fieldDescription', 'data-role': 'country-refused' });
-    var locationLine = h('div', { class: 'fieldDescription', 'data-role': 'location-note' });
     var status = h('div', { class: 'stolon-status-text', role: 'status' });
     var enabled = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelEnableProxy'), help: t.tr('ProxyEnableHelp'), field: 'Enabled' });
     var terms = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelAcceptTerms'), help: t.tr('ProxyAcceptTermsHelp'), field: 'AcceptTerms' });
     var history = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelRecordHistory'), help: t.tr('ProxyRecordHistoryHelp'), field: 'Visitors.Enabled' });
     var days = nectoModule.createInputField({ label: t.tr('ProxyLabelHistoryDays'), help: t.tr('ProxyHistoryDaysHelp'), field: 'Visitors.HistoryDays', type: 'number', min: 1, max: 3650 });
     var location = nectoModule.createSelectField({
-        label: t.tr('HeaderLocations'), help: t.tr('ProxyLocationsHelp'), field: 'Visitors.Location',
+        label: t.tr('ProxyLabelLocationLookup'), help: locationNote('Country', t), field: 'Visitors.Location',
         options: [{ value: 'Country', text: t.tr('HeaderCountry') }, { value: 'City', text: t.tr('ProxyOptionCountryAndCity') }, { value: 'Off', text: t.tr('Off') }]
     });
 
     [status, enabled.element, terms.element].forEach(function (n) { content.appendChild(n); });
     content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderVisitors') }));
     [history, days, location].forEach(function (f) { content.appendChild(f.element); });
-    content.appendChild(locationLine);
+    location.help.setAttribute('data-role', 'location-note');
     advancedSpecs().forEach(function (sub) {
         content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr(sub.title) }));
         sub.fields.forEach(function (spec) {
@@ -334,25 +331,21 @@ function buildSettings(content, ctx) {
             } else f = nectoModule.createInputField({ label: t.tr(spec.label), help: t.tr(spec.help), field: spec.key, type: spec.kind === 'int' ? 'number' : 'text', min: spec.min, max: spec.max, placeholder: spec.placeholder });
             inputs[spec.key] = f;
             content.appendChild(f.element);
-            if (spec.key === 'CountryMode') {
-                content.appendChild(countryText);
-                content.appendChild(refusedLine);
-            }
         });
     });
 
     // showNotes
-    // Shows the note for the picked country rule and location detail, with who was refused since start, and hides
-    // the country picker while the rule is off.
+    // Describes the picked country rule and location lookup under their selects, and hides the country picker while
+    // the rule is off.
     function showNotes() {
         var mode = inputs.CountryMode.input.value;
         var note = countryNote(mode, proxyStatus, !!inputs.BlockWithoutDatabase.input.checked, t);
-        countryText.textContent = note.text;
-        countryText.className = note.warn ? 'fieldDescription stolon-warn' : 'fieldDescription';
-        refusedLine.textContent = proxyStatus ? refusedText(proxyStatus.CountryRefused, t) : '';
-        refusedLine.classList.toggle('stolon-hidden', !proxyStatus || mode === 'Off');
+        var help = inputs.CountryMode.help;
+        help.textContent = note.text;
+        help.setAttribute('data-role', 'country-note');
+        help.classList.toggle('stolon-warn', note.warn);
         inputs.Countries.element.classList.toggle('stolon-hidden', mode === 'Off');
-        locationLine.textContent = locationNote(location.input.value, t);
+        location.help.textContent = locationNote(location.input.value, t);
     }
 
     [inputs.CountryMode.input, inputs.BlockWithoutDatabase.input, location.input].forEach(function (input) {
@@ -525,6 +518,7 @@ function buildTroubleshooting(content, ctx) {
                 { label: t.tr('ProxyLabelServerCountry'), value: s.ServerCountry || t.tr('Unknown') },
                 { label: t.tr('ProxyLabelMemory'), value: t.format(d.IsLowMemory ? 'ProxyMemoryLow' : 'ProxyMemoryStandard', d.MemoryMb) }
             ];
+            if (s.CountryRefused) items.push({ label: t.tr('ProxyLabelRefusedByCountry'), value: refusedText(s.CountryRefused, t) });
             items = items.concat(nameItems(s.Name, t));
             if (s.Error) items.push({ label: t.tr('LabelProblem'), value: s.Error });
             state.setItems(items);

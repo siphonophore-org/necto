@@ -414,25 +414,6 @@ export function createHealthEditor(t, onChange) {
     };
 }
 
-// choiceOf
-// Builds one stolon-choice radio card.
-//
-// Inputs
-// name [string]: The radio group's name.
-// value [string]: The choice's value.
-// label [string]: The choice's name.
-// help [string]: What it does.
-//
-// Output
-// [HTMLElement]: The card.
-function choiceOf(name, value, label, help) {
-    return h('label', { class: 'stolon-choice' }, [
-        h('input', { type: 'radio', name: name, value: value }),
-        h('span', { class: 'stolon-choice-name', text: label }),
-        h('span', { class: 'stolon-choice-text', text: help })
-    ]);
-}
-
 // checkboxOf
 // Builds a Jellyfin checkbox with its description.
 //
@@ -466,15 +447,20 @@ function buildSettings(content, ctx) {
     var t = ctx.shared.t;
     var alerts = createAlertEditor(t);
     var health = createHealthEditor(t);
-    var radio = fieldId('scan-guard');
-    var choices = h('div', { class: 'stolon-choice-group', role: 'radiogroup', 'aria-label': t.tr('StorageHeaderLibraryScans'), 'data-field': 'ScanGuard' }, [
-        choiceOf(radio, 'Affected', t.tr('StorageScanGuardAffected'), t.tr('StorageHelpScanGuardAffected')),
-        choiceOf(radio, 'All', t.tr('StorageScanGuardAll'), t.tr('StorageHelpScanGuardAll')),
-        choiceOf(radio, 'Off', t.tr('StorageScanGuardOff'), t.tr('StorageHelpScanGuardOff'))
-    ]);
+    var scanGuard = nectoModule.createChoiceGroup(null, {
+        label: t.tr('StorageHeaderLibraryScans'),
+        value: 'Affected',
+        choices: [
+            { value: 'Affected', name: t.tr('StorageScanGuardAffected'), text: t.tr('StorageHelpScanGuardAffected') },
+            { value: 'All', name: t.tr('StorageScanGuardAll'), text: t.tr('StorageHelpScanGuardAll') },
+            { value: 'Off', name: t.tr('StorageScanGuardOff'), text: t.tr('StorageHelpScanGuardOff') }
+        ],
+        onChange: function () { scanGuard.element.dispatchEvent(new CustomEvent('change', { bubbles: true })); }
+    });
+    scanGuard.element.setAttribute('data-field', 'ScanGuard');
     var remount = checkboxOf('Remount', t.tr('StorageLabelRemount'), t.tr('StorageHelpRemount'));
     var mute = checkboxOf('MuteMonitoring', t.tr('StorageLabelMuteMonitoring'), t.tr('StorageHelpMuteMonitoring'));
-    var enabled = nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), help: t.tr('StorageHelpEnabled'), field: 'Enabled' });
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('StorageLabelEnable'), help: t.tr('StorageHelpEnabled'), field: 'Enabled' });
 
     [
         enabled.element,
@@ -484,15 +470,11 @@ function buildSettings(content, ctx) {
         h('h3', { class: 'stolon-subsection-title', text: t.tr('StorageSectionMissingDisks') }),
         h('div', { class: 'stolon-field' }, [
             h('label', { text: t.tr('StorageHeaderLibraryScans') }),
-            choices,
-            h('div', { class: 'fieldDescription', text: t.tr('StorageHelpScanGuardScope') })
+            scanGuard.element
         ]),
         remount.element,
         mute.element
     ].forEach(function (node) { content.appendChild(node); });
-    var scanGuard = nectoModule.createChoiceGroup(choices, {
-        onChange: function () { choices.dispatchEvent(new CustomEvent('change', { bubbles: true })); }
-    });
 
     return {
         load: function (config) {
@@ -546,7 +528,7 @@ function buildTroubleshooting(content, ctx) {
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
         nectoModule.createResetGroup([nectoModule.createResetRow({ icon: 'health_and_safety', label: t.tr('StorageTaskCheckStorage'), help: t.tr('StorageTaskCheckStorageDescription'), button: t.tr('ButtonRunTask'), action: 'run-check' })]).element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('Settings') }),
-        nectoModule.createResetGroup([nectoModule.createResetRow({ icon: 'settings_backup_restore', label: t.tr('StorageTaskResetSettings'), help: t.tr('StorageHelpResetSettings'), button: t.tr('Reset'), action: 'reset-settings', destructive: true })]).element
+        nectoModule.createResetGroup([nectoModule.createResetRow({ icon: 'restore', label: t.tr('StorageTaskResetSettings'), help: t.tr('StorageHelpResetSettings'), button: t.tr('Reset'), action: 'reset-settings', destructive: true })]).element
     ].forEach(function (node) { content.appendChild(node); });
 
     // report

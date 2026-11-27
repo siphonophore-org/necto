@@ -44,7 +44,7 @@ export function buildSettings(content, ctx) {
     var concurrent = createSliderField({ min: 1, max: 32, label: t.tr('ScriptsLabelRunsAtOnce') });
     var timeout = createDurationField({ units: ['m', 's'], min: 1, max: 3600, required: true });
     var history = createSliderField({ min: 0, max: 5000, label: t.tr('ScriptsLabelHistorySize') });
-    var enabled = nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), help: t.tr('ScriptsHelpEnabled'), field: 'Enabled' });
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('ScriptsLabelEnable'), help: t.tr('ScriptsHelpEnabled'), field: 'Enabled' });
     content.appendChild(enabled.element);
     content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('ScriptsLabelRuns') }));
     content.appendChild(field(t.tr('ScriptsLabelRunsAtOnce'), t.tr('ScriptsHelpRunsAtOnce'), concurrent));
@@ -87,10 +87,13 @@ export function buildTroubleshooting(content, ctx) {
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var chartHost = h('div', { 'data-role': 'history-chart' });
     var tableHost = h('div', { 'data-role': 'history-table' });
+    var clearRow = nectoModule.createResetRow({ icon: 'history_toggle_off', label: t.tr('ScriptsTitleClearHistory'), help: t.tr('ScriptsHelpClearHistory'), button: t.tr('ButtonClear'), action: 'clear-history', destructive: true, onClick: function () { clearHistory(); } });
+    content.appendChild(status);
     content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('ScriptsTabHistory') }));
     content.appendChild(chartHost);
-    content.appendChild(status);
     content.appendChild(tableHost);
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }));
+    content.appendChild(nectoModule.createResetGroup([clearRow]).element);
 
     var table = null;
     var chart = null;
@@ -244,7 +247,6 @@ export function buildTroubleshooting(content, ctx) {
                     { value: 'test', label: t.tr('HeaderTests') }
                 ].concat(scripts.map(function (s) { return { value: s.Id, label: s.Name }; }))
             }],
-            actions: [{ id: 'clear', label: t.tr('ScriptsTitleClearHistory'), icon: 'delete', variant: 'destructive', onClick: clearHistory }],
             emptyText: t.tr('ScriptsEmptyRuns'),
             widthKey: 'scripts-history',
             columns: [

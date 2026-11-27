@@ -176,7 +176,7 @@ test('the Troubleshooting section lists the send log and the browsers, and asks 
 
     section.querySelector('[data-action="reset-keys"]').click();
     await settle(50);
-    clickDialogButton(opened.dom, 'Make new keys');
+    clickDialogButton(opened.dom, 'Replace');
     await settle(50);
     assert.ok(opened.page.requests.some(function (r) { return r.type === 'POST' && r.url === 'Notifications/Push/Keys'; }));
 });
