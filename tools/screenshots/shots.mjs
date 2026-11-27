@@ -97,7 +97,6 @@ const sidecars = {
     await section(p, 'Members');
     await section(p, 'Jellyfin access');
     await section(p, 'Parental control');
-    await section(p, 'Media playback');
     return panel;
   }],
   'Route Editor': ['proxy', 1100, (p) => row(p, 'media.example.com')],

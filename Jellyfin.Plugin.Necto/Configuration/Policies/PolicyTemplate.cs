@@ -2,7 +2,7 @@ namespace Jellyfin.Plugin.Necto.Configuration.Policies;
 
 /// <summary>
 /// The Jellyfin policy and preferences a group writes onto its members. Each row is set by the group or left to the
-/// member, and a member of several groups takes each row from the first group, in group order, that sets it.
+/// member.
 /// </summary>
 public class PolicyTemplate
 {

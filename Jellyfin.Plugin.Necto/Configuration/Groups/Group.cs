@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Jellyfin.Plugin.Necto.Configuration.Groups;
 
 /// <summary>
-/// A named set of Jellyfin users and the permissions they share. A user may be in several groups, and a user in none
+/// A named set of Jellyfin users and the permissions they share. A user is in one group at most, and a user in none
 /// takes the Everyone group.
 /// </summary>
 public class Group

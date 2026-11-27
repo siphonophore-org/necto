@@ -1,6 +1,7 @@
 // necto_groups.js
 // The Groups tool. It lists the groups, Everyone first, and opens each in an editor sidecar with its name, its
-// members, and a collapsible section of permissions per tool, with Remove, Cancel, and Save on the shelf.
+// members, its account rules, its Jellyfin access and preferences, and a collapsible section per tool, with Remove
+// and Save on the shelf.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import * as nectoTemplates from './configurationpage?name=necto_groups_templates.js';

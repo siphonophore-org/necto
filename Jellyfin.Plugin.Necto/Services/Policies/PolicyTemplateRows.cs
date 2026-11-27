@@ -46,7 +46,7 @@ public static class PolicyTemplateRows
     /// Builds one template from several, taking each row from the first template that sets it, and the preferences mode
     /// from the first.
     /// </summary>
-    /// <param name="templates">The templates, in group order.</param>
+    /// <param name="templates">The templates, the one that wins first.</param>
     /// <returns>A new template with every row some template sets.</returns>
     public static PolicyTemplate Merge(IEnumerable<PolicyTemplate> templates)
     {

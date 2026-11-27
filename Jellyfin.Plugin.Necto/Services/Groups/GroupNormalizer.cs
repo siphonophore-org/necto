@@ -74,7 +74,7 @@ public static class GroupNormalizer
             group.MemberIds.RemoveAll(id => admins.Contains(id) || (known is not null && !known.Contains(id)));
         }
 
-        // A user is in one group at most. A stored user in several keeps the first in group order.
+        // A user is in one group at most. A stored user in several keeps the first in the list.
         var placed = new Dictionary<Guid, Group>();
         foreach (var group in config.Groups)
         {

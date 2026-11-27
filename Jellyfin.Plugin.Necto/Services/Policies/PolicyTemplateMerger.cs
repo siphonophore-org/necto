@@ -8,8 +8,8 @@ using Siphonophore.Stolon;
 namespace Jellyfin.Plugin.Necto.Services.Policies;
 
 /// <summary>
-/// Works out the Jellyfin settings a user takes. Each row comes from the first of the user's groups, in group order,
-/// that sets it, and a row no group sets is left to the user. A user in no group takes Everyone's.
+/// Works out the Jellyfin settings a user takes from their one group. A row the group does not set is left to the
+/// user, and a user in no group takes Everyone's.
 /// </summary>
 public static class PolicyTemplateMerger
 {
