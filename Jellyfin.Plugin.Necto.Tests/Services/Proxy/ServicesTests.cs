@@ -43,6 +43,7 @@ public class ServicesTests
         Assert.Contains(typeof(ProxyHostedService), hosted);
         Assert.Contains(typeof(VisitorHostedService), hosted);
         Assert.Contains(typeof(ServerTextSetup), hosted);
+        Assert.Contains(typeof(FolderProtection), hosted);
     }
 
     /// <summary>

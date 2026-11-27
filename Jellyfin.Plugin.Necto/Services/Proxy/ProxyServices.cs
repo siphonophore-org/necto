@@ -38,6 +38,7 @@ public static class ProxyServices
         services.AddSingleton<PublicAddresses>();
         services.AddSingleton<ProxyManager>();
         services.AddSingleton<JellyfinNetworkOrchestrator>();
+        services.AddHostedService<FolderProtection>();
         services.AddHostedService<ProxyHostedService>();
 
         // Visitors: who connected from where. Sign-ins come from Jellyfin's events, sessions from a poll, and the

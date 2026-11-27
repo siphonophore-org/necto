@@ -771,6 +771,8 @@
   "ProxyLanAddressHelp": "The address local clients use. Leave blank to detect it.",
   "ProxyLoaded": "Loaded",
   "ProxyLocalOnlyHelp": "Answers only the local network and trusted networks. The internet gets nothing.",
+  "ProxyLocationDownloading": "The location database is downloading.",
+  "ProxyLocationLoadedOn": "The location database from {0} is loaded.",
   "ProxyLocationsHelp": "How much of each visitor's location is looked up, all on this server.",
   "ProxyLoopbackOnlyHelp": "Jellyfin listens on this machine only, so every client goes through the proxy.",
   "ProxyMaxConnectionsHelp": "Open internet connections at once. 0 is no limit.",

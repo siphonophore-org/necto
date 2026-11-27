@@ -671,11 +671,12 @@ export default function (view) {
         var activityHost = el('div', {});
         var countryHost = el('div', {});
         var attribution = el('div', { class: 'fieldDescription' });
+        var location = el('div', { class: 'fieldDescription', 'data-role': 'location' });
         [off, status,
             el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderBanned') }), bannedHost,
             el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderActivity') }), activityHost,
             el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyLabelCountries') }), countryHost,
-            attribution].forEach(function (n) { content.appendChild(n); });
+            location, attribution].forEach(function (n) { content.appendChild(n); });
         var section = nectoModule.createCollapsibleSection({ title: t.tr('ProxyHeaderVisitors'), icon: 'travel_explore', collapsed: true, content: content });
         view.querySelector('#proxyVisitors').appendChild(section.element);
 
@@ -720,6 +721,10 @@ export default function (view) {
             ],
             rows: [],
             rowKey: function (r) { return r.Type + '|' + r.Ip + '|' + r.User + '|' + r.Host; },
+            filters: [
+                { name: 'type', label: t.tr('ProxyColumnType'), field: 'kind', options: ACTIVITY_TYPES.map(function (k) { return { value: k, label: t.tr(ACTIVITY_KEYS[k]) }; }) },
+                { name: 'place', label: t.tr('ProxyColumnCountry'), field: 'placeCode', options: [] }
+            ],
             pageSize: 25,
             maxHeight: '32rem',
             label: t.tr('HeaderActivity'),
@@ -756,6 +761,29 @@ export default function (view) {
             return nectoModule.confirmDialog(t.tr('ProxyConfirmBlock'), { title: t.format('ProxyTitleBlock', act.value), confirmText: t.tr('ProxyButtonBlock'), destructive: true }).then(function (ok) { if (ok) return go(); });
         }
 
+        // placeOptions
+        // Lists the places the activity rows come from, your network first, for the place filter.
+        function placeOptions(rows) {
+            var seen = {};
+            var out = [];
+            rows.forEach(function (r) {
+                if (seen[r.placeCode]) return;
+                seen[r.placeCode] = true;
+                out.push({ value: r.placeCode, label: r.placeCode === 'local' ? t.tr('ProxyPlaceLocal') : (r.Country || t.tr('Unknown')) });
+            });
+            return out.sort(function (a, b) { return (a.value === 'local' ? -1 : 0) - (b.value === 'local' ? -1 : 0) || a.label.localeCompare(b.label); });
+        }
+
+        // locationText
+        // Says how the location database stands.
+        function locationText(loc) {
+            if (!loc) return '';
+            if (loc.Downloading) return t.tr('ProxyLocationDownloading');
+            if (loc.Error) return loc.Error;
+            if (loc.Loaded) return loc.BuiltUtc ? t.format('ProxyLocationLoadedOn', shared.formatDate(loc.BuiltUtc)) : t.tr('ProxyLoaded');
+            return t.tr('ProxyNotLoaded');
+        }
+
         // countryRows
         // Joins the totals by country into one row per country.
         function countryRows(data) {
@@ -778,7 +806,12 @@ export default function (view) {
             return shared.request('Proxy/Visitors').then(function (data) {
                 off.classList.toggle('stolon-hidden', !!data.Recording);
                 banned.setRows(data.Banned || []);
-                activity.setRows(data.Activity || []);
+                var rows = (data.Activity || []).map(function (r) {
+                    return Object.assign({ kind: fields.enumName(r.Type, ACTIVITY_TYPES), placeCode: r.IsLocal ? 'local' : (r.CountryCode || '') }, r);
+                });
+                activity.setRows(rows);
+                activity.setFilterOptions('place', placeOptions(rows));
+                location.textContent = locationText(data.Location);
                 countries.setRows(countryRows(data));
                 attribution.textContent = data.Attribution || '';
             }).catch(function (err) {
