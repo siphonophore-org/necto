@@ -132,3 +132,10 @@
 /* Example: <div class="stolon-cards stolon-balanced"><div class="stolon-card"><span class="stolon-card-count">Running</span></div></div> */
 .stolon-cards.stolon-balanced > .stolon-card { min-width: 0; }
 .stolon-cards .stolon-card-count { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* necto-word-cards */
+/* A card row whose values are words, such as Running or Points elsewhere, in a smaller size that wraps, so the word
+   reads whole instead of ending in an ellipsis. */
+/* Example: <div class="stolon-cards necto-word-cards"><div class="stolon-card"><span class="stolon-card-count">Running</span></div></div> */
+.necto-word-cards .stolon-card-count { font-size: var(--stolon-font-large); white-space: normal; overflow-wrap: anywhere; }
+.necto-word-cards .stolon-card-label { white-space: normal; }
