@@ -50,7 +50,7 @@ export { openTool, confirmDialog, openEditorSidecar, createRecordList, createCol
 export {
     createUsageMeter, createPieChart, createSpinner, createPillGroup, createDefinitionList, openSidecar,
     createCheckbox, createChoiceGroup, createSliderField, escapeHtml, createSubTabs, createFilePicker, SECRET_KEPT,
-    openDialog, promptSidecar, createTagInput, createComboBox, adornField, createUserMultiSelector,
+    openDialog, promptSidecar, bindSidecar, createTagInput, createComboBox, adornField, createUserMultiSelector,
     createSortableCardList, createTimeline, createDataTable, createPaginatedTable, createDurationField,
     createBarChart, createQrCode, createNumberUnitField, createInheritField, generateGuid, downloadJson, pickJsonFile,
     setFieldState, createTranslations as createToolTranslations, createAccessSchedule, createOrderedList,

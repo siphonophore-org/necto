@@ -6,14 +6,15 @@ import {
     createNectoPage, createChipSelect, createTagInput, createComboBox, adornField, createCheckboxList, createUserMultiSelector, createSortableCardList,
     createChoiceGroup, createCopyField, createTimeline, createDefinitionList, createRepeater, createDataTable,
     createRecordList, createSaveBar, createSliderField, createDurationField, createBarChart, createCollapsibleSection,
-    confirmDialog, promptSidecar, openSidecar, generateGuid, downloadJson, pickJsonFile, setFieldState, SECRET_KEPT, openTool
+    confirmDialog, promptSidecar, openSidecar, generateGuid, downloadJson, pickJsonFile, setFieldState, SECRET_KEPT, openTool,
+    bindSidecar, createToolTable, runBulk
 } from './configurationpage?name=necto_shared.js';
 
 export {
     createRepeater, createDataTable, createChipSelect, createTagInput, createComboBox, adornField, createCheckboxList, createUserMultiSelector, createSortableCardList,
     createChoiceGroup, createCopyField, createRecordList, createSaveBar, createSliderField, createDurationField,
     createBarChart, createCollapsibleSection, confirmDialog, promptSidecar, openSidecar, generateGuid, downloadJson, pickJsonFile,
-    setFieldState, SECRET_KEPT, openTool
+    setFieldState, SECRET_KEPT, openTool, bindSidecar, createToolTable, runBulk
 };
 
 // The plugin's strings once a page has them. Until then a key reads as its fallback.

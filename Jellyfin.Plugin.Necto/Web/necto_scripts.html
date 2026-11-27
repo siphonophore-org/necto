@@ -1,5 +1,5 @@
 <!-- necto_scripts.html -->
-<!-- The Scripts tool. It holds the script picker and the editor for one script. -->
+<!-- The Scripts tool. It lists the scripts in a table, and each opens in the editor sidecar. -->
 
 <div id="NectoScriptsPage" data-role="page" class="page type-interior pluginConfigurationPage"
      data-require="emby-input,emby-button,emby-select,emby-checkbox"
@@ -13,276 +13,268 @@
 
                     <div id="scriptCounts" class="stolon-cards stolon-even"></div>
 
-                    <!-- Script selector -->
-                    <div class="stolon-selector">
-                        <select id="selectScript" class="stolon-selector-dropdown" aria-label="Script" data-str-label="ScriptsLabelScript"></select>
-                        <div class="stolon-selector-actions">
-                            <button is="emby-button" type="button" id="btnNewScript" class="raised stolon-button stolon-primary">
-                                <span class="material-icons" aria-hidden="true">add</span>
-                                <span data-str="New">New</span>
-                            </button>
-                            <button is="emby-button" type="button" id="btnRenameScript" class="raised stolon-button stolon-secondary">
-                                <span class="material-icons" aria-hidden="true">edit</span>
-                                <span data-str="ButtonRename">Rename</span>
-                            </button>
-                            <button is="emby-button" type="button" id="btnRemoveScript" class="raised stolon-button stolon-destructive">
-                                <span class="material-icons" aria-hidden="true">delete</span>
-                                <span data-str="ButtonRemove">Remove</span>
-                            </button>
-                            <button is="emby-button" type="button" id="btnImportScripts" class="raised stolon-button stolon-secondary" title="Import scripts from a file" data-str-title="ScriptsTitleImportScripts">
-                                <span class="material-icons" aria-hidden="true">upload</span>
-                                <span data-str="ScriptsButtonImport">Import</span>
-                            </button>
-                            <button is="emby-button" type="button" id="btnExportScripts" class="raised stolon-button stolon-secondary" title="Export every script to a file" data-str-title="ScriptsTitleExportScripts">
-                                <span class="material-icons" aria-hidden="true">download</span>
-                                <span data-str="ScriptsButtonExport">Export</span>
-                            </button>
-                        </div>
-                    </div>
-                    <span id="transferStatus" class="stolon-status-text"></span>
+                    <span id="transferStatus" class="stolon-status-text" role="status"></span>
 
-                    <div id="emptyState" class="stolon-hidden"></div>
+                    <!-- Scripts -->
+                    <!-- Every script, with search, a state filter, Add script, Import, and Export, and bulk actions on the
+                         rows picked. Each opens in the editor sidecar below. -->
+                    <div id="scriptsTable"></div>
 
-                    <div id="scriptEditor" class="stolon-hidden">
-
-                        <!-- General -->
-                        <div class="stolon-section" data-fold="general" data-fold-icon="description" data-fold-state="closed">
-                            <div class="stolon-section-title" data-str="General">General</div>
-                            <div class="stolon-section-content">
-                                <div class="inputContainer">
-                                    <label for="scriptDescription" data-str="ScriptsLabelDescription">Description</label>
-                                    <input is="emby-input" type="text" id="scriptDescription" maxlength="500" />
-                                </div>
-                                <div class="checkboxContainer">
-                                    <label class="emby-checkbox-label">
-                                        <input type="checkbox" is="emby-checkbox" id="scriptEnabled" />
-                                        <span class="checkboxLabel" data-str="LabelEnabled">Enabled</span>
-                                    </label>
-                                </div>
+                    <!-- Editor -->
+                    <!-- One script's sections in a sidecar kept in the markup, with Remove, Rename, and Save on its shelf. -->
+                    <div id="scriptSidecar" class="stolon-dialog stolon-sidecar stolon-hidden">
+                        <div class="stolon-dialog-content stolon-sidecar-panel stolon-large" role="dialog" aria-modal="true" aria-labelledby="scriptSidecarTitle">
+                            <div class="stolon-sidecar-head">
+                                <div class="stolon-sidecar-heading"><div class="stolon-sidecar-title-row"><h2 id="scriptSidecarTitle" class="stolon-sidecar-title"></h2></div></div>
+                                <button type="button" class="stolon-row-btn stolon-dialog-close" title="Close" aria-label="Close" data-str-title="ButtonClose" data-str-label="ButtonClose"><span class="material-icons" aria-hidden="true">close</span></button>
                             </div>
-                        </div>
+                            <div class="stolon-sidecar-body">
+                                <div id="scriptEditor">
 
-                        <!-- Triggers -->
-                        <div class="stolon-section" data-fold="triggers" data-fold-icon="bolt" data-fold-state="closed">
-                            <div class="stolon-section-title" data-str="ScriptsSectionTriggers">Triggers</div>
-                            <div class="stolon-section-content">
-                                <div class="fieldDescription" data-str="ScriptsHelpTriggers">Runs the script when any checked trigger happens.</div>
-                                <div id="triggerMount" class="stolon-gap-below-wide"></div>
-
-                                <div id="itemKindOptions" class="stolon-panel stolon-hidden">
-                                    <div class="stolon-panel-header" data-str="ScriptsSectionItemKinds">Item kinds</div>
-                                    <div class="stolon-panel-body">
-                                        <div class="fieldDescription" data-str="ScriptsHelpItemKinds">Runs only for items of these kinds. Leave blank for every kind.</div>
-                                        <div id="itemKindMount"></div>
-                                        <div id="itemKindWarn" class="stolon-warn stolon-hidden"></div>
-                                    </div>
-                                </div>
-
-                                <div id="pausedOptions" class="stolon-panel stolon-hidden">
-                                    <div class="stolon-panel-body">
-                                        <div class="stolon-field">
-                                            <label data-str="ScriptsTriggerPlaybackPausedFor">Paused for a while</label>
-                                            <div id="pausedMinutesMount"></div>
-                                            <div class="fieldDescription" data-str="ScriptsHelpPausedFor">Runs once per pause, after the session has stayed paused this long.</div>
+                                    <!-- General -->
+                                    <div class="stolon-section" data-fold="general" data-fold-icon="description" data-fold-state="closed">
+                                        <div class="stolon-section-title" data-str="General">General</div>
+                                        <div class="stolon-section-content">
+                                            <div class="inputContainer">
+                                                <label for="scriptDescription" data-str="ScriptsLabelDescription">Description</label>
+                                                <input is="emby-input" type="text" id="scriptDescription" maxlength="500" />
+                                            </div>
+                                            <div class="checkboxContainer">
+                                                <label class="emby-checkbox-label">
+                                                    <input type="checkbox" is="emby-checkbox" id="scriptEnabled" />
+                                                    <span class="checkboxLabel" data-str="LabelEnabled">Enabled</span>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div id="playingOptions" class="stolon-panel stolon-hidden">
-                                    <div class="stolon-panel-body">
-                                        <div class="stolon-field">
-                                            <label data-str="ScriptsTriggerPlaybackPlayingFor">Playing for a while</label>
-                                            <div id="playingMinutesMount"></div>
-                                            <div class="fieldDescription" data-str="ScriptsHelpPlayingFor">Runs once per playback, after this much playing time. Pauses do not count.</div>
+                                    <!-- Triggers -->
+                                    <div class="stolon-section" data-fold="triggers" data-fold-icon="bolt" data-fold-state="closed">
+                                        <div class="stolon-section-title" data-str="ScriptsSectionTriggers">Triggers</div>
+                                        <div class="stolon-section-content">
+                                            <div class="fieldDescription" data-str="ScriptsHelpTriggers">Runs the script when any checked trigger happens.</div>
+                                            <div id="triggerMount" class="stolon-gap-below-wide"></div>
+
+                                            <div id="itemKindOptions" class="stolon-panel stolon-hidden">
+                                                <div class="stolon-panel-header" data-str="ScriptsSectionItemKinds">Item kinds</div>
+                                                <div class="stolon-panel-body">
+                                                    <div class="fieldDescription" data-str="ScriptsHelpItemKinds">Runs only for items of these kinds. Leave blank for every kind.</div>
+                                                    <div id="itemKindMount"></div>
+                                                    <div id="itemKindWarn" class="stolon-warn stolon-hidden"></div>
+                                                </div>
+                                            </div>
+
+                                            <div id="pausedOptions" class="stolon-panel stolon-hidden">
+                                                <div class="stolon-panel-body">
+                                                    <div class="stolon-field">
+                                                        <label data-str="ScriptsTriggerPlaybackPausedFor">Paused for a while</label>
+                                                        <div id="pausedMinutesMount"></div>
+                                                        <div class="fieldDescription" data-str="ScriptsHelpPausedFor">Runs once per pause, after the session has stayed paused this long.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div id="playingOptions" class="stolon-panel stolon-hidden">
+                                                <div class="stolon-panel-body">
+                                                    <div class="stolon-field">
+                                                        <label data-str="ScriptsTriggerPlaybackPlayingFor">Playing for a while</label>
+                                                        <div id="playingMinutesMount"></div>
+                                                        <div class="fieldDescription" data-str="ScriptsHelpPlayingFor">Runs once per playback, after this much playing time. Pauses do not count.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div id="progressOptions" class="stolon-panel stolon-hidden">
+                                                <div class="stolon-panel-body">
+                                                    <div class="stolon-field">
+                                                        <label data-str="ScriptsTriggerPlaybackProgressReached">Playback passed a percentage</label>
+                                                        <div id="progressPercentMount"></div>
+                                                        <div class="fieldDescription" data-str="ScriptsHelpProgressPercent">Runs once per playback, when it passes this percentage.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div id="streamOptions" class="stolon-panel stolon-hidden">
+                                                <div class="stolon-panel-body">
+                                                    <div class="stolon-field">
+                                                        <label data-str="ScriptsTriggerStreamCountReached">Stream count reached</label>
+                                                        <div id="streamCountMount"></div>
+                                                        <div class="fieldDescription" data-str="ScriptsHelpStreamCount">Runs when the number of active streams rises to this many.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div id="transcodeOptions" class="stolon-panel stolon-hidden">
+                                                <div class="stolon-panel-body">
+                                                    <div class="stolon-field">
+                                                        <label data-str="ScriptsTriggerTranscodeCountReached">Transcode count reached</label>
+                                                        <div id="transcodeCountMount"></div>
+                                                        <div class="fieldDescription" data-str="ScriptsHelpTranscodeCount">Runs when the number of transcoding streams rises to this many.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div id="webhookOptions" class="stolon-panel stolon-hidden">
+                                                <div class="stolon-panel-header" data-str="LabelWebhook">Webhook</div>
+                                                <div class="stolon-panel-body">
+                                                    <div class="stolon-field">
+                                                        <label id="webhookUrlLabel" data-str="LabelAddress">Address</label>
+                                                        <div id="webhookUrlMount"></div>
+                                                        <div class="fieldDescription" data-str-rich="ScriptsHelpWebhookAddress">Send a <code>POST</code> here with a Jellyfin API key. Query parameters and JSON fields arrive as <code>{{WEBHOOK_NAME}}</code>.</div>
+                                                    </div>
+                                                    <pre id="webhookExample" class="stolon-code stolon-code-block stolon-gap-below-wide"></pre>
+                                                    <button is="emby-button" type="button" id="btnNewWebhook" class="raised stolon-button stolon-secondary"><span data-str="ScriptsButtonNewAddress">New address</span></button>
+                                                </div>
+                                            </div>
+
+                                            <div id="scheduleOptions" class="stolon-panel stolon-hidden">
+                                                <div class="stolon-panel-header" data-str="Schedule">Schedule</div>
+                                                <div class="stolon-panel-body">
+                                                    <div class="fieldDescription" data-str-rich="ScriptsHelpSchedule">Runs as a Jellyfin scheduled task once saved. Set when it runs in <a is="emby-linkbutton" class="button-link" href="#/dashboard/tasks" data-str="ScriptsLinkScheduledTasks">Dashboard, Scheduled Tasks</a>.</div>
+                                                    <div id="scheduleStart" class="fieldDescription"></div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div id="progressOptions" class="stolon-panel stolon-hidden">
-                                    <div class="stolon-panel-body">
-                                        <div class="stolon-field">
-                                            <label data-str="ScriptsTriggerPlaybackProgressReached">Playback passed a percentage</label>
-                                            <div id="progressPercentMount"></div>
-                                            <div class="fieldDescription" data-str="ScriptsHelpProgressPercent">Runs once per playback, when it passes this percentage.</div>
+                                    <!-- Groups -->
+                                    <!-- Who the script runs for: every user, or the members of the groups picked. -->
+                                    <div class="stolon-section" data-fold="users" data-fold-icon="groups" data-fold-state="closed">
+                                        <div class="stolon-section-title" data-str="TabGroups">Groups</div>
+                                        <div class="stolon-section-content">
+                                            <div class="fieldDescription" data-str="ScriptsHelpGroups">Sets which users the script runs for. Administrators run every script.</div>
+                                            <div class="stolon-choice-group" id="scriptGroupScope" role="radiogroup" aria-label="Runs for" data-str-label="ScriptsLabelGroupScope">
+                                                <label class="stolon-choice">
+                                                    <input type="radio" name="scriptGroupScope" value="all" />
+                                                    <span class="stolon-choice-name" data-str="GroupsScopePermissive">Permissive</span>
+                                                    <span class="stolon-choice-text" data-str="ScriptsHelpScopePermissive">Runs for every user, in a group or not.</span>
+                                                </label>
+                                                <label class="stolon-choice">
+                                                    <input type="radio" name="scriptGroupScope" value="some" />
+                                                    <span class="stolon-choice-name" data-str="GroupsScopeRestrictive">Restrictive</span>
+                                                    <span class="stolon-choice-text" data-str="ScriptsHelpScopeRestrictive">Runs only for the members of the groups picked below.</span>
+                                                </label>
+                                            </div>
+                                            <div id="scriptGroupPicks" class="stolon-indent">
+                                                <div id="groupList"></div>
+                                                <div id="groupWarn" class="stolon-warn stolon-hidden" data-str="ScriptsWarnNoGroups">No group is picked, so the script runs for administrators only.</div>
+                                            </div>
+                                            <div id="userWarn" class="stolon-warn stolon-hidden"></div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div id="streamOptions" class="stolon-panel stolon-hidden">
-                                    <div class="stolon-panel-body">
-                                        <div class="stolon-field">
-                                            <label data-str="ScriptsTriggerStreamCountReached">Stream count reached</label>
-                                            <div id="streamCountMount"></div>
-                                            <div class="fieldDescription" data-str="ScriptsHelpStreamCount">Runs when the number of active streams rises to this many.</div>
+                                    <!-- Conditions -->
+                                    <div class="stolon-section" data-fold="conditions" data-fold-icon="rule" data-fold-state="closed">
+                                        <div class="stolon-section-title" data-str="ScriptsSectionConditions">Conditions</div>
+                                        <div class="stolon-section-content">
+                                            <div class="stolon-choice-group" id="conditionMatch" role="radiogroup" aria-label="Condition match" data-str-label="ScriptsLabelConditionMatch">
+                                                <label class="stolon-choice">
+                                                    <input type="radio" name="conditionMatch" value="All" />
+                                                    <span class="stolon-choice-name" data-str="ScriptsChoiceAllConditions">All conditions</span>
+                                                    <span class="stolon-choice-text" data-str="ScriptsHelpAllConditions">Run only when every condition matches.</span>
+                                                </label>
+                                                <label class="stolon-choice">
+                                                    <input type="radio" name="conditionMatch" value="Any" />
+                                                    <span class="stolon-choice-name" data-str="ScriptsChoiceAnyCondition">Any condition</span>
+                                                    <span class="stolon-choice-text" data-str="ScriptsHelpAnyCondition">Run when at least one condition matches.</span>
+                                                </label>
+                                            </div>
+                                            <div id="conditionList"></div>
+                                            <div id="conditionWarnings"></div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div id="transcodeOptions" class="stolon-panel stolon-hidden">
-                                    <div class="stolon-panel-body">
-                                        <div class="stolon-field">
-                                            <label data-str="ScriptsTriggerTranscodeCountReached">Transcode count reached</label>
-                                            <div id="transcodeCountMount"></div>
-                                            <div class="fieldDescription" data-str="ScriptsHelpTranscodeCount">Runs when the number of transcoding streams rises to this many.</div>
+                                    <!-- Steps -->
+                                    <div class="stolon-section" data-fold="steps" data-fold-icon="format_list_bulleted" data-fold-state="closed">
+                                        <div class="stolon-section-title" data-str="ScriptsHeaderSteps">Steps</div>
+                                        <div class="stolon-section-content">
+                                            <div class="fieldDescription" data-str="ScriptsHelpSteps">Runs the steps in order, from the top.</div>
+                                            <div id="operationList"></div>
+                                            <div id="operationEmpty" class="stolon-hidden"></div>
+                                            <div id="operationEditor"></div>
+                                            <div class="selectContainer">
+                                                <label class="selectLabel" for="newOperationType" data-str="ScriptsLabelStepType">Step type</label>
+                                                <select is="emby-select" id="newOperationType"></select>
+                                            </div>
+                                            <button is="emby-button" type="button" id="btnAddOperation" class="raised stolon-button stolon-primary">
+                                                <span class="material-icons" aria-hidden="true">add</span>
+                                                <span data-str="ScriptsButtonAddStep">Add step</span>
+                                            </button>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div id="webhookOptions" class="stolon-panel stolon-hidden">
-                                    <div class="stolon-panel-header" data-str="LabelWebhook">Webhook</div>
-                                    <div class="stolon-panel-body">
-                                        <div class="stolon-field">
-                                            <label id="webhookUrlLabel" data-str="LabelAddress">Address</label>
-                                            <div id="webhookUrlMount"></div>
-                                            <div class="fieldDescription" data-str-rich="ScriptsHelpWebhookAddress">Send a <code>POST</code> here with a Jellyfin API key. Query parameters and JSON fields arrive as <code>{{WEBHOOK_NAME}}</code>.</div>
+                                    <!-- Secrets -->
+                                    <div class="stolon-section" data-fold="secrets" data-fold-icon="key" data-fold-state="closed">
+                                        <div class="stolon-section-title" data-str="ScriptsSectionSecrets">Secrets</div>
+                                        <div class="stolon-section-content">
+                                            <div class="fieldDescription" data-str-rich="ScriptsHelpSecrets">Holds tokens this script uses as <code>{{SECRET_NAME}}</code> in a step or <code>$JF_SECRET_NAME</code> in a command.</div>
+                                            <div id="secretMount"></div>
                                         </div>
-                                        <pre id="webhookExample" class="stolon-code stolon-code-block stolon-gap-below-wide"></pre>
-                                        <button is="emby-button" type="button" id="btnNewWebhook" class="raised stolon-button stolon-secondary"><span data-str="ScriptsButtonNewAddress">New address</span></button>
                                     </div>
-                                </div>
 
-                                <div id="scheduleOptions" class="stolon-panel stolon-hidden">
-                                    <div class="stolon-panel-header" data-str="Schedule">Schedule</div>
-                                    <div class="stolon-panel-body">
-                                        <div class="fieldDescription" data-str-rich="ScriptsHelpSchedule">Runs as a Jellyfin scheduled task once saved. Set when it runs in <a is="emby-linkbutton" class="button-link" href="#/dashboard/tasks" data-str="ScriptsLinkScheduledTasks">Dashboard, Scheduled Tasks</a>.</div>
-                                        <div id="scheduleStart" class="fieldDescription"></div>
+                                    <!-- Behavior -->
+                                    <div class="stolon-section" data-fold="behavior" data-fold-icon="settings" data-fold-state="closed">
+                                        <div class="stolon-section-title" data-str="ScriptsSectionBehavior">Behavior</div>
+                                        <div class="stolon-section-content">
+                                            <div class="selectContainer">
+                                                <label for="forEachMode" data-str="ScriptsLabelRun">Run</label>
+                                                <select is="emby-select" id="forEachMode">
+                                                    <option value="None" data-str="ScriptsForEachNone">Once per event</option>
+                                                    <option value="Items" data-str="ScriptsForEachItems">Once for each library item</option>
+                                                    <option value="Users" data-str="ScriptsForEachUsers">Once for each user</option>
+                                                </select>
+                                                <div class="fieldDescription" data-str="ScriptsHelpForEach">Sets what a schedule, a webhook, or Run now runs the steps for.</div>
+                                            </div>
+                                            <div id="forEachLimitRow" class="stolon-field stolon-hidden">
+                                                <label data-str="ScriptsLabelForEachLimit">Most runs per event</label>
+                                                <div id="forEachLimitMount"></div>
+                                                <div class="fieldDescription" data-str="ScriptsHelpForEachLimit">Stops after this many matches. Each one is its own run in the history.</div>
+                                            </div>
+                                            <div id="forEachWarn" class="stolon-warn stolon-hidden"></div>
+                                            <div class="selectContainer">
+                                                <label for="onFailureScript" data-str="ScriptsLabelOnFailure">When this script fails, run</label>
+                                                <select is="emby-select" id="onFailureScript"></select>
+                                                <div class="fieldDescription" data-str-rich="ScriptsHelpOnFailure">Runs that script with <code>{{FAILED_SCRIPT_NAME}}</code>, <code>{{FAILED_STEP}}</code>, and <code>{{FAILED_MESSAGE}}</code> filled in.</div>
+                                            </div>
+                                            <div class="stolon-field">
+                                                <label data-str="ScriptsLabelCooldown">Cooldown</label>
+                                                <div id="cooldownMount"></div>
+                                                <div class="fieldDescription" data-str="ScriptsHelpCooldown">Skips the script for the same trigger, user, and item until this long passes. 0 turns it off.</div>
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    <!-- Testing -->
+                                    <div class="stolon-section" data-fold="testing" data-fold-icon="science" data-fold-state="closed">
+                                        <div class="stolon-section-title" data-str="ScriptsSectionTesting">Testing</div>
+                                        <div class="stolon-section-content">
+                                            <div class="fieldDescription" data-str="ScriptsHelpTestAndRun">Tries the steps with sample values, unsaved edits included.</div>
+                                            <div class="selectContainer">
+                                                <label class="selectLabel" for="testTrigger" data-str="ScriptsLabelTestTrigger">Trigger to test with</label>
+                                                <select is="emby-select" id="testTrigger"></select>
+                                            </div>
+                                            <span id="scriptStatus" class="stolon-status-text"></span>
+                                            <div class="stolon-button-row">
+                                                <button is="emby-button" type="button" id="btnTestScript" class="raised stolon-button stolon-secondary stolon-fill">
+                                                    <span class="material-icons" aria-hidden="true">science</span>
+                                                    <span data-str="ButtonTest">Test</span>
+                                                </button>
+                                                <button is="emby-button" type="button" id="btnRunScript" class="raised stolon-button stolon-secondary stolon-fill">
+                                                    <span class="material-icons" aria-hidden="true">play_arrow</span>
+                                                    <span data-str="ButtonRunTask">Run now</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Groups -->
-                        <!-- Who the script runs for: every user, or the members of the groups picked. -->
-                        <div class="stolon-section" data-fold="users" data-fold-icon="groups" data-fold-state="closed">
-                            <div class="stolon-section-title" data-str="TabGroups">Groups</div>
-                            <div class="stolon-section-content">
-                                <div class="fieldDescription" data-str="ScriptsHelpGroups">Sets which users the script runs for. Administrators run every script.</div>
-                                <div class="stolon-choice-group" id="scriptGroupScope" role="radiogroup" aria-label="Runs for" data-str-label="ScriptsLabelGroupScope">
-                                    <label class="stolon-choice">
-                                        <input type="radio" name="scriptGroupScope" value="all" />
-                                        <span class="stolon-choice-name" data-str="GroupsScopePermissive">Permissive</span>
-                                        <span class="stolon-choice-text" data-str="ScriptsHelpScopePermissive">Runs for every user, in a group or not.</span>
-                                    </label>
-                                    <label class="stolon-choice">
-                                        <input type="radio" name="scriptGroupScope" value="some" />
-                                        <span class="stolon-choice-name" data-str="GroupsScopeRestrictive">Restrictive</span>
-                                        <span class="stolon-choice-text" data-str="ScriptsHelpScopeRestrictive">Runs only for the members of the groups picked below.</span>
-                                    </label>
-                                </div>
-                                <div id="scriptGroupPicks" class="stolon-indent">
-                                    <div id="groupList"></div>
-                                    <div id="groupWarn" class="stolon-warn stolon-hidden" data-str="ScriptsWarnNoGroups">No group is picked, so the script runs for administrators only.</div>
-                                </div>
-                                <div id="userWarn" class="stolon-warn stolon-hidden"></div>
+                            <div class="stolon-sidecar-shelf">
+                                <button is="emby-button" type="button" id="btnRemoveScript" class="raised stolon-button stolon-destructive"><span data-str="ButtonRemove">Remove</span></button>
+                                <button is="emby-button" type="button" id="btnRenameScript" class="raised stolon-button stolon-secondary"><span data-str="ButtonRename">Rename</span></button>
+                                <button is="emby-button" type="button" id="btnSaveScript" class="raised stolon-button stolon-primary"><span data-str="Save">Save</span></button>
                             </div>
                         </div>
-
-                        <!-- Conditions -->
-                        <div class="stolon-section" data-fold="conditions" data-fold-icon="rule" data-fold-state="closed">
-                            <div class="stolon-section-title" data-str="ScriptsSectionConditions">Conditions</div>
-                            <div class="stolon-section-content">
-                                <div class="stolon-choice-group" id="conditionMatch" role="radiogroup" aria-label="Condition match" data-str-label="ScriptsLabelConditionMatch">
-                                    <label class="stolon-choice">
-                                        <input type="radio" name="conditionMatch" value="All" />
-                                        <span class="stolon-choice-name" data-str="ScriptsChoiceAllConditions">All conditions</span>
-                                        <span class="stolon-choice-text" data-str="ScriptsHelpAllConditions">Run only when every condition matches.</span>
-                                    </label>
-                                    <label class="stolon-choice">
-                                        <input type="radio" name="conditionMatch" value="Any" />
-                                        <span class="stolon-choice-name" data-str="ScriptsChoiceAnyCondition">Any condition</span>
-                                        <span class="stolon-choice-text" data-str="ScriptsHelpAnyCondition">Run when at least one condition matches.</span>
-                                    </label>
-                                </div>
-                                <div id="conditionList"></div>
-                                <div id="conditionWarnings"></div>
-                            </div>
-                        </div>
-
-                        <!-- Steps -->
-                        <div class="stolon-section" data-fold="steps" data-fold-icon="format_list_bulleted" data-fold-state="closed">
-                            <div class="stolon-section-title" data-str="ScriptsHeaderSteps">Steps</div>
-                            <div class="stolon-section-content">
-                                <div class="fieldDescription" data-str="ScriptsHelpSteps">Runs the steps in order, from the top.</div>
-                                <div id="operationList"></div>
-                                <div id="operationEmpty" class="stolon-hidden"></div>
-                                <div id="operationEditor"></div>
-                                <div class="selectContainer">
-                                    <label class="selectLabel" for="newOperationType" data-str="ScriptsLabelStepType">Step type</label>
-                                    <select is="emby-select" id="newOperationType"></select>
-                                </div>
-                                <button is="emby-button" type="button" id="btnAddOperation" class="raised stolon-button stolon-primary">
-                                    <span class="material-icons" aria-hidden="true">add</span>
-                                    <span data-str="ScriptsButtonAddStep">Add step</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Secrets -->
-                        <div class="stolon-section" data-fold="secrets" data-fold-icon="key" data-fold-state="closed">
-                            <div class="stolon-section-title" data-str="ScriptsSectionSecrets">Secrets</div>
-                            <div class="stolon-section-content">
-                                <div class="fieldDescription" data-str-rich="ScriptsHelpSecrets">Holds tokens this script uses as <code>{{SECRET_NAME}}</code> in a step or <code>$JF_SECRET_NAME</code> in a command.</div>
-                                <div id="secretMount"></div>
-                            </div>
-                        </div>
-
-                        <!-- Behavior -->
-                        <div class="stolon-section" data-fold="behavior" data-fold-icon="settings" data-fold-state="closed">
-                            <div class="stolon-section-title" data-str="ScriptsSectionBehavior">Behavior</div>
-                            <div class="stolon-section-content">
-                                <div class="selectContainer">
-                                    <label for="forEachMode" data-str="ScriptsLabelRun">Run</label>
-                                    <select is="emby-select" id="forEachMode">
-                                        <option value="None" data-str="ScriptsForEachNone">Once per event</option>
-                                        <option value="Items" data-str="ScriptsForEachItems">Once for each library item</option>
-                                        <option value="Users" data-str="ScriptsForEachUsers">Once for each user</option>
-                                    </select>
-                                    <div class="fieldDescription" data-str="ScriptsHelpForEach">Sets what a schedule, a webhook, or Run now runs the steps for.</div>
-                                </div>
-                                <div id="forEachLimitRow" class="stolon-field stolon-hidden">
-                                    <label data-str="ScriptsLabelForEachLimit">Most runs per event</label>
-                                    <div id="forEachLimitMount"></div>
-                                    <div class="fieldDescription" data-str="ScriptsHelpForEachLimit">Stops after this many matches. Each one is its own run in the history.</div>
-                                </div>
-                                <div id="forEachWarn" class="stolon-warn stolon-hidden"></div>
-                                <div class="selectContainer">
-                                    <label for="onFailureScript" data-str="ScriptsLabelOnFailure">When this script fails, run</label>
-                                    <select is="emby-select" id="onFailureScript"></select>
-                                    <div class="fieldDescription" data-str-rich="ScriptsHelpOnFailure">Runs that script with <code>{{FAILED_SCRIPT_NAME}}</code>, <code>{{FAILED_STEP}}</code>, and <code>{{FAILED_MESSAGE}}</code> filled in.</div>
-                                </div>
-                                <div class="stolon-field">
-                                    <label data-str="ScriptsLabelCooldown">Cooldown</label>
-                                    <div id="cooldownMount"></div>
-                                    <div class="fieldDescription" data-str="ScriptsHelpCooldown">Skips the script for the same trigger, user, and item until this long passes. 0 turns it off.</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Testing -->
-                        <div class="stolon-section" data-fold="testing" data-fold-icon="science" data-fold-state="closed">
-                            <div class="stolon-section-title" data-str="ScriptsSectionTesting">Testing</div>
-                            <div class="stolon-section-content">
-                                <div class="fieldDescription" data-str="ScriptsHelpTestAndRun">Tries the steps with sample values, unsaved edits included.</div>
-                                <div class="selectContainer">
-                                    <label class="selectLabel" for="testTrigger" data-str="ScriptsLabelTestTrigger">Trigger to test with</label>
-                                    <select is="emby-select" id="testTrigger"></select>
-                                </div>
-                                <span id="scriptStatus" class="stolon-status-text"></span>
-                                <div class="stolon-button-row">
-                                    <button is="emby-button" type="button" id="btnTestScript" class="raised stolon-button stolon-secondary stolon-fill">
-                                        <span class="material-icons" aria-hidden="true">science</span>
-                                        <span data-str="ButtonTest">Test</span>
-                                    </button>
-                                    <button is="emby-button" type="button" id="btnRunScript" class="raised stolon-button stolon-secondary stolon-fill">
-                                        <span class="material-icons" aria-hidden="true">play_arrow</span>
-                                        <span data-str="ButtonRunTask">Run now</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Save -->
-                        <div id="saveBarMount"></div>
                     </div>
 
                 </div>

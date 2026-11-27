@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { installPage, loadScript, paths, settle, routeApi, clickButton } from './support.mjs';
+import { installPage, loadScript, paths, settle, routeApi, clickButton, rowHtml, texts } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
@@ -94,12 +94,23 @@ test('the Scripts tool draws a saved script from its own markup', async function
     });
 
     assert.deepEqual(opened.errors, []);
-    assert.match(opened.view.querySelector('#selectScript').innerHTML, /Notify/);
+    var rows = opened.view.querySelectorAll('#scriptsTable .stolon-table-row');
+    assert.equal(rows.length, 1);
+    assert.match(rowHtml(rows[0]), /Notify[\s\S]*Item added · Restrictive \(1 group\)[\s\S]*Not run yet/);
+    assert.deepEqual(Array.prototype.map.call(opened.view.querySelectorAll('#scriptsTable .stolon-table-controls button.stolon-button'), function (b) { return b.id; }),
+        ['btnNewScript', 'btnImportScripts', 'btnExportScripts']);
+    assert.deepEqual(texts(opened.view.querySelector('#scriptsTable .stolon-table-bulk-actions'), '[data-bulk]'), ['Enable', 'Disable', 'Export', 'Remove']);
+    assert.equal(opened.view.querySelector('#selectScript'), null);
+    assert.equal(opened.view.querySelector('#scriptSidecar').classList.contains('stolon-hidden'), true);
+    rows[0].click();
+    await settle(50);
+    assert.equal(opened.view.querySelector('#scriptSidecar').classList.contains('stolon-hidden'), false);
+    assert.equal(opened.view.querySelector('#scriptSidecarTitle').textContent, 'Notify');
     var tiles = Array.prototype.map.call(opened.view.querySelectorAll('[data-fold] > .stolon-collapsible-header .stolon-collapsible-tile, [data-fold] .stolon-collapsible-tile'), function (n) { return n.textContent; });
     assert.deepEqual(Array.from(new Set(tiles)), ['description', 'bolt', 'groups', 'rule', 'format_list_bulleted', 'key', 'settings', 'science']);
     assert.equal(opened.view.querySelectorAll('[data-fold] .stolon-collapsible-content.stolon-flow').length, 8);
-    assert.deepEqual(Array.prototype.map.call(opened.view.querySelectorAll('.stolon-selector-actions button'), function (b) { return b.id; }),
-        ['btnNewScript', 'btnRenameScript', 'btnRemoveScript', 'btnImportScripts', 'btnExportScripts']);
+    assert.deepEqual(Array.prototype.map.call(opened.view.querySelectorAll('#scriptSidecar .stolon-sidecar-shelf button'), function (b) { return b.id; }),
+        ['btnRemoveScript', 'btnRenameScript', 'btnSaveScript']);
     assert.equal(opened.view.querySelector('#scriptEditor').classList.contains('stolon-hidden'), false);
     assert.equal(opened.view.querySelector('#scriptGroupScope input[value="some"]').checked, true);
     assert.equal(opened.view.querySelector('#scriptGroupPicks').classList.contains('stolon-hidden'), false);

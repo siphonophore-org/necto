@@ -1,10 +1,11 @@
 // necto_scripts.js
-// The Scripts tool: the script picker and the editor for one script's triggers, filters, conditions, steps,
-// secrets, and behavior, with Save, Test, and Run now. A script runs for every user, or for the groups it picks.
+// The Scripts tool: the table of scripts, and the editor sidecar for one script's triggers, filters, conditions,
+// steps, secrets, and behavior, with Remove, Rename, Save, Test, and Run now. A script runs for every user, or for the
+// groups it picks.
 
 import {
     createScriptsPage, createRepeater, createChipSelect, createTagInput, createComboBox, adornField, createCheckboxList, createUserMultiSelector, createSortableCardList,
-    createChoiceGroup, createCopyField, createSaveBar, createSliderField, createDurationField,
+    createChoiceGroup, createCopyField, createSliderField, createDurationField, bindSidecar, createToolTable, runBulk,
     createCollapsibleSection, confirmDialog, promptSidecar, openSidecar, generateGuid, downloadJson, pickJsonFile, setFieldState, SECRET_KEPT,
     fieldGroups, fieldLabel, NUMERIC_FIELDS, operatorLabels, operationTypes, renderRunSummary, renderRunSteps, t
 } from './configurationpage?name=necto_scripts_common.js';
@@ -99,7 +100,10 @@ export default function (view) {
     var conditionsQuiet = false;
     var secretRepeater = null;
     var variableRows = [];
-    var saveBar = null;
+    var table = null;
+    var sidecar = null;
+    // The last run of each script, by its id, from Scripts/Status.
+    var lastRuns = {};
     var numberControls = {};
     var editorControls = [];
     // The script's variable names, offered by the step condition's variable field.
@@ -163,14 +167,12 @@ export default function (view) {
         return !!(globalThis.matchMedia && globalThis.matchMedia('(max-width: 600px)').matches);
     }
 
-    // Every edit goes through here: it refreshes the counts, the picker, and the Save Bar's unsaved line.
+    // Every edit goes through here: it refreshes the counts, the table, the sidecar's title, and the sections.
     function edited() {
         renderCounts();
-        renderSelector();
+        renderTable();
         renderSummaries();
-        if (!tracker) return;
-        var dirty = tracker.check();
-        if (saveBar && saveBar.getState() !== 'saving') saveBar.setDirty(dirty);
+        if (tracker) tracker.check();
     }
 
     // numberControl
@@ -232,23 +234,126 @@ export default function (view) {
         ]);
     }
 
-    function renderSelector() {
-        var select = el('selectScript');
-        select.innerHTML = scripts.map(function (s) {
-            var name = s.Name || t.tr('ScriptsScriptUntitled');
-            return '<option value="' + esc(s.Id) + '">' + esc(s.Enabled ? name : t.format('ScriptsScriptNameDisabled', name)) + '</option>';
-        }).join('');
-        if (selectedId) select.value = selectedId;
-        el('emptyState').innerHTML = scripts.length ? '' : Shared.emptySection(t.tr('ScriptsEmptyScripts'));
-        Shared.setVisible('emptyState', scripts.length === 0);
-        Shared.setVisible('scriptEditor', scripts.length > 0);
-        el('btnRemoveScript').disabled = scripts.length === 0;
-        el('btnRenameScript').disabled = scripts.length === 0;
+    // scriptState
+    // Gives a script's state: Disabled while it is off, else its last run, Succeeded or Failed, or Not run yet.
+    function scriptState(script) {
+        if (!script.Enabled) return 'Disabled';
+        var run = lastRuns[script.Id];
+        return !run ? 'NotRun' : run.Succeeded ? 'Succeeded' : 'Failed';
+    }
+
+    // STATE_BADGES
+    // Each state's word and color, in the order the state filter lists them.
+    var STATE_BADGES = {
+        Succeeded: { key: 'ScriptsStateSucceeded', color: 'green' },
+        Failed: { key: 'LabelFailed', color: 'red' },
+        NotRun: { key: 'ScriptsStateNotRun', color: 'purple' },
+        Disabled: { key: 'Disabled', color: 'gray' }
+    };
+
+    // scriptLine
+    // Writes the line under a script's name: its triggers, and who it runs for.
+    function scriptLine(script) {
+        var triggers = selectedTriggers(script).map(function (x) { return x.Label; });
+        var who = script.AllGroups !== false ? t.tr('GroupsScopePermissive')
+            : t.tr('GroupsScopeRestrictive') + ' (' + counted((script.GroupIds || []).length, 'ScriptsSummaryNoGroups', 'ScriptsSummaryGroupsOne', 'ScriptsSummaryGroupsMany') + ')';
+        var said = triggers.length > 2 ? t.format('ScriptsTriggersAndMore', triggers.slice(0, 2).join(', '), triggers.length - 2) : triggers.join(', ');
+        return [said || t.tr('ScriptsSummaryNoTriggers'), who].join(' · ');
+    }
+
+    // createTable
+    // Builds the scripts' table with its search, its state filter, Add script, Import, and Export, and Enable,
+    // Disable, Export, and Remove for the scripts picked.
+    function createTable() {
+        table = createToolTable(view, Shared, {
+            containerId: 'scriptsTable',
+            rows: function () { return scripts; },
+            search: t.tr('ScriptsSearchScripts'),
+            filters: [{
+                label: t.tr('HeaderStatus'),
+                options: Object.keys(STATE_BADGES).map(function (k) { return { value: k, label: t.tr(STATE_BADGES[k].key) }; }),
+                test: function (script, value) { return scriptState(script) === value; }
+            }],
+            empty: { message: t.tr('ScriptsEmptyScripts'), filteredMessage: t.tr('ScriptsEmptyScriptsMatch') },
+            textOf: function (script) { return [script.Name, script.Description, scriptLine(script)].join(' '); },
+            icon: function () { return 'code'; },
+            title: function (script) { return script.Name || t.tr('ScriptsScriptUntitled'); },
+            lines: function (script) { return [scriptLine(script)]; },
+            status: function (script) { var b = STATE_BADGES[scriptState(script)]; return { label: t.tr(b.key), color: b.color }; },
+            add: [
+                { id: 'btnNewScript', icon: 'add', text: t.tr('ScriptsButtonAddScript'), onClick: newScript },
+                { id: 'btnImportScripts', icon: 'upload', text: t.tr('ScriptsButtonImport'), variant: 'secondary', onClick: importScripts },
+                { id: 'btnExportScripts', icon: 'download', text: t.tr('ScriptsButtonExport'), variant: 'secondary', onClick: function () { exportScripts(scripts); } }
+            ],
+            bulk: [
+                { verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' },
+                { verb: 'disable', text: t.tr('DisablePlugin') },
+                { verb: 'export', text: t.tr('ScriptsButtonExport') },
+                { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }
+            ],
+            onBulk: bulk,
+            onRowClick: function (script) { selectScript(script.Id); },
+            onReload: function () { reloadScripts(); }
+        });
+        page.addCleanup(function () { if (table) { table.destroy(); table = null; } });
+    }
+
+    // renderTable
+    // Draws the table again and keeps the open sidecar's title in step with the script's name.
+    function renderTable() {
+        if (table) table.refresh();
+        var script = current();
+        el('scriptSidecarTitle').textContent = script ? (script.Name || t.tr('ScriptsScriptUntitled')) : '';
+    }
+
+    // bulk
+    // Enables, disables, exports, or removes the scripts picked. A removal asks first. Each change saves only the
+    // scripts picked, so the server keeps the rest as they are.
+    //
+    // Output
+    // [Promise]: Resolves once the scripts are read again.
+    function bulk(verb, picked) {
+        if (verb === 'export') { exportScripts(picked); return Promise.resolve(); }
+        var ids = picked.map(function (s) { return s.Id; });
+        return runBulk(Shared, {
+            verb: verb,
+            rows: picked,
+            prefix: 'ScriptsBulk',
+            confirm: verb === 'remove' ? { text: t.tr('ScriptsConfirmRemoveScript'), title: t.plural(picked.length, 'ScriptsHeaderRemoveOne', 'ScriptsHeaderRemoveMany') } : null,
+            call: function (script) {
+                return Shared.saveConfigWith(function (config) {
+                    config.Scripts = config.Scripts || {};
+                    var list = config.Scripts.Scripts || [];
+                    config.Scripts.Scripts = verb === 'remove'
+                        ? list.filter(function (s) { return compactId(s.Id) !== script.Id; })
+                        : list.map(function (s) { if (compactId(s.Id) === script.Id) s.Enabled = verb === 'enable'; return s; });
+                });
+            },
+            report: function (text, isError) { Shared.setStatus('transferStatus', text, isError); }
+        }).then(function (done) {
+            if (done === null) return null;
+            if (verb === 'remove' && ids.indexOf(selectedId) >= 0) selectedId = null;
+            return reloadScripts();
+        });
+    }
+
+    // openEditor
+    // Shows the open script's editor in its sidecar.
+    function openEditor() {
+        renderTable();
+        if (!sidecar.isOpen()) sidecar.open();
     }
 
     function selectScript(id) {
         selectedId = id;
         renderEditor();
+        openEditor();
+    }
+
+    // discard
+    // Puts the scripts back as they were saved, for an editor closed without saving.
+    function discard() {
+        return reloadScripts();
     }
 
     // ---- Editor ----
@@ -1317,20 +1422,14 @@ export default function (view) {
     }
 
     // save
-    // The Save Bar's save: checks every script, saves them, and reloads them.
+    // The sidecar's Save: checks every script, saves them, and reloads them.
     //
     // Output
-    // [Promise]: Resolves once saved, and rejects with the reason it did not save, which the Save Bar shows.
+    // [Promise]: Resolves once saved, and rejects with the reason it did not save, which the sidecar shows.
     function save() {
         for (var i = 0; i < scripts.length; i++) {
             var problem = validate(scripts[i]);
-            if (problem) {
-                if (scripts[i].Id !== selectedId) {
-                    selectScript(scripts[i].Id);
-                    renderSelector();
-                }
-                return Promise.reject(new Error(problem));
-            }
+            if (problem) return Promise.reject(new Error(problem));
         }
 
         return Shared.saveConfigWith(function (config) {
@@ -1403,12 +1502,12 @@ export default function (view) {
         return s;
     }
 
-    function addScript(script, message) {
+    function addScript(script) {
         scripts.push(script);
         selectedId = script.Id;
         edited();
         renderEditor();
-        if (message) Shared.setStatus('transferStatus', message, false, { timeout: 0 });
+        openEditor();
     }
 
     // newScript
@@ -1422,7 +1521,7 @@ export default function (view) {
             var name = (values.name || '').trim() || t.tr('ScriptsScriptNewName');
             var script = sanitize({ Name: name }, blankScript(name));
             script.Description = (values.description || '').trim().slice(0, 500);
-            addScript(script, '');
+            addScript(script);
         });
     }
 
@@ -1444,46 +1543,41 @@ export default function (view) {
     }
 
     // removeScript
-    // Asks first, then removes the open script and saves only that, so edits to other scripts wait for Save.
+    // Asks first, then removes the open script and saves only that, and closes its sidecar.
     function removeScript() {
         var script = current();
         if (!script) return;
         var name = script.Name || t.tr('ScriptsScriptUntitled');
         confirmDialog(t.tr('ScriptsConfirmRemoveScript'), { title: t.format('TitleRemoveName', name), confirmText: t.tr('ButtonRemove'), destructive: true }).then(function (ok) {
             if (!ok) return;
-            var wasClean = !(tracker && tracker.isDirty());
             Shared.saveConfigWith(function (config) {
                 config.Scripts = config.Scripts || {};
                 config.Scripts.Scripts = (config.Scripts.Scripts || []).filter(function (s) { return compactId(s.Id) !== script.Id; });
             }, 'transferStatus', { success: t.tr('ScriptsStatusRemoved'), error: t.tr('ScriptsErrorRemoveRefused') }).then(function () {
-                scripts = scripts.filter(function (s) { return s.Id !== script.Id; });
-                selectedId = scripts.length ? scripts[0].Id : null;
-                if (wasClean && tracker) tracker.markClean();
-                edited();
-                if (selectedId) renderEditor();
+                selectedId = null;
+                sidecar.close('removed');
+                return reloadScripts();
             }).catch(function () { /* the status line already says why */ });
         });
     }
 
-    function exportScripts() {
-        if (!scripts.length) {
+    // exportScripts
+    // Saves these scripts to a file, without their secrets or webhook addresses.
+    function exportScripts(list) {
+        if (!list.length) {
             Shared.setStatus('transferStatus', t.tr('ScriptsErrorNoScriptsToExport'), true);
             return;
         }
 
         var now = new Date();
         var stamp = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-        var exported = JSON.parse(JSON.stringify(scripts)).map(function (s) {
+        var exported = JSON.parse(JSON.stringify(list)).map(function (s) {
             s.Secrets = (s.Secrets || []).map(function (x) { return { Name: x.Name, Value: '' }; });
             s.WebhookToken = '';
             return s;
         });
         downloadJson('necto-scripts-' + stamp + '.json', { Format: 'necto-scripts', Version: 1, Scripts: exported });
-        var unsaved = !!(tracker && tracker.isDirty());
-        var exported = scripts.length === 1
-            ? (unsaved ? t.tr('ScriptsStatusExportedOneUnsaved') : t.tr('ScriptsStatusExportedOne'))
-            : (unsaved ? t.format('ScriptsStatusExportedManyUnsaved', scripts.length) : t.format('ScriptsStatusExportedMany', scripts.length));
-        Shared.setStatus('transferStatus', exported, false);
+        Shared.setStatus('transferStatus', list.length === 1 ? t.tr('ScriptsStatusExportedOne') : t.format('ScriptsStatusExportedMany', list.length), false);
     }
 
     // Accepts an export file, a bare array of scripts, or one script.
@@ -1529,6 +1623,7 @@ export default function (view) {
                 selectedId = incoming[0].Id;
                 edited();
                 renderEditor();
+                openEditor();
                 Shared.setStatus('transferStatus', t.format('ScriptsStatusImported', incoming.length), false, { timeout: 0 });
             });
         }).catch(function () {
@@ -1540,12 +1635,31 @@ export default function (view) {
 
     function bind() {
         foldSections();
-        el('selectScript').addEventListener('change', function () { selectScript(this.value); });
-        el('btnNewScript').addEventListener('click', newScript);
         el('btnRenameScript').addEventListener('click', renameScript);
         el('btnRemoveScript').addEventListener('click', removeScript);
-        el('btnImportScripts').addEventListener('click', importScripts);
-        el('btnExportScripts').addEventListener('click', exportScripts);
+        el('btnSaveScript').addEventListener('click', function () {
+            var button = el('btnSaveScript');
+            button.disabled = true;
+            save().then(function () {
+                Shared.setStatus('transferStatus', t.tr('ToastSaved'), false);
+                sidecar.close('saved');
+            }, function (err) {
+                Shared.setStatus('scriptStatus', (err && err.message) || t.tr('ScriptsErrorSaveRefused'), true);
+            }).then(function () { button.disabled = false; });
+        });
+        // Closing with edits asks first, and a discard puts the scripts back as saved.
+        sidecar = bindSidecar('scriptSidecar', {
+            root: view,
+            beforeClose: function () {
+                if (!(tracker && tracker.isDirty())) return true;
+                return confirmDialog(t.tr('Stolon.DiscardChanges', 'Closing now loses your edits.'), {
+                    title: t.tr('Stolon.UnsavedChanges', 'Unsaved changes'), confirmText: t.tr('Stolon.Discard', 'Discard'), cancelText: t.tr('Stolon.KeepEditing', 'Keep editing'), destructive: true
+                });
+            },
+            onClose: function (value) { if (value !== 'saved' && value !== 'removed' && tracker && tracker.isDirty()) discard(); }
+        });
+        page.addCleanup(function () { if (sidecar) sidecar.destroy(); });
+        createTable();
 
         el('scriptDescription').addEventListener('input', function () { current().Description = this.value; edited(); });
         el('scriptEnabled').addEventListener('change', function () { current().Enabled = this.checked; edited(); });
@@ -1659,9 +1773,6 @@ export default function (view) {
             }
         });
 
-        saveBar = createSaveBar({ fill: true, onSave: save });
-        // The bar takes the mount's place, so no wrapper sits between it and the page.
-        el('saveBarMount').replaceWith(saveBar.element);
         el('btnTestScript').addEventListener('click', runTest);
         el('testTrigger').addEventListener('change', renderSummaries);
         el('btnRunScript').addEventListener('click', runNow);
@@ -1738,6 +1849,11 @@ export default function (view) {
     // Reads the scripts back from the server. The configuration holds only the kept sentinel for a stored
     // secret, never its value. PreviousName lets the server find a renamed secret's stored value.
     function reloadScripts() {
+        Shared.request('Scripts/Status').then(function (runs) {
+            lastRuns = {};
+            (Array.isArray(runs) ? runs : []).forEach(function (run) { lastRuns[compactId(run.ScriptId)] = run; });
+            if (table && catalog) table.refresh();
+        }).catch(function () { /* the rows show Not run yet */ });
         return Shared.getConfig().then(function (config) {
             scripts = ((config.Scripts && config.Scripts.Scripts) || []).map(function (s) {
                 var script = sanitize(s, blankScript(s.Name));
