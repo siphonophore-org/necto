@@ -398,3 +398,32 @@ test('the loading screen sends only this server\'s sign-ins, each once, and read
     assert.equal(loader.screenFor(404), 'missing');
     assert.equal(loader.screenFor(200), 'page');
 });
+
+test('the loading screen tries the stored sign-in, then asks to sign in again with the expired sentence', async function () {
+    var page = installPage({ storage: { jellyfin_credentials: JSON.stringify({ Servers: [{ Id: 'abc123', AccessToken: 'stale' }] }) } });
+    var loader = await loadScript('necto_pages_loader.js');
+    var doc = page.dom.document;
+    var data = doc.createElement('div');
+    data.id = 'pageLoading';
+    data.setAttribute('data-slug', 'family');
+    data.setAttribute('data-tier', 'user');
+    data.setAttribute('data-denied', 'No.');
+    data.setAttribute('data-sign-in', 'Sign in to open.');
+    data.setAttribute('data-expired', 'Expired.');
+    doc.body.appendChild(data);
+    var gate = doc.createElement('div');
+    gate.className = 'stolon-user-page-gate stolon-shell-gate';
+    doc.body.appendChild(gate);
+    var asked = [];
+    globalThis.fetch = function (url, init) {
+        asked.push({ url: String(url), auth: init && init.headers && init.headers.Authorization });
+        if (String(url).indexOf('System/Info/Public') >= 0) return Promise.resolve({ ok: true, status: 200, json: function () { return Promise.resolve({ Id: 'abc123', ServerName: 'Home' }); } });
+        return Promise.resolve({ ok: false, status: 401, json: function () { return Promise.resolve({}); }, text: function () { return Promise.resolve(''); } });
+    };
+
+    await loader.start(doc, { pathname: '/pages/family', origin: 'http://localhost' });
+
+    assert.ok(asked.some(function (a) { return a.url === '/pages/family/user' && a.auth === 'MediaBrowser Token="stale"'; }));
+    var text = gate.textContent;
+    assert.ok(text.indexOf('Expired.') >= 0, 'the sign in says the stored sign-in expired: ' + text);
+});

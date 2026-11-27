@@ -632,7 +632,7 @@ public sealed class RequestsControllerTests : IDisposable
         Assert.Equal(own, style);
         Assert.DoesNotContain("<style>", builtHead, StringComparison.Ordinal);
         Assert.Contains("<link rel=\"stylesheet\" href=\"page.css?v=v1\" />", builtHead, StringComparison.Ordinal);
-        Assert.True(builtHead.IndexOf("page.css?v=v1", StringComparison.Ordinal) < builtHead.IndexOf("id=\"brandingCss\"", StringComparison.Ordinal));
+        Assert.True(builtHead.IndexOf("page.css?v=v1", StringComparison.Ordinal) > builtHead.IndexOf("necto_stolon.css", StringComparison.Ordinal));
         Assert.Contains("function begin()", script, StringComparison.Ordinal);
         Assert.Contains("<script src=\"page.js?v=v1\"></script>", html, StringComparison.Ordinal);
         Assert.Equal(head.Split("<script>").Length, builtHead.Split("<script>").Length);
@@ -691,20 +691,6 @@ public sealed class RequestsControllerTests : IDisposable
         Assert.Contains("<template id=\"webDetailsTemplate\"><div id=\"itemDetailPage\"></div></template><div id=\"view-details\">", with, StringComparison.Ordinal);
         Assert.DoesNotContain("<template", without, StringComparison.Ordinal);
         Assert.Equal(2, PageHtml().Split(RequestsController.DetailsTemplateSlot).Length);
-    }
-
-    /// <summary>
-    /// The plugin's version is filled in.
-    /// True: the page reports the version it was built with.
-    /// False: the page would show PLUGIN_VERSION.
-    /// </summary>
-    [Fact]
-    public void BuildPage_PluginVersion_IsFilledIn()
-    {
-        var built = RequestsController.BuildPage(PageHtml(), "v1", null);
-
-        Assert.DoesNotContain("PLUGIN_VERSION", built, StringComparison.Ordinal);
-        Assert.Contains("encodeURIComponent('" + RequestsController.PluginVersion + "')", built, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -830,7 +816,7 @@ public sealed class RequestsControllerTests : IDisposable
     {
         var page = PageHtml();
         var script = page[page.LastIndexOf("<script>", StringComparison.Ordinal)..];
-        var own = new HashSet<string>(StringComparer.Ordinal) { "checkboxListTools", "stolon-web-error", "issueHeader", "issueTitleRow", "pushSettings", "requestHeader", "requestInfo", "requestOverview", "requestTitle", "rq-fullRow", "rq-homeRow", "rq-titleFull", "rq-titleShort" };
+        var own = new HashSet<string>(StringComparer.Ordinal) { "rq-checkboxListTools", "stolon-web-error", "issueHeader", "issueTitleRow", "pushSettings", "requestHeader", "requestInfo", "requestOverview", "requestTitle", "rq-fullRow", "rq-homeRow", "rq-titleFull", "rq-titleShort" };
 
         var classes = Regex.Matches(script, "class=\"([^\"]*)\"").SelectMany(m => m.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
@@ -861,54 +847,51 @@ public sealed class RequestsControllerTests : IDisposable
     // ------------------------------------------------------------------ sign in
 
     /// <summary>
-    /// The password field is a password field, and the sign in form posts nowhere else.
-    /// True: browsers treat the password as one and fill it in.
-    /// False: the password would show, or the form could post to another address.
+    /// The page keeps no sign in form of its own, so every user page signs in through Stolon's one.
+    /// True: the request page's sign in looks and behaves as the other user pages' and the web client's.
+    /// False: a second sign in form would drift from Stolon's.
     /// </summary>
     [Fact]
-    public void Page_SignInForm_PostsNowhereElse()
+    public void Page_SignIn_IsStolons()
     {
         var page = PageHtml();
-        var form = Regex.Match(page, "<form id=\"signinForm\"[^>]*>").Value;
 
-        Assert.Contains("method=\"post\"", form, StringComparison.Ordinal);
-        Assert.DoesNotContain("action=", form, StringComparison.Ordinal);
-        Assert.Matches("<input id=\"signinPassword\"[^>]*type=\"password\"[^>]*autocomplete=\"current-password\"", page);
-        Assert.Matches("<input id=\"signinUser\"[^>]*autocomplete=\"username\"", page);
-        Assert.DoesNotContain("id=\"signinLink\"", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("<form id=\"signinForm\"", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("type=\"password\"", page, StringComparison.Ordinal);
+        Assert.Contains("screenHandle = S.createSignIn({", page, StringComparison.Ordinal);
+        Assert.Contains("onSignedIn: signedIn", page, StringComparison.Ordinal);
     }
 
     /// <summary>
-    /// Credentials go only to this server's own sign in, without the browser's cookies.
-    /// True: the page signs in with Jellyfin and nowhere else.
-    /// False: a password could be sent to another address.
+    /// Stolon's sign in reaches this server's root through a base the page sets only while the sign in shows.
+    /// True: the sign in calls Jellyfin under any base path, and the page's own links resolve as before once it is gone.
+    /// False: the sign in would call /requests/Users/AuthenticateByName, or the page's hash links would leave the page.
     /// </summary>
     [Fact]
-    public void Page_Credentials_GoOnlyToThisServer()
+    public void Page_SignIn_ReachesTheServerRootWhileItShows()
     {
         var script = Script();
 
-        Assert.Contains("authenticate('/Users/AuthenticateByName'", script, StringComparison.Ordinal);
-        Assert.Contains("authenticate('/Users/AuthenticateWithQuickConnect'", script, StringComparison.Ordinal);
-        Assert.Contains("return fetch(prefix + path, {", script, StringComparison.Ordinal);
-        Assert.Contains("credentials: 'omit'", script, StringComparison.Ordinal);
-        Assert.Contains("e.preventDefault();", script, StringComparison.Ordinal);
+        Assert.Contains("base.href = prefix + '/';", script, StringComparison.Ordinal);
+        Assert.Matches(@"if \(signingIn\) \{\s*setServerRoot\(true\);", script);
+        Assert.Matches(@"function dropScreen\(\) \{[\s\S]{0,200}setServerRoot\(false\);", script);
+        Assert.Matches(@"function signedIn\(result\) \{\s*dropScreen\(\);", script);
+        Assert.DoesNotContain("AuthenticateByName", script, StringComparison.Ordinal);
     }
 
     /// <summary>
-    /// The sign in is shared with the web client and holds no password.
-    /// True: signing in on one signs in on the other, and no password is stored.
-    /// False: a password would be kept in the browser.
+    /// The page reads the web client's sign-ins and holds no password, leaving keeping a sign-in to Stolon.
+    /// True: a sign-in on one is a sign-in on the other, and no password is stored.
+    /// False: a password would be kept in the browser, or the page would write sign-ins Stolon already writes.
     /// </summary>
     [Fact]
     public void Page_SignIn_IsSharedAndHoldsNoPassword()
     {
         var script = Script();
 
-        Assert.Contains("WEB_CREDENTIALS = 'jellyfin_credentials', WEB_DEVICE = '_deviceId2'", script, StringComparison.Ordinal);
-        Assert.Contains("server.UserId = result.User.Id;", script, StringComparison.Ordinal);
-        Assert.Contains("server.AccessToken = result.AccessToken;", script, StringComparison.Ordinal);
-        Assert.DoesNotMatch(@"server\.\w+ = [^;]*(Pw|password|signinPassword)", script);
+        Assert.Contains("WEB_CREDENTIALS = 'jellyfin_credentials'", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("function saveSignIn", script, StringComparison.Ordinal);
+        Assert.DoesNotMatch(@"(Pw|password)\s*:", script);
         Assert.DoesNotContain("requests_credentials", script, StringComparison.Ordinal);
     }
 
@@ -923,7 +906,6 @@ public sealed class RequestsControllerTests : IDisposable
         var script = Script();
 
         Assert.Contains("throw new Error('Unreadable credentials')", script, StringComparison.Ordinal);
-        Assert.Matches(@"function saveSignIn[\s\S]{0,120}var creds = readCredentials\(\);", script);
         Assert.Matches(@"function forgetSignIn[\s\S]{0,120}readCredentials\(\)", script);
     }
 
@@ -939,7 +921,7 @@ public sealed class RequestsControllerTests : IDisposable
 
         Assert.Contains("/^[A-Za-z0-9]{16,128}$/", script, StringComparison.Ordinal);
         Assert.Contains("validToken(s.AccessToken) && id && s.Id === id", script, StringComparison.Ordinal);
-        Assert.Contains("result.ServerId !== serverId", script, StringComparison.Ordinal);
+        Assert.Contains("serverId: serverId || ''", script, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -952,26 +934,11 @@ public sealed class RequestsControllerTests : IDisposable
     {
         var script = Script();
 
-        Assert.Contains("function signedOut() { forgetHome(); forgetSignIn(token);", script, StringComparison.Ordinal);
+        Assert.Contains("function signedOut() { signInExpired = true; forgetHome(); forgetSignIn(token);", script, StringComparison.Ordinal);
         Assert.Matches(@"call\('/Sessions/Logout', 'POST'\)[\s\S]{0,200}forgetHome\(\);", script);
         Assert.Contains("sessionStorage.removeItem(homeKey())", script, StringComparison.Ordinal);
         Assert.Contains("if (r.status === 401) { forgetSignIn(candidates[index]);", script, StringComparison.Ordinal);
         Assert.Matches(@"call\('/Sessions/Logout', 'POST'\)[\s\S]{0,200}forgetSignIn\(signingOut\);", script);
-    }
-
-    /// <summary>
-    /// The device id is random and the client header encoded.
-    /// True: each browser is its own device and its id cannot break the header.
-    /// False: devices would share ids, or Math.random would make them guessable.
-    /// </summary>
-    [Fact]
-    public void Page_DeviceId_IsRandomAndEncoded()
-    {
-        var script = Script();
-
-        Assert.Contains("crypto.getRandomValues(bytes)", script, StringComparison.Ordinal);
-        Assert.Contains("DeviceId=\"' + encodeURIComponent(deviceId())", script, StringComparison.Ordinal);
-        Assert.DoesNotContain("Math.random", script, StringComparison.Ordinal);
     }
 
     // ------------------------------------------------------------------ installed app

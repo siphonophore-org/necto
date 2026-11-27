@@ -312,8 +312,7 @@ public partial class RequestsController : ControllerBase, IActionFilter
             }
         }
 
-        html = html.Replace("ASSET_VERSION", version, StringComparison.Ordinal)
-            .Replace("PLUGIN_VERSION", PluginVersion, StringComparison.Ordinal);
+        html = html.Replace("ASSET_VERSION", version, StringComparison.Ordinal);
         return string.IsNullOrEmpty(template)
             ? html
             : html.Replace(DetailsTemplateSlot, "<template id=\"webDetailsTemplate\">" + template + "</template>", StringComparison.Ordinal);
@@ -335,8 +334,6 @@ public partial class RequestsController : ControllerBase, IActionFilter
 
     // This build of the plugin, so what it serves the page, such as its strings, gets a new address with each update.
     private static readonly string PluginBuild = typeof(Plugin).Assembly.ManifestModule.ModuleVersionId.ToString();
-
-    internal static readonly string PluginVersion = typeof(Plugin).Assembly.GetName().Version?.ToString() ?? "0.0.0.0";
 
     // A short fingerprint of what the page links: the stylesheets, its script, and the plugin's build.
     internal static string AssetVersion(params string[] parts)

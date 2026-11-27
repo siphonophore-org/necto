@@ -24,11 +24,11 @@
      known). The server's custom CSS comes after the page's own styles, so it wins as in the web client. -->
 <link rel="stylesheet" href="fonts.css?v=ASSET_VERSION" />
 <script>
-    // The theme's link (themeCss), written here rather than in the markup so it names the theme the viewer picked in
-    // the web client from the start: a light theme then neither flashes dark first nor has the dark one downloaded
-    // for nothing. Known here only when the server's id was filled in and the web client has a sign-in stored for it,
-    // which says whose theme it is; dark otherwise. The page checks it against the web client's themes once it has
-    // them (applyTheme).
+    // The theme's link, stolon-shell-theme, the one Stolon's applyWebClientLook keeps. It is written here rather than in
+    // the markup so it names the theme the viewer picked in the web client from the start, and a light theme neither
+    // flashes dark first nor has the dark one downloaded for nothing. It is known here only when the server's id was
+    // filled in and the web client has a sign-in stored for it, which says whose theme it is, and is dark otherwise.
+    // applyTheme checks it against the web client's themes once the page has them.
     (function () {
         var theme = 'dark';
         try {
@@ -43,7 +43,7 @@
         // Written into the page where this script stands, so it keeps its place before the page's own styles and the
         // server's and, being the parser's, holds the first paint until it's in as the markup's link would (one added
         // with createElement wouldn't). The name is letters, digits, _ and - alone (checked above).
-        document.write('<link rel="stylesheet" id="themeCss" href="../web/themes/' + theme + '/theme.css" />');
+        document.write('<link rel="stylesheet" id="stolon-shell-theme" href="../web/themes/' + theme + '/theme.css" />');
         if (theme !== 'dark') document.documentElement.setAttribute('data-theme', theme);
     })();
 </script>
@@ -117,11 +117,6 @@
     #view-details > .detailLogo { margin-top: var(--headerHeight, 0px); }
 
     /* ---------- rows and grids of cards ---------- */
-    /* The web client's scroll arrows (elements/emby-scrollbuttons), whose stylesheet is a chunk the web client loads
-       with its scrolling rows rather than with the pages this one imports. */
-    .emby-scrollbuttons { align-items: center; color: #fff; display: flex; justify-content: center; min-height: 24px; min-width: 104px; padding-top: .85em; position: absolute; top: 0; z-index: 1; }
-    [dir=ltr] .emby-scrollbuttons { right: 0; } [dir=rtl] .emby-scrollbuttons { left: 0; }
-    .emby-scrollbuttons-button > .material-icons { display: block; min-height: 24px; min-width: 24px; }
     /* The web client has no badge for these; they are its played indicator (size, shadow and all, from its own
        stylesheet) in a colour for each state: purple waiting for approval, amber approved, green downloaded, grey
        rejected or blocked, red a problem. What the library has keeps the played indicator's own theme colour. */
@@ -133,8 +128,6 @@
     #loading.gate { display: block; text-align: start; padding: calc(var(--headerHeight, 4em) + 1em) 0 0; }
 
     /* ---------- item details and person pages: the web client's own stylesheet lays them out ---------- */
-    /* The web client's layout helpers, which its index.html carries rather than its stylesheet. */
-    .layout-desktop .hide-desktop, .layout-mobile .hide-mobile { display: none !important; }
     .detailImageContainer .card { cursor: default; }
 
     /* ---------- buttons and form fields ---------- */
@@ -164,19 +157,8 @@
     .emby-textarea + .fieldDescription { margin-top: 0.25em; }
 
     /* ---------- states ---------- */
-    .gate { box-sizing: border-box; min-height: 100vh; padding: calc(var(--headerHeight, 4em) + 2em) 2em 2em; display: flex; align-items: center; justify-content: center; text-align: center; }
-    .gate .inner { max-width: 26em; }
-    .gate img { width: 5em; height: 5em; margin-bottom: 1em; }
-    .gate h1 { margin: 0 0 0.5em; }
-    .gate p { margin: 0 0 1.5em; }
-    .rq-signinForm { text-align: start; }
-    .rq-signinForm .emby-button + .emby-button { margin-top: 1em; }
     /* The spinner under a list while its next page loads. */
     .rq-listMore { padding: 2em; text-align: center; }
-    .rq-insecure { color: #ffb74d; }
-    [data-theme="light"] .rq-insecure, [data-theme="appletv"] .rq-insecure { color: #e65100; }
-    .rq-quickConnectCode { font-size: 2.4em; font-weight: 600; letter-spacing: 0.15em; font-variant-numeric: tabular-nums; }
-    #quickConnect .docspinner { position: static; width: 3em; height: 3em; margin: 0 auto 1.5em; }
     /* Filter, the library toolbar's (FilterButton.tsx): MUI's small text button with the FilterAlt icon, and its dot
        badge while any filter is on; at the end of a list page's title bar, and beside the search field. */
     .rq-filterButton { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 40px; padding: 4px 5px; margin: 0 0 0 auto;
@@ -210,6 +192,8 @@
     @media (min-width: 600px) { .rq-listAction { padding: 6px 16px; font-size: 0.875rem; } .rq-listAction svg { width: 20px; height: 20px; } }
     .rq-titleShort { display: none; }
     .rq-searchField { margin-bottom: 0; }
+    /* Select all and Select none under the seasons, a link's width apart. */
+    .rq-checkboxListTools { display: flex; flex-wrap: wrap; gap: 0 1.5em; }
     /* A message in a grid of cards, across the grid's whole width. */
     .rq-fullRow { width: 100%; }
     /* On a phone, Reset Filters is only at the foot of the filters, so the bar keeps its room. */
@@ -223,20 +207,12 @@
     .rq-filterButton .MuiBadge-invisible { transform: scale(0) translate(50%, -50%); }
     /* The filters' backdrop, which closes them on a click outside. */
     .rq-filterBackdrop { position: fixed; inset: 0; z-index: var(--stolon-shell-layer-menu); }
-    /* Stopgap for Stolon 12.4.10, whose section-title.css draws the web client's own sectionTitleContainer as a dashboard
-       heading, ruled and spaced, on every page that loads it. These put back the web client's values. Remove them with the
-       Stolon that scopes that rule to its config pages. */
-    .stolon-shell .sectionTitleContainer, .stolon-shell .sectionTitleContainer:first-child { margin-top: 0; }
-    .stolon-shell .sectionTitleContainer .sectionTitle { flex: 0 1 auto; width: auto; border-bottom: 0; padding-bottom: 0; }
-    .stolon-shell .sectionTitleTextButton > .sectionTitle { margin-bottom: .35em; }
-    .stolon-shell .sectionTitleContainer-cards > .sectionTitle-cards { margin: 0; padding-bottom: .2em; }
     /* Headings the page moves focus to, so a screen reader starts there. They are not controls, so no focus ring. */
     #detailName:focus, #pageTitle:focus { outline: none; }
     /* A home row's holder, there only so each row can be redrawn on its own: it lays out as if it weren't there. */
     .rq-homeRow { display: contents; }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
-<link rel="stylesheet" id="brandingCss" />
 </head>
 <body dir="ltr" class="stolon-shell">
 
@@ -287,51 +263,9 @@
 
 <div id="loading" class="gate" role="status" aria-label="Loading" aria-busy="true"></div>
 
-<div id="signin" class="gate hide">
-    <div class="inner">
-        <img src="../web/favicons/touchicon.png" alt="" loading="lazy" decoding="async" />
-        <h1 data-str="RequestsHeaderSignInToJellyfin">Sign in to Jellyfin</h1>
-        <p class="secondaryText" id="signinMessage" data-str="RequestsMessageSignInToRequest">Sign in with your Jellyfin account to request movies and shows.</p>
-        <p class="secondaryText rq-insecure hide" id="signinInsecure" role="note" data-str="RequestsMessageInsecureSignIn">This connection isn’t secure. Others on the network could see your password.</p>
-        <form id="signinForm" class="rq-signinForm" method="post" autocomplete="on" novalidate>
-            <div class="inputContainer">
-                <label for="signinUser" class="inputLabel inputLabelUnfocused" data-tr="LabelUser">User</label>
-                <input id="signinUser" name="username" class="emby-input" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="256" required />
-            </div>
-            <div class="inputContainer">
-                <label for="signinPassword" class="inputLabel inputLabelUnfocused" data-tr="LabelPassword">Password</label>
-                <input id="signinPassword" name="password" class="emby-input" type="password" autocomplete="current-password" maxlength="1024" />
-            </div>
-            <button type="submit" id="signinSubmit" class="raised button-submit block emby-button" data-tr="ButtonSignIn">Sign In</button>
-            <button type="button" id="signinQuickConnect" class="raised block emby-button hide" data-tr="ButtonUseQuickConnect">Use Quick Connect</button>
-            <div class="stolon-web-error" id="signinError" role="alert" aria-live="assertive"></div>
-        </form>
-        <div id="quickConnect" class="hide" role="status" aria-live="polite">
-            <p class="secondaryText" id="quickConnectPrompt"></p>
-            <p class="rq-quickConnectCode" id="quickConnectCode"></p>
-            <div class="docspinner mdl-spinner mdlSpinnerActive" dir="ltr" data-spinner></div>
-            <button type="button" id="quickConnectCancel" class="raised block emby-button" data-tr="ButtonCancel">Cancel</button>
-        </div>
-    </div>
-</div>
-
-<div id="denied" class="gate hide">
-    <div class="inner">
-        <img src="../web/favicons/touchicon.png" alt="" loading="lazy" decoding="async" />
-        <h1 id="deniedTitle" data-str="RequestsHeaderRequestsClosed">Requests aren’t open to you</h1>
-        <p class="secondaryText" data-str="RequestsMessageAskForAccess">Ask an administrator for access.</p>
-        <a class="emby-button raised rq-home" href="../web/" data-str="ButtonBackToJellyfin">Back to Jellyfin</a>
-    </div>
-</div>
-
-<div id="unavailable" class="gate hide">
-    <div class="inner">
-        <img src="../web/favicons/touchicon.png" alt="" loading="lazy" decoding="async" />
-        <h1 data-str="RequestsHeaderSomethingWentWrong">Something went wrong</h1>
-        <p class="secondaryText" data-str="RequestsMessageServerUnreachable">Couldn’t reach the server. Try again in a moment.</p>
-        <button type="button" class="emby-button raised" id="tryAgain" data-str="RequestsButtonTryAgainRequests">Try again</button>
-    </div>
-</div>
+<!-- The sign in, not allowed and unreachable screens: Stolon's page screens, in the web client login page's column while
+     nobody is signed in, as the other user pages draw them. -->
+<main class="stolon-shell-main gate hide" id="screen"><div class="stolon-shell-column" id="screenColumn"><div class="stolon-shell-form" id="screenForm"><div class="stolon-shell-gate" id="screenGate"></div></div></div></main>
 
 <!-- Search, as the web client's search page: the field (apps/legacy/features/search/components/SearchFields.tsx), then
      the results (SearchResults.tsx) in full-width rows. -->
@@ -414,25 +348,11 @@
 </div>
 
 <!-- TMDb's attribution, as its terms ask of apps using its data: under every page, never over a sign-in or error screen. -->
-<footer class="rq-tmdb" id="tmdbFooter"><a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer"><img src="tmdb.svg" alt="TMDB" /></a><span>This product uses the TMDB API but is not endorsed or certified by TMDB.</span></footer>
+<footer class="rq-tmdb" id="tmdbFooter"><a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer"><img src="tmdb.svg" alt="TMDb" /></a><span>This product uses the TMDb API but is not endorsed or certified by TMDb.</span></footer>
 
 <!-- The library toolbar's filter popover (FilterButton.tsx), under the Filter button that opened it. -->
 <div class="rq-filterBackdrop hide" id="filterBackdrop"></div>
 <div class="MuiPaper-root MuiPopover-paper stolon-web-filters hide" id="filter-popover" role="dialog" aria-modal="true" aria-label="Filters" tabindex="-1"></div>
-<!-- One dialog, filled for each use: a form dialog, or a centered confirmation -->
-<div class="dialogBackdrop dialogBackdropOpened hide" id="dialogBackdrop"></div>
-<div class="dialogContainer hide" id="dialog">
-    <div class="dialog formDialog" id="dialogBox" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
-        <div class="formDialogHeader" id="dialogHeader">
-            <button type="button" class="paper-icon-button-light btnCancel autoSize" id="dialogClose" title="Back" aria-label="Back"><span class="material-icons arrow_back" aria-hidden="true"></span></button>
-            <h3 class="formDialogHeaderTitle" id="dialogTitle"></h3>
-            <h1 class="formDialogHeaderTitle hide" id="confirmTitle" style="margin-top: .5em;padding: 0 1em;"></h1>
-        </div>
-        <div class="formDialogContent" id="dialogContent"><div class="dialogContentInner dialog-content-centered" id="dialogBody"></div></div>
-        <div class="formDialogFooter" id="dialogFooter"></div>
-    </div>
-</div>
-
 <!-- The page's strings and its TMDb artwork addresses (requests_webclient.js). The web client's markup is Stolon's,
      which the script below loads first. -->
 <script src="webclient.js?v=ASSET_VERSION"></script>
@@ -448,17 +368,12 @@
         var prefix = location.pathname.replace(/\/(?:requests|issues)\/?$/i, '');
         if (prefix === location.pathname) { prefix = ''; }
         var api = prefix + '/Requests/';
-        // The web client's own themes, for a config.json without its list.
-        var THEMES = ['dark', 'light', 'appletv', 'blueradiance', 'purplehaze', 'wmc'];
         var WC = window.WebClient, esc = S.escapeHtml, str = WC.str;
         // A poster's url(), from the server's own copy of a TMDb image.
         function cssUrl(u) { return S.webCssUrl(WC.artwork(u)); }
-        // The palette the web client's Material UI theme writes for a theme, which its stylesheets and Stolon's read.
-        function applyPalette(theme) {
-            var vars = S.WEB_CLIENT_PALETTES[theme] || S.WEB_CLIENT_PALETTES.dark;
-            Object.keys(vars).forEach(function (name) { document.documentElement.style.setProperty(name, vars[name]); });
-        }
-        applyPalette(document.documentElement.getAttribute('data-theme') || 'dark');
+        // The web client's look before the viewer is known: the theme the head picked, its palette, and the server's custom CSS.
+        // The page is at /requests/ with no base element, so the server root is the folder above it.
+        S.applyWebClientLook({ root: '../' });
         // The details page is the web client's own when the plugin found its template (inlined as #webDetailsTemplate);
         // otherwise, or when it lacks a part the page fills in, the page's own copy below stays.
         (function () {
@@ -494,45 +409,99 @@
             });
         }
 
+        // onlyGate
+        // Shows the loading skeleton, or one of the page's screens, sign in, not allowed or unreachable, in place of every page.
+        // Set when a sign-in this browser kept is no longer good, so the sign in says it expired.
+        var screenHandle = null, gateSeq = 0, signInExpired = false;
         function onlyGate(id) {
             ready = false;
-            ['loading', 'signin', 'denied', 'unavailable'].forEach(function (v) { if (v === id) show(v); else hide(v); });
-            if (id === 'signin') openSignin(); else stopQuickConnect();
-            // Before anyone is signed in, in the browser's language.
-            if (id !== 'loading' && !stringsLoaded) loadStrings(me && me.UserId);
+            var seq = ++gateSeq;
+            if (id === 'loading') show('loading'); else hide('loading');
+            dropScreen();
             ['view-search', 'view-details', 'view-list'].forEach(hide);
             // A sign-in or error screen has no pages to open, so no drawer, and nothing loading behind it.
             hide('drawerButton');
             hide('appNav');
             hide('searchButton');
+            if (id === 'loading') return;
+            // Before anyone is signed in, in the browser's language.
+            var strings = stringsLoaded && stringsAsked ? stringsAsked.done : loadStrings(me && me.UserId);
+            strings.catch(function () { /* the markup's English */ }).then(function () { if (seq === gateSeq) drawScreen(id); });
+        }
+        // drawScreen
+        // Draws a screen from Stolon's page screens. The sign in is the one every user page shows, in the web client login
+        // page's frame, its header with the logo alone.
+        function drawScreen(id) {
+            var signingIn = id === 'signin';
+            setSignedOutFrame(signingIn || !token);
+            if (signingIn) {
+                setServerRoot(true);
+                screenHandle = S.createSignIn({
+                    serverId: serverId || '', serverName: serverName,
+                    message: signInExpired ? str('Stolon.SignInExpired') : str(ISSUES ? 'RequestsMessageSignInToReport' : 'RequestsMessageSignInToRequest'),
+                    onSignedIn: signedIn
+                });
+            } else if (id === 'denied') {
+                screenHandle = S.createUnauthorized({
+                    title: str(ISSUES ? 'RequestsHeaderIssuesClosed' : 'RequestsHeaderRequestsClosed'), message: str('RequestsMessageAskForAccess'),
+                    linkText: str('ButtonBackToJellyfin'), href: prefix + '/web/'
+                });
+            } else {
+                screenHandle = S.createUnauthorized({
+                    title: str('RequestsHeaderSomethingWentWrong'), message: str('RequestsMessageServerUnreachable'),
+                    linkText: str('RequestsButtonTryAgainRequests'), href: location.pathname + location.search + location.hash
+                });
+            }
+            el('screenGate').appendChild(screenHandle.element);
+            show('screen');
+        }
+        function dropScreen() {
+            if (screenHandle) screenHandle.destroy();
+            screenHandle = null;
+            el('screenGate').textContent = '';
+            hide('screen');
+            setServerRoot(false);
+            setSignedOutFrame(false);
+        }
+        // The web client login page's frame, as Stolon's signed out frame: the header with the logo alone, and the page in
+        // the login form's column.
+        var SIGNED_OUT_COLUMN = ['standalonePage', 'padded-left', 'padded-right', 'padded-bottom-page'], SIGNED_OUT_FORM = ['readOnlyContent', 'margin-auto-x'];
+        function setSignedOutFrame(on) {
+            document.body.classList.toggle('stolon-shell-signed-out', on);
+            SIGNED_OUT_COLUMN.forEach(function (c) { el('screenColumn').classList.toggle(c, on); });
+            SIGNED_OUT_FORM.forEach(function (c) { el('screenForm').classList.toggle(c, on); });
+        }
+        // Stolon's sign in calls Jellyfin and links the web client relative to the page's base, which Stolon's hosted pages
+        // set to the server's root. This page is at /requests/, so the base points there while the sign in shows.
+        function setServerRoot(on) {
+            var base = el('rqServerRoot');
+            if (on && !base) {
+                base = document.createElement('base');
+                base.id = 'rqServerRoot';
+                base.href = prefix + '/';
+                document.head.insertBefore(base, document.head.firstChild);
+            } else if (!on && base) {
+                base.parentNode.removeChild(base);
+            }
         }
 
         // A toast, optionally with one action such as Undo, in the web client's toast container.
         var toast = S.createWebToaster(document.body).show;
 
-        el('tryAgain').addEventListener('click', function () { location.reload(); });
-
-        // The issue page asks for the viewer to report issues rather than request, and shows nothing from TMDb.
-        if (ISSUES) {
-            el('signinMessage').setAttribute('data-str', 'RequestsMessageSignInToReport');
-            el('signinMessage').textContent = '';
-            el('deniedTitle').setAttribute('data-str', 'RequestsHeaderIssuesClosed');
-            el('deniedTitle').textContent = '';
-            hide('tmdbFooter');
-        }
+        // The issue page shows nothing from TMDb.
+        if (ISSUES) hide('tmdbFooter');
 
         // Links back into the web client.
         Array.prototype.forEach.call(document.querySelectorAll('.rq-home'), function (a) { a.href = prefix + '/web/'; });
-        el('brandingCss').href = prefix + '/Branding/Css';
 
         // ---------- the viewer's Jellyfin session ----------
 
         // One Jellyfin session for the page and the web client in this browser: the page reads the token the web client
-        // stored for this server, and signing in here stores it there, under the web client's own device ID, as its
-        // sign-in does. localStorage['jellyfin_credentials'] and '_deviceId2' are internals of the web client, not a
-        // public API; if they change, the viewer signs in here again.
-        var WEB_CREDENTIALS = 'jellyfin_credentials', WEB_DEVICE = '_deviceId2';
-        var serverId = null, serverName = null, started = false, signingIn = false, quickConnect = null;
+        // stored for this server, and Stolon's sign in stores one there when the viewer asks it to remember them.
+        // localStorage['jellyfin_credentials'] is an internal of the web client, not a public API. If it changes, the
+        // viewer signs in here again.
+        var WEB_CREDENTIALS = 'jellyfin_credentials';
+        var serverId = null, serverName = null, started = false;
 
         // MARK: validToken
         function validToken(t) { return typeof t === 'string' && /^[A-Za-z0-9]{16,128}$/.test(t); }
@@ -568,25 +537,6 @@
             } catch (e) { return null; }
         }
 
-        // MARK: saveSignIn
-        function saveSignIn(result, serverName) {
-            try {
-                var creds = readCredentials();
-                var server = creds.Servers.filter(function (s) { return s && s.Id === serverId; })[0];
-                if (!server) {
-                    server = { Id: serverId, ManualAddress: location.origin + prefix, LastConnectionMode: 2 };
-                    creds.Servers.push(server);
-                }
-
-                if (serverName) server.Name = serverName;
-                server.DateLastAccessed = Date.now();
-                server.UserId = result.User.Id;
-                server.AccessToken = result.AccessToken;
-                localStorage.setItem(WEB_CREDENTIALS, JSON.stringify(creds));
-                return webClientTokens(serverId).indexOf(result.AccessToken) >= 0;
-            } catch (e) { return false; }
-        }
-
         // MARK: forgetSignIn
         function forgetSignIn(t) {
             try {
@@ -602,187 +552,13 @@
             } catch (e) { }
         }
 
-        // MARK: deviceId
-        function deviceId() {
-            var id = null;
-            try { id = localStorage.getItem(WEB_DEVICE); } catch (e) { }
-            if (!id || !/^[A-Za-z0-9+/=._-]{8,512}$/.test(id)) {
-                var bytes = new Uint8Array(16);
-                crypto.getRandomValues(bytes);
-                id = Array.prototype.map.call(bytes, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
-                try { localStorage.setItem(WEB_DEVICE, id); } catch (e) { }
-            }
-            return id;
-        }
-
-        // MARK: deviceName
-        function deviceName() {
-            var agent = navigator.userAgent;
-            var known = [['iPhone', 'iPhone'], ['iPad', 'iPad'], ['Android', 'Android'], ['CrOS', 'ChromeOS'], ['Macintosh', 'Mac'], ['Windows', 'Windows'], ['Linux', 'Linux']];
-            for (var i = 0; i < known.length; i++) {
-                if (agent.indexOf(known[i][0]) >= 0) return 'Requests on ' + known[i][1];
-            }
-            return 'Requests';
-        }
-
-        // MARK: clientHeader
-        function clientHeader() {
-            return 'MediaBrowser Client="' + encodeURIComponent('Jellyfin Requests') + '", Device="' + encodeURIComponent(deviceName())
-                + '", DeviceId="' + encodeURIComponent(deviceId()) + '", Version="' + encodeURIComponent('PLUGIN_VERSION') + '"';
-        }
-
-        // MARK: authenticate
-        function authenticate(path, body, rejected) {
-            return fetch(prefix + path, {
-                method: 'POST',
-                credentials: 'omit',
-                cache: 'no-store',
-                referrerPolicy: 'no-referrer',
-                headers: { 'Authorization': clientHeader(), 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify(body)
-            }).catch(function () {
-                throw new Error(str('RequestsErrorServerUnreachable'));
-            }).then(function (r) {
-                if (r.status === 400 || r.status === 401 || r.status === 403) throw new Error(rejected);
-                if (!r.ok) throw new Error(str('RequestsErrorWithCode', r.status));
-                return r.json().catch(function () { return null; });
-            }).then(function (result) {
-                if (!result || !result.User || !validToken(result.AccessToken) || !serverId || result.ServerId !== serverId) {
-                    throw new Error(WC.tr('UnknownError', 'An unknown error occurred.'));
-                }
-
-                return result;
-            });
-        }
-
         // MARK: signedIn
+        // The viewer signed in on Stolon's sign in screen, which kept the sign-in for the web client too when they asked.
         function signedIn(result) {
-            stopQuickConnect();
-            el('signinPassword').value = '';
-            if (saveSignIn(result, serverName)) { location.reload(); return; }
-            if (started) { setSigningIn(false); el('signinError').textContent = str('RequestsErrorSignInNotKept'); return; }
-            hide('signin');
+            dropScreen();
             show('loading');
             tryTokens([result.AccessToken], 0);
         }
-
-        // MARK: setSigningIn
-        function setSigningIn(on) {
-            signingIn = on;
-            ['signinUser', 'signinPassword', 'signinSubmit', 'signinQuickConnect'].forEach(function (id) { el(id).disabled = on; });
-        }
-
-        // MARK: openSignin
-        function openSignin() {
-            stopQuickConnect();
-            setSigningIn(false);
-            el('signinError').textContent = '';
-            el('signinPassword').value = '';
-            if (window.isSecureContext) hide('signinInsecure'); else show('signinInsecure');
-            hide('signinQuickConnect');
-            fetch(prefix + '/QuickConnect/Enabled', { credentials: 'omit', cache: 'no-store', headers: { 'Accept': 'application/json' } })
-                .then(function (r) { return r.ok ? r.json() : false; })
-                .then(function (on) { if (on === true) show('signinQuickConnect'); }, function () { });
-            if (document.documentElement.classList.contains('layout-desktop')) el('signinUser').focus();
-        }
-
-        // MARK: startQuickConnect
-        function startQuickConnect(data) {
-            var session = { secret: data.Secret, timer: null, expires: Date.now() + 10 * 60 * 1000 };
-            quickConnect = session;
-            el('quickConnectPrompt').textContent = str('RequestsMessageQuickConnectPrompt');
-            el('quickConnectCode').textContent = String(data.Code);
-            hide('signinForm');
-            show('quickConnect');
-            el('quickConnectCancel').focus();
-
-            function poll() {
-                if (quickConnect !== session) return;
-                if (Date.now() > session.expires) { quickConnectFailed(str('RequestsMessageQuickConnectExpired')); return; }
-                fetch(prefix + '/QuickConnect/Connect?secret=' + encodeURIComponent(session.secret), { credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', headers: { 'Accept': 'application/json' } })
-                    .then(function (r) {
-                        if (r.status === 400 || r.status === 401 || r.status === 403 || r.status === 404) return { expired: true };
-                        return r.ok ? r.json() : null;
-                    })
-                    .then(function (state) {
-                        if (quickConnect !== session) return null;
-                        if (state && state.expired) { quickConnectFailed(str('RequestsMessageQuickConnectExpired')); return null; }
-                        if (!state || state.Authenticated !== true) { session.timer = setTimeout(poll, 5000); return null; }
-                        return authenticate('/Users/AuthenticateWithQuickConnect', { Secret: session.secret }, str('RequestsMessageQuickConnectExpired'))
-                            .then(function (result) { if (quickConnect === session) signedIn(result); });
-                    })
-                    .catch(function (err) {
-                        if (quickConnect !== session) return;
-                        // A dropped connection (fetch's TypeError) is tried again; the code is still good.
-                        if (err instanceof TypeError || (err && err.message === str('RequestsErrorServerUnreachable'))) { session.timer = setTimeout(poll, 5000); return; }
-                        quickConnectFailed(err && err.message ? err.message : WC.tr('UnknownError', 'An unknown error occurred.'));
-                    });
-            }
-
-            session.timer = setTimeout(poll, 5000);
-        }
-
-        // MARK: stopQuickConnect
-        function stopQuickConnect() {
-            if (quickConnect && quickConnect.timer) clearTimeout(quickConnect.timer);
-            quickConnect = null;
-            el('quickConnectCode').textContent = '';
-            hide('quickConnect');
-            show('signinForm');
-        }
-
-        // MARK: quickConnectFailed
-        function quickConnectFailed(message) {
-            stopQuickConnect();
-            el('signinError').textContent = message;
-        }
-
-        el('signinForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            if (signingIn) return;
-            var user = el('signinUser').value.trim();
-            if (!user) { el('signinUser').focus(); return; }
-            el('signinError').textContent = '';
-            var body = { Username: user, Pw: el('signinPassword').value };
-            setSigningIn(true);
-            authenticate('/Users/AuthenticateByName', body, WC.tr('MessageInvalidUser', 'Invalid username or password. Please try again.'))
-                .then(signedIn, function (err) {
-                    setSigningIn(false);
-                    el('signinPassword').value = '';
-                    el('signinError').textContent = err.message;
-                    el('signinPassword').focus();
-                });
-            body = null;
-        });
-
-        el('signinQuickConnect').addEventListener('click', function () {
-            if (signingIn) return;
-            el('signinError').textContent = '';
-            setSigningIn(true);
-            fetch(prefix + '/QuickConnect/Initiate', { method: 'POST', credentials: 'omit', cache: 'no-store', headers: { 'Authorization': clientHeader(), 'Accept': 'application/json' } })
-                .catch(function () { throw new Error(str('RequestsErrorServerUnreachable')); })
-                .then(function (r) {
-                    if (!r.ok) throw new Error(WC.tr('QuickConnectNotActive', 'Quick Connect is not active on this server'));
-                    return r.json();
-                })
-                .then(function (data) {
-                    if (!data || typeof data.Secret !== 'string' || !data.Secret || !/^[A-Za-z0-9]{4,12}$/.test(String(data.Code))) {
-                        throw new Error(WC.tr('UnknownError', 'An unknown error occurred.'));
-                    }
-
-                    setSigningIn(false);
-                    startQuickConnect(data);
-                })
-                .catch(function (err) {
-                    setSigningIn(false);
-                    el('signinError').textContent = err.message;
-                });
-        });
-
-        el('quickConnectCancel').addEventListener('click', function () {
-            stopQuickConnect();
-            el('signinUser').focus();
-        });
 
         // The web client's layout class on <html>, picked as its layoutManager picks it (12.4): the layout chosen in its
         // display settings (kept in this browser as "layout"), otherwise mobile on a phone or tablet by the browser's
@@ -797,27 +573,16 @@
             document.documentElement.classList.add(mobile ? 'layout-mobile' : 'layout-desktop');
         })();
 
-        // The theme the viewer picked in the web client's display settings, kept there per user.
+        // The viewer's web client look: their theme, its palette, the server's custom CSS unless they turned it off, and
+        // their own custom CSS, from Stolon. The themes are the ones the web client's config.json lists.
         function applyTheme(userId, config) {
-            var theme = null;
-            try { theme = localStorage.getItem(userId + '-appTheme') || localStorage.getItem('appTheme'); } catch (e) { /* default */ }
-            // The themes the web client offers, from its config.json (a server can add its own), its default when unset.
-            var themes = (config && Array.isArray(config.themes) && config.themes.length ? config.themes : THEMES.map(function (id) { return { id: id }; }))
-                .filter(function (t) { return t && /^[\w-]+$/.test(t.id); });
-            var ids = themes.map(function (t) { return t.id; });
-            if (ids.indexOf(theme) < 0) theme = (themes.filter(function (t) { return t.default; })[0] || themes[0] || { id: 'dark' }).id;
-            // Left alone when it's the one the page started with, which would otherwise be read again.
-            var themeHref = new URL(prefix + '/web/themes/' + theme + '/theme.css', location.href).href;
-            if (el('themeCss').href !== themeHref) el('themeCss').href = themeHref;
+            S.applyWebClientLook({ userId: userId, themes: config && Array.isArray(config.themes) ? config.themes : null, root: '../' });
             // The viewer's Display settings for details pages: the banner (on unless turned off) shows the backdrop
             // above the details, and backdrops (off unless turned on) let it show through behind them too.
             try {
                 detailsBanner = localStorage.getItem(userId + '-detailsBanner') !== 'false';
                 enableBackdrops = localStorage.getItem(userId + '-enableBackdrops') === 'true';
             } catch (e) { /* the web client's defaults */ }
-            // For the few colours of the page's own that need a darker shade on the light themes.
-            document.documentElement.setAttribute('data-theme', theme);
-            applyPalette(theme);
         }
 
         function authHeader(t) { return 'MediaBrowser Token="' + t + '"'; }
@@ -922,11 +687,12 @@
         // The stored sign-ins, tried in turn, with the first one's language asked for at the same time as its Me.
         function firstTokens() {
             var tokens = webClientTokens(serverId), user = tokens.length ? storedUser(tokens[0]) : null;
+            signInExpired = tokens.length > 0;
             if (user) loadStrings(user);
             tryTokens(tokens, 0);
         }
 
-        function signedOut() { forgetHome(); forgetSignIn(token); token = null; closeFilterPopover(); closeDialog(); closeDrawer(false); closeUserMenu(false); onlyGate('signin'); }
+        function signedOut() { signInExpired = true; forgetHome(); forgetSignIn(token); token = null; closeFilterPopover(); closeDialog(); closeDrawer(false); closeUserMenu(false); onlyGate('signin'); }
 
         // The web client's settings this page follows, as the web client keeps them per user in this browser.
         function userSetting(userId, name) { if (!userId) return ''; try { return localStorage.getItem(userId + '-' + name) || ''; } catch (e) { return ''; } }
@@ -973,8 +739,6 @@
             el('drawerHomeText').textContent = tr('Home', 'Home');
             el('query').placeholder = tr('Search', 'Search');
             el('query').setAttribute('aria-label', tr('Search', 'Search'));
-            el('dialogClose').title = tr('ButtonBack', 'Back');
-            el('dialogClose').setAttribute('aria-label', tr('ButtonBack', 'Back'));
         }
 
         // Once the viewer is known: their language and the web client's themes first, so the page is drawn in them.
@@ -988,6 +752,8 @@
         var earlyRequestRow = null;
         function show_(access, config) {
             me = access;
+            // A viewer signing in again after their sign-in expired keeps the page's handlers from the first time.
+            var firstShow = !started;
             started = true;
             applyTheme(access.UserId, config);
             hide('loading');
@@ -1013,20 +779,22 @@
             show('drawerButton');
             // Filters, in list pages' title bars.
             syncFilterButtons();
-            el('listFilterButton').addEventListener('click', function () {
-                var page = topPage();
-                if (page && page.filterKind) openFilterPopover(page.filterKind, { types: page.filterKind === 'requests' && !typeFilter, genreType: page.filterType || typeFilter || null }, this);
-            });
-            el('listPrev').addEventListener('click', function () { turnPage(false); });
-            el('listNext').addEventListener('click', function () { turnPage(true); });
-            el('listActionButton').addEventListener('click', function () {
-                var page = topPage();
-                if (page && page.action) page.action.run(this);
-            });
-            el('listResetButton').addEventListener('click', function () {
-                var page = topPage();
-                if (page && page.filterKind) { resetFilters(page.filterKind); el('listFilterButton').focus(); }
-            });
+            if (firstShow) {
+                el('listFilterButton').addEventListener('click', function () {
+                    var page = topPage();
+                    if (page && page.filterKind) openFilterPopover(page.filterKind, { types: page.filterKind === 'requests' && !typeFilter, genreType: page.filterType || typeFilter || null }, this);
+                });
+                el('listPrev').addEventListener('click', function () { turnPage(false); });
+                el('listNext').addEventListener('click', function () { turnPage(true); });
+                el('listActionButton').addEventListener('click', function () {
+                    var page = topPage();
+                    if (page && page.action) page.action.run(this);
+                });
+                el('listResetButton').addEventListener('click', function () {
+                    var page = topPage();
+                    if (page && page.filterKind) { resetFilters(page.filterKind); el('listFilterButton').focus(); }
+                });
+            }
             ready = true;
             if (!openFromAddress()) el('query').focus();
             // The empty search's rows only when it shows: a page opened from the address draws them on the way back.
@@ -1357,7 +1125,7 @@
                     try { mine = new URL(href).origin === location.origin && new URL(href).pathname.replace(/\/?$/, '/') === here; } catch (e) { /* not this page */ }
                     return { href: mine ? here : href, icon: S.webIcon(l.icon), name: l.name, current: mine, external: !mine };
                 });
-                if (!links.some(function (l) { return l.current; })) links.unshift({ href: here, icon: S.webIcon(ISSUES ? 'bug_report' : 'search'), name: str(ISSUES ? 'TabIssues' : 'TabRequests'), current: true });
+                if (!links.some(function (l) { return l.current; })) links.unshift({ href: here, icon: S.webIcon(ISSUES ? 'report_problem' : 'search'), name: str(ISSUES ? 'TabIssues' : 'TabRequests'), current: true });
                 var libraries = ((got[1] && got[1].Items) || []).map(function (v) {
                     return { href: web + S.webLibraryRoute(v), icon: S.webLibraryIcon(v), name: v.Name };
                 });
@@ -1603,7 +1371,7 @@
             closeFilterPopover();
             // An address typed or pasted in: opened as on arrival.
             if (!e.state) {
-                if (dialogOpen) { dialogPushed = false; hideDialog(); }
+                if (dialogOpen) dropDialog();
                 leavePage();
                 pageStack = [];
                 depth = 0;
@@ -1611,7 +1379,7 @@
                 return;
             }
             var state = e.state || {}, to = typeof state.depth === 'number' ? state.depth : 0;
-            if (dialogOpen && !state.dialog) { dialogPushed = false; hideDialog(); }
+            if (dialogOpen && !state.dialog) dropDialog();
             // Forward onto a dialog that has since closed: step back off it.
             else if (state.dialog && !dialogOpen) { history.back(); return; }
             if (state.dialog) return;
@@ -1632,59 +1400,17 @@
 
         // ---------- dialog ----------
 
-        // Form dialogs (request, decline) as the web client's: a back arrow to cancel, the title beside it and one wide
-        // button below, filling the screen on anything smaller than a large monitor. Confirmations (remove) are its
-        // centered message dialog instead: title and text in the middle, Cancel then the action.
+        // Dialogs are the web client's, from Stolon's openWebDialog: form dialogs (request, decline) with Back and the title,
+        // and its centered message dialog for confirmations (remove), Cancel then the action. One shows at a time.
         // As the web client's dialogHelper, an open dialog has its own history entry, so Back closes just the dialog.
         // Each opening gets a number: callbacks from an earlier dialog check it and leave a newer one alone.
-        var dialogOpen = false, dialogPushed = false, dialogSeq = 0, returnFocus = null;
-        // The classes and footers are the web client's, as its own dialogs end up once opened (Stolon's WEB_FORM_DIALOG and
-        // WEB_CONFIRM_DIALOG). dialog.js sets the message dialog's spacing on its elements, as these do.
-        var CONFIRM_BODY_STYLE = 'padding-top:1em;padding-bottom: 1em; text-align: center;', CONFIRM_FOOTER_STYLE = 'margin:1em';
-        function openDialog(title, bodyHtml, submit) {
-            var d = S.WEB_FORM_DIALOG;
-            el('dialogBox').className = d.box;
-            el('dialogHeader').className = d.header;
-            setTitle('dialogTitle', 'confirmTitle');
-            el('dialogContent').className = d.content;
-            el('dialogContent').removeAttribute('style');
-            el('dialogBody').removeAttribute('style');
-            // The web client's form dialog footer: one 12em button, centred, over the bottom of the dialog, with the
-            // content's own 20em of room below the fields to scroll them clear of it.
-            el('dialogFooter').className = d.footer;
-            el('dialogFooter').removeAttribute('style');
-            // Without a submit, only something to read: no footer.
-            el('dialogFooter').innerHTML = submit ? S.webFormDialogFooter(submit.text, submit.type) : '';
-            el('dialogFooter').classList.toggle('hide', !submit);
-            if (submit) el('dialogSubmit').addEventListener('click', function () { submit.action(el('dialogSubmit')); });
-            return fillDialog(title, bodyHtml, null);
-        }
-        // dialog.js showDialog: no scrolling, centred, the content as wide as its buttons need.
-        function openConfirm(title, text, ok) {
-            var d = S.WEB_CONFIRM_DIALOG;
-            el('dialogBox').className = d.box;
-            el('dialogHeader').className = d.header;
-            setTitle('confirmTitle', 'dialogTitle');
-            el('dialogContent').className = d.content;
-            el('dialogContent').removeAttribute('style');
-            el('dialogContent').style.maxWidth = S.webConfirmDialogWidth(innerWidth);
-            el('dialogBody').setAttribute('style', CONFIRM_BODY_STYLE);
-            el('dialogFooter').className = d.footer;
-            el('dialogFooter').setAttribute('style', CONFIRM_FOOTER_STYLE);
-            el('dialogFooter').innerHTML = S.webConfirmDialogFooter(ok.text, ok.type);
-            el('dialogCancel').addEventListener('click', function () { closeDialog(); });
-            el('dialogSubmit').addEventListener('click', function () { ok.action(el('dialogSubmit')); });
-            // Cancel takes the focus, as in the web client's confirm, so Enter never removes by accident.
-            return fillDialog(title, S.webConfirmDialogBody(text), el('dialogCancel'));
-        }
-        // A form dialog has the back arrow and a small title; a confirmation a large centred one and no arrow.
-        function setTitle(showId, hideId) {
-            show(showId);
-            hide(hideId);
-            el('dialogClose').classList.toggle('hide', showId !== 'dialogTitle');
-            el('dialogBox').setAttribute('aria-labelledby', showId);
-        }
-        function fillDialog(title, bodyHtml, focusTarget) {
+        var dialog = null, dialogOpen = false, dialogPushed = false, dialogSeq = 0, returnFocus = null;
+        // A dialog opened from another, such as an item's issue history, goes back to that one when it is dismissed.
+        var dialogBack = null;
+        // showDialog
+        // Opens a dialog in place of the one showing. options are openWebDialog's, with footerClass for the footer and
+        // onAction(id) for a footer button. Cancel, Back, Escape and a click outside dismiss it. Returns its number.
+        function showDialog(options) {
             // A search the viewer was typing doesn't run behind the dialog, and nothing else stays open under it.
             clearTimeout(typingTimer);
             closeFilterPopover();
@@ -1692,68 +1418,87 @@
             closeUserMenu(false);
             if (!dialogOpen) returnFocus = document.activeElement;
             dialogBack = null;
-            el('dialogTitle').textContent = title;
-            el('confirmTitle').textContent = title;
-            el('dialogBody').onchange = null;
-            el('dialogBody').onclick = null;
-            el('dialogBody').innerHTML = bodyHtml;
-            el('dialogContent').scrollTop = 0;
-            show('dialogBackdrop');
-            show('dialog');
-            // dialogHelper's entry animation, set on the dialog as it opens.
-            if (!dialogOpen) {
-                el('dialogBox').style.animation = 'none';
-                void el('dialogBox').offsetWidth;
-                el('dialogBox').style.animation = 'scaleup 180ms ease-out normal both';
+            var previous = dialog;
+            dialog = null;
+            if (previous) previous.close('replaced');
+            var opened = S.openWebDialog({
+                look: options.look, title: options.title, html: options.html, text: options.text, content: options.content, buttons: options.buttons, footerHtml: options.footerHtml,
+                onAction: function (id) {
+                    if (id === 'dialogCancel') return true;
+                    if (options.onAction) options.onAction(id);
+                    return false;
+                },
+                onClose: function (id) { if (dialog === opened) dialogClosed(id); }
+            });
+            if (options.footerClass) opened.footer.classList.add(options.footerClass);
+            // A form takes the focus at its first field, as the web client's. On a touch screen it stays on Back, so the
+            // keyboard doesn't open over the form at once. A confirmation keeps Stolon's, on Cancel.
+            if (options.look !== 'message') {
+                var touch = document.documentElement.classList.contains('layout-mobile');
+                var first = (!touch && opened.content.querySelector('select, textarea, input:not(:disabled)')) || opened.element.querySelector('.btnCancel');
+                if (first) first.focus();
             }
-            document.body.classList.add('noScroll');
-            setInert(true, DIALOG);
-            if (!dialogOpen && !dialogPushed) { history.pushState({ depth: depth, dialog: true }, ''); dialogPushed = true; }
+            dialog = opened;
+            if (!dialogPushed) { history.pushState({ depth: depth, dialog: true }, ''); dialogPushed = true; }
             dialogOpen = true;
-            // On a touch screen the first field isn't focused, so the keyboard doesn't open over the form at once.
-            var touchLayout = document.documentElement.classList.contains('layout-mobile');
-            var focusable = focusTarget || (touchLayout ? el('dialogClose') : el('dialogBody').querySelector('select, textarea, input:not(:disabled)')) || el('dialogSubmit') || el('dialogClose');
-            if (focusable) focusable.focus();
             return ++dialogSeq;
+        }
+        // The dialog showing closed: dismissed, it goes back to the one it opened from, else the page takes its focus back.
+        function dialogClosed(id) {
+            var back = dialogBack;
+            dialog = null;
+            dialogBack = null;
+            if ((id === null || id === 'dialogCancel') && back) { back(); return; }
+            dialogOpen = false;
+            dialogSeq++;
+            if (dialogPushed) {
+                dialogPushed = false;
+                if (history.state && history.state.dialog) history.back();
+            }
+            var focus = returnFocus;
+            returnFocus = null;
+            if (!focus || !focus.isConnected || focus.disabled || !focus.offsetParent) {
+                focus = el('view-details').classList.contains('hide') ? null : el('detailButtons').querySelector('button:not(:disabled), a');
+            }
+            if (focus) focus.focus();
+        }
+        // The dialog's content, where its fields are.
+        function dialogBody() { return dialog ? dialog.content : document.createElement('div'); }
+        function openDialog(title, bodyHtml, submit) {
+            return showDialog({
+                title: title, html: bodyHtml,
+                buttons: submit ? [{ id: 'dialogSubmit', text: submit.text, type: submit.type || 'submit' }] : [],
+                onAction: function (id) { if (submit && id === 'dialogSubmit') submit.action(el('dialogSubmit')); }
+            });
+        }
+        // A confirmation, with room under its sentence for what went wrong.
+        function openConfirm(title, text, ok) {
+            var error = document.createElement('div');
+            error.className = 'stolon-web-error';
+            error.id = 'dialogError';
+            error.setAttribute('role', 'alert');
+            return showDialog({
+                look: 'message', title: title, text: text, content: error,
+                buttons: [{ id: 'dialogCancel', text: WC.tr('ButtonCancel', 'Cancel') }, { id: 'dialogSubmit', text: ok.text, type: ok.type }],
+                onAction: function (id) { if (id === 'dialogSubmit') ok.action(el('dialogSubmit')); }
+            });
         }
         // Whether a dialog opened as number seq is still the one showing.
         function dialogLive(seq) { return dialogOpen && seq === dialogSeq; }
-        // Everything but the dialog is inert while it shows, so Tab stays inside it.
-        var DIALOG = ['dialog', 'dialogBackdrop'];
-        // Hides the dialog and gives the focus back to what opened it, or failing that the first details button.
-        function hideDialog() {
-            if (!dialogOpen) return;
-            hide('dialog');
-            hide('dialogBackdrop');
-            document.body.classList.remove('noScroll');
-            setInert(false, DIALOG);
-            dialogOpen = false;
-            dialogSeq++;
-            var back = returnFocus;
-            returnFocus = null;
-            if (!back || !back.isConnected || back.disabled || !back.offsetParent) {
-                back = el('view-details').classList.contains('hide') ? null : el('detailButtons').querySelector('button:not(:disabled), a');
-            }
-            if (back) back.focus();
-            else if (el('dialog').contains(document.activeElement)) document.activeElement.blur();
+        // Takes the dialog down when the history entry under it is gone already.
+        function dropDialog() {
+            dialogPushed = false;
+            dialogBack = null;
+            if (dialog) dialog.close('history');
         }
         // Closing from the page takes the dialog's history entry back off; then steps further back, if asked.
         function closeDialog(stepsBack) {
             var steps = (dialogPushed && history.state && history.state.dialog ? 1 : 0) + (stepsBack || 0);
             dialogPushed = false;
-            hideDialog();
+            dialogBack = null;
+            if (dialog) dialog.close('done');
             if (steps) history.go(-steps);
         }
-        // A dialog opened from another, such as an item's issue history, goes back to that one when it is dismissed.
-        var dialogBack = null;
-        function dismissDialog() {
-            var back = dialogBack;
-            dialogBack = null;
-            if (back) back(); else closeDialog();
-        }
-        el('dialogClose').addEventListener('click', function () { dismissDialog(); });
-        el('dialog').addEventListener('click', function (e) { if (e.target === el('dialog')) dismissDialog(); });
-        document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && dialogOpen) dismissDialog(); });
 
         // ---------- helpers ----------
 
@@ -1909,14 +1654,16 @@
         function titleCard(r, shape) {
             var key = 't' + (++cardSeq), req = r.Request;
             cards[key] = { type: 'title', item: r, shape: shape, render: function () { return titleCard(r, shape); } };
-            var fab = canRequest(r) ? { action: 'request', key: key, icon: 'playlist_add', title: str('RequestsButtonRequest') } : null;
+            // Each button's accessible name says which title it acts on, under its one word tooltip.
+            var named = r.Title + (r.Year ? ' (' + r.Year + ')' : '');
+            var fab = canRequest(r) ? { action: 'request', key: key, icon: 'playlist_add', title: str('RequestsButtonRequest'), label: str('RequestsLabelRequestTitle', named) } : null;
             var buttons = [];
             if (req && me.IsAdministrator && (req.Status === 'Pending' || req.Status === 'Failed')) {
                 var retry = req.Status === 'Failed';
-                buttons.push({ action: 'approve', key: key, icon: retry ? 'refresh' : 'thumb_up', title: retry ? WC.tr('Retry', 'Retry') : str('RequestsButtonApprove') },
-                    { action: 'decline', key: key, icon: 'thumb_down', title: str('RequestsButtonReject') });
+                buttons.push({ action: 'approve', key: key, icon: retry ? 'refresh' : 'thumb_up', title: retry ? WC.tr('Retry', 'Retry') : str('RequestsButtonApprove'), label: str(retry ? 'RequestsLabelRetryTitle' : 'RequestsLabelApproveTitle', named) },
+                    { action: 'decline', key: key, icon: 'thumb_down', title: str('RequestsButtonReject'), label: str('RequestsLabelRejectTitle', named) });
             }
-            if (req && req.UserId === me.UserId && droppedByArr(req)) buttons.push({ action: 'cancel', key: key, icon: 'delete_sweep', title: WC.tr('ButtonRemove', 'Remove') });
+            if (req && req.UserId === me.UserId && droppedByArr(req)) buttons.push({ action: 'cancel', key: key, icon: 'delete_sweep', title: WC.tr('ButtonRemove', 'Remove'), label: str('TitleRemoveName', named) });
             var progress = req && typeof req.Progress === 'number' && (req.Status === 'Approved' || req.Status === 'PartiallyAvailable') ? req.Progress : null;
             var s = standing(r);
             return S.webCard({ key: key, shape: shape, href: titleHref(r), type: r.Type, image: r.PosterUrl, imageClass: imageClassOf(r.Type), title: r.Title, secondary: years(r), indicator: indicatorOf(s), status: s && s.tag, fab: fab, progress: progress, buttons: buttons });
@@ -2197,8 +1944,9 @@
             syncListAction(page);
             hide('listError');
             setHtml(el('listItems'), cardsHtml(page.items, page.card, GRID));
-            show('listPaging');
             function syncPaging() {
+                // A list that fits on one page has nothing to page through, so Previous and Next show only once there is more.
+                el('listPaging').classList.toggle('hide', page.start === 0 && page.next == null);
                 el('listPrev').disabled = !!page.loading || page.start === 0;
                 el('listNext').disabled = !!page.loading || page.next == null;
                 el('listPrev').title = WC.tr('Previous', 'Previous');
@@ -2552,10 +2300,12 @@
             [['Tmdb', 'tmdb'], ['Tvdb', 'tvdb'], ['Imdb', 'imdb']].forEach(function (k) { if (p[k[1]]) ids[k[0]] = p[k[1]]; });
             return ids;
         }
-        // A show's seasons, a grid of them under its details as the web client's: each a card opening its episodes.
+        // A show's seasons, a grid of them under its details as the web client's: each a card opening its episodes. A season
+        // with no episodes yet is left out, as the web client leaves out seasons it has nothing in, so the cards match the
+        // count beside the year.
         function loadSeasons(r, seq) {
             cachedTitleCall('Titles/Seasons', 'Series', r, { Title: r.Title, Year: r.Year, ProviderIds: r.ProviderIds }).then(function (details) {
-                var seasons = (details && details.Seasons) || [];
+                var seasons = ((details && details.Seasons) || []).filter(function (s) { return s.InLibrary || s.EpisodeCount > 0; });
                 if (seq !== renderSeq || !seasons.length) return;
                 setChildren(S.webChildrenGrid(cardsHtml(seasons, function (s, shape) { return seasonCard(r, s, shape); })), WC.tr('HeaderSeasons', 'Seasons'));
             }).catch(function () { /* the seasons are a nicety */ });
@@ -3137,32 +2887,31 @@
 
         // A form dialog with Cancel and an action at its foot, as the web client's dialogs that ask (dialog.js).
         function openIssueDialog(title, bodyHtml, action) {
-            var seq = openDialog(title, bodyHtml, null);
-            if (!action) return seq;
-            el('dialogFooter').innerHTML = S.webCancelDialogFooter(action.text, action.type);
-            el('dialogFooter').classList.add('formDialogFooter-flex');
-            show('dialogFooter');
-            el('dialogCancel').addEventListener('click', function () { dismissDialog(); });
-            el('dialogSubmit').addEventListener('click', function () { action.run(el('dialogSubmit')); });
-            return seq;
+            return showDialog({
+                title: title, html: bodyHtml,
+                footerHtml: action ? S.webCancelDialogFooter(action.text, action.type) : '',
+                footerClass: action ? 'formDialogFooter-flex' : '',
+                onAction: function (id) { if (action && id === 'dialogSubmit') action.run(el('dialogSubmit')); }
+            });
         }
 
         // An item's issues, newest first. An administrator can decline, confirm or resolve its open one from here.
         // Dismissing it goes back to the item's dialog with what was typed.
         function showIssueHistory(view, past, typed) {
             var issue = view.Mine || view.Open;
-            openDialog(str('RequestsHeaderIssueHistory'), S.webPaperList(past.map(issueDetails).join(''), 'issueList'), null);
-            dialogBack = function () { showIssueDialog(view, typed); };
-            if (!me.IsAdministrator || !issue) return;
-            var verbs = [{ id: 'issueDecline', verb: 'Decline', text: str('ButtonDecline'), done: str('IssuesToastDeclined'), type: 'delete' }]
+            var verbs = !me.IsAdministrator || !issue ? [] : [{ id: 'issueDecline', verb: 'Decline', text: str('ButtonDecline'), done: str('IssuesToastDeclined'), type: 'delete' }]
                 .concat(issue.State === 'Reported' ? [{ id: 'issueConfirm', verb: 'Confirm', text: str('IssuesButtonConfirm'), done: str('IssuesToastConfirmed') }] : [])
                 .concat([{ id: 'issueResolve', verb: 'Resolve', text: str('IssuesButtonResolve'), done: str('IssuesToastResolved'), type: 'submit' }]);
-            el('dialogFooter').innerHTML = S.webActionsDialogFooter(verbs);
-            el('dialogFooter').classList.add('formDialogFooter-flex');
-            show('dialogFooter');
-            verbs.forEach(function (v) {
-                el(v.id).addEventListener('click', function () { decideIssue(issue, v, function () { showIssueHistory(view, past, typed); }); });
+            showDialog({
+                title: str('RequestsHeaderIssueHistory'), html: S.webPaperList(past.map(issueDetails).join(''), 'issueList'),
+                footerHtml: verbs.length ? S.webActionsDialogFooter(verbs) : '',
+                footerClass: verbs.length ? 'formDialogFooter-flex' : '',
+                onAction: function (id) {
+                    var v = verbs.filter(function (x) { return x.id === id; })[0];
+                    if (v) decideIssue(issue, v, function () { showIssueHistory(view, past, typed); });
+                }
             });
+            dialogBack = function () { showIssueDialog(view, typed); };
         }
 
         // An administrator's decision on an issue, with a note its reporters see. Dismissing it goes back to the history.
@@ -3816,7 +3565,7 @@
                         var taken = s.InLibrary || (s.Requested && !ours(s));
                         var note = s.InLibrary ? str('RequestsRequestStatusInLibrary') : taken ? str('RequestsRequestStatusRequested') : s.EpisodeCount === 1 ? WC.tr('ValueOneEpisode', '1 episode') : s.EpisodeCount ? WC.format(WC.tr('ValueEpisodeCount', '{0} episodes'), s.EpisodeCount) : '';
                         return S.webCheckbox({ 'data-season': s.Number }, str('NameSeasonNumber', s.Number), note, !editing || taken || ours(s), taken);
-                    }).join('') + '<div class="checkboxListTools">' + S.webLinkButton({ 'data-all': '1' }, WC.tr('SelectAll', 'Select All')) + S.webLinkButton({ 'data-all': '0' }, str('RequestsButtonSelectNone')) + '</div>';
+                    }).join('') + '<div class="rq-checkboxListTools">' + S.webLinkButton({ 'data-all': '1' }, WC.tr('SelectAll', 'Select All')) + S.webLinkButton({ 'data-all': '0' }, str('RequestsButtonSelectNone')) + '</div>';
                     syncSeasons();
                 }).catch(function (err) {
                     var box = el('dialogSeasons');
@@ -3842,7 +3591,7 @@
             }
             function pickingSeasons() { return !!(seasons && seasons.CanPickSeasons && el('dialogSeasons')); }
             function specialsOn() {
-                return Array.prototype.slice.call(el('dialogBody').querySelectorAll('[data-special]:not(:disabled)'))
+                return Array.prototype.slice.call(dialogBody().querySelectorAll('[data-special]:not(:disabled)'))
                     .filter(function (c) { return c.checked; }).map(function (c) { return parseInt(c.getAttribute('data-special'), 10); });
             }
             function specialsLabel(n) { return n === 1 ? str('RequestsButtonRequestSpecial') : str('RequestsButtonRequestSpecials'); }
@@ -3854,7 +3603,7 @@
                 if (!editing) submitButton.innerHTML = '<span>' + esc(!wholeOk && sp ? specialsLabel(sp) : specialsOnly ? str('RequestsButtonRequestSpecials') : str('RequestsButtonRequest')) + '</span>';
             }
 
-            function chips() { return Array.prototype.slice.call(el('dialogBody').querySelectorAll('[data-season]:not(:disabled)')); }
+            function chips() { return Array.prototype.slice.call(dialogBody().querySelectorAll('[data-season]:not(:disabled)')); }
             // The server's cap on seasons of a show, said up front and held to before sending; the server also counts
             // the requester's other requests for the show. It's the cap of whoever the request is for, so the line under
             // the seasons follows an administrator's pick of who.
@@ -3867,11 +3616,11 @@
                 submitButton.disabled = sending || blocked || !(n || sp) || (max > 0 && n > max);
                 if (!editing) submitButton.innerHTML = '<span>' + esc(!n ? (sp ? specialsLabel(sp) : str('RequestsButtonRequest')) : n === all ? str('RequestsButtonRequestAll') : n === 1 ? str('RequestsButtonRequestSeason') : str('RequestsButtonRequestSeasons', n)) + '</span>';
             }
-            el('dialogBody').onchange = function (e) {
+            dialogBody().onchange = function (e) {
                 if (e.target.closest('[data-season]')) syncSeasons();
                 else if (e.target.closest('[data-special]')) { if (pickingSeasons()) syncSeasons(); else syncWhole(); }
             };
-            el('dialogBody').onclick = function (e) {
+            dialogBody().onclick = function (e) {
                 var a = e.target.closest('[data-all]');
                 if (a) { chips().forEach(function (x) { x.checked = a.getAttribute('data-all') === '1'; }); syncSeasons(); }
                 if (e.target.closest('#dialogSeasonsRetry')) { el('dialogSeasons').textContent = '\u2026'; loadDialogSeasons(); }
@@ -4144,11 +3893,11 @@
 
         // ---------- links, people rows, more like this ----------
 
-        // The web client's external links line: IMDb, TMDB, TVDB.
+        // The web client's external links line: IMDb, TMDb, TVDB.
         function renderLinks(r) {
             var ids = r.ProviderIds || {}, links = [];
             if (ids.Imdb && /^tt\d+$/.test(ids.Imdb)) links.push({ text: 'IMDb', href: 'https://www.imdb.com/title/' + ids.Imdb });
-            if (ids.Tmdb && /^\d+$/.test(ids.Tmdb)) links.push({ text: 'TMDB', href: 'https://www.themoviedb.org/' + (r.Type === 'Series' ? 'tv' : 'movie') + '/' + ids.Tmdb });
+            if (ids.Tmdb && /^\d+$/.test(ids.Tmdb)) links.push({ text: 'TMDb', href: 'https://www.themoviedb.org/' + (r.Type === 'Series' ? 'tv' : 'movie') + '/' + ids.Tmdb });
             if (ids.Tvdb && /^\d+$/.test(ids.Tvdb)) links.push({ text: 'TVDB', href: 'https://www.thetvdb.com/?tab=series&id=' + ids.Tvdb });
             el('detailLinks').innerHTML = S.webExternalLinks(links);
             el('detailLinks').classList.toggle('hide', !links.length);
@@ -4266,7 +4015,7 @@
                 setOverview(d.Overview);
                 setLifeDates(d);
                 if (d.TmdbId && /^\d+$/.test(d.TmdbId)) {
-                    el('detailLinks').innerHTML = S.webExternalLinks([{ text: 'TMDB', href: 'https://www.themoviedb.org/person/' + d.TmdbId }]);
+                    el('detailLinks').innerHTML = S.webExternalLinks([{ text: 'TMDb', href: 'https://www.themoviedb.org/person/' + d.TmdbId }]);
                     show('detailLinks');
                 }
                 // Beside the photo, as the web client lists a person's titles (itemDetails renderChildren): a heading and

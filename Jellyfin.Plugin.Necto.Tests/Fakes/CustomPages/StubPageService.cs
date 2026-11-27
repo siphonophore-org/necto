@@ -39,7 +39,7 @@ public sealed class StubPageService : IPageService
     public IReadOnlyDictionary<string, string> LoaderValues(string slug, PageVisibility visibility, string? language)
     {
         Loaders.Add((slug, visibility, language));
-        return new Dictionary<string, string> { ["SLUG"] = slug, ["TIER"] = "user", ["LOADING"] = "Loading", ["DENIED_MESSAGE"] = "No." };
+        return new Dictionary<string, string> { ["SLUG"] = slug, ["TIER"] = "user", ["DENIED_MESSAGE"] = "No.", ["SIGN_IN_MESSAGE"] = "Sign in.", ["EXPIRED_MESSAGE"] = "Expired." };
     }
 
     public PageAsset? FindAsset(string name) => Assets.GetValueOrDefault(name);

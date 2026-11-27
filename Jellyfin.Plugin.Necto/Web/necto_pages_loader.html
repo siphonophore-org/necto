@@ -1,5 +1,5 @@
 <!-- necto_pages_loader.html -->
-<!-- The loading screen of a custom page that needs a signed in viewer, served by HostedPage at /pages/{slug} in the web -->
-<!-- client's signed out frame. Its script asks for the page with the viewer's sign-in and writes it in. -->
-<div class="docspinner mdl-spinner mdlSpinnerActive" id="pageLoading" role="status" aria-label="{{LOADING}}" data-slug="{{SLUG}}" data-tier="{{TIER}}" data-denied="{{DENIED_MESSAGE}}"></div>
+<!-- What the web client's loading screen of a custom page that needs a signed in viewer carries, placed after its -->
+<!-- spinner. Its script asks for the page with the viewer's sign-in and writes it in. -->
+<div id="pageLoading" hidden data-slug="{{SLUG}}" data-tier="{{TIER}}" data-denied="{{DENIED_MESSAGE}}" data-sign-in="{{SIGN_IN_MESSAGE}}" data-expired="{{EXPIRED_MESSAGE}}"></div>
 <script type="module" src="web/configurationpage?name=necto_pages_loader.js"></script>

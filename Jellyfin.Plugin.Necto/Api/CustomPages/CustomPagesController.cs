@@ -78,8 +78,8 @@ public class CustomPagesController : ControllerBase, IActionFilter
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    // The loading screen's content, read once.
-    private static readonly HostedPageContent LoaderContent = HostedPageContent.Resource(typeof(Plugin).Assembly, "Web.necto_pages_loader.html");
+    // The loading screen's script and the page it asks for, read once.
+    private static string? _loaderTemplate;
 
     private readonly IPageService _pages;
     private readonly IStoreService _stores;
@@ -158,26 +158,37 @@ public class CustomPagesController : ControllerBase, IActionFilter
         if (!page.Visibility.RequiresAuth())
         {
             Harden();
-            return Content(_pages.Render(page, WebClientContentStyle.Style(this)), HtmlContentType);
+            return Content(_pages.Render(page, WebClientContentStyle.Style(this, PagePath(page.Slug))), HtmlContentType);
         }
 
-        var loading = LoadingPage(page.Title);
-        return HardenScreen(loading.Serve(this, _pages.LoaderValues(page.Slug, page.Visibility, StolonTranslations.RequestLanguage(Request))));
+        var loader = LoaderMarkup(_pages.LoaderValues(page.Slug, page.Visibility, StolonTranslations.RequestLanguage(Request)));
+        return HardenScreen(StatusPage.ServeWebClient(this, "necto", StatusPageScreen.Loading, content: loader, title: string.IsNullOrWhiteSpace(page.Title) ? null : page.Title));
     }
 
     /// <summary>
-    /// Builds the loading screen of a page that needs a signed in viewer, named after the page so the tab shows its
-    /// title from the start. It is the web client's signed out frame, which never follows a sign-in, so nothing of the
-    /// frame is still at work when the page is written over it.
+    /// Writes what the web client's loading screen carries for a page that needs a signed in viewer: the page's slug,
+    /// tier, and denied sentence, and the script that asks for the page with the viewer's sign-in.
     /// </summary>
-    /// <param name="title">The page's title.</param>
-    /// <returns>The screen.</returns>
-    internal static HostedPage LoadingPage(string? title) => new("necto", HostedPageAccess.Anyone, LoaderContent)
+    /// <param name="values">The loader's values, each HTML encoded here.</param>
+    /// <returns>The markup placed after the screen's spinner.</returns>
+    internal static string LoaderMarkup(IReadOnlyDictionary<string, string> values)
     {
-        Frame = HostedPageFrame.WebClientSignedOut,
-        Title = string.IsNullOrWhiteSpace(title) ? null : title,
-        Translations = "Necto/Translations"
-    };
+        ArgumentNullException.ThrowIfNull(values);
+        var html = _loaderTemplate ??= Services.Requests.EmbeddedResources.Read("necto_pages_loader.html");
+        foreach (var (key, value) in values)
+        {
+            html = html.Replace("{{" + key + "}}", System.Net.WebUtility.HtmlEncode(value), StringComparison.Ordinal);
+        }
+
+        return html;
+    }
+
+    /// <summary>
+    /// Gives the address a page shows at, without the server's base path, which its fonts resolve against.
+    /// </summary>
+    /// <param name="slug">The page's slug.</param>
+    /// <returns>The path, such as <c>/pages/family</c>.</returns>
+    internal static string PagePath(string slug) => "/pages/" + slug;
 
     /// <summary>
     /// Serves the web client's favicon so pages can reuse the server's real icon at a stable path.
@@ -259,7 +270,7 @@ public class CustomPagesController : ControllerBase, IActionFilter
         }
 
         Harden();
-        return Content(_pages.Render(page, WebClientContentStyle.Style(this)), HtmlContentType);
+        return Content(_pages.Render(page, WebClientContentStyle.Style(this, PagePath(page.Slug))), HtmlContentType);
     }
 
     /// <summary>
@@ -282,7 +293,7 @@ public class CustomPagesController : ControllerBase, IActionFilter
         }
 
         Harden();
-        return Content(_pages.Render(page, WebClientContentStyle.Style(this)), HtmlContentType);
+        return Content(_pages.Render(page, WebClientContentStyle.Style(this, PagePath(page.Slug))), HtmlContentType);
     }
 
     /// <summary>

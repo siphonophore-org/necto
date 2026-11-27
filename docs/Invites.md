@@ -44,7 +44,7 @@ The account joins the invite's group, takes that group's password rules and Jell
 
 ## Members' Invites
 
-A member whose groups allow invites makes and shares their own at `/invites`, in the web client with its header, libraries, and user menu. **Your invites** lists each invite with its state, group, and uses, and **Copy link**, **Show QR code**, and **Delete** buttons. **New invite** makes one with **Name**, **Group**, **Uses**, and **Expiry date**, and **Add invite** adds it. **Groups > Invites** sets who may do this.
+A member whose groups allow invites makes and shares their own at `/invites`, in the web client with its header, libraries, and user menu. **Your invites** lists each invite with its state, group, and uses, and **Copy link**, **Show QR code**, and **Remove** buttons. **New invite** makes one with **Name**, **Group**, **Uses**, and **Expiry date**, and **Add invite** adds it. **Groups > Invites** sets who may do this.
 
 ![Members' invites](screenshots/Member%20Invites.png)
 
@@ -52,7 +52,7 @@ A member whose groups allow invites makes and shares their own at `/invites`, in
 * **Open invites** sets how many working invites a member may have at once. 0 is no limit.
 * **Invite to any group** lets members' invites join any group, or **Invite groups** names the groups.
 
-A member deletes only their own invites. **Browser notifications** holds **Notify me in this browser**, so the member hears when their invites are used, as their groups allow. It shows while **Settings > Notifications** offers browser notifications.
+A member removes only their own invites, and **Remove** asks first. A viewer who is not signed in gets the web client's sign in page. **Browser notifications** holds **Notify me in this browser** as a web client settings checkbox, so the member hears when their invites are used, as their groups allow. It shows while **Settings > Notifications** offers browser notifications.
 
 ## Limits
 
