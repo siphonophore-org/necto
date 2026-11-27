@@ -172,3 +172,5 @@
 #settingsSections .stolon-panel-body > .fieldDescription { margin: var(--stolon-gap-narrow) 0 0 !important; }
 #settingsSections .necto-storage-alert-editor { gap: var(--stolon-gap-wide); }
 #settingsSections .necto-storage-alert-editor > * { flex: none; margin-top: 0 !important; margin-bottom: 0 !important; }
+#settingsSections .stolon-collapsible-content > div > div > :last-child,
+#troubleshootingSections .stolon-collapsible-content > div > div > :last-child { margin-bottom: 0 !important; }
