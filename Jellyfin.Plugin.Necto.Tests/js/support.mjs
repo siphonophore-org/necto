@@ -276,6 +276,18 @@ export function routeApiByPath(page, answers) {
     };
 }
 
+// rowHtml
+// Reads the markup of each cell of a table row, after its checkbox, joined.
+//
+// Inputs
+// row [object]: The row.
+//
+// Output
+// [string]: The cells' markup.
+export function rowHtml(row) {
+    return Array.prototype.map.call(row.querySelectorAll('.stolon-table-cell:not(.stolon-table-cell-checkbox)'), function (c) { return c.innerHTML; }).join(' ');
+}
+
 // pickRows
 // Ticks the checkbox of each table row at these places under a root.
 //

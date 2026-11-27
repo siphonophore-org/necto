@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, loadScript, pageView, settle, routeApi, routeApiByPath, pickRows, texts, clickButton, clickDialogButton, dialogText } from './support.mjs';
+import { installPage, loadScript, pageView, settle, routeApi, routeApiByPath, pickRows, rowHtml, texts, clickButton, clickDialogButton, dialogText } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
@@ -213,8 +213,8 @@ test('the page draws the cards with the public address and a table row per recor
     assert.ok(view.querySelector('#ddnsAddress').textContent.indexOf('203.0.113.10') >= 0);
     var rows = view.querySelectorAll('#ddnsRecords .stolon-table-row');
     assert.equal(rows.length, 2);
-    assert.match(rows[0].innerHTML, /home\.example\.com[\s\S]*Cloudflare[\s\S]*Updated/);
-    assert.match(rows[1].innerHTML, /Cabin[\s\S]*Off/);
+    assert.match(rowHtml(rows[0]), /home\.example\.com[\s\S]*Cloudflare[\s\S]*Updated/);
+    assert.match(rowHtml(rows[1]), /Cabin[\s\S]*Off/);
     assert.equal(view.querySelectorAll('#ddnsNotices .stolon-warn').length, 1);
     assert.ok(opened.page.requests.some(function (r) { return /^Ddns\/Records\/All\?/.test(r.url); }));
 });
