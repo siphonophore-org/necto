@@ -367,7 +367,8 @@ export function statusCell(r, shared) {
 }
 
 // detailItems
-// Lists a request's details for its sidecar, such as its requester, where it goes, and its note.
+// Lists a request's details for its sidecar, such as where it goes, its seasons, and its TMDb page. Who asked for it
+// and their notes have sections of their own.
 //
 // Inputs
 // r [object]: The request.
@@ -379,21 +380,70 @@ export function statusCell(r, shared) {
 export function detailItems(r, t, goesTo) {
     var specials = r.Specials && r.Specials.length;
     return [
-        { label: t.tr('RequestsLabelRequester'), value: t.format('ActivitySessionsUserApps', r.UserName, when(r.CreatedUtc)) },
         goesTo ? { label: t.tr('RequestsLabelGoesTo'), value: goesTo } : null,
         r.Type === 'Series' ? (specials
             ? { label: t.tr('OptionSpecialEpisode'), value: specialNames(r, t) }
             : { label: t.tr('HeaderSeasons'), value: describeWanted(r, t) }) : null,
         r.AvailableSeasons && !specials ? { label: t.tr('RequestsRequestStatusInLibrary'), value: describeSeasons(r.AvailableSeasons, t) } : null,
-        r.DecidedBy ? { label: r.Status === 'Declined' ? t.tr('RequestsLabelRejectedBy') : t.tr('RequestsLabelApprovedBy'), value: r.DecidedBy } : null,
-        (r.Joined || []).length ? { label: t.tr('RequestsLabelAlsoWantedBy'), value: r.Joined.map(function (j) { return j.UserName; }).join(', ') } : null,
-        r.RequesterNote ? { label: t.tr('RequestsLabelRequestNote'), value: r.RequesterNote } : null,
         r.RetryAfterUtc && r.Status === 'Failed' ? { label: t.tr('RequestsLabelNextRetry'), value: when(r.RetryAfterUtc) } : null,
         r.ProviderIds && r.ProviderIds.Tmdb ? {
             label: 'TMDb',
             value: { text: String(r.ProviderIds.Tmdb), link: 'https://www.themoviedb.org/' + (r.Type === 'Series' ? 'tv' : 'movie') + '/' + encodeURIComponent(r.ProviderIds.Tmdb) }
         } : null
     ].filter(Boolean);
+}
+
+// userImage
+// Gives the address of a user's Jellyfin picture, which the avatar swaps for the person icon when there is none.
+//
+// Inputs
+// userId [string]: The user's id.
+//
+// Output
+// [string]: The address, or empty without a server connection.
+export function userImage(userId) {
+    if (!userId || typeof ApiClient === 'undefined' || !ApiClient.getUrl) return '';
+    return ApiClient.getUrl('Users/' + userId + '/Images/Primary', { height: 96, quality: 90 });
+}
+
+// noteItems
+// Lists a request's notes for its timeline, oldest first: the requester's note, then the decision with its reason.
+//
+// Inputs
+// r [object]: The request.
+// t [object]: The strings.
+//
+// Output
+// [object[]]: The timeline items, empty when the request has no note and no decision.
+export function noteItems(r, t) {
+    var items = [];
+    if (r.RequesterNote) items.push({ title: r.UserName, time: when(r.CreatedUtc), datetime: r.CreatedUtc || undefined, body: r.RequesterNote, icon: 'person' });
+    if (r.DecidedBy) {
+        var declined = r.Status === 'Declined';
+        items.push({
+            title: t.format(declined ? 'RequestsNoteRejected' : 'RequestsNoteApproved', r.DecidedBy),
+            time: when(r.DecidedUtc),
+            datetime: r.DecidedUtc || undefined,
+            body: declined ? (r.Note || '') : '',
+            icon: declined ? 'block' : 'check',
+            status: declined ? 'gray' : 'blue'
+        });
+    }
+    return items;
+}
+
+// joinerItems
+// Lists the people who asked for a request's title after it was made, oldest first.
+//
+// Inputs
+// r [object]: The request.
+//
+// Output
+// [object[]]: Each { userId, name, when }, without a joiner the viewer may not see.
+export function joinerItems(r) {
+    return (r.Joined || []).filter(function (j) { return j && j.UserName; }).slice().sort(function (a, b) {
+        return String(a.JoinedUtc || '').localeCompare(String(b.JoinedUtc || ''));
+    }).map(function (j) { return { userId: j.UserId, name: j.UserName, when: when(j.JoinedUtc) }; });
 }
 
 export default function (view) {
@@ -739,10 +789,37 @@ export default function (view) {
         }
         var details = nectoModule.createDefinitionList({ items: items });
         var status = h('div', { class: 'stolon-status-text', role: 'alert', 'data-role': 'status' });
+        var parts = [card, details];
+
+        // The requester with their picture, then the notes on the request.
+        var requester = nectoModule.createUserChip({ name: r.UserName, image: userImage(r.UserId), text: t.format('RequestsValueRequestedOn', when(r.CreatedUtc)) });
+        var notes = noteItems(r, t);
+        var timeline = notes.length ? nectoModule.createTimeline({ items: notes }) : null;
+        var requesterBody = h('div', { class: 'stolon-stack', 'data-role': 'requester' }, [requester.element, timeline ? timeline.element : null]);
+        var requesterSection = nectoModule.createCollapsibleSection({ title: t.tr('RequestsLabelRequester'), icon: 'person', collapsible: false, content: requesterBody });
+        parts.push(requester, requesterSection);
+        if (timeline) parts.push(timeline);
+
+        // Everyone who asked for the same title after it was made, hidden while nobody did.
+        var joiners = joinerItems(r);
+        var joinedSection = null;
+        if (joiners.length) {
+            var joinedBody = h('div', { class: 'stolon-stack', 'data-role': 'joined' });
+            joiners.forEach(function (j) {
+                var chip = nectoModule.createUserChip({ name: j.name, image: userImage(j.userId), text: t.format('RequestsValueJoinedOn', j.when) });
+                parts.push(chip);
+                joinedBody.appendChild(chip.element);
+            });
+            joinedSection = nectoModule.createCollapsibleSection({ title: t.tr('RequestsLabelAlsoWantedBy'), icon: 'group_add', collapsible: false, content: joinedBody });
+            parts.push(joinedSection);
+        }
+
         var body = h('div', { class: 'stolon-stack', 'data-role': 'request-detail' }, [
             card.element,
             details.element,
             r.Overview ? h('div', { class: 'fieldDescription', text: r.Overview }) : null,
+            requesterSection.element,
+            joinedSection ? joinedSection.element : null,
             status
         ]);
 
@@ -768,7 +845,7 @@ export default function (view) {
             buttons: requestActions(r).map(function (key) {
                 return { text: t.tr(labels[key][0]), className: 'stolon-button ' + labels[key][1], action: function (close) { run[key](close); } };
             }),
-            onClose: function () { card.destroy(); details.destroy(); }
+            onClose: function () { parts.forEach(function (part) { if (part && part.destroy) part.destroy(); }); }
         });
 
         if (r.ArrId) {

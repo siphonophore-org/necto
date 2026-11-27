@@ -224,6 +224,37 @@ test('a request opens in a sidecar with its actions, and Approve sends it with t
     assert.equal(statusText(opened.view.querySelector('#requestsStatus')), 'Approved.');
 });
 
+test('the sidecar leads with the requester and their notes, then everyone who joined, each with their picture', async function () {
+    var opened = await openPage();
+    opened.handle.showRequest(dune({
+        Status: 'Declined', RequesterNote: 'For movie night', DecidedBy: 'admin', DecidedUtc: '2026-01-03T10:00:00Z', Note: 'Already on the shelf',
+        Joined: [{ UserId: 'u3', UserName: 'sam', JoinedUtc: '2026-01-04T10:00:00Z' }, { UserId: 'u2', UserName: 'riley', JoinedUtc: '2026-01-03T09:00:00Z' }, { UserId: '', UserName: '', JoinedUtc: '2026-01-05T10:00:00Z' }]
+    }));
+    await settle(50);
+    var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
+    var requester = sidecar.querySelector('[data-role="requester"]');
+    var joined = sidecar.querySelector('[data-role="joined"]');
+
+    assert.equal(requester.querySelector('.stolon-user-chip-name').textContent, 'viewer');
+    assert.match(requester.querySelector('.stolon-user-chip-text').textContent, /^Requested /);
+    assert.deepEqual(Array.prototype.map.call(requester.querySelectorAll('.stolon-timeline-title'), function (n) { return n.textContent; }), ['viewer', 'admin rejected the request']);
+    assert.match(requester.textContent, /For movie night[\s\S]*Already on the shelf/);
+    assert.deepEqual(Array.prototype.map.call(joined.querySelectorAll('.stolon-user-chip-name'), function (n) { return n.textContent; }), ['riley', 'sam']);
+    assert.doesNotMatch(sidecar.querySelector('.stolon-definition-list, dl') ? sidecar.querySelector('.stolon-definition-list, dl').textContent : '', /Requester|Also wanted by/);
+    assert.equal(sidecar.querySelectorAll('.stolon-collapsible-tile').length, new Set(Array.prototype.map.call(sidecar.querySelectorAll('.stolon-collapsible-tile'), function (n) { return n.textContent; })).size);
+});
+
+test('a request nobody joined has no joined section, and one with no note shows only the requester', async function () {
+    var opened = await openPage();
+    opened.handle.showRequest(dune());
+    await settle(50);
+    var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
+
+    assert.equal(sidecar.querySelector('[data-role="joined"]'), null);
+    assert.equal(sidecar.querySelector('[data-role="requester"] .stolon-timeline'), null);
+    assert.ok(sidecar.querySelector('[data-role="requester"] .stolon-user-chip'));
+});
+
 test('Remove asks first with the title, and Cancel sends nothing', async function () {
     var opened = await openPage();
     opened.handle.showRequest(dune());
