@@ -83,7 +83,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 | **Invites** | **Allow invites**, **Open invites**, **Invite to any group**, **Invite groups** |
 | **WireGuard** | **Allow peers**, **Peers per member** |
 | **Scripts** | **Run every script** |
-| **Custom pages** | **Open every page** |
+| **Custom pages** | **Open every page**, **Pages members may open** |
 | **Notifications** | **Receive every event** |
 
 ## Scheduled Tasks

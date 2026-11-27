@@ -83,6 +83,18 @@ Several records, each with its own provider, credentials, name, and how often it
 
 Turning WireGuard on asks to download `wireguard-go`, which is the only way WireGuard runs. **Settings > WireGuard** shows the download and its version, and replaces it. A server with its own WireGuard uses that instead of Necto.
 
+### Custom Pages
+
+Everything Custom Pages does. A page keeps its tier, **Anyone**, **Signed in**, or **Administrators**, and its list of named users is gone, since groups give pages.
+
+* A **Signed in** page opens for administrators and for members of a group that gives it, with **Open every page** or by name. **Everyone** gives no page on a fresh install, so a page opens for nobody but administrators until a group gives it. **Review**
+* An API key opens **Administrators** pages, as the elevation policy lets it, but no **Signed in** page, since it is in no group. **Review**
+* Stores keep their **Read** and **Write** tiers, **Scope**, and **Writers edit own records** on the store. They name classes of caller, not users, and a store has no group section yet. **Review**
+* The pages keep their own addresses under `/pages`, since served pages and their helpers call them. The administrator routes are under `/Pages` with two segments or more, and the slugs `asset`, `store`, `stores`, and `configuration` are kept for them. **Review**
+* A server route never follows a redirect, so its credentials stay with the host it names. **Review**
+* **Settings > Custom pages** holds the record limit, retention, and notify a new store starts with, the only settings that are not on a page, image, or store. **Clear** for a store is in **Troubleshooting > Custom pages**. **Review**
+* Store writes go to Notifications as `pages.*` events, summed per burst like the activity log entries. **Review**
+
 ### Storage
 
 Everything Storage Manager does. Pooling disks or RAID is left out of 12.4.0.0: it needs the operating system's own tools run as root, which a plugin cannot do safely, and a pool Jellyfin cannot see as one disk gains nothing over a library with several folders. **Review**
