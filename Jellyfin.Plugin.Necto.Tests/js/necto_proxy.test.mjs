@@ -234,7 +234,7 @@ test('the Proxy Troubleshooting section shows the state and the recovery file', 
     var section = view.querySelector('[data-tool="proxy"]');
     assert.ok(section.textContent.indexOf('/config/Jellyfin.Plugin.Necto.Proxy/DISABLE') >= 0);
     assert.ok(section.textContent.indexOf('Running') >= 0);
-    assert.ok(view.querySelector('[data-tool="ddns"]').textContent.indexOf('Public IPv4') >= 0);
+    assert.ok(view.querySelector('[data-tool="ddns"]').textContent.indexOf('Public IPv4') < 0);
 });
 
 // openProxyPage
@@ -376,7 +376,7 @@ test('the country rule note names the server country, warns while the database i
     var sections = await loadScript('necto_proxy_sections.js');
     var t = bag.t;
 
-    assert.equal(sections.countryNote('Off', { CountryDatabaseLoaded: false }, false, t).text, 'Every country can connect.');
+    assert.equal(sections.countryNote('Off', { CountryDatabaseLoaded: false }, false, t).text, 'Lets every country connect.');
     var known = sections.countryNote('ServerCountry', { CountryDatabaseLoaded: true, ServerCountry: 'FR' }, false, t);
     assert.match(known.text, /This server is in /);
     assert.equal(known.warn, false);
@@ -459,18 +459,18 @@ test('turning on Only through the proxy asks before it saves, and Cancel saves n
     assert.equal(JSON.parse(posts(opened, 'Proxy/Settings')[0].data).Advanced.JellyfinLoopbackOnly, true);
 });
 
-test('the Locations notes follow the picked rule and detail, and hide the countries while the rule is off', async function () {
+test('the country rule and location lookup describe the pick under their selects, and hide the countries while the rule is off', async function () {
     var opened = await openSettings({ Enabled: true, Advanced: { CountryMode: 'ServerCountry' }, Visitors: { Enabled: true, HistoryDays: 90, Location: 'City' } });
     var note = opened.section.querySelector('[data-role="country-note"]');
-    var refused = opened.section.querySelector('[data-role="country-refused"]');
 
     assert.match(note.textContent, /This server is in /);
-    assert.match(refused.textContent, /3 from .+\.$/);
+    assert.ok(note.closest('.selectContainer').querySelector('[data-field="CountryMode"]'));
+    assert.equal(opened.section.querySelector('[data-role="country-refused"]'), null);
     assert.match(opened.section.querySelector('[data-role="location-note"]').textContent, /130 MB/);
     var mode = opened.section.querySelector('[data-field="CountryMode"]');
     mode.value = 'Off';
     mode.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
-    assert.equal(note.textContent, 'Every country can connect.');
+    assert.equal(note.textContent, 'Lets every country connect.');
     assert.equal(opened.section.querySelector('[data-field="Countries"]').classList.contains('stolon-hidden'), true);
 });
 
@@ -517,4 +517,25 @@ test('every text field of the Proxy settings is sent as text, never null', async
 
     assert.ok(texts.length > 0);
     texts.forEach(function (key) { assert.equal(typeof out[key], 'string', key); });
+});
+
+test('the Jellyfin section offers Trust and Undo as rows with their tiles, and its badge alone says where trust stands', async function () {
+    var opened = await openProxyPage();
+    var section = opened.view.querySelector('#proxyJellyfin');
+
+    assert.deepEqual(Array.prototype.map.call(section.querySelectorAll('.stolon-reset-row .stolon-collapsible-tile'), function (n) { return n.textContent; }), ['verified_user', 'undo']);
+    assert.equal(section.querySelectorAll('.stolon-collapsible-content > div > .fieldDescription').length, 0);
+    assert.equal(section.querySelector('[data-role="trust-state"]'), null);
+    assert.equal(section.querySelector('[data-action="undo"]').disabled, true);
+});
+
+test('the Proxy section of Settings folds each group of settings into its own part with a tile', async function () {
+    var opened = await openSettings({ Enabled: true, Advanced: {}, Visitors: { Enabled: true, HistoryDays: 90, Location: 'Country' } });
+    var parts = opened.section.querySelectorAll('[data-part]');
+
+    assert.equal(parts.length, 8);
+    var icons = Array.prototype.map.call(parts, function (p) { return p.querySelector('.stolon-collapsible-tile').textContent; });
+    assert.equal(new Set(icons).size, 8);
+    assert.equal(opened.section.querySelectorAll('.stolon-subsection-title').length, 0);
+    assert.ok(opened.section.querySelector('[data-part="HeaderLocations"] [data-field="CountryMode"]'));
 });

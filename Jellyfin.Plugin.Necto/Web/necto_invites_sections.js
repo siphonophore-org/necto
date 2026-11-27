@@ -66,7 +66,7 @@ export function linksInsecure(linkUrl, protocol) {
 }
 
 // buildSettings
-// Fills the Invites section of Settings: the address links start with, the signup rate limit, and the wrong PINs
+// Fills the Invites section of Settings: the address links start with, the sign-up rate limit, and the wrong PINs
 // that lock an invite.
 //
 // Inputs
@@ -90,7 +90,7 @@ function buildSettings(content, ctx) {
         httpsWarn.classList.toggle('stolon-hidden', !linksInsecure(link.value, globalThis.location && globalThis.location.protocol));
     };
     link.addEventListener('input', checkHttps);
-    var enabled = nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), help: t.tr('InvitesHelpEnabled'), field: 'Enabled' });
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('InvitesLabelEnable'), help: t.tr('InvitesHelpEnabled'), field: 'Enabled' });
 
     [
         enabled.element,
@@ -102,7 +102,6 @@ function buildSettings(content, ctx) {
         ]),
         httpsWarn,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLimits') }),
-        h('div', { class: 'fieldDescription', text: t.tr('InvitesLimitsHelp') }),
         count.wrap, windowField.wrap, pins.wrap
     ].forEach(function (node) { content.appendChild(node); });
 
@@ -141,14 +140,14 @@ function buildTroubleshooting(content, ctx) {
     var t = shared.t;
     var pollers = [];
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var run = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'run-invite-expiry' }, [h('span', { text: t.tr('ButtonRunTask') })]);
     [
         status,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
         nectoModule.createResetGroup([
-            nectoModule.createResetRow({ icon: 'timer_off', label: t.tr('InvitesTaskExpire'), help: t.tr('InvitesTaskExpireDescription'), button: run })
+            nectoModule.createResetRow({ icon: 'timer_off', label: t.tr('InvitesTaskExpire'), help: t.tr('InvitesTaskExpireDescription'), button: t.tr('ButtonRunTask'), action: 'run-invite-expiry' })
         ]).element
     ].forEach(function (node) { content.appendChild(node); });
+    var run = content.querySelector('[data-action="run-invite-expiry"]');
 
     run.addEventListener('click', function () {
         shared.runScheduledTask(run, INVITE_EXPIRY_TASK, t.tr('ButtonRunTask')).then(function (poller) { pollers.push(poller); }).catch(function (err) {

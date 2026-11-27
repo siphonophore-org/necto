@@ -153,7 +153,7 @@ export function createRouteEditor(route, ctx) {
     var ddnsNames = nectoModule.createSelectField({
         label: t.tr('ProxyLabelDdnsName'),
         field: 'DdnsName',
-        options: [{ value: '', text: t.tr('ProxyOptionTypeName') }].concat((ctx.hostnames || []).map(function (name) { return { value: name.Hostname, text: name.Hostname }; })),
+        options: [{ value: '', text: t.tr('None') }].concat((ctx.hostnames || []).map(function (name) { return { value: name.Hostname, text: name.Hostname }; })),
         value: ''
     });
     var enabled = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelRouteEnabled'), field: 'Enabled', checked: draft.Enabled !== false, help: t.tr('ProxyRouteEnabledHelp') });
@@ -229,14 +229,20 @@ export function createRouteEditor(route, ctx) {
     var testBtn = actionButton('test', t.tr('ProxyButtonTestRoute'));
     upload.appendChild(h('div', { class: 'stolon-button-row' }, [uploadBtn]));
 
-    root.appendChild(host.element);
-    if ((ctx.hostnames || []).length) root.appendChild(ddnsNames.element);
-    [enabled, target, upstream, localOnly].forEach(function (f) { root.appendChild(f.element); });
-    root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyLabelUploadFile') }));
-    [mode, challenge, record, path, keyPath, password].forEach(function (f) { root.appendChild(f.element); });
-    root.appendChild(certStatus);
-    root.appendChild(upload);
-    root.appendChild(actions);
+    // The route and its certificate are the editor's two steps, each led by its tile.
+    var routePart = h('div', { class: 'stolon-stack' }, [host.element]);
+    if ((ctx.hostnames || []).length) routePart.appendChild(ddnsNames.element);
+    [enabled, target, upstream, localOnly].forEach(function (f) { routePart.appendChild(f.element); });
+    var certPart = h('div', { class: 'stolon-stack' });
+    [mode, challenge, record, path, keyPath, password].forEach(function (f) { certPart.appendChild(f.element); });
+    [certStatus, upload, actions].forEach(function (n) { certPart.appendChild(n); });
+    [
+        nectoModule.createCollapsibleSection({ title: t.tr('PagesRowRoute'), icon: 'alt_route', collapsible: false, content: routePart }),
+        nectoModule.createCollapsibleSection({ title: t.tr('ProxyLabelUploadFile'), icon: 'verified', collapsible: false, content: certPart })
+    ].forEach(function (part) {
+        handles.push(part);
+        root.appendChild(part.element);
+    });
 
     // reflect
     // Shows only what the picked choices use.
@@ -488,27 +494,22 @@ export default function (view) {
     }
 
     // drawJellyfin
-    // Draws whether Jellyfin trusts the proxy, with Trust and Undo. The section is built once and only its state
-    // changes after, so a refresh never folds it or clears its status line.
+    // Draws whether Jellyfin trusts the proxy, as the section's badge, with Trust and Undo as action rows. The section
+    // is built once and only its state changes after, so a refresh never folds it or clears its status line.
     function drawJellyfin() {
         var t = shared.t;
         var phase = phaseText(proxyStatus, t);
         var managed = phase.color !== 'gray';
         if (!jellyfin) {
             var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'trust-status' });
-            var trust = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'trust' }, [h('span', {})]);
-            var undo = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'undo' }, [h('span', { text: t.tr('ButtonUndo') })]);
-            var state = h('div', { 'data-role': 'trust-state' });
-            var content = h('div', {}, [
-                h('div', { class: 'fieldDescription', text: t.tr('ProxyTrustHelp') }),
-                state,
-                h('div', { class: 'fieldDescription', text: t.tr('ProxyTrustRestartsOnce') }),
-                h('div', { class: 'stolon-button-row' }, [trust, undo]),
-                status
-            ]);
+            var trustRow = nectoModule.createResetRow({ icon: 'verified_user', label: t.tr('ProxyButtonTrust'), help: t.tr('ProxyTrustHelp'), button: t.tr('ProxyButtonTrustShort'), action: 'trust' });
+            var undoRow = nectoModule.createResetRow({ icon: 'undo', label: t.tr('ProxyUndoTrust'), help: t.tr('ProxyUndoTrustHelp'), button: t.tr('ButtonUndo'), action: 'undo', destructive: true });
+            var trust = trustRow.button;
+            var undo = undoRow.button;
+            var content = h('div', { class: 'stolon-stack' }, [status, nectoModule.createResetGroup([trustRow, undoRow]).element]);
             var section = nectoModule.createCollapsibleSection({ title: t.tr('LabelJellyfin'), icon: 'shield', collapsed: managed, content: content });
             view.querySelector('#proxyJellyfin').appendChild(section.element);
-            jellyfin = { section: section, state: state, trust: trust, undo: undo, status: status, busy: false };
+            jellyfin = { section: section, trust: trust, undo: undo, undoRow: undoRow, status: status, busy: false };
             trust.addEventListener('click', function () {
                 nectoModule.confirmDialog(t.tr('ProxyConfirmTrust'), { title: t.tr('ProxyButtonTrust'), confirmText: t.tr('ProxyButtonTrustShort') }).then(function (ok) {
                     if (ok) runTrust('Proxy/Trust', trust, status);
@@ -521,9 +522,8 @@ export default function (view) {
             });
         }
         jellyfin.section.setBadge({ label: phase.label, color: phase.color });
-        jellyfin.state.className = phase.color === 'green' ? 'stolon-success' : 'stolon-neutral';
-        jellyfin.state.textContent = phase.text;
-        jellyfin.trust.querySelector('span').textContent = t.tr(managed ? 'ProxyButtonTrustAgain' : 'ProxyButtonTrust');
+        (jellyfin.trust.querySelector('span') || jellyfin.trust).textContent = t.tr(managed ? 'ProxyButtonTrustAgain' : 'ProxyButtonTrustShort');
+        jellyfin.undoRow.setEmpty(!managed);
         if (!jellyfin.busy) jellyfin.undo.disabled = !managed;
     }
 

@@ -5,7 +5,7 @@ Requests lets users search for movies and shows, see what the library already ha
 ## How It Works
 
 1. A user finds a title on the request page at `/requests` and requests it, picking a profile, such as 1080p or 4K, and for a show its seasons.
-2. An administrator, or a member of a group with **Manage requests**, approves or rejects it on the **Requests** tool or on the request page. A group with **Auto approve movies** or **Auto approve series** skips that step, and so does a title whose rating is listed in **Auto-approve when rated**.
+2. An administrator, or a member of a group with **Manage requests**, approves or rejects it on the **Requests** tool or on the request page. A group with **Auto approve movies** or **Auto approve series** skips that step, and so does a title whose rating is listed in **Auto approve when rated**.
 3. An approved request goes to Radarr (movies) or Sonarr (shows), which downloads it. The download's progress shows on the request.
 4. Once the title is in the library, the request turns available and the requester hears of it through **Notifications**.
 
@@ -61,18 +61,20 @@ Select a row to open the request in a sidecar, with **Approve** to the profile p
 
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
-| **Enabled** | Serves the request page at `/requests/`, takes new requests, runs the scheduled tasks, and adds a **Requests** link to the web client's menu. Off hides the page and takes the link out, and keeps every request already made | Off |
+| **Enable requests** | Serves the request page at `/requests/`, takes new requests, runs the scheduled tasks, and adds a **Requests** link to the web client's menu. Off hides the page and takes the link out, and keeps every request already made | Off |
 
-While **Enabled** is off, **Requests** leaves the sidebar, the Dashboard, and the group editor, `/requests/` answers 404, and a route that makes, changes, or joins a request answers 404 with "Requests are turned off." The issue page at `/issues/` follows its own switch.
+While **Enable requests** is off, **Requests** leaves the sidebar, the Dashboard, and the group editor, `/requests/` answers 404, and a route that makes, changes, or joins a request answers 404 with "Requests are turned off." The issue page at `/issues/` follows its own switch.
+
+The settings below show while **Enable requests** is on. Each group, from **Rules** to **Imports**, is a part of its own that opens from its heading.
 
 ### Rules
 
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
-| **Auto-approve when rated** | Approves titles with these age ratings at once | None |
+| **Auto approve when rated** | Approves titles with these age ratings at once | None |
 | **Remind administrators after (days)** | Sends the "Aging request" event once for a request waiting this long. 0 turns it off | 0 |
 | **Reject after (days)** | Rejects requests waiting this long. 0 turns it off | 0 |
-| **Auto-reject reason** | Tells the requester why such a request was rejected | Not approved in time. Request it again if you still want it. |
+| **Auto reject reason** | Tells the requester why such a request was rejected | Not approved in time. Request it again if you still want it. |
 | **Full series only** | Requests a show whole, so no one picks seasons | Off |
 | **Allow specials** | Lets a show's specials be requested, each on its own | Off |
 
@@ -178,13 +180,13 @@ A webhook gets the request's id, status, type, and its TMDb, TVDB, IMDb, and lib
 | **Verify requests** | At startup and daily | Marks requests available once their titles are in the library |
 | **Refresh status** | Hourly | Reads download progress, retries refused requests, sends reminders, and rejects requests past **Reject after (days)** |
 | **Refresh discovery** | Daily | Reads the request page's rows from TMDb again, and which titles Radarr and Sonarr have |
-| **Clean expired requests** | Daily | Removes finished requests past **Keep finished requests (days)**, and closed issues past **Keep closed issues (days)** |
+| **Clean up requests** | Daily | Removes finished requests past **Keep finished requests (days)**, and TMDb images no request uses |
 
 Requests also turn available as soon as their titles are scanned in.
 
 ## Troubleshooting
 
-**Troubleshooting > Requests** runs each scheduled task now, and **Refresh statuses now** reads every open request's progress from Radarr and Sonarr at once.
+**Troubleshooting > Requests** runs each scheduled task now. **Verify requests** and then **Refresh status** check every open request against the library, Radarr, and Sonarr at once.
 
 ![Requests troubleshooting](screenshots/troubleshooting/Requests.png)
 

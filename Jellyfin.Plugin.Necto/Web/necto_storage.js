@@ -49,7 +49,7 @@ export function stateOf(t, disk) {
     if (disk.State === 'NotMounted') return { label: t.tr('StorageStateNotMounted'), color: 'gray' };
     if (disk.Health === 'Failing') return { label: t.tr('StorageHealthFailing'), color: 'red' };
     if (disk.Level === 'Error') return { label: t.tr('StorageLevelFull'), color: 'red' };
-    if (disk.Level === 'Warning') return { label: t.tr('StorageLevelLow'), color: 'orange' };
+    if (disk.Level === 'Warning') return { label: t.tr('DashboardStateAttention'), color: 'orange' };
     if (!disk.InUse) return { label: t.tr('StorageStateUnused'), color: 'gray' };
     return { label: t.tr('LabelAvailable'), color: 'green' };
 }
@@ -290,7 +290,7 @@ export default function (view) {
     var page = null;
     var t = null;
     var list = null;
-    var filter = null;
+    var tabs = null;
     var disks = [];
     var checkedAt = null;
     var spinner = null;
@@ -318,7 +318,7 @@ export default function (view) {
     // [object]: { element, button, fail(text) }.
     function actionRow(label, destructive) {
         var problem = h('div', { class: 'stolon-error stolon-hidden necto-storage-actions-why', role: 'status' });
-        var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + (destructive ? 'destructive' : 'primary') }, [h('span', { text: label })]);
+        var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + (destructive ? 'stolon-destructive' : 'stolon-primary') }, [h('span', { text: label })]);
         var row = h('div', { class: 'necto-storage-actions' }, [problem, button]);
         return {
             element: row,
@@ -354,28 +354,26 @@ export default function (view) {
         return { id: disk.MountPoint || disk.Device, title: nameOf(t, disk), secondary: secondaryOf(t, shared, disk), tags: tagsOf(t, disk), aside: asideOf(disk), disk: disk };
     }
 
-    // stopCard
-    // Gives one alert as a count card: the used space at which it fires on this disk, labeled with the alert as set.
-    function stopCard(disk, stop, percent, color, name) {
+    // stopItem
+    // Gives one alert as a fact: the alert as set, and the used space at which it fires on this disk.
+    function stopItem(disk, stop, percent, name) {
         if (!stop || !stop.Enabled || percent === null || percent === undefined) return null;
         var value = Math.round(stop.Value * 10) / 10;
         var setting = stop.Unit === 'Gigabytes' ? t.format('StorageStopGigabytesFree', value) : t.format('StorageStopPercentUsed', value);
-        return { label: name + ' · ' + setting, count: shared.formatSize(Math.round(disk.TotalBytes * percent / 100)), color: color };
+        return { label: name, value: t.format('StorageStopAt', setting, shared.formatSize(Math.round(disk.TotalBytes * percent / 100))) };
     }
 
     // spaceSection
-    // Builds the sidecar's space: a pie chart of used and free space beside the Size, Used, and Free cards, and the
-    // Storage low and Storage full cards below them.
+    // Builds the sidecar's space: a donut of used and free space, with the share used in its center and each part in
+    // its legend.
     function spaceSection(disk) {
         var used = disk.TotalBytes - disk.FreeBytes;
-        var percent = Math.round(used * 100 / disk.TotalBytes);
         var usedColor = disk.Level === 'Error' ? token('--stolon-red-fg') : disk.Level === 'Warning' ? token('--stolon-orange-fg') : token('--stolon-blue-fg');
         var chart = nectoModule.createPieChart({
             label: t.tr('StorageLabelSpace'),
             donut: true,
-            size: 'medium',
-            showLegend: false,
-            centerText: percent + '%',
+            size: 'small',
+            centerText: Math.round(used * 100 / disk.TotalBytes) + '%',
             centerLabel: t.tr('StorageLabelUsed'),
             emptyText: t.tr('StorageNoticeDiskUnused'),
             format: function (value) { return shared.formatSize(value); },
@@ -384,26 +382,10 @@ export default function (view) {
                 { label: t.tr('StorageLabelFree'), value: disk.FreeBytes, color: token('--stolon-gray-fg') }
             ]
         });
-        var figures = h('div', { class: 'necto-storage-figures' });
-        var cards = h('div', { class: 'stolon-cards' });
-        figures.appendChild(cards);
-        var freeColor = disk.Level === 'Error' ? 'red' : disk.Level === 'Warning' ? 'orange' : 'green';
-        shared.renderCards(cards, [
-            { label: t.tr('LabelSize'), count: shared.formatSize(disk.TotalBytes) },
-            { label: t.tr('StorageLabelUsed'), count: shared.formatSize(used) },
-            { label: t.tr('StorageLabelFree'), count: shared.formatSize(disk.FreeBytes), color: freeColor }
-        ]);
-        // The alerts sit on their own row, which is left out while both are off.
-        var stops = [
-            stopCard(disk, disk.WarningStop, disk.WarningPercent, 'orange', t.tr('StorageAlertLow')),
-            stopCard(disk, disk.ErrorStop, disk.ErrorPercent, 'red', t.tr('StorageAlertFull'))
-        ].filter(Boolean);
-        if (stops.length) {
-            var alertCards = h('div', { class: 'stolon-cards' });
-            figures.appendChild(alertCards);
-            shared.renderCards(alertCards, stops);
-        }
-        return h('div', { class: 'necto-storage-space' }, [chart.element, figures]);
+        var part = section(t.tr('StorageLabelSpace'));
+        part.setAttribute('data-role', 'disk-space');
+        part.appendChild(chart.element);
+        return part;
     }
 
     // librariesSection
@@ -436,57 +418,77 @@ export default function (view) {
         return part;
     }
 
+    // saveBar
+    // Ends a sidecar section that saves with its own Save Bar, which closes the sidecar and checks the disks again once
+    // the save lands.
+    //
+    // Inputs
+    // part [HTMLElement]: The section.
+    // onSave [function]: Saves the section, returning the save's promise.
+    //
+    // Output
+    // [object]: The Save Bar.
+    function saveBar(part, onSave) {
+        var bar = nectoModule.createSaveBar({
+            fill: true,
+            onSave: function () {
+                return onSave().then(function () {
+                    closeDisk();
+                    check();
+                }, function (err) {
+                    return shared.errorText(err, t.tr('StorageErrorSaveSettings')).then(function (text) { throw new Error(text); });
+                });
+            }
+        });
+        part.appendChild(bar.element);
+        part.addEventListener('input', function () { bar.setDirty(true); });
+        part.addEventListener('change', function () { bar.setDirty(true); });
+        return bar;
+    }
+
     // alertsSection
-    // Builds the sidecar's full disk alerts: the global ones, or the disk's own while Use its own alerts is on, with
-    // Save. Saving closes the sidecar and checks the disks again.
+    // Builds the sidecar's full disk alerts: the points they fire at on this disk, then the global ones, or the disk's
+    // own while Use its own alerts is on, with a Save Bar.
     function alertsSection(disk) {
         var part = section(t.tr('Alerts'));
         part.setAttribute('data-role', 'disk-alerts');
+        if (isRead(disk)) {
+            var points = [
+                stopItem(disk, disk.WarningStop, disk.WarningPercent, t.tr('StorageAlertLow')),
+                stopItem(disk, disk.ErrorStop, disk.ErrorPercent, t.tr('StorageAlertFull'))
+            ].filter(Boolean);
+            if (points.length) part.appendChild(nectoModule.createDefinitionList({ layout: 'columns', items: points }).element);
+        }
         shared.getConfig().then(function (config) {
             var storage = sections.storageOf(config);
             var globals = { WarningStop: storage.WarningStop, ErrorStop: storage.ErrorStop };
             var own = storage.DiskOverrides.filter(function (o) { return o.MountPoint === disk.MountPoint; })[0];
             var editor = sections.createAlertEditor(t, { heading: false, onChange: changed });
             editor.setValue(own ? { WarningStop: own.WarningStop, ErrorStop: own.ErrorStop } : globals);
-            var inherited = h('div', { class: 'fieldDescription', text: t.format('StorageInheritedAlerts', sections.alertText(t, globals)) });
             var indent = h('div', { class: 'stolon-indent' }, [editor.element]);
-            var toggle = nectoModule.createCheckbox({
+            var toggle = nectoModule.createCheckboxField({
                 label: t.tr('StorageLabelOwnAlerts'),
-                description: t.tr('StorageHelpOwnAlerts'),
-                size: 'large',
-                checked: !!own,
-                onChange: changed
+                help: t.format('StorageInheritedAlerts', sections.alertText(t, globals)),
+                checked: !!own
             });
-            var row = actionRow(t.tr('Save'));
-            [toggle.element, inherited, indent, row.element].forEach(function (node) { part.appendChild(node); });
-            var start = JSON.stringify([!!own, editor.getValue()]);
+            toggle.input.addEventListener('change', changed);
+            [toggle.element, indent].forEach(function (node) { part.appendChild(node); });
 
             // changed
-            // Shows the editor while the disk has its own alerts, and Save once they differ from what was saved.
+            // Shows the editor while the disk has its own alerts.
             function changed() {
-                var on = !!toggle.getValue();
-                indent.classList.toggle('stolon-hidden', !on);
-                inherited.classList.toggle('stolon-hidden', on);
-                row.button.disabled = JSON.stringify([on, editor.getValue()]) === start;
+                indent.classList.toggle('stolon-hidden', !toggle.input.checked);
             }
             changed();
 
-            row.button.addEventListener('click', function () {
-                var on = !!toggle.getValue();
+            saveBar(part, function () {
+                var on = !!toggle.input.checked;
                 var value = editor.getValue();
                 var error = on ? editor.errorText() : '';
-                row.fail(error);
-                if (error) return;
-                row.button.disabled = true;
-                shared.saveConfigWith(function (latest) {
+                if (error) return Promise.reject(new Error(error));
+                return shared.saveConfigWith(function (latest) {
                     latest.Storage = latest.Storage || {};
                     withOverride(latest.Storage, disk.MountPoint, on ? value : null);
-                }).then(function () {
-                    closeDisk();
-                    check();
-                }).catch(function (err) {
-                    row.button.disabled = false;
-                    return shared.errorText(err, t.tr('StorageErrorSaveSettings')).then(row.fail);
                 });
             });
         }).catch(function () {
@@ -501,26 +503,20 @@ export default function (view) {
     function addressSection(disk) {
         var windows = /^[A-Za-z]:|^\\\\/.test(disk.MountPoint);
         var part = section(t.tr('StorageHeaderShareAddress'));
-        var input = h('input', { is: 'emby-input', type: 'text', class: 'stolon-mono', spellcheck: 'false', 'aria-label': t.tr('StorageHeaderShareAddress'), placeholder: windows ? '\\\\nas\\Media' : 'smb://nas.example.com/Media' });
-        input.value = disk.ShareAddress || '';
-        part.appendChild(h('div', { class: 'inputContainer' }, [input, h('div', { class: 'fieldDescription', text: t.tr(windows ? 'StorageHelpShareAddressWindows' : 'StorageHelpShareAddress') })]));
-        var row = actionRow(t.tr('Save'));
-        part.appendChild(row.element);
-        var start = input.value.trim();
-        row.button.disabled = true;
-        input.addEventListener('input', function () { row.button.disabled = input.value.trim() === start; });
-        row.button.addEventListener('click', function () {
-            var address = input.value.trim();
-            row.button.disabled = true;
-            shared.saveConfigWith(function (latest) {
+        var field = nectoModule.createInputField({
+            label: t.tr('LabelAddress'),
+            help: t.tr(windows ? 'StorageHelpShareAddressWindows' : 'StorageHelpShareAddress'),
+            placeholder: windows ? '\\\\nas\\Media' : 'smb://nas.example.com/Media',
+            value: disk.ShareAddress || ''
+        });
+        field.input.classList.add('stolon-mono');
+        field.input.setAttribute('spellcheck', 'false');
+        part.appendChild(field.element);
+        saveBar(part, function () {
+            var address = field.input.value.trim();
+            return shared.saveConfigWith(function (latest) {
                 latest.Storage = latest.Storage || {};
                 withAddress(latest.Storage, disk.MountPoint, address);
-            }).then(function () {
-                closeDisk();
-                check();
-            }).catch(function (err) {
-                row.button.disabled = false;
-                return shared.errorText(err, t.tr('StorageErrorSaveSettings')).then(row.fail);
             });
         });
         return part;
@@ -747,11 +743,12 @@ export default function (view) {
         var body = h('div', { class: 'necto-storage-disk', 'data-role': 'disk' });
         var state = stateOf(t, disk);
         var health = healthFacts(disk);
-        var facts = [{ label: t.tr('LabelStatus'), value: { badge: { label: state.label, color: state.color } } }];
+        // The status shows as the sidecar's badge, so the facts start with its health.
+        var facts = [];
         if (health.length) facts.push(health.shift());
         facts.push({ label: t.tr('LabelType'), value: typeOf(t, disk).label });
         if (disk.FileSystem) facts.push({ label: t.tr('StorageLabelFileSystem'), value: sections.named(t, disk.FileSystem) });
-        if ((disk.State === 'Unformatted' || disk.State === 'NotMounted') && disk.TotalBytes) facts.push({ label: t.tr('LabelSize'), value: shared.formatSize(disk.TotalBytes) });
+        if (disk.TotalBytes) facts.push({ label: t.tr('LabelSize'), value: shared.formatSize(disk.TotalBytes) });
         if (disk.Contents && disk.Contents.length) facts.push({ label: t.tr('StorageLabelHolds'), value: disk.Contents.join(', ') });
         if (disk.MountsAt) facts.push({ label: t.tr('StorageLabelMountsAt'), value: disk.MountsAt, mono: true });
         if (disk.MountPoint) facts.push({ label: t.tr('StorageLabelMountPoint'), value: disk.MountPoint, mono: true });
@@ -823,9 +820,8 @@ export default function (view) {
         cards.classList.toggle('stolon-hidden', !space);
         cards.textContent = '';
         if (!space) return;
-        var detail = t.plural(space.count, 'StorageSpaceOneDisk', 'StorageSpaceDisks');
         shared.renderCards(cards, [
-            { label: t.tr('LabelSize') + ' · ' + detail, count: shared.formatSize(space.total) },
+            { label: t.tr('LabelSize'), count: shared.formatSize(space.total) },
             { label: t.tr('StorageLabelUsed'), count: shared.formatSize(space.total - space.free) },
             { label: t.tr('StorageLabelFree'), count: shared.formatSize(space.free), color: space.color }
         ]);
@@ -837,7 +833,7 @@ export default function (view) {
         var used = disks.filter(function (d) { return d.InUse; });
         renderAttention(used);
         renderSpace(used);
-        var shown = filter.get() === 'all' ? disks : used;
+        var shown = tabs.getValue() === 'all' ? disks : used;
         list.setItems(shown.map(itemOf));
     }
 
@@ -883,8 +879,18 @@ export default function (view) {
         });
     }
 
+    // refreshButton
+    // Builds Refresh, which checks every disk again, with its icon that turns into a spinner while a check runs.
+    function refreshButton() {
+        return h('button', { is: 'emby-button', type: 'button', id: 'btnStorageCheck', class: 'raised stolon-button stolon-secondary' }, [
+            h('span', { id: 'storageRefreshIcon', class: 'material-icons', 'aria-hidden': 'true', text: 'refresh' }),
+            h('span', { text: t.tr('Refresh') })
+        ]);
+    }
+
     // bindPage
-    // Draws the disk list and wires the filter and Refresh once.
+    // Draws the Disks section once: its sub-tabs for the disks Jellyfin uses and every disk, the disk list under them,
+    // and Refresh in its header.
     function bindPage(bag, handle) {
         shared = bag;
         page = handle;
@@ -894,11 +900,24 @@ export default function (view) {
             emptyText: t.tr('StorageEmptyDisks'),
             onOpen: function (item) { openDisk(item.disk); }
         });
-        $('storageDiskList').appendChild(list.element);
-        filter = nectoModule.createPillGroup($('storageDiskFilter'), { onChange: render });
-        filter.set('used');
-        $('btnStorageCheck').addEventListener('click', check);
-        $('btnStorageCheck').addEventListener('mouseenter', function () {
+        tabs = nectoModule.createSubTabs({
+            label: t.tr('StorageHeaderDisks'),
+            tabs: [{ id: 'used', label: t.tr('LabelJellyfin') }, { id: 'all', label: t.tr('All') }],
+            value: 'used',
+            render: function () { return null; },
+            onChange: function (id) {
+                tabs.getPanel(id).appendChild(list.element);
+                render();
+            }
+        });
+        tabs.getPanel('used').appendChild(list.element);
+        var status = h('div', { id: 'storageCheckStatus', class: 'stolon-error stolon-hidden', role: 'status' });
+        var content = h('div', { class: 'stolon-stack' }, [status, tabs.element]);
+        var refresh = refreshButton();
+        var disksSection = nectoModule.createCollapsibleSection({ title: t.tr('StorageHeaderDisks'), icon: 'storage', collapsible: false, content: content, aside: refresh });
+        $('storageDisks').appendChild(disksSection.element);
+        refresh.addEventListener('click', check);
+        refresh.addEventListener('mouseenter', function () {
             this.title = checkedAt ? t.format('StorageLastChecked', shared.formatRelativeTime(checkedAt)) : '';
         });
         page.addCleanup(closeDisk);

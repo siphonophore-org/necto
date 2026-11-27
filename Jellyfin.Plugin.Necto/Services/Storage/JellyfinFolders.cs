@@ -43,10 +43,10 @@ public class JellyfinFolders
         var paths = _config.ApplicationPaths;
         return new List<(string, string)>
         {
-            ("PathProgramData", paths.ProgramDataPath),
+            ("LabelProgramData", paths.ProgramDataPath),
             ("LabelWeb", paths.WebPath),
             ("LabelLogs", paths.LogDirectoryPath),
-            ("PathImageCache", paths.ImageCachePath),
+            ("LabelImageCache", paths.ImageCachePath),
             ("LabelMetadata", paths.InternalMetadataPath),
             ("LabelCache", paths.CachePath),
             ("LabelTranscodes", _config.GetTranscodePath())

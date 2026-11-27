@@ -10,6 +10,7 @@ export var SWEEP_TASK = 'RequestsSweep';
 export var SYNC_TASK = 'RequestsSyncProgress';
 export var DISCOVERY_TASK = 'RequestsRefreshDiscovery';
 export var CLEANUP_TASK = 'RequestsCleanup';
+export var ISSUE_CLEANUP_TASK = 'IssuesCleanup';
 
 // The names of each choice the server numbers, in its order.
 var TYPES = ['Movie', 'Series'];
@@ -214,6 +215,27 @@ function customKey(row) {
     return 'Custom-' + row.Id;
 }
 
+// ROW_ICONS
+// The icon each home row leads with: a built-in row by its key, and a row of the server's own by what picks its titles.
+export var ROW_ICONS = {
+    RecentlyAdded: 'new_releases', RecommendedForYou: 'thumb_up', TrendingShows: 'trending_up', TrendingMovies: 'trending_up',
+    UpcomingShows: 'event', UpcomingMovies: 'event', PopularShows: 'whatshot', PopularMovies: 'whatshot',
+    Genre: 'category', Keyword: 'label', Company: 'business', Network: 'live_tv', Provider: 'subscriptions'
+};
+
+// rowIcon
+// Gives the icon a home row's card leads with.
+//
+// Inputs
+// key [string]: The row's key, as the order knows it.
+// kind [string]: What picks a row of the server's own, such as Genre. [optional]
+//
+// Output
+// [string]: The Material icon.
+export function rowIcon(key, kind) {
+    return ROW_ICONS[key] || ROW_ICONS[kind] || 'view_carousel';
+}
+
 // rowKeys
 // Lists every home row's key in the order they show: those the order names, then the rest as the request page has them.
 //
@@ -387,6 +409,7 @@ function buildRequestSettings(content, ctx) {
     var rowCards = null;
     var handles = [];
     var suggestions = null;
+    var body = content;
 
     // changed
     // Tells the Settings page the section has changes, for edits made outside its fields, such as in a sidecar.
@@ -395,9 +418,15 @@ function buildRequestSettings(content, ctx) {
     }
 
     // sub
-    // Adds a subsection title to the section.
-    function sub(key) {
-        content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr(key) }));
+    // Adds a closed collapsible part to the section, with its icon tile and an optional one line intro, and sends the
+    // fields after it into that part.
+    function sub(key, icon, help) {
+        var part = h('div', { class: 'stolon-stack' });
+        if (help) part.appendChild(h('div', { class: 'fieldDescription', text: t.tr(help) }));
+        var fold = nectoModule.createCollapsibleSection({ title: t.tr(key), icon: icon, collapsed: true, content: part });
+        fold.element.setAttribute('data-part', key);
+        content.appendChild(fold.element);
+        body = part;
     }
 
     // numberField
@@ -405,14 +434,14 @@ function buildRequestSettings(content, ctx) {
     function numberField(path, label, help, min, helpText) {
         var id = fieldId(path);
         inputs[path] = numberInput(id, path, min);
-        content.appendChild(field(id, t.tr(label), inputs[path], helpText || (help ? t.tr(help) : '')));
+        body.appendChild(field(id, t.tr(label), inputs[path], helpText || (help ? t.tr(help) : '')));
     }
 
     // checkSetting
     // Adds an on or off setting to the section.
     function checkSetting(path, label, help) {
         inputs[path] = checkbox(fieldId(path), path);
-        content.appendChild(checkField(inputs[path], t.tr(label), help ? t.tr(help) : ''));
+        body.appendChild(checkField(inputs[path], t.tr(label), help ? t.tr(help) : ''));
     }
 
     // chipField
@@ -423,7 +452,7 @@ function buildRequestSettings(content, ctx) {
         if (input) input.setAttribute('aria-label', t.tr(label));
         chips[path] = made;
         handles.push(made);
-        content.appendChild(h('div', { class: 'inputContainer', 'data-field': path }, [
+        body.appendChild(h('div', { class: 'inputContainer', 'data-field': path }, [
             h('div', { class: 'inputLabel', text: t.tr(label) }),
             made.element,
             help ? h('div', { class: 'fieldDescription', text: t.tr(help) }) : null
@@ -477,94 +506,85 @@ function buildRequestSettings(content, ctx) {
 
     // The switch, first, with where users request.
     inputs.Enabled = checkbox(fieldId('requests-enabled'), 'Requests.Enabled');
-    content.appendChild(h('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
-        h('label', {}, [inputs.Enabled, h('span', { text: t.tr('LabelEnabled') })]),
+    body.appendChild(h('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
+        h('label', {}, [inputs.Enabled, h('span', { text: t.tr('RequestsLabelEnable') })]),
         linkSentence(t.tr('RequestsHelpEnabled'), pageUrl('requests'), 'fieldDescription checkboxFieldDescription')
     ]));
 
     // Rules
-    sub('RequestsHeaderRules');
-    chipField('AutoApproveRatings', 'RequestsLabelAutoApproveRated', 'RequestsHelpAutoApproveRated', { allowCreate: true, placeholder: t.tr('RequestsPlaceholderTypeToAdd') });
+    sub('RequestsHeaderRules', 'gavel');
+    chipField('AutoApproveRatings', 'RequestsLabelAutoApproveRated', 'RequestsHelpAutoApproveRated', { allowCreate: true, placeholder: t.tr('RequestsPlaceholderSearchRatings') });
     numberField('AgingAfterDays', 'RequestsLabelRemindAfterDays', null, 0, t.format('RequestsHelpAging', t.tr('RequestsEventAging')));
     numberField('AutoDeclineAfterDays', 'RequestsLabelRejectAfterDays', 'RequestsHelpRejectAfter', 0);
     var reasonId = fieldId('reason');
     inputs.AutoDeclineReason = h('input', { is: 'emby-input', type: 'text', id: reasonId, 'data-field': 'AutoDeclineReason', maxlength: '500' });
-    content.appendChild(field(reasonId, t.tr('RequestsLabelAutoRejectReason'), inputs.AutoDeclineReason, t.tr('RequestsHelpAutoRejectReason')));
+    body.appendChild(field(reasonId, t.tr('RequestsLabelAutoRejectReason'), inputs.AutoDeclineReason, t.tr('RequestsHelpAutoRejectReason')));
     checkSetting('FullSeriesOnly', 'RequestsLabelFullSeriesOnly', 'RequestsHelpFullSeriesOnly');
     checkSetting('AllowSpecials', 'RequestsLabelAllowSpecials', 'RequestsHelpAllowSpecials');
 
     // Quota windows
-    sub('RequestsHeaderQuotaWindows');
-    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpQuotaWindows') }));
+    sub('RequestsHeaderQuotaWindows', 'hourglass_empty');
     numberField('MovieQuotaDays', 'RequestsLabelMovieQuotaDays', 'RequestsHelpMovieQuotaDays', 1);
     numberField('SeriesQuotaDays', 'RequestsLabelSeriesQuotaDays', 'RequestsHelpSeriesQuotaDays', 1);
 
     // Blocklist
-    sub('RequestsHeaderBlocklist');
-    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpBlocklist') }));
-    chipField('BlockedGenres', 'RequestsLabelBlockedGenres', null, { allowCreate: true, placeholder: t.tr('RequestsPlaceholderTypeToAdd') });
-    chipField('BlockedRatings', 'RequestsLabelBlockedRatings', null, { allowCreate: true, placeholder: t.tr('RequestsPlaceholderTypeToAdd') });
-    chipField('BlockedKeywords', 'RequestsLabelBlockedWords', 'RequestsHelpBlockedWords', { allowCreate: true, placeholder: t.tr('RequestsPlaceholderTypeToAdd') });
-    chipField('BlockedTags', 'RequestsLabelBlockedTmdbKeywords', 'RequestsHelpBlockedKeywords', { placeholder: t.tr('RequestsPlaceholderTypeToFind'), searchFn: tmdbSearch('Keyword') });
+    sub('RequestsHeaderBlocklist', 'block', 'RequestsHelpBlocklist');
+    chipField('BlockedGenres', 'RequestsLabelBlockedGenres', null, { allowCreate: true, placeholder: t.tr('RequestsPlaceholderSearchGenres') });
+    chipField('BlockedRatings', 'RequestsLabelBlockedRatings', null, { allowCreate: true, placeholder: t.tr('RequestsPlaceholderSearchRatings') });
+    chipField('BlockedKeywords', 'RequestsLabelBlockedWords', 'RequestsHelpBlockedWords', { allowCreate: true, placeholder: 'trailer' });
+    chipField('BlockedTags', 'RequestsLabelBlockedTmdbKeywords', 'RequestsHelpBlockedKeywords', { placeholder: t.tr('RequestsPlaceholderSearchKeywords'), searchFn: tmdbSearch('Keyword') });
     chipField('BlockedLanguages', 'RequestsLabelBlockedLanguages', 'RequestsHelpBlockedLanguages', {
-        placeholder: t.tr('RequestsPlaceholderChooseLanguages'),
+        placeholder: t.tr('RequestsPlaceholderSearchLanguages'),
         options: LANGUAGES.map(function (c) { return { value: c, label: languageName(c, t) }; })
     });
-    chipField('BlockedCollections', 'RequestsLabelBlockedCollections', 'RequestsHelpBlockedCollections', { placeholder: t.tr('RequestsPlaceholderTypeToFind'), searchFn: tmdbSearch('Collection') });
-    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('RequestsHeaderBlockedTitles') }));
-    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpBlockedTitles') }));
+    chipField('BlockedCollections', 'RequestsLabelBlockedCollections', 'RequestsHelpBlockedCollections', { placeholder: t.tr('RequestsPlaceholderSearchCollections'), searchFn: tmdbSearch('Collection') });
+    body.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('RequestsHeaderBlockedTitles') }));
+    body.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpBlockedTitles') }));
     var blockedMount = h('div', { 'data-role': 'blocked-titles' });
     var blockedStatus = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'blocked-status' });
-    content.appendChild(blockedMount);
-    content.appendChild(blockedStatus);
+    body.appendChild(blockedMount);
+    body.appendChild(blockedStatus);
 
     // Radarr and Sonarr
-    sub('RequestsLabelRadarrAndSonarr');
-    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpServers') }));
+    sub('RequestsLabelRadarrAndSonarr', 'cloud_download', 'RequestsHelpServers');
     var serverMount = h('div', { 'data-role': 'servers' });
-    content.appendChild(serverMount);
-    content.appendChild(h('div', { class: 'stolon-card-list-actions' }, ['Movie', 'Series'].map(function (type) {
-        return h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-add-server': type }, [
+    body.appendChild(serverMount);
+    body.appendChild(h('div', { class: 'stolon-card-list-actions' }, ['Movie', 'Series'].map(function (type) {
+        return h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-add-server': type }, [
             h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
             h('span', { text: t.tr(type === 'Movie' ? 'RequestsButtonAddRadarr' : 'RequestsButtonAddSonarr') })
         ]);
     })));
 
     // Discovery
-    sub('RequestsHeaderDiscovery');
-    content.appendChild(h('div', { class: 'fieldDescription' }, [h('img', { src: '../requests/tmdb.svg', alt: 'TMDB', width: '60' })]));
-    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsTmdbNotice') }));
-    var keyId = fieldId('tmdb-key');
-    inputs.TmdbApiKey = h('input', { is: 'emby-input', type: 'password', id: keyId, 'data-field': 'TmdbApiKey', autocomplete: 'off' });
-    var clearKey = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small stolon-hidden', 'data-action': 'clear-tmdb-key' }, [h('span', { text: t.tr('RequestsButtonClearSavedKey') })]);
-    content.appendChild(h('div', { class: 'inputContainer' }, [
-        h('label', { class: 'inputLabel inputLabelUnfocused', for: keyId, text: t.tr('RequestsLabelTmdbApiKey') }),
-        inputs.TmdbApiKey,
-        h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpTmdbKey') }),
-        clearKey
-    ]));
+    sub('RequestsHeaderDiscovery', 'explore');
+    body.appendChild(h('div', { class: 'fieldDescription' }, [h('img', { src: '../requests/tmdb.svg', alt: 'TMDb', width: '60' })]));
+    body.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsTmdbNotice') }));
+    var tmdbKey = nectoModule.createSecretField({ label: t.tr('RequestsLabelTmdbApiKey'), help: t.tr('RequestsHelpTmdbKey'), field: 'TmdbApiKey', clearText: t.tr('RequestsButtonClearSavedKey') });
+    inputs.TmdbApiKey = tmdbKey.input;
+    tmdbKey.clear.addEventListener('click', changed);
+    body.appendChild(tmdbKey.element);
     checkSetting('HideAvailableInRows', 'RequestsLabelHideAvailable', 'RequestsHelpHideAvailable');
-    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('RequestsHeaderHomeRows') }));
-    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpHomeRows') }));
+    sub('RequestsHeaderHomeRows', 'view_carousel', 'RequestsHelpHomeRows');
     var rowMount = h('div', { class: 'stolon-card-list', 'data-role': 'home-rows' });
     var rowEditorEl = h('div', { 'data-role': 'home-row-editor' });
-    content.appendChild(rowMount);
-    content.appendChild(h('div', { class: 'stolon-hidden' }, [rowEditorEl]));
-    content.appendChild(h('div', { class: 'stolon-card-list-actions' }, [
-        h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'add-row' }, [
+    body.appendChild(rowMount);
+    body.appendChild(h('div', { class: 'stolon-hidden' }, [rowEditorEl]));
+    body.appendChild(h('div', { class: 'stolon-card-list-actions' }, [
+        h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'add-row' }, [
             h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
             h('span', { text: t.tr('RequestsButtonAddRow') })
         ])
     ]));
 
     // Imports
-    sub('RequestsHeaderImports');
+    sub('RequestsHeaderImports', 'download_done');
     var scanId = fieldId('scan');
     inputs.RefreshOnAvailable = h('select', { is: 'emby-select', id: scanId, 'data-field': 'RefreshOnAvailable' });
     [['ItemFolder', 'RequestsOptionScanTitleFolder'], ['FullLibrary', 'AllLibraries'], ['Disabled', 'RequestsOptionScanNone']].forEach(function (o) {
         inputs.RefreshOnAvailable.appendChild(h('option', { value: o[0], text: t.tr(o[1]) }));
     });
-    content.appendChild(field(scanId, t.tr('RequestsLabelScanAfterDownload'), inputs.RefreshOnAvailable, t.tr('RequestsHelpScan'), true));
+    body.appendChild(field(scanId, t.tr('RequestsLabelScanAfterDownload'), inputs.RefreshOnAvailable, t.tr('RequestsHelpScan'), true));
     numberField('RetentionDays', 'RequestsLabelKeepFinishedDays', 'RequestsHelpKeepFinished', 0);
 
     // renderBlocked
@@ -890,11 +910,12 @@ function buildRequestSettings(content, ctx) {
         var builtIn = builtInRow(key);
         if (builtIn) {
             var off = hidden.indexOf(key) >= 0;
-            return { title: sentence(t, builtIn[1]), subtitle: off ? t.tr('RequestsValueBuiltIn') + ' · ' + t.tr('RequestsValueHidden') : t.tr('RequestsValueBuiltIn'), dot: 'none', disabled: off };
+            return { icon: rowIcon(key), iconColor: off ? 'gray' : null, title: sentence(t, builtIn[1]), subtitle: off ? t.tr('RequestsValueBuiltIn') + ' · ' + t.tr('RequestsValueHidden') : t.tr('RequestsValueBuiltIn'), dot: 'none', disabled: off };
         }
         var r = rows[rows.map(customKey).indexOf(key)] || {};
         var names = String(r.Names || '').split('|').filter(Boolean);
         return {
+            icon: rowIcon(key, r.Kind),
             title: r.Title,
             subtitle: [enumName(r.Type, TYPES) === 'Series' ? t.tr('Shows') : t.tr('Movies'), labelOf(rowKinds(), r.Kind), labelOf(rowSorts(), r.Sort || '')].join(' · '),
             badges: (names.length ? names : String(r.Ids || '').split(',').filter(Boolean)).map(function (n) { return { label: n }; }),
@@ -992,7 +1013,7 @@ function buildRequestSettings(content, ctx) {
             picks = nectoModule.createChipSelect({
                 value: values || [],
                 allowCreate: kind === 'Network',
-                placeholder: kind === 'Network' ? t.tr('RequestsPlaceholderNetworkId') : t.tr('RequestsPlaceholderTypeToFind'),
+                placeholder: kind === 'Network' ? t.tr('RequestsPlaceholderNetworkId') : t.tr('Search'),
                 searchFn: searched ? function (q, cb) { if ((q || '').trim().length < 2) { cb([]); return; } tmdbChoices(kind, type, q).then(cb); } : undefined
             });
             picksMount.textContent = '';
@@ -1073,7 +1094,6 @@ function buildRequestSettings(content, ctx) {
         if ((hit = target.closest('[data-add-server]'))) { openServer(-1, hit.getAttribute('data-add-server')); return; }
         if ((hit = target.closest('[data-edit-row]'))) { openRow(parseInt(hit.getAttribute('data-edit-row'), 10)); return; }
         if (target.closest('[data-action="add-row"]')) { openRow(-1); return; }
-        if (target.closest('[data-action="clear-tmdb-key"]')) { shared.clearSecretField(inputs.TmdbApiKey); clearKey.classList.add('stolon-hidden'); changed(); }
     });
     content.addEventListener('change', function (e) {
         var box = e.target && e.target.closest ? e.target.closest('[data-show-row]') : null;
@@ -1107,8 +1127,7 @@ function buildRequestSettings(content, ctx) {
             inputs.RetentionDays.value = String(typeof r.RetentionDays === 'number' ? r.RetentionDays : NUMBER_DEFAULTS.RetentionDays);
             inputs.RefreshOnAvailable.value = enumName(r.RefreshOnAvailable, REFRESH_MODES);
             inputs.HideAvailableInRows.checked = !!r.HideAvailableInRows;
-            shared.bindSecretField(inputs.TmdbApiKey, !!r.TmdbApiKey, { clearButton: clearKey });
-            clearKey.classList.toggle('stolon-hidden', !r.TmdbApiKey);
+            tmdbKey.setStored(!!r.TmdbApiKey);
             blocked = JSON.parse(JSON.stringify(r.BlockedTitles || []));
             servers = keptServers(r.ArrServers);
             rows = JSON.parse(JSON.stringify(r.HomeRows || []));
@@ -1148,7 +1167,7 @@ function buildRequestSettings(content, ctx) {
             r.BlockedCollections = named('BlockedCollections');
             r.BlockedLanguages = list('BlockedLanguages');
             r.ArrServers = JSON.parse(JSON.stringify(servers));
-            r.TmdbApiKey = shared.readSecretField(inputs.TmdbApiKey);
+            r.TmdbApiKey = tmdbKey.getValue();
             r.HideAvailableInRows = !!inputs.HideAvailableInRows.checked;
             r.HomeRows = JSON.parse(JSON.stringify(rows));
             r.HomeRowOrder = rowKeys(rows, order);
@@ -1217,17 +1236,16 @@ function buildIssueSettings(content, ctx) {
 }
 
 // buildTaskSection
-// Fills a Troubleshooting section with a row per scheduled task, each run now on its own button, and any extra rows.
+// Fills a Troubleshooting section with a row per scheduled task, each run now on its own button.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
 // ctx [object]: shared is the Necto helper bag.
 // tasks [object[]]: Each task's key, icon, label key, and help key.
-// extra [function]: Adds rows of its own to the group and wires them, given the group and report. [optional]
 //
 // Output
 // [object]: A handle with load and destroy.
-function buildTaskSection(content, ctx, tasks, extra) {
+function buildTaskSection(content, ctx, tasks) {
     var shared = ctx.shared;
     var t = shared.t;
     var pollers = [];
@@ -1255,7 +1273,6 @@ function buildTaskSection(content, ctx, tasks, extra) {
             });
         });
     });
-    if (extra) extra(group, report);
 
     return {
         load: function () {},
@@ -1266,7 +1283,7 @@ function buildTaskSection(content, ctx, tasks, extra) {
 }
 
 // buildRequestTroubleshooting
-// Fills the Requests section of Troubleshooting: each scheduled task run now, and the statuses refreshed at once.
+// Fills the Requests section of Troubleshooting: each scheduled task, run now.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -1275,31 +1292,16 @@ function buildTaskSection(content, ctx, tasks, extra) {
 // Output
 // [object]: A handle with load and destroy.
 function buildRequestTroubleshooting(content, ctx) {
-    var shared = ctx.shared;
-    var t = shared.t;
     return buildTaskSection(content, ctx, [
         { key: SWEEP_TASK, icon: 'manage_search', label: 'RequestsTaskSweepName', help: 'RequestsTaskSweepDescription' },
         { key: SYNC_TASK, icon: 'sync', label: 'RequestsTaskSyncName', help: 'RequestsTaskSyncDescription' },
         { key: DISCOVERY_TASK, icon: 'explore', label: 'RequestsTaskDiscoveryName', help: 'RequestsTaskDiscoveryDescription' },
         { key: CLEANUP_TASK, icon: 'cleaning_services', label: 'RequestsTaskCleanupName', help: 'RequestsTaskCleanupDescription' }
-    ], function (group, report) {
-        var row = nectoModule.createResetRow({ icon: 'refresh', label: t.tr('RequestsLabelRefreshStatuses'), help: t.tr('RequestsHelpRefreshStatuses'), button: t.tr('RequestsButtonRefreshNow'), action: 'refresh-statuses' }).element;
-        group.appendChild(row);
-        var btn = row.querySelector('button');
-        btn.addEventListener('click', function () {
-            btn.disabled = true;
-            report(t.tr('RequestsMessageRefreshing'), false);
-            return shared.request('Requests/Refresh', 'POST').then(function () {
-                report(t.tr('RequestsToastStatusesRefreshed'), false);
-            }).catch(function (err) {
-                return shared.errorText(err, t.tr('RequestsErrorRefreshStatuses')).then(function (text) { report(text, true); });
-            }).then(function () { btn.disabled = false; });
-        });
-    });
+    ]);
 }
 
 // buildIssueTroubleshooting
-// Fills the Issues section of Troubleshooting: the clean up run now, which clears closed issues and marks changed files.
+// Fills the Issues section of Troubleshooting: the clean up run now, which removes closed issues and marks changed files.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -1308,7 +1310,7 @@ function buildRequestTroubleshooting(content, ctx) {
 // Output
 // [object]: A handle with load and destroy.
 function buildIssueTroubleshooting(content, ctx) {
-    return buildTaskSection(content, ctx, [{ key: CLEANUP_TASK, icon: 'cleaning_services', label: 'RequestsTaskCleanupName', help: 'IssuesHelpCleanupTask' }]);
+    return buildTaskSection(content, ctx, [{ key: ISSUE_CLEANUP_TASK, icon: 'delete_outline', label: 'IssuesTaskCleanupName', help: 'IssuesHelpCleanupTask' }]);
 }
 
 nectoModule.registerSection('settings', 'requests', { build: buildRequestSettings });

@@ -137,15 +137,15 @@ A refused change shows the reason on the password form, and writes "Password cha
 
 ![Groups troubleshooting](screenshots/troubleshooting/Groups.png)
 
-* **Apply rules** moves users onto or off password rules by their groups, and drops administrators from every group.
-* **Apply settings** under **Jellyfin settings** writes each user's group Jellyfin settings onto them, and reports how many took them.
+* **Apply** beside **Apply password rules** moves users onto or off password rules by their groups.
+* **Apply** beside **Apply group Jellyfin settings** writes each user's group Jellyfin settings onto them, and reports how many took them.
 * **Run now** beside **Process expired and inactive users** asks first, then runs the task. A deleted user cannot come back.
 * **Run now** beside **Clean expired sessions** runs the task.
 * **Password resets** counts the pending resets that are **Active**, **Expiring** within 5 minutes, and **Expired**, warns to use HTTPS, and lists each with its user, its state, and its code, expired ones last, while **Show reset codes** is on.
 
 | Reason | What to do |
 | :--- | :--- |
-| A member is not held to the group's password rules | Check that the member signs in with Jellyfin's own provider, then select **Apply rules** |
+| A member is not held to the group's password rules | Check that the member signs in with Jellyfin's own provider, then select **Apply** beside **Apply password rules** |
 | "Reset codes are off. Turn on Show reset codes in Settings to list them." | Turn on **Show reset codes** in **Settings > Groups** |
 
 ## Activity Log

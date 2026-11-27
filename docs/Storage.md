@@ -87,12 +87,12 @@ The top of **Storage** names what needs a look, one line each. It is red when an
 
 The cards add up the size, used space, and free space of every disk Jellyfin uses that could be read. **Free** takes the color of the fullest disk's alert.
 
-Each row is one disk or share, with its name, its mount point, its type, its status, and a bar of its used space. The bar turns orange and red at the disk's **Storage low** and **Storage full** alerts. **Jellyfin** lists the disks that hold a library folder or one of Jellyfin's own folders. **All** also lists mounted disks Jellyfin does not use, disks with no file system, and on Linux, disks that hold data but are not mounted. **Refresh** checks every disk again. Hover over it to see when the disks were last checked. On a phone, the notice, the cards, and the rows stack to fit. On Windows, disks show by drive letter and volume label, and shares by their `\\server\share` path.
+The **Disks** section holds one row per disk or share, with its name, its mount point, its type, its status, and a bar of its used space. The bar turns orange and red at the disk's **Storage low** and **Storage full** alerts. Its **Jellyfin** sub-tab lists the disks that hold a library folder or one of Jellyfin's own folders. **All** also lists mounted disks Jellyfin does not use, disks with no file system, and on Linux, disks that hold data but are not mounted. **Refresh**, in the section's header, checks every disk again. Hover over it to see when the disks were last checked. On a phone, the notice, the cards, and the rows stack to fit. On Windows, disks show by drive letter and volume label, and shares by their `\\server\share` path.
 
 | Status | Meaning |
 | :--- | :--- |
 | **Available** | The disk is mounted and can be read |
-| **Low** | The disk is past its **Storage low** alert |
+| **Needs attention** | The disk is past its **Storage low** alert |
 | **Full** | The disk is past its **Storage full** alert |
 | **Failing** | The disk's SMART data predicts it will fail |
 | **Missing** | The disk is not mounted where Jellyfin expects it |
@@ -113,23 +113,23 @@ Each row is one disk or share, with its name, its mount point, its type, its sta
 
 ## Disk Details
 
-Select a row to open the disk in a sidecar. It lists the disk's status, type, file system, mount point, device, and model. A disk that reports SMART data also shows its health, temperature, power-on time, and, for an SSD, its wear.
+Select a row to open the disk in a sidecar. It lists the disk's status, type, file system, size, mount point, device, and model. A disk that reports SMART data also shows its health, temperature, power-on time, and, for an SSD, its wear.
 
 ![Disk details](screenshots/Disk%20Detail.png)
 
-The chart shows the share of the disk in use, beside the **Size**, **Used**, and **Free** cards. **Storage low** and **Storage full** show how much space is in use when each alert fires on this disk. A card is left out when its alert is off.
+**Space** shows the share of the disk in use as a ring, with the **Used** and **Free** space beside it. **Alerts** opens with **Storage low** and **Storage full**, each as set and with how much space is in use when it fires on this disk. An alert that is off is left out.
 
 ### Its Own Alerts
 
-A disk uses the alerts in **Settings > Storage** unless it has its own. Turn on **Use its own alerts** to set this disk's **Storage low** and **Storage full**, then select **Save**. Turn it off and select **Save** to use the alerts in **Settings** again.
+A disk uses the alerts in **Settings > Storage** unless it has its own. Turn on **Use its own alerts** to set this disk's **Storage low** and **Storage full**, then select **Save** at the end of **Alerts**. Turn it off and select **Save** to use the alerts in **Settings** again. Saving closes the sidecar and checks the disks again.
 
 ### Share Address
 
-A share, and a disk that is missing, shows its **Share address**, where it is mounted from, such as `smb://nas.example.com/Media`. Storage fills it in whenever it sees the share mounted. Set it by hand for a share that was already gone, then select **Save**. A missing share is mounted again from it at the next check.
+A share, and a disk that is missing, shows its **Share address**, where it is mounted from, such as `smb://nas.example.com/Media`. Storage fills it in whenever it sees the share mounted. Set it by hand for a share that was already gone, then select **Save** under it. A missing share is mounted again from it at the next check.
 
 ### Libraries and Folders
 
-**Libraries** lists each library with a folder on the disk. **Folders** lists every library folder and Jellyfin folder on it, with **Found**, **Not found**, or **Read only**. A **Read only** folder is one Jellyfin cannot write to, so NFO files and artwork saved next to the media fail there. Jellyfin's own folders show under the names the dashboard gives them, such as **Cache** and **Metadata**. Each one puts its disk in use, so it is alerted on and remounted like a library disk. They never block a library scan.
+**Libraries** lists each library with a folder on the disk. **Folders** lists every library folder and Jellyfin folder on it, with **Found**, **Not found**, or **Read only**. A **Read only** folder is one Jellyfin cannot write to, so NFO files and artwork saved next to the media fail there. Jellyfin's own folders show under the names the dashboard gives them, such as **Program data**, **Image cache**, and **Metadata**. Each one puts its disk in use, so it is alerted on and remounted like a library disk. They never block a library scan.
 
 ### New Folder
 
@@ -188,8 +188,8 @@ Storage never formats the system disk, a disk with something mounted or in use a
 
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
-| **Enabled** | Checks the disks on schedule, sends their alerts, and guards library scans. Off checks nothing, sends no alert, blocks no scan, and keeps every setting | Off |
-| **Storage low** | Writes a warning and sends an alert when a disk passes its point, and marks it **Low** | On, 90% used |
+| **Enable storage** | Checks the disks on schedule, sends their alerts, and guards library scans. Off checks nothing, sends no alert, blocks no scan, and keeps every setting. The settings below show while it is on | Off |
+| **Storage low** | Writes a warning and sends an alert when a disk passes its point, and marks it **Needs attention** | On, 90% used |
 | **Storage full** | Writes an error and sends an alert when a disk passes its point, and marks it **Full** | On, 95% used |
 | **Measurement** | Sets the points as a share of each disk in use, **Usage**, or as the free space left, **Size** | **Usage** |
 | **Failing** | Sends an alert when a disk's SMART data predicts it will fail | On |

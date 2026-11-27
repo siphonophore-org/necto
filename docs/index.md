@@ -13,7 +13,7 @@ Necto is one page, **Dashboard > Plugins > Necto**, with a sidebar of tools: [Da
 
 ## Turning Tools On and Off
 
-Dashboard, Groups, Notifications, Settings, and Troubleshooting are always on. Every other tool has an **Enabled** switch, the first checkbox of its section in **Settings**, and is off on a fresh install. Its tile is green while it is on and gray while it is off.
+Dashboard, Groups, Notifications, Settings, and Troubleshooting are always on. Every other tool has a switch named **Enable** and the tool's name, such as **Enable storage**, the first checkbox of its section in **Settings**, and is off on a fresh install. Its tile is green while it is on and gray while it is off.
 
 While a tool is off, it leaves the sidebar, its card leaves the Dashboard, and its section leaves the group editor and Troubleshooting. Its pages answer as off, and its routes, scheduled tasks, and background work do nothing. Turning it off deletes nothing, so turning it on again finds everything as it was.
 

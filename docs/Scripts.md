@@ -8,7 +8,7 @@
 
 ![Scripts settings](screenshots/settings/Scripts.png)
 
-* **Enabled** runs scripts on their triggers, schedules, and webhooks. Off runs nothing, refuses **Run now**, **Test**, and webhooks, and keeps every script and its history. It is off on a fresh install.
+* **Enable scripts** runs scripts on their triggers, schedules, and webhooks. Off runs nothing, refuses **Run now**, **Test**, and webhooks, and keeps every script and its history. It is off on a fresh install.
 * **Runs**
     * **Runs at once** is a slider that sets how many scripts may run at the same time. Further runs wait their turn.
     * **Default command timeout** is a duration in minutes and seconds. A **Run command** step that sets no timeout of its own is stopped after this long.
@@ -343,7 +343,7 @@ A chart at the top of **History** shows how many runs succeeded and failed on ea
 
 Every run, tests included, is listed under the chart, newest first. The table grows with its rows, and more load as you scroll. Its columns are **Run**, **Trigger**, **Started**, **Duration**, and **Result**, and a test shows *(test)* after its script's name. Drag the edge of a heading to resize its column, and the width is kept for the next visit. On a phone the table shows only the run and its result.
 
-Search the runs, or filter them to **Failed**, **Tests**, or one script. **Clear history** asks first, then deletes every recorded run.
+Search the runs, or filter them to **Failed**, **Tests**, or one script. Under **Repairs**, **Clear history** asks first, then deletes every recorded run.
 
 
 Open a run to see, in a sidecar, its result, trigger, start, and length, each step's result with any captured output, and the variables it received.

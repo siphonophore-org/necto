@@ -75,10 +75,10 @@ def sign_in(api_class, base, state, name):
 
 
 def enable_tools(api):
-    """Every tool with a switch is off until turned on. DDNS and the proxy turn on through their own routes."""
+    """Every tool with a switch is off until turned on. The proxy turns on with its routes, and DDNS with its records."""
     cfg = config(api)
     for key in ('Requests', 'Issues', 'InviteSettings', 'Scripts', 'CustomPages', 'Storage'):
-        cfg[key]['Enabled'] = True
+        cfg.setdefault(key, {})['Enabled'] = True
     cfg['WireGuard']['Enabled'] = True
     cfg['WireGuard']['HostEnabled'] = True
     cfg['WireGuard']['PublicEndpoint'] = 'vpn.example.com'
@@ -162,6 +162,7 @@ def ddns(api):
             api.post('/Ddns/Records', record)
     settings = api.get('/Ddns/Settings')
     settings['Enabled'] = True
+    settings['Records'] = []
     api.post('/Ddns/Settings', settings, ok=None)
     return [r['Record']['Id'] for r in api.get('/Ddns/Records')['Records']]
 

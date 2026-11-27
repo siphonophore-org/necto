@@ -60,7 +60,7 @@ A member deletes only their own invites. **Browser notifications** holds **Notif
     The address limits count each visitor by the address Jellyfin sees. Behind a reverse proxy, Jellyfin sees the real visitor only when the proxy is listed under **Dashboard > Networking > Known proxies**. Otherwise every visitor shares the proxy's address and one budget. The server log warns once when invite calls look like they come through an untrusted proxy.
 
 * **Wrong PINs before a lock** locks an invite after that many wrong PINs in a row, from anyone, until an administrator turns it on.
-* **Signups before a pause** and **Pause window (minutes)** pause an invite once it has made that many accounts in the window. 0 in either is no limit.
+* **Sign-ups before a pause** and **Pause window (minutes)** pause an invite once it has made that many accounts in the window. 0 in either is no limit.
 * Each network address may open 60 invite pages and make 10 signup attempts every 15 minutes, across all invites. Every attempt counts. Past that the server answers "Too many attempts from your network. Wait a few minutes and try again." IPv6 visitors are counted per /64. These limits reset when the server restarts.
 * A taken user name gets "Could not create the account. Check the details and try again.", so the page cannot be used to find out who has an account.
 
@@ -72,10 +72,10 @@ A member deletes only their own invites. **Browser notifications** holds **Notif
 
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
-| **Enabled** | Lets invite links make accounts, and members make their own invites at `/invites`. Off says every invite is unavailable, answers 404 at `/invites` and its routes, stops the expiry task, and keeps every invite | Off |
+| **Enable invites** | Lets invite links make accounts, and members make their own invites at `/invites`. Off says every invite is unavailable, answers 404 at `/invites` and its routes, stops the expiry task, and keeps every invite | Off |
 | **Invite link address** | Starts every invite link, such as your reverse proxy's address. Blank uses the address the page is open at. A warning shows while links would use plain http | Blank |
-| **Signups before a pause** | Pauses an invite after this many accounts in the window | 10 |
-| **Pause window (minutes)** | Sets the window the signups count over | 60 |
+| **Sign-ups before a pause** | Pauses an invite after this many accounts in the window | 10 |
+| **Pause window (minutes)** | Sets the window the sign-ups count over | 60 |
 | **Wrong PINs before a lock** | Locks an invite after this many wrong PINs | 5 |
 
 ## Troubleshooting
@@ -87,7 +87,7 @@ A member deletes only their own invites. **Browser notifications** holds **Notif
 | Reason | What to do |
 | :--- | :--- |
 | "Too many wrong PINs. This invite is locked." | Open the invite and select **Turn on** |
-| "This invite was used recently. Try again later." | Wait for the pause window, or raise **Signups before a pause** |
+| "This invite was used recently. Try again later." | Wait for the pause window, or raise **Sign-ups before a pause** |
 | "This invite's group has expired. Ask the server's administrator for a new invite." | Move or clear the group's expiry date |
 | "This invite's expiry date has passed. Move the date forward to turn it on." | Set a new **Expiry date** |
 | "The group disallows password changes, so it cannot take invites." | Pick another group, or change the group's **Password changes** |

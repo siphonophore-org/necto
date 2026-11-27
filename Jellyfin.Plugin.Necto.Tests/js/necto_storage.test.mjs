@@ -51,7 +51,7 @@ test('a disk state reads as its badge, most serious first, in the colors the sty
     assert.deepEqual(storage.stateOf(t, disk({ State: 'Missing' })), { label: 'Missing', color: 'red' });
     assert.deepEqual(storage.stateOf(t, disk({ State: 'Unresponsive' })), { label: 'Unresponsive', color: 'orange' });
     assert.deepEqual(storage.stateOf(t, disk({ Health: 'Failing', Level: 'Warning' })), { label: 'Failing', color: 'red' });
-    assert.deepEqual(storage.stateOf(t, disk({ Level: 'Warning' })), { label: 'Low', color: 'orange' });
+    assert.deepEqual(storage.stateOf(t, disk({ Level: 'Warning' })), { label: 'Needs attention', color: 'orange' });
     assert.deepEqual(storage.stateOf(t, disk({ InUse: false })), { label: 'Unused', color: 'gray' });
     assert.equal(storage.stateOf(t, disk()).color, 'green');
 });
@@ -204,14 +204,8 @@ test('the Storage section of Troubleshooting asks before it resets the settings,
 test('the notice lists each problem on its own line when more than one disk needs a look', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
-    var ids = ['storageAttention', 'storageSpaceCards', 'storageCheckStatus', 'storageDiskList'];
-    var children = ids.map(function (id) { return dom.el('div', { id: id }); });
-    var filterEl = dom.el('div', { id: 'storageDiskFilter', class: 'stolon-pill-group' }, [
-        dom.el('button', { class: 'stolon-pill', 'data-value': 'used' }),
-        dom.el('button', { class: 'stolon-pill', 'data-value': 'all' })
-    ]);
-    var refresh = dom.el('button', { id: 'btnStorageCheck' }, [dom.el('span', { id: 'storageRefreshIcon' })]);
-    var view = pageView(dom, children.concat([filterEl, refresh]));
+    var ids = ['storageAttention', 'storageSpaceCards', 'storageDisks'];
+    var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
         'GET Storage/Disks': [
@@ -234,14 +228,8 @@ test('the notice lists each problem on its own line when more than one disk need
 test('the tool checks every disk, says what needs a look, and lists the disks in use', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
-    var ids = ['storageAttention', 'storageSpaceCards', 'storageCheckStatus', 'storageDiskList'];
-    var children = ids.map(function (id) { return dom.el('div', { id: id }); });
-    var filterEl = dom.el('div', { id: 'storageDiskFilter', class: 'stolon-pill-group' }, [
-        dom.el('button', { class: 'stolon-pill', 'data-value': 'used' }),
-        dom.el('button', { class: 'stolon-pill', 'data-value': 'all' })
-    ]);
-    var refresh = dom.el('button', { id: 'btnStorageCheck' }, [dom.el('span', { id: 'storageRefreshIcon' })]);
-    var view = pageView(dom, children.concat([filterEl, refresh]));
+    var ids = ['storageAttention', 'storageSpaceCards', 'storageDisks'];
+    var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
         'GET Storage/Disks': [
@@ -258,7 +246,7 @@ test('the tool checks every disk, says what needs a look, and lists the disks in
     var attention = view.querySelector('#storageAttention');
     assert.ok(attention.querySelector('.stolon-banner').classList.contains('stolon-error'));
     assert.match(attention.textContent, /media went missing /);
-    var rows = view.querySelectorAll('#storageDiskList .stolon-record-list-row');
+    var rows = view.querySelectorAll('#storageDisks .stolon-record-list-row');
     assert.equal(rows.length, 1);
     assert.match(rows[0].textContent, /media/);
     assert.match(rows[0].textContent, /Local/);
@@ -288,13 +276,8 @@ async function openStorage(disks, opts) {
     globalThis.ApiClient.getVirtualFolders = function () { return Promise.resolve([{ Name: 'Movies' }, { Name: 'Collections', CollectionType: 'boxsets' }]); };
     var saved = [];
     globalThis.ApiClient.updatePluginConfiguration = function (id, next) { saved.push(JSON.parse(JSON.stringify(next))); return Promise.resolve(); };
-    var ids = ['storageAttention', 'storageSpaceCards', 'storageCheckStatus', 'storageDiskList'];
-    var filterEl = dom.el('div', { id: 'storageDiskFilter', class: 'stolon-pill-group' }, [
-        dom.el('button', { class: 'stolon-pill', 'data-value': 'used' }),
-        dom.el('button', { class: 'stolon-pill', 'data-value': 'all' })
-    ]);
-    var refresh = dom.el('button', { id: 'btnStorageCheck' }, [dom.el('span', { id: 'storageRefreshIcon' })]);
-    var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }).concat([filterEl, refresh]));
+    var ids = ['storageAttention', 'storageSpaceCards', 'storageDisks'];
+    var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApi(page, Object.assign({ 'GET Storage/Disks': disks }, opts.answers || {}));
     var mod = await loadScript('necto_storage.js');
@@ -302,10 +285,10 @@ async function openStorage(disks, opts) {
     view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
     await settle();
     if (opts.filter === 'all') {
-        filterEl.querySelector('[data-value="all"]').click();
+        view.querySelectorAll('#storageDisks [role="tab"]')[1].click();
         await settle(20);
     }
-    view.querySelectorAll('#storageDiskList .stolon-record-list-row')[0].click();
+    view.querySelectorAll('#storageDisks .stolon-record-list-row')[0].click();
     await settle(50);
     return { page: page, dom: dom, view: view, saved: saved, sidecar: dom.document.querySelector('.stolon-sidecar') };
 }
@@ -328,8 +311,11 @@ test('a mounted disk shows its space, libraries, and folders, with the folder st
     var opened = await openStorage([disk({ Level: 'Warning', WarningPercent: 50, WarningStop: { Enabled: true, Value: 50, Unit: 'Percent' }, ReadOnlyFolders: ['/mnt/media/Movies'] })]);
     var sidecar = opened.sidecar;
 
-    assert.ok(sidecar.querySelector('.necto-storage-space'));
-    assert.ok(sidecar.querySelector('.stolon-pie-chart'));
+    assert.ok(sidecar.querySelector('[data-role="disk-space"] .stolon-pie-chart'));
+    assert.ok(sidecar.querySelector('.stolon-defs, [class*="stolon-def"]'));
+    assert.doesNotMatch(sidecar.querySelector('[data-role="disk"]').firstChild.textContent, /Status/);
+    assert.equal(sidecar.querySelector('[data-role="disk-space"] .stolon-cards'), null);
+    assert.match(sidecar.querySelector('[data-role="disk-alerts"]').textContent, /Storage low[\s\S]*50% used, at /);
     assert.deepEqual(texts(sidecar, '.stolon-tag'), ['Movies']);
     assert.match(sidecar.querySelector('.stolon-static-table-scroll').innerHTML, /Read only/);
     assert.ok(sectionTitled(sidecar, 'New folder'));
@@ -340,12 +326,11 @@ test('turning on a disk own alerts and saving writes them for that disk only, th
     var opened = await openStorage([disk()], { config: { Storage: { DiskOverrides: [{ MountPoint: '/mnt/other' }] } } });
     var part = opened.sidecar.querySelector('[data-role="disk-alerts"]');
     var save = Array.prototype.find.call(part.querySelectorAll('button'), function (b) { return b.textContent === 'Save'; });
-    assert.equal(save.disabled, true);
+    assert.ok(save.closest('.stolon-save-bar'));
     var toggle = part.querySelector('input[type="checkbox"]');
     toggle.checked = true;
     toggle.dispatchEvent(new globalThis.CustomEvent('change', { bubbles: true }));
 
-    assert.equal(save.disabled, false);
     save.click();
     await settle(50);
 
@@ -471,5 +456,5 @@ test('the tool page holds no settings, only the disks', async function () {
     var html = fs.readFileSync(new URL('../../Jellyfin.Plugin.Necto/Web/necto_storage.html', import.meta.url), 'utf8');
 
     assert.doesNotMatch(html, /Save|saveBar|emby-checkbox|Settings/);
-    assert.match(html, /storageDiskList/);
+    assert.match(html, /storageDisks/);
 });

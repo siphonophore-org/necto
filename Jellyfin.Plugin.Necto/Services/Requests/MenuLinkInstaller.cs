@@ -151,10 +151,10 @@ public sealed class MenuLinkInstaller : IHostedService
     /// <summary>Adds the Issues link to a web client config's menuLinks, unless one already goes to the issue page.</summary>
     /// <param name="web">The web client's config.json.</param>
     /// <param name="name">The name set in Menu links, or empty for Issues.</param>
-    /// <param name="icon">The icon set in Menu links, or empty for bug_report.</param>
+    /// <param name="icon">The icon set in Menu links, or empty for report_problem, the Issues tool's icon.</param>
     /// <returns>Whether it was added.</returns>
     internal static bool AddIssuesLink(JsonObject web, string? name = null, string? icon = null)
-        => Add(web, "issues", string.IsNullOrWhiteSpace(name) ? "Issues" : name, string.IsNullOrWhiteSpace(icon) ? "bug_report" : icon, IssuesLinkUrl);
+        => Add(web, "issues", string.IsNullOrWhiteSpace(name) ? "Issues" : name, string.IsNullOrWhiteSpace(icon) ? "report_problem" : icon, IssuesLinkUrl);
 
     /// <summary>Takes every link to the issue page out of a web client config's menuLinks.</summary>
     /// <param name="web">The web client's config.json.</param>
@@ -176,10 +176,10 @@ public sealed class MenuLinkInstaller : IHostedService
     /// </summary>
     /// <param name="web">The web client's config.json.</param>
     /// <param name="name">The name set in Menu links, or empty for Requests.</param>
-    /// <param name="icon">The icon set in Menu links, or empty for search.</param>
+    /// <param name="icon">The icon set in Menu links, or empty for movie_filter, the Requests tool's icon.</param>
     /// <returns>Whether it was added.</returns>
     internal static bool AddLink(JsonObject web, string? name = null, string? icon = null)
-        => Add(web, "requests", string.IsNullOrWhiteSpace(name) ? "Requests" : name, string.IsNullOrWhiteSpace(icon) ? "search" : icon, LinkUrl);
+        => Add(web, "requests", string.IsNullOrWhiteSpace(name) ? "Requests" : name, string.IsNullOrWhiteSpace(icon) ? "movie_filter" : icon, LinkUrl);
 
     // A link to this server's request page, however it's written: requests, ../requests/, /requests, or under a base
     // path such as /jellyfin/requests. An address with a host is left out, since it can't be told apart from another

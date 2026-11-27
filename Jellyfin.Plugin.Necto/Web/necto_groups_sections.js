@@ -178,8 +178,8 @@ function buildTroubleshooting(content, ctx) {
     var pollers = [];
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var resets = h('div', { 'data-role': 'resets' });
-    var apply = nectoModule.createResetRow({ icon: 'password', label: t.tr('TaskApplyPasswordRules'), help: t.tr('HelpApplyPasswordRules'), button: t.tr('ButtonApplyRules'), action: 'apply-rules' }).element;
-    var templates = nectoModule.createResetRow({ icon: 'library_add_check', label: t.tr('GroupsTaskApplyTemplates'), help: t.tr('GroupsTaskApplyTemplatesDescription'), button: t.tr('GroupsButtonApplyTemplates'), action: 'apply-templates' }).element;
+    var apply = nectoModule.createResetRow({ icon: 'password', label: t.tr('TaskApplyPasswordRules'), help: t.tr('HelpApplyPasswordRules'), button: t.tr('ButtonApply'), action: 'apply-rules' }).element;
+    var templates = nectoModule.createResetRow({ icon: 'library_add_check', label: t.tr('GroupsTaskApplyTemplates'), help: t.tr('GroupsTaskApplyTemplatesDescription'), button: t.tr('ButtonApply'), action: 'apply-templates' }).element;
     var expired = nectoModule.createResetRow({ icon: 'event_busy', label: t.tr('TaskProcessExpired'), help: t.tr('HelpProcessExpiredTask'), button: t.tr('ButtonRunTask'), action: 'run-account-rules' }).element;
     var sessions = nectoModule.createResetRow({ icon: 'devices', label: t.tr('TaskCleanSessions'), help: t.tr('HelpCleanSessionsTask'), button: t.tr('ButtonRunTask'), action: 'run-session-cleanup' }).element;
 

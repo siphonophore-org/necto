@@ -127,8 +127,8 @@ function buildSettings(content, ctx) {
     var port = nectoModule.createInputField({ label: t.tr('NotificationsLabelSmtpPort'), type: 'number', min: '1', field: 'Smtp.Port', help: t.tr('NotificationsSmtpPortHelp') });
     var tls = nectoModule.createCheckboxField({ label: t.tr('NotificationsLabelSmtpTls'), help: t.tr('NotificationsSmtpTlsHelp'), field: 'Smtp.UseTls' });
     var user = nectoModule.createInputField({ label: t.tr('NotificationsLabelSmtpUser'), field: 'Smtp.Username', help: t.tr('NotificationsSmtpUserHelp') });
-    var password = nectoModule.createInputField({ label: t.tr('NotificationsLabelSmtpPassword'), type: 'password', field: 'Smtp.Password' });
-    var passwordClear = clearButton(password.element, t);
+    var password = nectoModule.createSecretField({ label: t.tr('NotificationsLabelSmtpPassword'), field: 'Smtp.Password', clearText: t.tr('ButtonClear') });
+    password.clear.addEventListener('click', function () { changed(); });
     var from = nectoModule.createInputField({ label: t.tr('NotificationsLabelFromAddress'), type: 'email', placeholder: 'jellyfin@example.com', field: 'Smtp.FromAddress' });
     var fromName = nectoModule.createInputField({ label: t.tr('NotificationsLabelFromName'), placeholder: 'Jellyfin', field: 'Smtp.FromName' });
     var listBox = h('div', { 'data-role': 'channels' });
@@ -226,7 +226,7 @@ function buildSettings(content, ctx) {
         user.input.value = smtp.Username || '';
         from.input.value = smtp.FromAddress || '';
         fromName.input.value = smtp.FromName || '';
-        nectoModule.bindSecretField(password.input, smtp.Password === nectoModule.SECRET_KEPT || !!smtp.Password, { clearButton: passwordClear });
+        password.setStored(smtp.Password === nectoModule.SECRET_KEPT || !!smtp.Password);
         drawChannels();
     }
 
@@ -243,7 +243,7 @@ function buildSettings(content, ctx) {
             Port: parseInt(port.input.value, 10) || 587,
             UseTls: !!tls.input.checked,
             Username: user.input.value.trim(),
-            Password: nectoModule.readSecretField(password.input),
+            Password: password.getValue(),
             FromAddress: from.input.value.trim(),
             FromName: fromName.input.value.trim()
         };
@@ -521,21 +521,23 @@ function buildTroubleshooting(content, ctx) {
         status,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderTests') }),
         nectoModule.createResetGroup([
-            nectoModule.createResetRow({ icon: 'send', label: t.tr('NotificationsTestMe'), help: t.tr('NotificationsTestMeHelp'), button: t.tr('ButtonTest'), action: 'test-me' })
+            nectoModule.createResetRow({ icon: 'send', label: t.tr('NotificationsTestMe'), help: t.tr('NotificationsTestMeHelp'), button: t.tr('ButtonSendTest'), action: 'test-me' })
         ]).element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderLog') }),
         h('div', { class: 'fieldDescription', text: t.tr('NotificationsLogHelp') }),
         logBox,
         h('div', { class: 'stolon-card-list-actions' }, [
-            h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'refresh-log' }, [h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'refresh' }), h('span', { text: t.tr('Refresh') })]),
-            h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'clear-log' }, [h('span', { text: t.tr('NotificationsButtonClearLog') })])
+            h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'refresh-log' }, [h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'refresh' }), h('span', { text: t.tr('Refresh') })])
         ]),
+        nectoModule.createResetGroup([
+            nectoModule.createResetRow({ icon: 'clear_all', label: t.tr('NotificationsClearLog'), help: t.tr('NotificationsClearLogHelp'), button: t.tr('ButtonClear'), action: 'clear-log', destructive: true })
+        ]).element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderBrowsers') }),
         browserBox,
         heldLine,
         nectoModule.createResetGroup([
-            nectoModule.createResetRow({ icon: 'delete_sweep', label: t.tr('NotificationsClearHeld'), help: t.tr('NotificationsClearHeldHelp'), button: t.tr('ButtonClear'), action: 'clear-held', destructive: true }),
-            nectoModule.createResetRow({ icon: 'key', label: t.tr('NotificationsResetKeys'), help: t.tr('NotificationsResetKeysHelp'), button: t.tr('NotificationsButtonResetKeys'), action: 'reset-keys', destructive: true })
+            nectoModule.createResetRow({ icon: 'speaker_notes_off', label: t.tr('NotificationsClearHeld'), help: t.tr('NotificationsClearHeldHelp'), button: t.tr('ButtonClear'), action: 'clear-held', destructive: true }),
+            nectoModule.createResetRow({ icon: 'vpn_key', label: t.tr('NotificationsResetKeys'), help: t.tr('NotificationsResetKeysHelp'), button: t.tr('WireGuardButtonReplace'), action: 'reset-keys', destructive: true })
         ]).element
     ].forEach(function (node) { content.appendChild(node); });
 
@@ -613,7 +615,7 @@ function buildTroubleshooting(content, ctx) {
         });
     });
     button('reset-keys').addEventListener('click', function () {
-        confirmThen(t.tr('NotificationsConfirmResetKeys'), t.tr('NotificationsResetKeys'), t.tr('NotificationsButtonResetKeys'), function () {
+        confirmThen(t.tr('NotificationsConfirmResetKeys'), t.tr('NotificationsResetKeys'), t.tr('WireGuardButtonReplace'), function () {
             return shared.request('Notifications/Push/Keys', 'POST').then(function () {
                 report(t.tr('NotificationsKeysReset'), false);
                 loadPush();

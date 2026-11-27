@@ -5,35 +5,29 @@ using System.Threading.Tasks;
 using Siphonophore.Stolon;
 using MediaBrowser.Model.Tasks;
 using Jellyfin.Plugin.Necto.Configuration.Requests;
-using Jellyfin.Plugin.Necto.Configuration.Issues;
 using Jellyfin.Plugin.Necto.Services.Requests;
 using Jellyfin.Plugin.Necto.Services.Requests.Models;
-using Jellyfin.Plugin.Necto.Services.Issues;
-using Jellyfin.Plugin.Necto.Services.Issues.Models;
 
 namespace Jellyfin.Plugin.Necto.Tasks.Requests;
 
 /// <summary>
 /// Rejects requests left waiting too long, then removes rejected and available requests older than the retention setting,
-/// and closed issues older than theirs. Open issues whose file changed or went while nothing watched are marked.
+/// and the TMDb images no request uses.
 /// </summary>
 public class CleanupRequestsTask : PluginScheduledTask
 {
     private readonly RequestService _requests;
     private readonly ArtworkCache _artwork;
-    private readonly IssueService _issues;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CleanupRequestsTask"/> class.
     /// </summary>
     /// <param name="requests">The request service.</param>
     /// <param name="artwork">The TMDb images kept in the cache folder.</param>
-    /// <param name="issues">The issue service.</param>
-    public CleanupRequestsTask(RequestService requests, ArtworkCache artwork, IssueService issues)
+    public CleanupRequestsTask(RequestService requests, ArtworkCache artwork)
     {
         _requests = requests;
         _artwork = artwork;
-        _issues = issues;
     }
 
     /// <inheritdoc />
@@ -51,22 +45,10 @@ public class CleanupRequestsTask : PluginScheduledTask
     /// <inheritdoc />
     public override Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
-        // Each tool's part runs only while that tool is on.
         if (RequestService.Enabled)
         {
             _requests.Cleanup();
-        }
-
-        progress?.Report(40);
-        if (IssueService.Enabled)
-        {
-            _issues.Clean();
-            _issues.CheckFiles();
-        }
-
-        progress?.Report(70);
-        if (RequestService.Enabled)
-        {
+            progress?.Report(50);
             _artwork.Trim();
         }
 

@@ -24,11 +24,10 @@ Necto 12.4.0.0 is a first release. It reads nothing the old plugins stored, so a
 
 ### Turning Tools On and Off
 
-* Dashboard, Groups, Notifications, Settings, and Troubleshooting are always on. Requests, Issues, Invites, Proxy, DDNS, VPN, Scripts, Pages, and Storage each have an **Enabled** switch, the first checkbox of their Settings section. **Review**
+* Dashboard, Groups, Notifications, Settings, and Troubleshooting are always on. Requests, Issues, Invites, Proxy, DDNS, VPN, Scripts, Pages, and Storage each have a switch named **Enable** and the section's name, such as **Enable storage**, the first checkbox of their Settings section. The rest of the section shows while the switch is on. **Review**
 * A fresh install has all nine off, so a new server runs no optional tool until the administrator turns it on. Necto reads nothing from the old plugins, so no setting is carried over. **Review**
 * `ToolSwitches.All` lists the switches in C#, and each tool's `visibleWhen` in `nectoTools` in `necto_shared.js` reads them for the pages, through Stolon's tool app. A test reads the script and checks the two agree. **Review**
 * A tool that is off leaves the sidebar, the Dashboard, the group editor, and Troubleshooting. Its pages answer as off, and its routes, tasks, and background work do nothing. Turning it off deletes nothing. **Review**
-* The switches of Issues, Proxy, and WireGuard keep their labels, **Enable issues**, **Enable proxy**, and **Enabled**. The new switches read **Enabled**, as WireGuard's does. **Review**
 * Issues does not need Requests. The issue page is the request page served at `/issues/`, with its own switch, so `/issues/` and the routes it calls answer while Requests is off. **Review**
 * While Requests is off, the request page and its assets answer 404, and the routes that make, change, or join a request answer 404 with "Requests are turned off." The routes Settings and the issue page call, such as `/Requests/Me`, still answer. **Review**
 * The Requests and Issues menu links are each added once when their tool is turned on, and taken out when it is turned off, so one removed by hand stays removed until its tool is turned off and on. **Review**
@@ -64,7 +63,7 @@ The page is one Stolon tool app, as Zooid's is: a sidebar of the tools that are 
 
 A status card per tool that is on, one world map, the share card, and recent activity. See [Dashboard](Dashboard.md) for what is built.
 
-* A tool has a card while it is on. Dashboard, Groups, and Notifications are always on, and the nine optional tools each follow their **Enabled** switch. **Review**
+* A tool has a card while it is on. Dashboard, Groups, and Notifications are always on, and the nine optional tools each follow their switch. **Review**
 * The map comes from `GET /Dashboard/Map`, which joins the proxy's totals by country, the WireGuard tunnel ends, and this server's country on the server, rather than the page reading `GET /Proxy/Visitors` and `GET /WireGuard/Peers` itself. **Review**
 * The map's controller is named `NectoDashboardController` and answers at `/Dashboard`, since Jellyfin has a `DashboardController` of its own, whose routes are under `/web`. **Review**
 * While WireGuard is on, the location database stays loaded at country detail, even with **Record visitors** off, so the map can place the tunnel ends. The map loads it when it is missing, and looks up this server's own country while it is not known, each at most once every 10 minutes. **Review**

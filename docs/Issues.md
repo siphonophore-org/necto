@@ -39,7 +39,7 @@ An issue's notes are kept in the order they were written. On the issue page a re
 
 ## File Changed
 
-Each issue keeps the item's file as it was reported, with its path, size, and the time it last changed. When the file is replaced or rescanned and any of those differ, or the item leaves the library, the issue is marked **File changed** for a manager to check. Nothing is resolved on its own. A scan's changes are checked a few seconds after it touches the item, and **Clean expired requests** checks every open issue each night.
+Each issue keeps the item's file as it was reported, with its path, size, and the time it last changed. When the file is replaced or rescanned and any of those differ, or the item leaves the library, the issue is marked **File changed** for a manager to check. Nothing is resolved on its own. A scan's changes are checked a few seconds after it touches the item, and **Clean up issues** checks every open issue each night.
 
 ## The Issues Tool
 
@@ -96,7 +96,7 @@ A webhook gets the issue's id, state, type, its item's id, and its TMDb, TVDB, a
 
 ## Troubleshooting
 
-**Troubleshooting > Issues** runs **Clean expired requests** now, which clears closed issues past **Keep closed issues (days)** and marks open issues whose file changed.
+**Troubleshooting > Issues** runs **Clean up issues** now, the daily task of its own, which clears closed issues past **Keep closed issues (days)** and marks open issues whose file changed.
 
 ![Issues troubleshooting](screenshots/troubleshooting/Issues.png)
 

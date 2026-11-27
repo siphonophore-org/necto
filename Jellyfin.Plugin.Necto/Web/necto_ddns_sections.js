@@ -86,7 +86,7 @@ function buildSettings(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var f = {
-        enabled: nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), help: t.tr('DdnsHelpEnabled'), field: 'Enabled' }),
+        enabled: nectoModule.createCheckboxField({ label: t.tr('DdnsLabelEnable'), help: t.tr('DdnsHelpEnabled'), field: 'Enabled' }),
         ipv4: nectoModule.createTextareaField({ label: t.tr('DdnsLabelIpv4Urls'), help: t.tr('DdnsIpv4UrlsHelp'), field: 'IPv4DetectionUrl', placeholder: 'https://api.ipify.org' }),
         ipv6: nectoModule.createTextareaField({ label: t.tr('DdnsLabelIpv6Urls'), help: t.tr('DdnsIpv6UrlsHelp'), field: 'IPv6DetectionUrl', placeholder: 'https://api6.ipify.org' }),
         skip: nectoModule.createCheckboxField({ label: t.tr('DdnsLabelSkipInternal'), help: t.tr('DdnsSkipInternalHelp'), field: 'SkipInternalAddresses' }),
@@ -129,8 +129,8 @@ function buildSettings(content, ctx) {
 }
 
 // buildTroubleshooting
-// Fills the DDNS section of Troubleshooting: the addresses the last run found, running the update now, and starting a
-// record over.
+// Fills the DDNS section of Troubleshooting: why the last run could not find the public IP, running the update now,
+// and resetting a record.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -143,19 +143,16 @@ function buildTroubleshooting(content, ctx) {
     var t = shared.t;
     var pollers = [];
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var addresses = h('div', { 'data-role': 'addresses' });
-    var addressList = nectoModule.createDefinitionList({ items: [] });
-    addresses.appendChild(addressList.element);
+    var detection = h('div', { class: 'stolon-error stolon-hidden', role: 'status', 'data-role': 'detection' });
     var record = nectoModule.createSelectField({ label: t.tr('DdnsLabelRecord'), field: 'ResetRecord', help: t.tr('DdnsResetRecordHelp') });
     var rows = nectoModule.createResetGroup([
         nectoModule.createResetRow({ icon: 'schedule', label: t.tr('DdnsTaskUpdate'), help: t.tr('DdnsTaskUpdateHelp'), button: t.tr('ButtonRunTask'), action: 'run-update' }),
-        nectoModule.createResetRow({ icon: 'sync', label: t.tr('DdnsButtonCheckAll'), help: t.tr('DdnsCheckAllHelp'), button: t.tr('DdnsButtonUpdateNow'), action: 'update-now' })
+        nectoModule.createResetRow({ icon: 'published_with_changes', label: t.tr('DdnsButtonCheckAll'), help: t.tr('DdnsCheckAllHelp'), button: t.tr('ButtonRunTask'), action: 'update-now' })
     ]).element;
-    var resetRow = nectoModule.createResetRow({ icon: 'restart_alt', label: t.tr('DdnsResetRecord'), help: t.tr('DdnsResetRecordRowHelp'), button: t.tr('DdnsButtonReset'), action: 'reset-record' }).element;
+    var resetRow = nectoModule.createResetRow({ icon: 'replay', label: t.tr('DdnsResetRecord'), help: t.tr('DdnsResetRecordRowHelp'), button: t.tr('Reset'), action: 'reset-record' }).element;
     [
         status,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderPublicIp') }),
-        addresses,
+        detection,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderChecks') }),
         rows,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
@@ -176,15 +173,11 @@ function buildTroubleshooting(content, ctx) {
     }
 
     // load
-    // Reads the records and the last run's addresses.
+    // Reads the records, and why the last run could not find the public IP.
     function load() {
         return shared.request('Ddns/Records').then(function (data) {
-            var items = [
-                { label: t.tr('DdnsLabelPublicIpv4'), value: data.DetectedIPv4 || t.tr('TextNotFound') },
-                { label: t.tr('DdnsLabelPublicIpv6'), value: data.DetectedIPv6 || t.tr('TextNotFound') }
-            ];
-            if (data.DetectionMessage) items.push({ label: t.tr('DdnsLabelDetection'), value: data.DetectionMessage });
-            addressList.setItems(items);
+            detection.textContent = data.DetectionMessage || '';
+            detection.classList.toggle('stolon-hidden', !data.DetectionMessage);
             record.setOptions((data.Records || []).map(function (entry) {
                 var r = entry.Record;
                 return { value: r.Id, text: (r.Name || r.Hostname || r.Id) };
@@ -217,7 +210,7 @@ function buildTroubleshooting(content, ctx) {
         if (!id) return;
         nectoModule.confirmDialog(t.tr('DdnsConfirmResetRecord'), {
             title: t.format('DdnsTitleResetRecord', record.input.options[record.input.selectedIndex].textContent),
-            confirmText: t.tr('DdnsButtonReset'),
+            confirmText: t.tr('Reset'),
             destructive: true
         }).then(function (confirmed) {
             if (!confirmed) return;
@@ -233,7 +226,6 @@ function buildTroubleshooting(content, ctx) {
         load: load,
         destroy: function () {
             pollers.splice(0).forEach(function (p) { if (p && p.cancel) p.cancel(); });
-            addressList.destroy();
         }
     };
 }

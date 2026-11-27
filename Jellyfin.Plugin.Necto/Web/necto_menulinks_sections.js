@@ -272,7 +272,7 @@ function buildSettings(content, ctx) {
     var writable = true;
     var problem = h('div', { class: 'stolon-warn stolon-hidden', role: 'status', 'data-role': 'problem' });
     var empty = h('div', { 'data-role': 'empty' });
-    var add = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'add-link' }, [
+    var add = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'add-link' }, [
         h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
         h('span', { text: t.tr('MenuLinksButtonAdd') })
     ]);
@@ -406,6 +406,6 @@ function buildTroubleshooting(content, ctx) {
     };
 }
 
-var section = { name: function () { return nectoModule.toolName('MenuLinksTitle', 'Menu links'); }, icon: 'menu_open' };
+var section = { name: function () { return nectoModule.toolName('MenuLinksTitle', 'Menu links'); }, icon: 'add_link' };
 nectoModule.registerSection('settings', 'menulinks', Object.assign({ build: buildSettings }, section));
 nectoModule.registerSection('troubleshooting', 'menulinks', Object.assign({ build: buildTroubleshooting }, section));

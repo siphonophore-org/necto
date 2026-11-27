@@ -6,13 +6,13 @@
 
 Necto runs `wgsidecar`, a small program built on wireguard-go with its own network stack. Each tunnel runs in its own sidecar, and tunnel traffic never touches the host's network. A change to a tunnel's peers or limits reaches its running sidecar live.
 
-The sidecar is not part of the plugin. Turning on **Enabled** in **Settings > VPN** asks to download wireguard-go, and Necto downloads the sidecar for this server's platform from the `wgsidecar` release on the [Necto releases](https://github.com/siphonophore-org/necto/releases). It checks the file against the release's `SHA256SUMS` before it keeps it in Necto's data folder, and refuses a file that does not match.
+The sidecar is not part of the plugin. Turning on **Enable VPN** in **Settings > VPN** asks to download wireguard-go, and Necto downloads the sidecar for this server's platform from the `wgsidecar` release on the [Necto releases](https://github.com/siphonophore-org/necto/releases). It checks the file against the release's `SHA256SUMS` before it keeps it in Necto's data folder, and refuses a file that does not match.
 
 * The host lets peers connect on one UDP port and reach only Jellyfin. A peer is a device, or a router that brings every device behind it.
 * A connection joins another WireGuard host as a peer. Each forward opens a local port that reaches a host across the tunnel.
 
 !!! note "A server with its own WireGuard"
-    A server that already runs WireGuard keeps using it. Leave **Enabled** off and point that WireGuard at Jellyfin.
+    A server that already runs WireGuard keeps using it. Leave **Enable VPN** off and point that WireGuard at Jellyfin.
 
 ## Settings
 
@@ -20,11 +20,13 @@ The sidecar is not part of the plugin. Turning on **Enabled** in **Settings > VP
 
 ![WireGuard settings](screenshots/settings/WireGuard.png)
 
-* **Enabled** runs WireGuard. Turning it on asks to download wireguard-go when the server has none, and stays off when the download is declined or fails. It is off on a fresh install, and while it is off **VPN** leaves the sidebar, the Dashboard, and the group editor.
+* **Enable VPN** runs WireGuard. Turning it on asks to download wireguard-go when the server has none, and stays off when the download is declined or fails. It is off on a fresh install, and while it is off **VPN** leaves the sidebar, the Dashboard, and the group editor.
+
+The settings below show while **Enable VPN** is on. Each group, from **wireguard-go** to **Connections**, is a part of its own that opens from its heading.
 
 ### wireguard-go
 
-The line under the heading says which wireguard-go the server has, such as "Version 1.0.0 for linux-amd64, downloaded Nov 20, 2026.", or that it is not downloaded yet. **Replace** asks first, then downloads it again and restarts every tunnel with it. Before the first download the button reads **Download**.
+The line at the top of the part says which wireguard-go the server has, such as "Version 1.0.0 for linux-amd64, downloaded Nov 20, 2026.", or that it is not downloaded yet. **Replace** asks first, then downloads it again and restarts every tunnel with it. Before the first download the button reads **Download**.
 
 ### Host
 
