@@ -518,3 +518,13 @@ test('every text field of the Proxy settings is sent as text, never null', async
     assert.ok(texts.length > 0);
     texts.forEach(function (key) { assert.equal(typeof out[key], 'string', key); });
 });
+
+test('the Jellyfin section offers Trust and Undo as rows with their tiles, and its badge alone says where trust stands', async function () {
+    var opened = await openProxyPage();
+    var section = opened.view.querySelector('#proxyJellyfin');
+
+    assert.deepEqual(Array.prototype.map.call(section.querySelectorAll('.stolon-reset-row .stolon-collapsible-tile'), function (n) { return n.textContent; }), ['verified_user', 'undo']);
+    assert.equal(section.querySelectorAll('.stolon-collapsible-content > div > .fieldDescription').length, 0);
+    assert.equal(section.querySelector('[data-role="trust-state"]'), null);
+    assert.equal(section.querySelector('[data-action="undo"]').disabled, true);
+});

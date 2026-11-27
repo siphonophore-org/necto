@@ -488,27 +488,22 @@ export default function (view) {
     }
 
     // drawJellyfin
-    // Draws whether Jellyfin trusts the proxy, with Trust and Undo. The section is built once and only its state
-    // changes after, so a refresh never folds it or clears its status line.
+    // Draws whether Jellyfin trusts the proxy, as the section's badge, with Trust and Undo as action rows. The section
+    // is built once and only its state changes after, so a refresh never folds it or clears its status line.
     function drawJellyfin() {
         var t = shared.t;
         var phase = phaseText(proxyStatus, t);
         var managed = phase.color !== 'gray';
         if (!jellyfin) {
             var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'trust-status' });
-            var trust = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'trust' }, [h('span', {})]);
-            var undo = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'undo' }, [h('span', { text: t.tr('ButtonUndo') })]);
-            var state = h('div', { 'data-role': 'trust-state' });
-            var content = h('div', {}, [
-                h('div', { class: 'fieldDescription', text: t.tr('ProxyTrustHelp') }),
-                state,
-                h('div', { class: 'fieldDescription', text: t.tr('ProxyTrustRestartsOnce') }),
-                h('div', { class: 'stolon-button-row' }, [trust, undo]),
-                status
-            ]);
+            var trustRow = nectoModule.createResetRow({ icon: 'verified_user', label: t.tr('ProxyButtonTrust'), help: t.tr('ProxyTrustHelp'), button: t.tr('ProxyButtonTrustShort'), action: 'trust' });
+            var undoRow = nectoModule.createResetRow({ icon: 'undo', label: t.tr('ProxyUndoTrust'), help: t.tr('ProxyUndoTrustHelp'), button: t.tr('ButtonUndo'), action: 'undo', destructive: true });
+            var trust = trustRow.button;
+            var undo = undoRow.button;
+            var content = h('div', { class: 'stolon-stack' }, [status, nectoModule.createResetGroup([trustRow, undoRow]).element]);
             var section = nectoModule.createCollapsibleSection({ title: t.tr('LabelJellyfin'), icon: 'shield', collapsed: managed, content: content });
             view.querySelector('#proxyJellyfin').appendChild(section.element);
-            jellyfin = { section: section, state: state, trust: trust, undo: undo, status: status, busy: false };
+            jellyfin = { section: section, trust: trust, undo: undo, undoRow: undoRow, status: status, busy: false };
             trust.addEventListener('click', function () {
                 nectoModule.confirmDialog(t.tr('ProxyConfirmTrust'), { title: t.tr('ProxyButtonTrust'), confirmText: t.tr('ProxyButtonTrustShort') }).then(function (ok) {
                     if (ok) runTrust('Proxy/Trust', trust, status);
@@ -521,9 +516,8 @@ export default function (view) {
             });
         }
         jellyfin.section.setBadge({ label: phase.label, color: phase.color });
-        jellyfin.state.className = phase.color === 'green' ? 'stolon-success' : 'stolon-neutral';
-        jellyfin.state.textContent = phase.text;
-        jellyfin.trust.querySelector('span').textContent = t.tr(managed ? 'ProxyButtonTrustAgain' : 'ProxyButtonTrust');
+        (jellyfin.trust.querySelector('span') || jellyfin.trust).textContent = t.tr(managed ? 'ProxyButtonTrustAgain' : 'ProxyButtonTrustShort');
+        jellyfin.undoRow.setEmpty(!managed);
         if (!jellyfin.busy) jellyfin.undo.disabled = !managed;
     }
 
