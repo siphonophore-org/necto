@@ -42,10 +42,13 @@ export function sidecarText(info, shared) {
 // Output
 // [Promise]: Resolves with the sidecar's description, and rejects with the reason.
 export function downloadSidecar(shared, button) {
-    var label = button ? button.textContent : '';
-    if (button) { button.disabled = true; button.textContent = shared.t.tr('WireGuardDownloading'); }
+    // Only the label changes, so the button keeps its own span for the next label.
+    var spans = button ? button.querySelectorAll('span') : [];
+    var labelEl = spans.length ? spans[spans.length - 1] : button;
+    var label = labelEl ? labelEl.textContent : '';
+    if (button) { button.disabled = true; labelEl.textContent = shared.t.tr('WireGuardDownloading'); }
     return shared.request('WireGuard/Sidecar/Download', 'POST').finally(function () {
-        if (button) { button.disabled = false; button.textContent = label; }
+        if (button) { button.disabled = false; labelEl.textContent = label; }
     });
 }
 

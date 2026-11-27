@@ -214,3 +214,19 @@ test('the WireGuard section of Troubleshooting lists the tunnels, Restart, and e
     await settle(50);
     assert.ok(opened.page.requests.some(function (r) { return r.type === 'POST' && r.url === 'WireGuard/Restart'; }));
 });
+
+test('downloading wireguard-go gives the button back its own children, so its label can change after', async function () {
+    var page = installPage({});
+    var mod = await loadScript('necto_wireguard_sections.js');
+    var doc = page.dom.document;
+    var button = doc.createElement('button');
+    var span = doc.createElement('span');
+    span.textContent = 'Download';
+    button.appendChild(span);
+    var shared = { t: { tr: function (k) { return k; } }, request: function () { return Promise.resolve({ Installed: true }); } };
+
+    await mod.downloadSidecar(shared, button);
+
+    assert.equal(button.querySelector('span'), span);
+    assert.equal(button.disabled, false);
+});

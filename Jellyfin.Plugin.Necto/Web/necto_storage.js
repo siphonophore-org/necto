@@ -673,7 +673,7 @@ export default function (view) {
                 }).then(function (yes) {
                     if (!yes) return;
                     row.button.disabled = true;
-                    row.button.textContent = t.tr('StorageStatusFormatting');
+                    (row.button.querySelector('span') || row.button).textContent = t.tr('StorageStatusFormatting');
                     return shared.request('Storage/Format', 'POST', {
                         Device: disk.Device,
                         Name: name,
@@ -698,7 +698,7 @@ export default function (view) {
                     return shared.errorText(err, t.tr('StorageErrorFormatRequest')).then(row.fail);
                 }).then(function () {
                     row.button.disabled = false;
-                    row.button.textContent = action;
+                    (row.button.querySelector('span') || row.button).textContent = action;
                 });
             });
         }).catch(function () {
