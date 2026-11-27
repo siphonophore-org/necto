@@ -32,7 +32,7 @@ public sealed class ProxyPaths
     /// Initializes a new instance of the <see cref="ProxyPaths"/> class rooted at a directory.
     /// </summary>
     /// <param name="dataDirectory">The directory.</param>
-    public ProxyPaths(string dataDirectory)
+    internal ProxyPaths(string dataDirectory)
     {
         DataDirectory = dataDirectory;
     }

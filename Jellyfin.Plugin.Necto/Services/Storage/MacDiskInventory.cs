@@ -32,7 +32,7 @@ public sealed partial class MacDiskInventory : IDiskInventory
     /// </summary>
     /// <param name="describe">Describes every whole disk, or <c>null</c> to ask DiskArbitration.</param>
     /// <param name="logger">The logger.</param>
-    public MacDiskInventory(Func<IReadOnlyList<MacDiskDescription>>? describe, ILogger logger)
+    internal MacDiskInventory(Func<IReadOnlyList<MacDiskDescription>>? describe, ILogger logger)
     {
         _logger = logger;
         _describe = describe ?? DescribeWholeDisks;

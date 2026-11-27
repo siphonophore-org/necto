@@ -87,7 +87,7 @@ public sealed class StoreService : IStoreService
     /// <param name="configuration">Gives the Custom pages settings, or <c>null</c> when there are none.</param>
     /// <param name="activity">Writes store entries, or <c>null</c> to write none.</param>
     /// <param name="time">The clock, so retention can be tested without waiting out a day.</param>
-    public StoreService(
+    internal StoreService(
         IApplicationPaths paths,
         ILogger<StoreService> logger,
         Func<CustomPagesSettings?> configuration,

@@ -44,7 +44,7 @@ public sealed class NotificationHeldStore : INotifyHeldStore
     /// <param name="path">The file.</param>
     /// <param name="logger">Writes the server log.</param>
     /// <param name="time">The clock the age of a message is read against.</param>
-    public NotificationHeldStore(string path, ILogger? logger, TimeProvider time)
+    internal NotificationHeldStore(string path, ILogger? logger, TimeProvider time)
     {
         _file = new JsonFileStore<List<NotifyHeldMessage>>(path, logger);
         _time = time ?? TimeProvider.System;

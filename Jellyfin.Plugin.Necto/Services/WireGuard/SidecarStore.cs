@@ -45,7 +45,7 @@ public sealed class SidecarStore : IDisposable
     /// <param name="folder">Where the sidecar is kept.</param>
     /// <param name="http">Sends the download, or null when nothing is downloaded.</param>
     /// <param name="logger">Logs the download.</param>
-    public SidecarStore(string folder, IHttpClientFactory? http, ILogger<SidecarStore> logger)
+    internal SidecarStore(string folder, IHttpClientFactory? http, ILogger<SidecarStore> logger)
     {
         ArgumentException.ThrowIfNullOrEmpty(folder);
         _folder = folder;

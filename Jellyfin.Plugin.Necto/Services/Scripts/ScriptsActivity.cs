@@ -48,7 +48,7 @@ public sealed class ScriptsActivity : IDisposable
     /// Initializes a new instance of the <see cref="ScriptsActivity"/> class, writing in US English.
     /// </summary>
     /// <param name="activityLogger">The activity log writer.</param>
-    public ScriptsActivity(ActivityLogger activityLogger)
+    internal ScriptsActivity(ActivityLogger activityLogger)
         : this(new ActivitySummary(activityLogger))
     {
     }
@@ -60,7 +60,7 @@ public sealed class ScriptsActivity : IDisposable
     /// <param name="notifier">Sends each failure to Notifications, or null to send none.</param>
     /// <param name="language">Gives the language of the events, or null for US English.</param>
     /// <param name="now">The clock that spaces the events, or null for the system clock.</param>
-    public ScriptsActivity(ActivitySummary summary, INotifier? notifier = null, Func<string>? language = null, Func<DateTime>? now = null)
+    internal ScriptsActivity(ActivitySummary summary, INotifier? notifier = null, Func<string>? language = null, Func<DateTime>? now = null)
     {
         Summary = summary;
         _notifier = notifier;

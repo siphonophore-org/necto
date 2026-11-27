@@ -34,7 +34,7 @@ public sealed class InviteStatusStore
     /// </summary>
     /// <param name="path">The file.</param>
     /// <param name="logger">Writes the server log.</param>
-    public InviteStatusStore(string path, ILogger? logger)
+    internal InviteStatusStore(string path, ILogger? logger)
     {
         _file = new JsonFileStore<InviteStatusData>(path, logger);
     }

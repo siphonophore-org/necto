@@ -45,7 +45,7 @@ public sealed class LinuxDiskInventory : IDiskInventory
     /// <param name="logger">The logger.</param>
     /// <param name="swaps">The swap table, normally /proc/swaps, or <c>null</c> for one beside the mount table.</param>
     /// <param name="fstab">The file system table, normally /etc/fstab, or <c>null</c> for one beside the mount table.</param>
-    public LinuxDiskInventory(string sys, string udev, string mountInfo, ILogger logger, string? swaps = null, string? fstab = null)
+    internal LinuxDiskInventory(string sys, string udev, string mountInfo, ILogger logger, string? swaps = null, string? fstab = null)
     {
         _swaps = swaps ?? Path.Combine(Path.GetDirectoryName(mountInfo) ?? string.Empty, "swaps");
         _fstab = fstab ?? Path.Combine(Path.GetDirectoryName(mountInfo) ?? string.Empty, "fstab");

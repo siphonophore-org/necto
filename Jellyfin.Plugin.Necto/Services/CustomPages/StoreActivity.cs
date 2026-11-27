@@ -46,7 +46,7 @@ public sealed class StoreActivity : IDisposable
     /// <param name="language">Gives the language of the entries, or <c>null</c> for US English.</param>
     /// <param name="notifier">Sends each entry to Notifications, or <c>null</c> to send none.</param>
     /// <param name="quiet">How long a burst must go quiet before its entry is written, or <c>null</c> for the default.</param>
-    public StoreActivity(ActivityLogger logger, Func<string?> language, INotifier? notifier, TimeSpan? quiet)
+    internal StoreActivity(ActivityLogger logger, Func<string?> language, INotifier? notifier, TimeSpan? quiet)
     {
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(language);

@@ -48,7 +48,7 @@ public sealed class UsageTracker : IDisposable
     /// </summary>
     /// <param name="store">The file store, or null to keep counts in memory only.</param>
     /// <param name="now">The clock.</param>
-    public UsageTracker(JsonFileStore<UsageData>? store, Func<DateTime> now)
+    internal UsageTracker(JsonFileStore<UsageData>? store, Func<DateTime> now)
     {
         _store = store;
         _now = now;

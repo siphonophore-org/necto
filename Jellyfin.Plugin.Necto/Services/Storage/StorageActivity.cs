@@ -38,7 +38,7 @@ public sealed class StorageActivity
     /// <param name="logger">The activity log writer.</param>
     /// <param name="language">Gives the language entries are written in.</param>
     /// <param name="notifier">Sends each alert to Notifications, or <c>null</c> to send none.</param>
-    public StorageActivity(ActivityLogger logger, Func<string?> language, INotifier? notifier = null)
+    internal StorageActivity(ActivityLogger logger, Func<string?> language, INotifier? notifier = null)
     {
         _logger = logger;
         _language = language;

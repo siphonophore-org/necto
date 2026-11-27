@@ -52,7 +52,7 @@ public sealed class InviteAttemptLimiter
     /// </summary>
     /// <param name="time">The clock.</param>
     /// <param name="capacity">The most clients tracked at once.</param>
-    public InviteAttemptLimiter(TimeProvider time, int capacity = MaxTrackedClients)
+    internal InviteAttemptLimiter(TimeProvider time, int capacity = MaxTrackedClients)
     {
         _time = time;
         _capacity = Math.Max(1, capacity);

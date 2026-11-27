@@ -118,7 +118,9 @@ export function nectoTools() {
 // [HTMLElement]: The element.
 export function el(tag, attrs, children) {
     attrs = attrs || {};
-    var node = attrs.is ? document.createElement(tag, { is: attrs.is }) : document.createElement(tag);
+    // The is attribute, set below, lets the web client upgrade the element once it is in the page. Upgrading at
+    // creation breaks elements that need a parent, such as emby-input.
+    var node = document.createElement(tag);
     Object.keys(attrs).forEach(function (key) {
         var value = attrs[key];
         if (value === null || value === undefined || value === false) return;

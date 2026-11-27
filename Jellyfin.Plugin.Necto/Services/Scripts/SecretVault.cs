@@ -30,7 +30,7 @@ public class SecretVault
     /// </summary>
     /// <param name="path">The vault file.</param>
     /// <param name="logger">The logger.</param>
-    public SecretVault(string path, ILogger logger)
+    internal SecretVault(string path, ILogger logger)
     {
         _store = new JsonFileStore<SecretVaultState>(path, logger);
     }

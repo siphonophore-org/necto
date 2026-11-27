@@ -63,7 +63,7 @@ public sealed partial class PageService : IPageService
     /// Initializes a new instance of the <see cref="PageService"/> class over a settings source, for tests.
     /// </summary>
     /// <param name="settings">Gives the Custom pages settings, or <c>null</c> when there are none.</param>
-    public PageService(Func<CustomPagesSettings?> settings)
+    internal PageService(Func<CustomPagesSettings?> settings)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
     }

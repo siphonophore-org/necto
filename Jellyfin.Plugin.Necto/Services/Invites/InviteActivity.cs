@@ -40,7 +40,7 @@ public sealed class InviteActivity : IDisposable
     /// Initializes a new instance of the <see cref="InviteActivity"/> class over a summary.
     /// </summary>
     /// <param name="summary">Sums and writes the entries.</param>
-    public InviteActivity(ActivitySummary summary)
+    internal InviteActivity(ActivitySummary summary)
     {
         Summary = summary ?? throw new ArgumentNullException(nameof(summary));
     }

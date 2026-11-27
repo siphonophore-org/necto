@@ -50,7 +50,7 @@ public sealed class AccountActivity : IDisposable
     /// Initializes a new instance of the <see cref="AccountActivity"/> class over a summary.
     /// </summary>
     /// <param name="summary">Sums and writes the entries.</param>
-    public AccountActivity(ActivitySummary summary)
+    internal AccountActivity(ActivitySummary summary)
     {
         ArgumentNullException.ThrowIfNull(summary);
         Summary = summary;

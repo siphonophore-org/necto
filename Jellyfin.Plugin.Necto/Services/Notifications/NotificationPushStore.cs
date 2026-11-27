@@ -45,7 +45,7 @@ public sealed class NotificationPushStore : IWebPushStore
     /// <param name="secrets">Encrypts the private key.</param>
     /// <param name="path">The file the subscriptions are kept in.</param>
     /// <param name="logger">Writes the server log.</param>
-    public NotificationPushStore(IConfigurationStore store, SecretProtector secrets, string path, ILogger? logger)
+    internal NotificationPushStore(IConfigurationStore store, SecretProtector secrets, string path, ILogger? logger)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(secrets);
