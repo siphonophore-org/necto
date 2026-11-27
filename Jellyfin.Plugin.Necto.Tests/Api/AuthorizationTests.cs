@@ -19,7 +19,7 @@ public class AuthorizationTests
     private static readonly Type[] Controllers = typeof(Plugin).Assembly.GetTypes().Where(t => typeof(ControllerBase).IsAssignableFrom(t) && !t.IsAbstract).ToArray();
 
     // The controller that serves custom pages to their visitors, which decides access per route.
-    private static readonly Type[] UserPageControllers = { typeof(CustomPagesController), typeof(Jellyfin.Plugin.Necto.Api.Requests.RequestsController) };
+    private static readonly Type[] UserPageControllers = { typeof(CustomPagesController), typeof(Jellyfin.Plugin.Necto.Api.Requests.RequestsController), typeof(Jellyfin.Plugin.Necto.Api.Notifications.PushController), typeof(Jellyfin.Plugin.Necto.Api.Invites.MemberInvitesController) };
 
     // The controller behind the request and issue pages, which signed in users who are not administrators call.
     private static readonly Type RequestPages = typeof(Jellyfin.Plugin.Necto.Api.Requests.RequestsController);

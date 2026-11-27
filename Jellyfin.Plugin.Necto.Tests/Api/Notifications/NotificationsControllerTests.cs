@@ -54,6 +54,23 @@ public sealed class NotificationsControllerTests : IDisposable
         return controller;
     }
 
+    private PushController Push(Guid user)
+    {
+        Controller(user);
+        var (sessions, stub) = InterfaceStub.Create<ISessionManager>();
+        stub.Answer("get_Sessions", _ => new List<SessionInfo>());
+        var (http, _) = InterfaceStub.Create<IHttpClientFactory>();
+        var held = new NotificationHeldStore(_folder.File("held.json"), null, TimeProvider.System);
+        var stolon = new StolonNotifier(http, sessions, NullLogger<StolonNotifier>.Instance, _secrets, held, _push);
+        var controller = new PushController(stolon, _config);
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(Caller.UserIdClaim, user.ToString()) }, "test"))
+        };
+        controller.ControllerContext = new ControllerContext { HttpContext = context };
+        return controller;
+    }
+
     private static PushSubscriptionBody Browser(string endpoint) => new() { Endpoint = endpoint, Keys = new PushSubscriptionKeys { P256dh = P256dh, Auth = Auth }, Label = "Safari" };
 
     /// <summary>
@@ -67,13 +84,13 @@ public sealed class NotificationsControllerTests : IDisposable
         var viewer = Guid.NewGuid();
         var other = Guid.NewGuid();
 
-        Assert.IsType<NoContentResult>(Controller(viewer).Subscribe(Browser("https://push.example.com/1")));
+        Assert.IsType<NoContentResult>(Push(viewer).Subscribe(Browser("https://push.example.com/1")));
 
         Assert.Single(_push!.GetSubscriptions(viewer));
         Assert.Empty(_push.GetSubscriptions(other));
-        Assert.IsType<NotFoundResult>(Controller(other).Unsubscribe(Browser("https://push.example.com/1")));
+        Assert.IsType<NotFoundResult>(Push(other).Unsubscribe(Browser("https://push.example.com/1")));
         Assert.Single(_push.GetSubscriptions(viewer));
-        Assert.IsType<NoContentResult>(Controller(viewer).Unsubscribe(Browser("https://push.example.com/1")));
+        Assert.IsType<NoContentResult>(Push(viewer).Unsubscribe(Browser("https://push.example.com/1")));
         Assert.Empty(_push.GetSubscriptions(viewer));
     }
 
@@ -85,8 +102,8 @@ public sealed class NotificationsControllerTests : IDisposable
     [Fact]
     public void Subscribe_BadSubscription_IsRefused()
     {
-        Assert.IsType<BadRequestResult>(Controller(Guid.NewGuid()).Subscribe(Browser("http://push.example.com/1")));
-        Assert.IsType<BadRequestResult>(Controller(Guid.NewGuid()).Subscribe(new PushSubscriptionBody { Endpoint = "https://push.example.com/1" }));
+        Assert.IsType<BadRequestResult>(Push(Guid.NewGuid()).Subscribe(Browser("http://push.example.com/1")));
+        Assert.IsType<BadRequestResult>(Push(Guid.NewGuid()).Subscribe(new PushSubscriptionBody { Endpoint = "https://push.example.com/1" }));
     }
 
     /// <summary>
@@ -97,11 +114,11 @@ public sealed class NotificationsControllerTests : IDisposable
     [Fact]
     public void PushKey_FollowsTheSetting()
     {
-        var key = Assert.IsType<PushKeyView>(Assert.IsType<OkObjectResult>(Controller(Guid.NewGuid()).PushKey().Result).Value);
+        var key = Assert.IsType<PushKeyView>(Assert.IsType<OkObjectResult>(Push(Guid.NewGuid()).PushKey().Result).Value);
         Assert.False(string.IsNullOrEmpty(key.PublicKey));
 
         _config.Configuration.Notifications.BrowserNotifications = false;
-        Assert.IsType<NotFoundResult>(Controller(Guid.NewGuid()).PushKey().Result);
+        Assert.IsType<NotFoundResult>(Push(Guid.NewGuid()).PushKey().Result);
     }
 
     /// <summary>

@@ -39,7 +39,13 @@ public sealed class RouteTests : IDisposable
             return "anyone";
         }
 
-        return method.GetCustomAttribute<AuthorizeAttribute>() is not null ? "user" : "administrator";
+        // A class that asks for elevation asks it of every action, whatever the action adds.
+        if (controller.GetCustomAttributes<AuthorizeAttribute>(true).Any(a => string.Equals(a.Policy, "RequiresElevation", StringComparison.Ordinal)))
+        {
+            return "administrator";
+        }
+
+        return method.GetCustomAttribute<AuthorizeAttribute>() is not null || controller.GetCustomAttribute<AuthorizeAttribute>() is not null ? "user" : "administrator";
     }
 
     /// <summary>
@@ -59,9 +65,6 @@ public sealed class RouteTests : IDisposable
     [InlineData(nameof(NotificationsController.Push), "GET", "Push", "administrator")]
     [InlineData(nameof(NotificationsController.ResetKeys), "POST", "Push/Keys", "administrator")]
     [InlineData(nameof(NotificationsController.ClearHeld), "DELETE", "Held", "administrator")]
-    [InlineData(nameof(NotificationsController.PushKey), "GET", "Push/Key", "user")]
-    [InlineData(nameof(NotificationsController.Subscribe), "POST", "Push/Subscribe", "user")]
-    [InlineData(nameof(NotificationsController.Unsubscribe), "POST", "Push/Unsubscribe", "user")]
     [InlineData(nameof(NotificationsController.Worker), "GET", "Push/Worker.js", "anyone")]
     public void Notifications_AnswerAtTheirRoutes(string action, string verb, string template, string access)
     {
@@ -86,9 +89,6 @@ public sealed class RouteTests : IDisposable
     [InlineData(nameof(InvitesController.Delete), "DELETE", "{id:guid}", "administrator")]
     [InlineData(nameof(InvitesController.SetEnabled), "POST", "{id:guid}/Enabled", "administrator")]
     [InlineData(nameof(InvitesController.SetExpiry), "POST", "{id:guid}/Expiry", "administrator")]
-    [InlineData(nameof(InvitesController.Mine), "GET", "Mine", "user")]
-    [InlineData(nameof(InvitesController.CreateMine), "POST", "Mine", "user")]
-    [InlineData(nameof(InvitesController.DeleteMine), "DELETE", "Mine/{id:guid}", "user")]
     [InlineData(nameof(InvitesController.MemberInvites), "GET", "/invites", "anyone")]
     [InlineData(nameof(InvitesController.Signup), "GET", "/invites/{token}", "anyone")]
     [InlineData(nameof(InvitesController.Info), "GET", "/invites/{token}/Info", "anyone")]
@@ -119,6 +119,17 @@ public sealed class RouteTests : IDisposable
         Assert.Equal(new[] { verb }, attribute.HttpMethods);
         Assert.Equal(template, attribute.Template);
         Assert.Equal("administrator", Access(typeof(GroupOrderController), action));
+    }
+
+    private MemberInvitesController MemberInvites(Guid user)
+    {
+        var controller = new MemberInvitesController(_h.Service, _h.Config, _h.Users.Manager);
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(Caller.UserIdClaim, user.ToString()) }, "test"))
+        };
+        controller.ControllerContext = new ControllerContext { HttpContext = context };
+        return controller;
     }
 
     private InvitesController Invites(InviteAttemptLimiter? limiter = null, Guid? user = null)
@@ -191,10 +202,32 @@ public sealed class RouteTests : IDisposable
         _h.Service.Create(new InviteRequest(), Guid.Empty, null);
         _h.Service.CreateForMember(member.Id, new InviteRequest { GroupId = target.Id }, null);
 
-        var view = Assert.IsType<MemberInvitesView>(Assert.IsType<OkObjectResult>(Invites(user: member.Id).Mine().Result).Value);
+        var view = Assert.IsType<MemberInvitesView>(Assert.IsType<OkObjectResult>(MemberInvites(member.Id).Mine().Result).Value);
 
         Assert.True(view.MayCreate);
         Assert.Single(view.Invites);
         Assert.Equal(new[] { target.Id }, view.Groups.Select(g => g.Id));
+    }
+
+    /// <summary>
+    /// The routes user pages call for their signed in user answer to any user, not only administrators.
+    /// True: a member turns on browser notifications and makes their own invites.
+    /// False: those pages answer 403 to everyone but administrators.
+    /// </summary>
+    [Theory]
+    [InlineData(typeof(PushController), "Notifications/Push", nameof(PushController.PushKey), "GET", "Key")]
+    [InlineData(typeof(PushController), "Notifications/Push", nameof(PushController.Subscribe), "POST", "Subscribe")]
+    [InlineData(typeof(PushController), "Notifications/Push", nameof(PushController.Unsubscribe), "POST", "Unsubscribe")]
+    [InlineData(typeof(MemberInvitesController), "Invites/Mine", nameof(MemberInvitesController.Mine), "GET", null)]
+    [InlineData(typeof(MemberInvitesController), "Invites/Mine", nameof(MemberInvitesController.CreateMine), "POST", null)]
+    [InlineData(typeof(MemberInvitesController), "Invites/Mine", nameof(MemberInvitesController.DeleteMine), "DELETE", "{id:guid}")]
+    public void UserRoutes_AnswerAnySignedInUser(Type controller, string route, string action, string verb, string? template)
+    {
+        var attribute = Verb(controller, action);
+
+        Assert.Equal(route, controller.GetCustomAttribute<RouteAttribute>()!.Template);
+        Assert.Equal(new[] { verb }, attribute.HttpMethods);
+        Assert.Equal(template, attribute.Template);
+        Assert.Equal("user", Access(controller, action));
     }
 }
