@@ -528,3 +528,14 @@ test('the Jellyfin section offers Trust and Undo as rows with their tiles, and i
     assert.equal(section.querySelector('[data-role="trust-state"]'), null);
     assert.equal(section.querySelector('[data-action="undo"]').disabled, true);
 });
+
+test('the Proxy section of Settings folds each group of settings into its own part with a tile', async function () {
+    var opened = await openSettings({ Enabled: true, Advanced: {}, Visitors: { Enabled: true, HistoryDays: 90, Location: 'Country' } });
+    var parts = opened.section.querySelectorAll('[data-part]');
+
+    assert.equal(parts.length, 8);
+    var icons = Array.prototype.map.call(parts, function (p) { return p.querySelector('.stolon-collapsible-tile').textContent; });
+    assert.equal(new Set(icons).size, 8);
+    assert.equal(opened.section.querySelectorAll('.stolon-subsection-title').length, 0);
+    assert.ok(opened.section.querySelector('[data-part="HeaderLocations"] [data-field="CountryMode"]'));
+});

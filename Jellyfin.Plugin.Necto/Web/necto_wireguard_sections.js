@@ -95,29 +95,36 @@ export function buildSettings(content, ctx) {
     var connUp = nectoModule.createInputField({ label: t.tr('WireGuardLabelUploadMbps'), type: 'number', min: 0, autocomplete: 'off' });
     var connData = createDataLimitField(t, null);
 
+    // part
+    // Builds a closed collapsible part of the section, led by its icon tile, holding the nodes given.
+    function part(title, icon, nodes) {
+        var fold = nectoModule.createCollapsibleSection({ title: t.tr(title), icon: icon, collapsed: true, content: h('div', { class: 'stolon-stack' }, nodes) });
+        fold.element.setAttribute('data-part', title);
+        return fold.element;
+    }
+
     [
         status,
         enabled.element,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderSidecar') }),
-        sidecarLine,
-        nectoModule.createResetGroup([
-            nectoModule.createResetRow({ icon: 'swap_horiz', label: t.tr('WireGuardTitleReplace'), help: t.tr('WireGuardSidecarHelp'), button: replace })
-        ]).element,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('LabelServerHost') }),
-        host.element, endpoint.element, port.element, subnet.element,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderSecurity') }),
-        keyRow, psk.element, forward.element,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderDns') }),
-        dns.element, dnsFields,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderPeerLimits') }),
-        h('div', { class: 'fieldDescription', text: t.tr('WireGuardPeerLimitsHelp') }),
-        peerDown.element, peerUp.element, labelled(t, 'WireGuardLabelPeerDataLimit', peerData.element),
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('TabAdvanced') }),
-        keepalive.element, mtu.element,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderConnections') }),
-        connect.element,
-        h('div', { class: 'fieldDescription', text: t.tr('WireGuardConnectionLimitsHelp') }),
-        connDown.element, connUp.element, labelled(t, 'WireGuardLabelConnectionDataLimit', connData.element)
+        part('WireGuardHeaderSidecar', 'download', [
+            sidecarLine,
+            nectoModule.createResetGroup([
+                nectoModule.createResetRow({ icon: 'swap_horiz', label: t.tr('WireGuardTitleReplace'), help: t.tr('WireGuardSidecarHelp'), button: replace })
+            ]).element
+        ]),
+        part('LabelServerHost', 'router', [host.element, endpoint.element, port.element, subnet.element]),
+        part('WireGuardHeaderSecurity', 'key', [keyRow, psk.element, forward.element]),
+        part('WireGuardHeaderDns', 'language', [dns.element, dnsFields]),
+        part('WireGuardHeaderPeerLimits', 'data_usage', [
+            h('div', { class: 'fieldDescription', text: t.tr('WireGuardPeerLimitsHelp') }),
+            peerDown.element, peerUp.element, labelled(t, 'WireGuardLabelPeerDataLimit', peerData.element)
+        ]),
+        part('TabAdvanced', 'tune', [keepalive.element, mtu.element]),
+        part('HeaderConnections', 'cable', [
+            connect.element,
+            h('div', { class: 'fieldDescription', text: t.tr('WireGuardConnectionLimitsHelp') }),
+            connDown.element, connUp.element, labelled(t, 'WireGuardLabelConnectionDataLimit', connData.element)
+        ])
     ].forEach(function (node) { content.appendChild(node); });
 
     // report

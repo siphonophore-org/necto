@@ -173,7 +173,7 @@ test('the WireGuard section of Settings shows the download and saves its fields 
     var opened = await openTool('settings', { 'GET WireGuard/Sidecar': { Installed: true, Version: '1.0.0', Platform: 'linux-amd64', DownloadedUtc: '2026-11-20T00:00:00Z', ReleaseVersion: '1.0.0' } });
     var section = opened.section;
 
-    assert.deepEqual(texts(section, '.stolon-subsection-title'), ['wireguard-go', 'Host', 'Security', 'DNS', 'Peer limits', 'Advanced', 'Connections']);
+    assert.deepEqual(texts(section, '[data-part] > .stolon-collapsible-header .stolon-collapsible-title'), ['wireguard-go', 'Host', 'Security', 'DNS', 'Peer limits', 'Advanced', 'Connections']);
     assert.match(section.textContent, /Version 1\.0\.0 for linux-amd64/);
     assert.ok(Array.prototype.some.call(section.querySelectorAll('button'), function (b) { return b.textContent === 'Replace'; }));
     var port = Array.prototype.find.call(section.querySelectorAll('input[type="number"]'), function (i) { return i.value === '51820'; });
