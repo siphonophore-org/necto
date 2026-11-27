@@ -880,6 +880,11 @@ export default function (view) {
         routes = (answer && answer.Routes) || [];
         statuses = (answer && answer.Status) || [];
         var items = routeItems(routes, statuses, shared.t);
+        var none = items.length === 0;
+        [['#proxyNoRoutes', !none], ['#proxyRoutes', none], ['#proxyActions', none]].forEach(function (pair) {
+            var node = view.querySelector(pair[0]);
+            if (node) node.classList.toggle('stolon-hidden', pair[1]);
+        });
         if (list) list.setItems(items);
         else {
             list = nectoModule.createRecordList({
@@ -1289,6 +1294,8 @@ export default function (view) {
         page: 'necto_proxy',
         bind: function (bag, pg) {
             view.querySelector('#btnAddRoute').addEventListener('click', pickTemplate);
+            var first = view.querySelector('#btnAddFirstRoute');
+            if (first) first.addEventListener('click', pickTemplate);
             visitors = createVisitors();
             pg.addCleanup(function () {
                 if (visitors) visitors.destroy();
