@@ -75,7 +75,7 @@ While **Enable issues** is off, **Issues** leaves the sidebar, and opened by its
 
 ## Permissions
 
-Each group's **Issues** section sets what its members may do. See [Groups](Groups.md#how-groups-combine) for how several groups combine.
+Each group's **Issues** section sets what its members may do. A user is in one group at most. See [Groups](Groups.md#members).
 
 | Permission | What it does |
 | :--- | :--- |

@@ -16,8 +16,8 @@ Cards at the top count the sends in the send log that went, as **Sent**, and tho
 
 | Channel | Sends to | Events |
 | :--- | :--- | :--- |
-| **Browser notifications** | The browsers a user turned notifications on in, from a user page | The events the user's groups give them, when a group turns this channel on |
-| **Jellyfin messages** | A message on the user's Jellyfin apps, held until an app comes online | The events the user's groups give them, when a group turns this channel on |
+| **Browser notifications** | The browsers a user turned notifications on in, from a user page | The events about the user that their group sends this way |
+| **Jellyfin messages** | A message on the user's Jellyfin apps, held until an app comes online | The events about the user that their group sends this way |
 | **Administrators** | Every administrator's Jellyfin apps, and the browsers they turned notifications on in | The events the channel picks, every event by default |
 | **Activity log** | Jellyfin's activity log | The events the channel picks, none by default |
 | Discord | A Discord channel webhook, as an embed | The events the channel picks |
@@ -28,12 +28,12 @@ A test of **Browser notifications**, **Jellyfin messages**, or **Administrators*
 
 ## Who Gets an Event
 
-* **Groups > Notifications** sets the events members receive, with **Receive every event** or a pick from **Events**, listed under the tool that sends each, and the channels they receive them on, with **Browser notifications** and **Jellyfin messages**. A member gets their events on each channel one of their groups with events turns on.
-* An event for users, such as a request's or an invite's, goes only to the users it is about, when the account is on and their groups give them the event. Administrators get every event about them.
-* Any other event, such as a proxy ban or a missing disk, goes to every member who is not an administrator and whose groups give them the event. Administrators get these through **Administrators**.
+* **Groups > Notifications** lists the events for users, those about a member such as a request's or an invite's, under the tool that sends each. Each has a switch for **Browser notifications** and one for **Jellyfin messages**, and an event with both off is off for members.
+* An event for users goes only to the user it is about, when the account is on, by the methods their group turns on for it. Administrators get every event about them.
+* Any other event, such as a proxy ban or a missing disk, is for administrators only. It goes only to the channels on this page that pick it, such as **Administrators**.
 * Every event goes to each administrators' channel that picks it, or takes every event.
-* An administrator the event is about gets it once, as a user, and not again through **Administrators**. An event can also leave people out of **Administrators** and the groups, such as the administrator who approved a request.
-* **Everyone** gives **Request approved**, **Request rejected**, **Request available**, and **Issue resolved** on a fresh install, so a user in no group hears about their own requests and issues. A new group starts with the same four, and can drop them.
+* An administrator the event is about gets it once, as a user, and not again through **Administrators**. An event can also leave people out, such as the administrator who approved a request.
+* **Everyone** sends **Request approved**, **Request rejected**, **Request available**, and **Issue resolved** by both methods on a fresh install, so a user in no group hears about their own requests and issues. A new group starts with the same four, and can turn them off.
 
 ## Settings
 

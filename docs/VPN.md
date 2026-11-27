@@ -127,7 +127,7 @@ Who may have peers is set on groups, in the **VPN** section of each group in **G
 | **Data per member (GB)** | How much data all of a member's peers may move together in the period. 0 is no limit |
 | **Period** | The window **Data per member (GB)** counts over |
 
-A member of several groups gets the most generous of the groups that allow peers. Saving or deleting a group applies its peers to the tunnel at once, and any other change, such as a user becoming an administrator, applies within a minute. Administrators add peers for any user. A peer past its owner's count stays stored and shows **Over peer count** until the owner has room or a group gives more.
+Saving or deleting a group applies its peers to the tunnel at once, and any other change, such as a user becoming an administrator, applies within a minute. Administrators add peers for any user. A peer past its owner's count stays stored and shows **Over peer count** until the owner has room or a group gives more.
 
 ## Troubleshooting
 

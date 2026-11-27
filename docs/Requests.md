@@ -132,7 +132,7 @@ Requests a quota still counts are kept until they leave its window.
 
 ## Permissions
 
-Each group's **Requests** section sets what its members may do. See [Groups](Groups.md#how-groups-combine) for how several groups combine.
+Each group's **Requests** section sets what its members may do. A user is in one group at most. See [Groups](Groups.md#members).
 
 | Permission | What it does |
 | :--- | :--- |

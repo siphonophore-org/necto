@@ -91,11 +91,11 @@ def groups(api, ids):
     have = {g['Name']: g for g in api.get('/Groups')}
     made = {}
 
-    def perms(requests, issues, invites, wireguard, pages=False, scripts=False, events=None):
+    def perms(requests, issues, invites, wireguard, pages=False, events=None):
         return {
             'Requests': requests, 'Issues': issues, 'Invites': invites, 'WireGuard': wireguard,
-            'CustomPages': {'AllPages': pages, 'PageIds': []}, 'Scripts': {'AllScripts': scripts, 'ScriptIds': []},
-            'Notifications': {'AllEvents': False, 'EventKeys': events or [], 'BrowserNotifications': True, 'JellyfinMessages': True},
+            'CustomPages': {'AllPages': pages, 'PageIds': []},
+            'Notifications': {'ByMethod': True, 'BrowserEventKeys': events or [], 'MessageEventKeys': events or []},
         }
 
     plans = [
@@ -118,12 +118,21 @@ def groups(api, ids):
             {'MayCreate': False, 'MaxInvites': 1, 'AnyGroup': False, 'TargetGroupIds': []},
             {'MayHavePeers': False, 'MaxPeers': 1, 'DataLimit': 0, 'DataPeriod': 'Month'})),
     ]
+    # Kids sets some of Jellyfin's own settings, so the Jellyfin access shot has rows on Group.
+    templates = {'Kids': {
+        'Access': {'ManageMaxParentalRating': True, 'MaxParentalRating': 10, 'MaxParentalSubRating': 0,
+                   'ManageRemoteClientBitrateLimit': True, 'RemoteClientBitrateLimit': 8000000,
+                   'ManageEnableLiveTvManagement': True, 'EnableLiveTvManagement': False},
+        'Preferences': {'ManageSubtitleMode': True, 'SubtitleMode': 'Always'},
+        'PreferencesMode': 'Maintain'}}
     for name, members, permissions in plans:
         body = dict(have.get(name) or {'Name': name})
         body['MemberIds'] = [ids[m] for m in members]
         merged = dict(body.get('Permissions') or {})
         merged.update(permissions)
         body['Permissions'] = merged
+        if name in templates:
+            body['Template'] = templates[name]
         made[name] = api.put('/Groups/%s' % body['Id'], body) if 'Id' in body else api.post('/Groups', body)
     return made
 

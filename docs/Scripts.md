@@ -175,9 +175,9 @@ While the panel shows, the **Triggers** heading carries a badge, green **All kin
 
 ## Groups
 
-Which users a script runs for is set on groups, in the **Scripts** section of each group in **Groups**. **Run every script** runs every script for the group's members, and **Scripts that run** lists the ones it runs otherwise. Administrators run every script, since groups hold no administrators. To leave them out, add an **Is administrator** condition, as the editor's **Groups** section says.
+The **Groups** section of the editor sets which users a script runs for. **Run for everyone** is on for a new script, so it runs for every user, in a group or not. Turn it off to pick the groups it runs for, where **Everyone** stands for the users in no group. With it off and no group picked, the script runs for administrators only, and the section says so. Administrators run every script, since groups hold no administrators. To leave them out, add an **Is administrator** condition.
 
-The **Groups** section of the editor names the groups that run the open script, and **Open groups** opens **Groups**. On playback, the script runs when the groups of any of the session's users run it. A failed sign in for a name with no account takes **Everyone**, so the script runs for it when **Everyone** runs the script.
+On playback, the script runs when it runs for any of the session's users. A failed sign in for a name with no account counts as **Everyone**.
 
 Groups only filter triggers that carry a user. Others ignore them. For anything finer, such as matching a name pattern, use a **User** condition.
 
@@ -359,13 +359,6 @@ Open a run to see, in a sidecar, its result, trigger, start, and length, each st
 | Event | When |
 | :--- | :--- |
 | `scripts.failed` | A run ends with a failed step, at most once a minute for each script |
-
-## Permissions
-
-| Field | What it does |
-| :--- | :--- |
-| **Run every script** | Runs every script for the group's members |
-| **Scripts that run** | Lists the scripts that run for the group's members while **Run every script** is off |
 
 ## API
 

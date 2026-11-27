@@ -92,6 +92,14 @@ const sidecars = {
     await section(p, 'Requests');
     return panel;
   }],
+  'Group Jellyfin Access': ['groups', 1300, async (p) => {
+    const panel = await row(p, 'Kids');
+    await section(p, 'Members');
+    await section(p, 'Jellyfin access');
+    await section(p, 'Parental control');
+    await section(p, 'Media playback');
+    return panel;
+  }],
   'Route Editor': ['proxy', 1100, (p) => row(p, 'media.example.com')],
   'Record Editor': ['ddns', 1100, (p) => row(p, 'Home')],
   'Peer Editor': ['wireguard', 1000, (p) => row(p, 'Travel router')],

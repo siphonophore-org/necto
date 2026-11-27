@@ -56,7 +56,7 @@ A member whose groups allow invites makes and shares their own at `/invites`, in
 
 * **Allow invites** lets members make invites.
 * **Open invites** sets how many working invites a member may have at once. 0 is no limit.
-* **Invite to any group** lets members' invites join any group, or **Invite groups** names the groups.
+* **Invite groups** is **Permissive** to let members' invites join any group, or **Selective** to name the groups.
 
 A member removes only their own invites, and **Remove** asks first. A viewer who is not signed in gets the web client's sign in page. **Browser notifications** holds **Notify me in this browser** as a web client settings checkbox, so the member hears when their invites are used, as their groups allow. It shows while **Settings > Notifications** offers browser notifications.
 

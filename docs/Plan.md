@@ -74,24 +74,24 @@ A status card per tool that is on, one world map, the share card, and recent act
 
 ### Groups
 
-Groups are the only place a permission is set. A tool's own page sets how the tool works, never who may use it.
+Groups are where a permission is set, except a script's users, which the script itself picks. A tool's own page sets how the tool works, never who may use it.
 
-* A user may be in several groups. An allow from any group allows, and a count or limit takes the largest any group gives. **Review**
+* A user is in one group at most, as in User Management, and a user in none takes **Everyone**. Administrators are in no group, may do everything in Necto, and their Jellyfin settings are never written. A stored user in several groups stays in the first, in the stored order, and the server log names each one moved. **Review**
 * What a group carries:
   * **Requests:** may request, may auto approve, quotas and limits by type, may see others' requests, may manage requests.
   * **Issues:** may report, may manage issues.
-  * **Custom pages:** which pages members may open.
-  * **Scripts:** which scripts run for members.
+  * **Custom pages:** every signed in page, or the pages picked.
   * **WireGuard:** may have peers, how many, and limits.
-  * **Invites:** may create invites, how many, into which groups.
+  * **Invites:** may create invites, how many, into any group or the groups picked.
   * **Accounts** (from User Management): password rules, password resets, expiration, inactivity, session rules.
-  * **Notifications:** which events members receive, and on which channels.
-* Users outside every group take the **Everyone** group, which always exists. Everyone never adds to a real group's permissions.
-* A count or limit of 0 is no limit, so it is the largest. A limit counts only from groups that allow the action. **Review**
-* Account rules combine the other way, since any one group may keep an account. Password rules hold when any group enforces them, at their strictest, with the most generous change mode. Expiry, inactivity, and session cleanup hold only when every group has them, at the largest window, and expiry deletes only when every group asks for it. **Review**
+  * **Notifications:** for each event about a member, whether it comes in browsers and as a Jellyfin message.
+  * **Jellyfin access** and **Jellyfin preferences** (from User Management): every Jellyfin user setting, each set by the group or left to the member.
+* Users outside every group take the **Everyone** group, which always exists.
 * User Management's default group is **Settings > Groups > Group for new users**. Existing users in no group stay in **Everyone** rather than being moved into it. **Review**
-* User Management's Jellyfin policy and preference templates (**Access and features**, **Preferences**) sit on groups. A member takes the template of the first of their groups, in group order, that has one on, since a whole policy cannot be merged field by field. Groups have an order the Groups tool changes, and Everyone stays first. **Review**
-* A template is written onto every user after any group save or reorder, and when the server starts, as User Management's sync did. **Review**
+* User Management's group editor is whole in Necto's: **Jellyfin access** holds Library access, Device access, Media deletion, Media playback, Live TV, Remote control, Parental control, and Profile, and **Jellyfin preferences** holds Subtitles, Playback, Display, and Home, each a collapsible section with every row User Management had. Each row is **Member** or **Group**, and each header counts its rows on **Group**, as User Management's did. There is no switch over them, and a group stored with **Set Jellyfin settings** off loads with every row on **Member**. **Review**
+* **Jellyfin preferences** adds **Maintain**, which writes the preferences on every save and sync as User Management did, and **On join only**, which writes them once as a user joins. **Review**
+* The Jellyfin settings are written onto members when a group is saved, when a user is created or joins through an invite, when the server starts, and daily, as User Management's sync did, and with **Apply** in Troubleshooting. Administrators are never written. **Review**
+* User Management's session rules pick their clients from the clients seen on the server, its devices and sessions, and the common Jellyfin clients, with **Other clients** for any name not listed. **Review**
 * The request quota window is a Requests setting, and the quotas by type are permissions. **Review**
 * See [Groups](Groups.md) for what is built.
 
@@ -136,7 +136,7 @@ Turning WireGuard on asks to download `wireguard-go`, which is the only way Wire
 * The download is `wgsidecar`, the WireGuard plugin's own sidecar on wireguard-go, built from `sidecar/` by the **Release wgsidecar** workflow and published as the release `wgsidecar-<version>` of this repository. Necto checks it against the release's `SHA256SUMS`, which catches a damaged download but not a release that was itself replaced. The workflow must run before WireGuard can be turned on. **Review**
 * A server with its own WireGuard leaves **Enable WireGuard** off. Necto has no mode that drives a system WireGuard. **Review**
 * The host's key pair is made the first time the host runs with wireguard-go downloaded, and a peer or connection that needs a new key pair is refused until then. A save from **Settings** keeps the stored peers, connections, and host keys, which only the WireGuard routes change. **Review**
-* **Data per user** moves onto groups as **Data per member (GB)** with its **Period**. Several groups give the largest limit of the groups that allow peers, with that group's period. **Review**
+* **Data per user** moves onto groups as **Data per member (GB)** with its **Period**. **Review**
 * Groups decide which peers connect. A peer whose owner has no group with **Allow peers** is left out of the tunnel, and an owner past **Peers per member** keeps their oldest enabled peers. Administrators' peers and peers with no owner always connect, and administrators add peers for any user, as the WireGuard plugin let them. **Review**
 * The location lookups, the **Location** setting, and the **Refresh WireGuard locations** task are not in WireGuard. `GET /WireGuard/Peers` gives each tunnel end's public address, and `GET /Dashboard/Map` places the same ends on the server with the location database from Remote Access. **Review**
 * Peers connecting, connections, data limits, and failing tunnels are written to the activity log as the WireGuard plugin wrote them, and each is also sent to Notifications. **Review**
@@ -146,7 +146,7 @@ Turning WireGuard on asks to download `wireguard-go`, which is the only way Wire
 
 Everything the Scripts plugin does, with its history in **Troubleshooting** and its settings in **Settings**.
 
-* A script runs for a user only when one of the user's groups runs it, by **Run every script** or **Scripts that run**. Everyone runs no script on a fresh install, where the Scripts plugin's empty users list ran a script for everyone. **Review**
+* A script runs for every user unless its editor turns off **Run for everyone** and picks groups, as the Scripts plugin's empty users list ran a script for everyone. Groups hold no script picks. A stored script takes the groups that ran it, or runs for everyone when no group or every group did. **Review**
 * A failed sign in for a name with no account takes **Everyone**. **Review**
 * Administrators run every script, since groups hold no administrators. The script editor says so, and an **Is administrator** condition leaves them out, where the Scripts plugin's users list could leave out an administrator. **Review**
 * `scripts.failed` goes to Notifications at most once a minute for each script, so a burst of failures sends one alert. **Review**
@@ -155,7 +155,7 @@ Everything the Scripts plugin does, with its history in **Troubleshooting** and 
 
 Everything Custom Pages does. A page keeps its tier, **Anyone**, **Signed in**, or **Administrators**, and its list of named users is gone, since groups give pages.
 
-* A **Signed in** page opens for administrators and for members of a group that gives it, with **Open every page** or by name. **Everyone** gives no page on a fresh install, so a page opens for nobody but administrators until a group gives it. **Review**
+* A **Signed in** page opens for administrators and for members of a group that gives it, with **Permissive** for every page or **Selective** by name. **Everyone** gives no page on a fresh install, so a page opens for nobody but administrators until a group gives it. **Review**
 * An API key opens **Administrators** pages, as the elevation policy lets it, but no **Signed in** page, since it is in no group. **Review**
 * Stores keep their **Read** and **Write** tiers, **Scope**, and **Writers edit own records** on the store. They name classes of caller, not users, and a store has no group section yet. **Review**
 * The pages keep their own addresses under `/pages`, since served pages and their helpers call them. The administrator routes are under `/Pages` with two segments or more, and the slugs `asset`, `store`, `stores`, and `configuration` are kept for them. **Review**
@@ -178,10 +178,9 @@ One service every tool sends events to, and one set of channels.
 
 * **Channels:** browser push, email, Discord, webhooks, and Jellyfin's activity log.
 * **Events:** new and changed requests, issue reports and updates, invite use, proxy bans and certificate expiry, WireGuard connections, script failures, disk alerts and missing disks, DDNS failures.
-* Who receives an event is set on groups. Administrators may receive everything.
-* An event a tool marks for users goes only to the users it is about. Any other event goes to every member who is not an administrator and whose groups pick it, so a group can follow proxy bans or missing disks. Administrators get those through **Administrators**. **Review**
-* A group picks the user channels its members receive on, **Browser notifications** and **Jellyfin messages**, as each Requests user once picked theirs. A member gets each channel one of their groups with events turns on. **Review**
-* **Everyone** gives **Request approved**, **Request rejected**, **Request available**, and **Issue resolved** on a fresh install, the old requester defaults, so requesters hear about their requests before anyone sets a group up. A new group starts with the same four. **Review**
+* Every event, its text, and its channels are set in Notifications, and events for administrators are set only there.
+* An event a tool marks for users goes only to the user it is about. A group turns **Browser notifications** and **Jellyfin messages** on or off for each such event, as each Requests user once picked theirs. Any other event is for administrators only, through the channels that pick it. A stored group's events move onto the methods it had on, and its picks of administrators' events are dropped. **Review**
+* **Everyone** sends **Request approved**, **Request rejected**, **Request available**, and **Issue resolved** by both methods on a fresh install, the old requester defaults, so requesters hear about their requests before anyone sets a group up. A new group starts with the same four. **Review**
 * Every tool lists its events in one shape, `IReadOnlyList<NectoEventInfo> All`, and a test checks that every key a tool sends is listed. **Review**
 * User pages (Requests, Issues, Invites, custom pages) carry one service worker and one push subscription. The worker is `Notifications/Push/Worker.js`, registered at the server's root with `Service-Worker-Allowed`, so one subscription serves every user page. It has no fetch handler, so it never answers for Jellyfin's own pages. The request page installed as an app keeps its own worker for notifications, since a phone ties them to the installed app, and a browser moves a subscription made through it onto the shared worker. **Review**
 * Requests' Jellyfin messages to the requester and to administrators are kept: **Jellyfin messages** is a user channel, and the **Administrators** channel sends to every administrator's apps and browsers. **Review**

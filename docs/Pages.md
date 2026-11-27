@@ -56,7 +56,7 @@ A page that needs a signed in viewer opens on the web client's loading screen. I
 | **Signed in** | Administrators, and members of a group that gives the page |
 | **Administrators** | Administrators only |
 
-A group gives pages in **Groups > Pages**, with **Open every page** or **Pages members may open**. **Pages members may open** lists the **Signed in** pages, since the other tiers ignore groups, and keeps a page the group already gives after it moves to another tier. A user in no group takes **Everyone**, which gives no page until you choose one. The check runs before the page is built, so a refused viewer never receives its HTML, CSS, or JavaScript. An API key carries no user, so it cannot open a **Signed in** page.
+A group gives pages in **Groups > Pages**. **Permissive** opens every **Signed in** page, pages added later too, and **Selective** opens only the pages picked under it. The list the **Signed in** pages, since the other tiers ignore groups, and keeps a page the group already gives after it moves to another tier. A user in no group takes **Everyone**, which gives no page until you choose one. The check runs before the page is built, so a refused viewer never receives its HTML, CSS, or JavaScript. An API key carries no user, so it cannot open a **Signed in** page.
 
 !!! note "A viewer reads the source"
     Groups narrow who receives a page. Everyone who receives it can read its source, since a browser needs the source to show it.
@@ -219,7 +219,7 @@ A read or write drops a store's expired records too, so the task is for stores n
 
 ## Permissions
 
-**Groups > Pages** sets which **Signed in** pages members may open, with **Open every page** or **Pages members may open**. See [Groups](Groups.md#tool-permissions). Stores keep their own **Read** and **Write** tiers.
+**Groups > Pages** sets which **Signed in** pages members may open, with **Permissive** for every page or **Selective** for the pages picked. See [Groups](Groups.md#tool-permissions). Stores keep their own **Read** and **Write** tiers.
 
 ## API
 
