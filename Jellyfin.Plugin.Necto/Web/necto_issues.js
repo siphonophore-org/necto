@@ -393,8 +393,8 @@ export default function (view) {
             search: t.tr('IssuesSearchPlaceholder'),
             filters: [
                 { label: t.tr('HeaderStatus'), options: stateFilters(t), initialValue: filters.state, onChange: function (value) { filters.state = value; keepFilters(storage(), filters); } },
-                { name: 'type', label: t.tr('IssuesLabelType'), options: issueTypes(t), allLabel: t.tr('IssuesFilterEveryType'), initialValue: filters.type, onChange: function (value) { filters.type = value; keepFilters(storage(), filters); } },
-                { name: 'user', label: t.tr('IssuesLabelReporter'), options: reporterOptions(reporters), allLabel: t.tr('GroupEveryone'), initialValue: filters.reporter, onChange: function (value) { filters.reporter = value; keepFilters(storage(), filters); } }
+                { name: 'type', label: t.tr('IssuesLabelType'), options: issueTypes(t), initialValue: filters.type, onChange: function (value) { filters.type = value; keepFilters(storage(), filters); } },
+                { name: 'user', label: t.tr('IssuesLabelReporter'), options: reporterOptions(reporters), initialValue: filters.reporter, onChange: function (value) { filters.reporter = value; keepFilters(storage(), filters); } }
             ],
             pageSize: PAGE_SIZE,
             empty: { message: t.tr('IssuesEmpty'), filteredMessage: t.tr('IssuesEmptyMatch') },

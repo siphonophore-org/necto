@@ -225,26 +225,6 @@ export function storeItems(stores, counts, t) {
     });
 }
 
-// storeCounts
-// Counts the stores, their records, and the ones open to writes from visitors who are not signed in.
-//
-// Inputs
-// stores [object[]]: The stores.
-// counts [object]: Record counts by lower case store name.
-//
-// Output
-// [object]: stores, records, and open counts.
-export function storeCounts(stores, counts) {
-    var total = 0;
-    var open = 0;
-    (stores || []).forEach(function (s) {
-        var c = counts[(s.Name || '').toLowerCase()];
-        if (typeof c === 'number') total += c;
-        if (normalizeVisibility(s.WriteAccess, 'User') === 'Anonymous' && s.Enabled !== false) open++;
-    });
-    return { stores: (stores || []).length, records: total, open: open };
-}
-
 // storeWarnings
 // Works out which store notices show for the editor's choices.
 //
@@ -907,19 +887,10 @@ export default function (view) {
         if (!panel) return;
         var t = shared.t;
         var assets = settings.Assets || [];
-        var images = 0;
-        var other = 0;
-        var bytes = 0;
-        assets.forEach(function (a) {
-            if ((a.ContentType || '').indexOf('image/') === 0) images++;
-            else other++;
-            bytes += base64Bytes(a.DataBase64);
-        });
-        shared.renderCards(panel.querySelector('[data-role="asset-counts"]'), [
-            { count: images, label: t.tr('Images'), color: 'blue' },
-            { count: other, label: t.tr('Other'), color: 'purple' },
-            { count: shared.formatSize(bytes), label: t.tr('LabelSize'), color: 'gray' }
-        ]);
+        shared.renderCards(panel.querySelector('[data-role="asset-counts"]'), ['Anonymous', 'User', 'Admin'].map(function (tier) {
+            var badge = tierBadge(tier, t);
+            return { count: assets.filter(function (a) { return normalizeVisibility(a.Visibility) === tier; }).length, label: badge.label, color: badge.color };
+        }));
         drawTable('assets', panel, function () {
             return {
                 containerId: 'assetsTable',
@@ -995,11 +966,10 @@ export default function (view) {
         var panel = panels.stores;
         if (!panel) return;
         var t = shared.t;
-        var c = storeCounts(settings.Stores, counts);
+        var on = (settings.Stores || []).filter(function (x) { return x.Enabled !== false; }).length;
         shared.renderCards(panel.querySelector('[data-role="store-counts"]'), [
-            { count: c.stores, label: t.tr('PagesTabStores'), color: 'blue' },
-            { count: c.records, label: t.tr('LabelRecords'), color: 'green' },
-            { count: c.open, label: t.tr('PagesCardOpenToWrites'), color: c.open > 0 ? 'orange' : 'gray' }
+            { count: on, label: t.tr('StateOn'), color: on ? 'green' : 'gray' },
+            { count: (settings.Stores || []).length - on, label: t.tr('Off'), color: 'gray' }
         ]);
         drawTable('stores', panel, function () {
             return {

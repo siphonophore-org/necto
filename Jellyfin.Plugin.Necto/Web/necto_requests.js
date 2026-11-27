@@ -537,7 +537,7 @@ export default function (view) {
                     name: 'user',
                     label: t.tr('RequestsLabelRequester'),
                     options: requesterOptions(requesters),
-                    allLabel: t.tr('GroupEveryone'),
+                   
                     initialValue: filters.requester,
                     onChange: function (value) { filters.requester = value; keepFilters(storage(), filters); markShown(); }
                 }

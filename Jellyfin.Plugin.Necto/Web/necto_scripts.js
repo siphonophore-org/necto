@@ -225,13 +225,13 @@ export default function (view) {
 
     // ---- Counts and selector ----
 
+    // renderCounts
+    // Counts the scripts in each state, in the words and colors of the rows' badges. A state with none is gray.
     function renderCounts() {
-        var enabled = scripts.filter(function (s) { return s.Enabled; }).length;
-        Shared.renderCards('scriptCounts', [
-            { count: scripts.length, label: t.tr('TabScripts'), color: 'blue' },
-            { count: enabled, label: t.tr('LabelEnabled'), color: 'green' },
-            { count: scripts.length - enabled, label: t.tr('Disabled'), color: 'gray' }
-        ]);
+        Shared.renderCards('scriptCounts', Object.keys(STATE_BADGES).map(function (state) {
+            var count = scripts.filter(function (s) { return scriptState(s) === state; }).length;
+            return { count: count, label: t.tr(STATE_BADGES[state].key), color: count ? STATE_BADGES[state].color : 'gray' };
+        }));
     }
 
     // scriptState
@@ -1852,6 +1852,7 @@ export default function (view) {
         Shared.request('Scripts/Status').then(function (runs) {
             lastRuns = {};
             (Array.isArray(runs) ? runs : []).forEach(function (run) { lastRuns[compactId(run.ScriptId)] = run; });
+            renderCounts();
             if (table && catalog) table.refresh();
         }).catch(function () { /* the rows show Not run yet */ });
         return Shared.getConfig().then(function (config) {

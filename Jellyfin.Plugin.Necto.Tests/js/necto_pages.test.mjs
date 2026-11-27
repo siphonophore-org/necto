@@ -77,7 +77,7 @@ test('the page rows lead with each page title over its address, end with its tie
     assert.deepEqual(pages.pageCounts(list.slice(0, 2).concat([{ Slug: 'x' }])), { anyone: 1, user: 1, admin: 0, unpublished: 1 });
 });
 
-test('the store rows show who reads and writes and how full each store is, and the counts flag open stores', async function () {
+test('the store rows show who reads and writes and how full each store is, and On or Off', async function () {
     installPage({});
     var pages = await loadScript('necto_pages.js');
     var stores = [
@@ -93,7 +93,6 @@ test('the store rows show who reads and writes and how full each store is, and t
     assert.deepEqual(rows[0].state, { label: 'On', color: 'green' });
     assert.equal(rows[1].secondary, '');
     assert.deepEqual(rows[1].state, { label: 'Off', color: 'gray' });
-    assert.deepEqual(pages.storeCounts(stores, { queue: 4 }), { stores: 2, records: 4, open: 1 });
 });
 
 test('a store shows its warnings and scope only where they apply', async function () {

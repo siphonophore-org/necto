@@ -516,8 +516,9 @@ export function tableLine(parts) {
 //   endpoint    : the route, such as Invites/All, or rows, a function that gives every row, for rows the page holds
 //   idKey       : a row's id, as a property name or a function (default Id)
 //   search      : the search box's placeholder, such as Search invites
-//   filters     : [{ name, label, options, initialValue, allLabel, onChange(value), test(row, value) }], whose All
-//                 value is All. name is the query parameter, filter by default. test filters rows the page holds.
+//   filters     : [{ name, label, options, initialValue, onChange(value), test(row, value) }], whose first choice
+//                 is All, which means no filter. name is the query parameter, filter by default. test filters rows
+//                 the page holds.
 //   textOf      : textOf(row) gives the text the search looks in, for rows the page holds (default name and lines)
 //   empty       : { message, filteredMessage }, such as No invites yet. and No invites match. [required]
 //   title       : title(row) gives the row's name [required]
@@ -547,7 +548,6 @@ export function createToolTable(view, shared, o) {
             label: f.label,
             options: f.options || [],
             allValue: 'All',
-            allLabel: f.allLabel,
             initialValue: f.initialValue || 'All',
             onChange: f.onChange,
             buildParams: function (value) { var p = {}; p[name] = value === 'All' ? null : value; return p; }
@@ -654,6 +654,14 @@ export function createToolTable(view, shared, o) {
             return run.apply(table, arguments).then(function (result) { paintNone(); return result; });
         };
     });
+    // A filter whose choices arrive later is drawn then, so the tool's actions and Reload move back to the end.
+    var setFilterOptions = table.setFilterOptions;
+    table.setFilterOptions = function () {
+        setFilterOptions.apply(table, arguments);
+        if (!controls) return;
+        (o.add || []).forEach(function (a) { controls.appendChild(buttons[a.id]); });
+        if (buttons.reload) controls.appendChild(buttons.reload);
+    };
     var destroy = table.destroy;
     table.setNone = function (value) { none = !!value; paintNone(); };
     table.addButton = function (id) { return buttons[id] || null; };

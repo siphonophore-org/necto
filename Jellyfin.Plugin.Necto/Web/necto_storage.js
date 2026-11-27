@@ -936,7 +936,7 @@ export default function (view) {
             search: t.tr('StorageSearchDisks'),
             filters: [{
                 label: t.tr('StorageLabelShown'),
-                allLabel: t.tr('StorageFilterEveryDisk'),
+               
                 options: [{ value: 'InUse', label: t.tr('StorageFilterJellyfin') }],
                 initialValue: 'InUse',
                 test: function (disk) { return !!disk.InUse; }

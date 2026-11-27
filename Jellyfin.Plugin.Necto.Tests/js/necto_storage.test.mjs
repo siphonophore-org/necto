@@ -263,7 +263,7 @@ test('the tool checks every disk, lists the disks in use with their state, and l
     assert.match(rowHtml(rows[0]), /data-role="row-icon"[\s\S]*media[\s\S]*Local[\s\S]*data-role="row-state"/);
     var controls = view.querySelector('#storageDisks .stolon-table-controls');
     assert.equal(controls.querySelector('input').getAttribute('placeholder'), 'Search disks');
-    assert.deepEqual(texts(controls, 'select option'), ['Every disk', 'Used by Jellyfin']);
+    assert.deepEqual(texts(controls, 'select option'), ['All', 'Used by Jellyfin']);
     assert.ok(controls.querySelector('.stolon-table-reload-btn'));
     assert.equal(view.querySelector('#storageDisks .stolon-table-row-checkbox'), null);
 
