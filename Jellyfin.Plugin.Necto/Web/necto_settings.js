@@ -96,7 +96,11 @@ export default function (view) {
         var entry = entries.find(function (e) { return e.key === key; });
         if (!entry) return;
         entry.collapsible.setValue(true);
-        if (entry.collapsible.element.scrollIntoView) entry.collapsible.element.scrollIntoView({ block: 'start' });
+        if (!entry.collapsible.element.scrollIntoView) return;
+        entry.collapsible.element.scrollIntoView({ block: 'start' });
+        // The dashboard's fixed header would cover the section's title, so the page moves down by its height.
+        var header = document.querySelector('.skinHeader');
+        if (header && typeof window !== 'undefined' && window.scrollBy) window.scrollBy(0, -(header.offsetHeight + 16));
     }
 
     // loadPage
