@@ -7,22 +7,22 @@ using Jellyfin.Plugin.Necto.Configuration.Groups;
 namespace Jellyfin.Plugin.Necto.Services.Groups;
 
 /// <summary>
-/// Finds the groups that apply to a user: every group the user is in, or Everyone when the user is in none.
+/// Finds the group that applies to a user. A user is in one group at most, and Everyone holds a user in none.
 /// </summary>
 public static class GroupMembership
 {
     /// <summary>
-    /// Lists the groups that apply to a user.
+    /// Lists the group that applies to a user, as a list of one.
     /// </summary>
     /// <param name="config">The configuration that holds the groups.</param>
     /// <param name="userId">The Jellyfin user.</param>
-    /// <returns>The user's groups in list order, or only Everyone when the user is in none.</returns>
+    /// <returns>The user's group, the first in list order should a stored one list them twice, or Everyone.</returns>
     public static IReadOnlyList<Group> GroupsOf(PluginConfiguration config, Guid userId)
     {
         ArgumentNullException.ThrowIfNull(config);
-        var groups = (config.Groups ?? new List<Group>()).Where(g => g?.MemberIds?.Contains(userId) == true).ToList();
+        var groups = (config.Groups ?? new List<Group>()).Where(g => g?.MemberIds?.Contains(userId) == true).Take(1).ToList();
 
-        // Everyone only stands in for a user no group holds, so it never adds to a real group's permissions.
+        // Everyone only stands in for a user no group holds.
         if (groups.Count == 0)
         {
             groups.Add(config.Everyone ?? PluginConfiguration.NewEveryone());

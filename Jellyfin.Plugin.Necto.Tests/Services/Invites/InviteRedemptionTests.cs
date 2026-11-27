@@ -175,7 +175,6 @@ public sealed class InviteRedemptionTests : IDisposable
     public async Task Redeem_TemplateDisablesAccounts_KeepsItDisabled()
     {
         var review = TestGroups.Make("Review");
-        review.Template.Enabled = true;
         review.Template.Access.ManageIsDisabled = true;
         review.Template.Access.IsDisabled = true;
         _h.Config.Configuration.Groups.Add(review);

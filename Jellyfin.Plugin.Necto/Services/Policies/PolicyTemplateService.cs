@@ -67,17 +67,12 @@ public sealed class PolicyTemplateService
             return false;
         }
 
-        var (template, accounts) = _store.Read(c =>
-        {
-            var group = PolicyTemplateMerger.GroupFor(c, user.Id);
-            return (group is null ? null : SecretJson.Copy(group.Template), PermissionService.Resolve(c, user.Id, false).Accounts);
-        });
-        if (template is null)
+        var (template, accounts) = _store.Read(c => (PolicyTemplateMerger.For(c, user.Id), PermissionService.Resolve(c, user.Id, false).Accounts));
+        if (!PolicyTemplateRows.SetsAnything(template))
         {
             return false;
         }
 
-        PolicyTemplateNormalizer.Complete(template);
         var dto = _userManager.GetUserDto(user, string.Empty);
         var policy = dto.Policy;
         template.Access.ApplyTo(policy, user.Id);

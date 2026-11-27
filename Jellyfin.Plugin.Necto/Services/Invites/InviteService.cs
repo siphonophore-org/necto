@@ -783,7 +783,7 @@ public sealed class InviteService : IDisposable
         await WithUserRetryAsync(userId, async u => await _templates.ApplyAsync(u).ConfigureAwait(false)).ConfigureAwait(false);
 
         // The hold ends only now, with the password set and the group applied. A template that disables accounts keeps it.
-        var template = _store.Read(c => PolicyTemplateMerger.GroupFor(c, userId)?.Template);
+        var template = _store.Read(c => PolicyTemplateMerger.For(c, userId));
         var keepDisabled = template is { Access.ManageIsDisabled: true, Access.IsDisabled: true };
         await WithUserRetryAsync(userId, async u =>
         {

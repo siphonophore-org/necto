@@ -69,12 +69,12 @@ public class AccountRuleServiceTests
     }
 
     /// <summary>
-    /// A member of a second group without inactivity stays enabled.
-    /// True: any one group lets a member stay.
-    /// False: one group's rule would disable a member another group holds.
+    /// A user stored in a second group follows only the first, since a user is in one group.
+    /// True: the first group's inactivity rule disables the user.
+    /// False: a stored second group would still keep the user enabled.
     /// </summary>
     [Fact]
-    public async Task Process_SecondGroupWithoutInactivity_KeepsTheMember()
+    public async Task Process_UserStoredInASecondGroup_FollowsTheFirst()
     {
         var viewer = _users.Add("viewer", lastActivity: Now.UtcDateTime.AddDays(-400));
         Inactive(30, viewer.Id);
@@ -82,7 +82,7 @@ public class AccountRuleServiceTests
 
         await Run();
 
-        Assert.False(_users.IsDisabled(viewer.Id));
+        Assert.True(_users.IsDisabled(viewer.Id));
     }
 
     /// <summary>
@@ -124,23 +124,20 @@ public class AccountRuleServiceTests
     }
 
     /// <summary>
-    /// A group that has not expired, or a second group with no expiry, keeps the account.
-    /// True: a member expires only once every group has.
-    /// False: an expired group would end an account another group still holds.
+    /// A group that has not expired keeps its member's account.
+    /// True: a member expires only on the group's date.
+    /// False: an account would end early.
     /// </summary>
     [Fact]
-    public async Task Process_NotEveryGroupExpired_KeepsTheAccount()
+    public async Task Process_GroupNotExpired_KeepsTheAccount()
     {
         var future = _users.Add("future");
-        var both = _users.Add("both");
         Expires(2, ExpiryAction.Delete, future.Id);
-        Expires(-2, ExpiryAction.Delete, both.Id);
-        _config.Configuration.Groups.Add(TestGroups.Make("Family", both.Id));
 
         await Run();
 
         Assert.Empty(_users.Deleted);
-        Assert.False(_users.IsDisabled(both.Id));
+        Assert.False(_users.IsDisabled(future.Id));
     }
 
     /// <summary>

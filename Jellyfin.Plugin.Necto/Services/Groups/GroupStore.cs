@@ -61,7 +61,7 @@ public sealed class GroupStore
     /// </summary>
     /// <returns>Copies of the groups.</returns>
     public IReadOnlyList<Group> List()
-        => _store.Read(c => new[] { c.Everyone ?? PluginConfiguration.NewEveryone() }.Concat(c.Groups ?? new List<Group>()).Select(SecretJson.Copy).ToList());
+        => _store.Read(c => new[] { c.Everyone ?? PluginConfiguration.NewEveryone() }.Concat(c.Groups ?? new List<Group>()).Select(Completed).ToList());
 
     /// <summary>
     /// Finds a group.
@@ -69,6 +69,18 @@ public sealed class GroupStore
     /// <param name="id">The group's id.</param>
     /// <returns>A copy of the group, or <c>null</c> when none has the id.</returns>
     public Group? Get(Guid id) => List().FirstOrDefault(g => g.Id == id);
+
+    /// <summary>
+    /// Copies a group with every section filled in, as a save would leave it.
+    /// </summary>
+    /// <param name="group">The stored group.</param>
+    /// <returns>The copy.</returns>
+    private static Group Completed(Group group)
+    {
+        var copy = SecretJson.Copy(group);
+        GroupNormalizer.Complete(copy);
+        return copy;
+    }
 
     /// <summary>
     /// Creates a group with a new id.
@@ -95,6 +107,7 @@ public sealed class GroupStore
             }
 
             config.Groups.Add(group);
+            TakeMembers(config, group);
             GroupNormalizer.Normalize(config, known, admins);
             result = new GroupChange(SecretJson.Copy(config.Groups.First(g => g.Id == group.Id)), GroupChangeError.None);
             return true;
@@ -148,6 +161,7 @@ public sealed class GroupStore
                 }
 
                 config.Groups[index] = group;
+                TakeMembers(config, group);
             }
 
             GroupNormalizer.Normalize(config, known, admins);
@@ -208,11 +222,17 @@ public sealed class GroupStore
     {
         var (known, admins) = Users();
         var changed = false;
+        var moved = new List<(Guid UserId, string Kept, string Left)>();
         _store.Mutate(config =>
         {
-            changed = GroupNormalizer.Normalize(config, known, admins);
+            changed = GroupNormalizer.Normalize(config, known, admins, moved);
             return changed;
         });
+
+        foreach (var (userId, kept, left) in moved)
+        {
+            _logger.LogInformation("User {UserId} was in several groups and stays in {Kept}, leaving {Left}", userId, FormatUtilities.SanitizeForLog(kept), FormatUtilities.SanitizeForLog(left));
+        }
 
         if (changed)
         {
@@ -221,6 +241,19 @@ public sealed class GroupStore
         }
 
         return changed;
+    }
+
+    /// <summary>
+    /// Moves a saved group's members out of every other group, since a user is in one group at most.
+    /// </summary>
+    /// <param name="config">The configuration, changed in place.</param>
+    /// <param name="group">The group just saved.</param>
+    private static void TakeMembers(PluginConfiguration config, Group group)
+    {
+        foreach (var other in config.Groups.Where(g => g.Id != group.Id))
+        {
+            other.MemberIds.RemoveAll(group.MemberIds.Contains);
+        }
     }
 
     /// <summary>

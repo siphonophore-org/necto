@@ -3,7 +3,8 @@ using System.Collections.Generic;
 namespace Jellyfin.Plugin.Necto.Configuration.Groups;
 
 /// <summary>
-/// The scripts that run for members.
+/// The scripts a stored group runs for its members. Each script holds its own groups, and
+/// <see cref="Services.Scripts.ScriptGroupFilter.Migrate"/> moves these onto the scripts and clears them.
 /// </summary>
 public class ScriptPermissions
 {

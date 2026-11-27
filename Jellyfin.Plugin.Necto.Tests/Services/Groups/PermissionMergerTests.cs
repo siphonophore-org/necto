@@ -178,7 +178,7 @@ public class PermissionMergerTests
         Assert.True(merged.Issues.MayReport && merged.Issues.MayManage);
         Assert.True(merged.WireGuard.MayHavePeers);
         Assert.Equal(0, merged.WireGuard.MaxPeers);
-        Assert.True(merged.MayOpenPage("any") && merged.RunsScript("any") && merged.Receives("any") && merged.MayInviteTo(Guid.NewGuid()));
+        Assert.True(merged.MayOpenPage("any") && merged.Receives("any") && merged.MayInviteTo(Guid.NewGuid()));
         Assert.Null(merged.Accounts.Password);
     }
 

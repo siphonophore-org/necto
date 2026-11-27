@@ -52,5 +52,6 @@ public sealed class PolicyTemplatesTask : PluginScheduledTask
     public override IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
         yield return OnStartup();
+        yield return Daily(TimeSpan.Zero);
     }
 }

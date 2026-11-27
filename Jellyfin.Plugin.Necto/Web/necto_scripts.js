@@ -1,11 +1,11 @@
 // necto_scripts.js
 // The Scripts tool: the script picker and the editor for one script's triggers, filters, conditions, steps,
-// secrets, and behavior, with Save, Test, and Run now. Which users a script runs for is set on groups.
+// secrets, and behavior, with Save, Test, and Run now. A script runs for every user, or for the groups it picks.
 
 import {
     createScriptsPage, createRepeater, createChipSelect, createTagInput, createComboBox, adornField, createCheckboxList, createUserMultiSelector, createSortableCardList,
     createChoiceGroup, createCopyField, createSaveBar, createSliderField, createDurationField,
-    createCollapsibleSection, confirmDialog, promptSidecar, openSidecar, openTool, generateGuid, downloadJson, pickJsonFile, setFieldState, SECRET_KEPT,
+    createCollapsibleSection, confirmDialog, promptSidecar, openSidecar, generateGuid, downloadJson, pickJsonFile, setFieldState, SECRET_KEPT,
     fieldGroups, fieldLabel, NUMERIC_FIELDS, operatorLabels, operationTypes, renderRunSummary, renderRunSteps, t
 } from './configurationpage?name=necto_scripts_common.js';
 import { templates, httpPresetLabels, HTTP_PRESETS } from './configurationpage?name=necto_scripts_templates.js';
@@ -106,6 +106,7 @@ export default function (view) {
     var variableNames = [];
     var variableCombo = null;
     var webhookField = null;
+    var groupPicker = null;
     var suppressWidgetEvents = false;
 
     function el(id) { return view.querySelector('#' + id); }
@@ -361,10 +362,10 @@ export default function (view) {
             : { label: t.plural(kinds, 'ScriptsBadgeKindsOne', 'ScriptsBadgeKindsMany'), color: 'blue' });
         folds.steps.setSubtitle(counted((script.Operations || []).length, 'ScriptsSummaryNoSteps', 'ScriptsSummaryStepsOne', 'ScriptsSummaryStepsMany'));
 
-        var runningGroups = groupsRunning(script);
-        folds.users.setSubtitle(counted(runningGroups.length, 'ScriptsSummaryNoGroups', 'ScriptsSummaryGroupsOne', 'ScriptsSummaryGroupsMany'));
+        folds.users.setSubtitle(script.AllGroups !== false ? t.tr('GroupEveryone')
+            : counted((script.GroupIds || []).length, 'ScriptsSummaryNoGroups', 'ScriptsSummaryGroupsOne', 'ScriptsSummaryGroupsMany'));
         folds.users.setBadge(shown('userWarn') ? { label: ignoredLabel(script), color: 'orange' } : null);
-        renderGroups(runningGroups);
+        renderGroups(script);
 
         // With one condition, All and Any match the same, so only a count of two or more names the match.
         folds.conditions.setSubtitle(counted((script.Conditions || []).length, 'ScriptsSummaryNoConditions', 'ScriptsSummaryConditionsOne',
@@ -437,7 +438,7 @@ export default function (view) {
         Shared.setVisible('itemKindWarn', kindWarn);
 
         var noUser = triggers.filter(function (t) { return !carriesUser(script, t); });
-        var userWarn = groupsRunning(script).length > 0 && noUser.length > 0;
+        var userWarn = script.AllGroups === false && noUser.length > 0;
         var ignored = noUser.map(quoted).join(', ');
         el('userWarn').textContent = !userWarn ? '' : noUser.length === 1 ? t.format('ScriptsWarnUsersIgnoredOne', ignored) : t.format('ScriptsWarnUsersIgnoredMany', ignored);
         Shared.setVisible('userWarn', userWarn);
@@ -454,32 +455,35 @@ export default function (view) {
         Shared.setVisible('forEachWarn', !!eachWarn);
     }
 
-    // groupsRunning
-    // Lists the groups that run a script, Everyone first, from what the Groups tool holds.
-    //
-    // Inputs
-    // script [object]: The script.
+    // groupOptions
+    // Lists the groups a script can pick, Everyone first under its name in the viewer's language.
     //
     // Output
-    // [object[]]: The groups.
-    function groupsRunning(script) {
-        return nectoGroups.filter(function (g) {
-            var p = (g.Permissions && g.Permissions.Scripts) || {};
-            return p.AllScripts || (p.ScriptIds || []).some(function (id) { return compactId(id) === compactId(script.Id); });
+    // [object[]]: Each group's Id and Name.
+    function groupOptions() {
+        var everyone = nectoGroups.filter(function (g) { return g.IsEveryone; });
+        return everyone.concat(nectoGroups.filter(function (g) { return !g.IsEveryone; })).map(function (g) {
+            return { Id: compactId(g.Id), Name: g.IsEveryone ? t.tr('GroupEveryone') : g.Name };
         });
     }
 
     // renderGroups
-    // Names the groups that run the open script, or says that none does.
+    // Shows whether the open script runs for everyone, and the groups it picks while it does not.
     //
     // Inputs
-    // list [object[]]: The groups that run it.
-    function renderGroups(list) {
-        var holder = el('groupList');
-        if (!holder) return;
-        holder.innerHTML = list.length
-            ? '<div class="stolon-tag-row">' + list.map(function (g) { return Shared.badge('blue', g.Name); }).join(' ') + '</div>'
-            : Shared.emptySection(t.tr('ScriptsEmptyGroups'), { inline: true });
+    // script [object]: The open script.
+    function renderGroups(script) {
+        var all = script.AllGroups !== false;
+        el('scriptAllGroups').checked = all;
+        var picked = (script.GroupIds || []).map(compactId);
+        if (groupPicker && groupPicker.getValue().map(compactId).join() !== picked.join()) {
+            var quiet = suppressWidgetEvents;
+            suppressWidgetEvents = true;
+            groupPicker.setValue(picked);
+            suppressWidgetEvents = quiet;
+        }
+        Shared.setVisible('scriptGroupPicks', !all);
+        Shared.setVisible('groupWarn', !all && !(script.GroupIds || []).length);
     }
 
     // ---- Trigger options ----
@@ -1361,7 +1365,7 @@ export default function (view) {
 
     function blankScript(name) {
         return {
-            Id: compactId(generateGuid()), Name: name || t.tr('ScriptsScriptNewName'), Description: '', Enabled: true, Triggers: [], ItemKinds: [],
+            Id: compactId(generateGuid()), Name: name || t.tr('ScriptsScriptNewName'), Description: '', Enabled: true, AllGroups: true, GroupIds: [], Triggers: [], ItemKinds: [],
             Match: 'All', Conditions: [], Operations: [], CooldownSeconds: 0, Secrets: [],
             PausedForMinutes: 10, PlayingForMinutes: 60, ScheduleMode: 'None', ScheduleIntervalMinutes: 60,
             ScheduleTime: '03:00', ScheduleDays: [], ScheduleMonthDay: 1,
@@ -1556,7 +1560,6 @@ export default function (view) {
         el('btnRemoveScript').addEventListener('click', removeScript);
         el('btnImportScripts').addEventListener('click', importScripts);
         el('btnExportScripts').addEventListener('click', exportScripts);
-        el('btnOpenGroups').addEventListener('click', function () { openTool(view, 'groups'); });
 
         el('scriptDescription').addEventListener('input', function () { current().Description = this.value; edited(); });
         el('scriptEnabled').addEventListener('change', function () { current().Enabled = this.checked; edited(); });
@@ -1713,6 +1716,28 @@ export default function (view) {
         });
         el('itemKindMount').appendChild(itemKindSelect.element);
 
+        groupPicker = createCheckboxList({
+            items: groupOptions(),
+            idKey: 'Id',
+            matchKey: compactId,
+            search: false,
+            renderRow: function (g) { return { label: g.Name }; },
+            onChange: function (ids) {
+                if (suppressWidgetEvents) return;
+                current().GroupIds = ids.map(compactId);
+                renderWarnings();
+                renderSummaries();
+                edited();
+            }
+        });
+        el('groupList').appendChild(groupPicker.element);
+        el('scriptAllGroups').addEventListener('change', function () {
+            current().AllGroups = el('scriptAllGroups').checked;
+            renderWarnings();
+            renderSummaries();
+            edited();
+        });
+
 
         tracker = Shared.createChangeTracker({
             serialize: function () { return JSON.stringify(scripts); }
@@ -1728,6 +1753,8 @@ export default function (view) {
                 script.Id = compactId(s.Id);
                 script.Enabled = !!s.Enabled;
                 script.WebhookToken = s.WebhookToken || script.WebhookToken;
+                script.AllGroups = s.AllGroups !== false;
+                script.GroupIds = (s.GroupIds || []).map(compactId);
                 script.Secrets = (s.Secrets || []).map(function (x) {
                     return { Name: x.Name, Value: x.Value ? SECRET_KEPT : '', PreviousName: x.Name };
                 });

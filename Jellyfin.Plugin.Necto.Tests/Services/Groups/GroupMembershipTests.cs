@@ -7,17 +7,17 @@ using Xunit;
 namespace Jellyfin.Plugin.Necto.Tests.Services.Groups;
 
 /// <summary>
-/// A user's groups are every group that lists them, in list order, or only Everyone when none does.
+/// A user's group is the one that lists them, the first in list order should a stored config list them twice, or Everyone.
 /// </summary>
 public class GroupMembershipTests
 {
     /// <summary>
-    /// A user may be in several groups.
-    /// True: every group that lists the user applies.
-    /// False: only the first group would count, as a single membership model would.
+    /// A user is in one group, so a stored config that lists them twice gives only the first.
+    /// True: one group decides everything a user may do.
+    /// False: a second group would still add to a user's permissions.
     /// </summary>
     [Fact]
-    public void GroupsOf_UserInSeveralGroups_GetsEachInOrder()
+    public void GroupsOf_UserListedTwice_GetsTheFirst()
     {
         var user = Guid.NewGuid();
         var a = TestGroups.Make("A", user);
@@ -26,8 +26,7 @@ public class GroupMembershipTests
 
         var groups = GroupMembership.GroupsOf(TestGroups.Config(a, b, c), user);
 
-        Assert.Equal(new[] { a.Id, c.Id }, new[] { groups[0].Id, groups[1].Id });
-        Assert.Equal(2, groups.Count);
+        Assert.Equal(a.Id, Assert.Single(groups).Id);
     }
 
     /// <summary>

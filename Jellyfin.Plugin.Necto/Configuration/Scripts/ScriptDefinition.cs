@@ -25,6 +25,19 @@ public class ScriptDefinition
     public List<ScriptTrigger> Triggers { get; set; } = new();
 
     /// <summary>
+    /// Gets or sets a value indicating whether the script runs for every user, in any group or none. False runs it only
+    /// for the members of <see cref="GroupIds"/>. Null marks a stored script whose groups are still on the groups, which
+    /// <see cref="Services.Scripts.ScriptGroupFilter.Migrate"/> moves here.
+    /// </summary>
+    public bool? AllGroups { get; set; }
+
+    /// <summary>
+    /// Gets or sets the groups whose members the script runs for while <see cref="AllGroups"/> is off. Everyone stands
+    /// for the users in no group.
+    /// </summary>
+    public List<Guid> GroupIds { get; set; } = new();
+
+    /// <summary>
     /// Gets or sets the item kinds the script runs for. Empty runs for every kind. Only events that carry an
     /// item are filtered; sign ins and scheduled tasks ignore it.
     /// </summary>

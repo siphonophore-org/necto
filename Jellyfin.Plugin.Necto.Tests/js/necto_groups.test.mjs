@@ -91,10 +91,16 @@ test('a group opens in a sidecar named for it, with its sections, and Remove, Ca
 
     assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'Family');
     assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Cancel', 'Save']);
-    assert.equal((sidecar.textContent.match(/never holds administrators/g) || []).length, 1);
-    assert.match(sidecar.querySelector('[data-section="members"]').textContent, /never holds administrators/);
-    assert.deepEqual(texts(sidecar, '.stolon-collapsible-title'), ['Members', 'Account rules', 'Access and features', 'Preferences', 'Requests', 'Issues', 'Invites', 'VPN', 'Scripts', 'Pages', 'Notifications']);
-    assert.deepEqual(texts(sidecar, '[data-section="accounts"] .stolon-subsection-title'), ['Password requirements', 'Expiry', 'Inactivity', 'Session management']);
+    assert.equal((sidecar.textContent.match(/administrators are never in one/g) || []).length, 1);
+    assert.match(sidecar.querySelector('[data-section="members"]').textContent, /administrators are never in one/);
+    assert.deepEqual(texts(sidecar, '.stolon-sidecar-body > * > .stolon-collapsible-section > .stolon-collapsible-header .stolon-collapsible-title, [data-role="group-editor"] > .stolon-collapsible-section > .stolon-collapsible-header .stolon-collapsible-title'),
+        ['Members', 'Account rules', 'Jellyfin access', 'Jellyfin preferences', 'Requests', 'Issues', 'Invites', 'VPN', 'Pages', 'Notifications']);
+    assert.deepEqual(texts(sidecar, '[data-section="accounts"] .stolon-collapsible-section .stolon-collapsible-title'), ['Password requirements', 'Expiry', 'Inactivity', 'Session management']);
+    assert.deepEqual(texts(sidecar, '[data-section="template-access"] .stolon-collapsible-section .stolon-collapsible-title').map(function (x) { return x.toLowerCase(); }),
+        ['library access', 'device access', 'media deletion', 'media playback', 'live tv', 'remote control', 'parental control', 'profile']);
+    assert.deepEqual(texts(sidecar, '[data-section="template-preferences"] .stolon-collapsible-section .stolon-collapsible-title'), ['Subtitles', 'Playback', 'Display', 'Home']);
+    var icons = Array.prototype.map.call(sidecar.querySelectorAll('.stolon-collapsible-tile'), function (n) { return n.textContent; });
+    assert.equal(new Set(icons).size, icons.length);
     assert.equal(sidecar.querySelectorAll('[data-role="coming"]').length, 0);
     assert.equal(sidecar.querySelector('[data-section="accounts"] [data-role="coming"]'), null);
     assert.equal(sidecar.querySelector('[data-field="Name"]').value, 'Family');
@@ -108,7 +114,7 @@ test('Everyone opens with no name field, no members to pick, no Remove, and no w
     assert.equal(sidecar.querySelector('[data-field="Name"]'), null);
     assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Cancel', 'Save']);
     assert.match(sidecar.querySelector('[data-section="members"]').textContent, /every user who is in no other group/);
-    assert.doesNotMatch(sidecar.textContent, /never holds administrators/);
+    assert.doesNotMatch(sidecar.textContent, /administrators are never in one/);
 });
 
 // tile
@@ -123,10 +129,14 @@ test('each tool section tile is green while the group gives members the tool and
     var sidecar = await openRow(opened, 1);
 
     assert.equal(tile(sidecar, 'members'), 'accent');
-    assert.equal(tile(sidecar, 'accounts'), 'accent');
+    assert.equal(tile(sidecar, 'accounts'), 'green');
+    assert.equal(tile(sidecar, 'accounts-password'), 'green');
+    assert.equal(tile(sidecar, 'accounts-expiry'), 'gray');
+    assert.equal(tile(sidecar, 'accounts-inactivity'), 'green');
+    assert.equal(tile(sidecar, 'accounts-sessions'), 'gray');
+    assert.equal(sidecar.querySelector('[data-section="scripts"]'), null);
     assert.equal(tile(sidecar, 'requests'), 'green');
     assert.equal(tile(sidecar, 'issues'), 'gray');
-    assert.equal(tile(sidecar, 'scripts'), 'gray');
     var report = sidecar.querySelector('[data-field="Issues.MayReport"]');
     report.checked = true;
     report.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
@@ -169,27 +179,40 @@ test('the Notifications tile follows the events each list holds, and clearing th
     assert.deepEqual(JSON.parse(sent(opened)[0].data).Permissions.Notifications.EventKeys, []);
 });
 
-test('the Jellyfin settings tiles follow their switch, and Preferences hides while the group sets nothing', async function () {
+test('the Jellyfin tiles are gray until a row is set by the group, then green with the count in the header', async function () {
     var opened = await openPage();
     var sidecar = await openRow(opened, 1);
-    var prefs = sidecar.querySelector('[data-section="template-preferences"]');
 
     assert.equal(tile(sidecar, 'template-access'), 'gray');
-    assert.ok(prefs.classList.contains('stolon-hidden'));
-    var on = sidecar.querySelector('[data-field="Template.Enabled"]');
-    on.checked = true;
-    on.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    assert.equal(tile(sidecar, 'access-playback'), 'gray');
+    assert.equal(sidecar.querySelector('[data-section="template-preferences"]').classList.contains('stolon-hidden'), false);
+    var row = sidecar.querySelector('[data-field="Access.EnableMediaPlayback"]');
+    var group = Array.prototype.find.call(row.querySelectorAll('button'), function (b) { return b.textContent.trim() === 'Group'; });
+    group.click();
+    await settle(20);
     assert.equal(tile(sidecar, 'template-access'), 'green');
-    assert.equal(prefs.classList.contains('stolon-hidden'), false);
-    assert.equal(tile(sidecar, 'template-preferences'), 'green');
+    assert.equal(tile(sidecar, 'access-playback'), 'green');
+    assert.match(sidecar.querySelector('[data-section="access-playback"] > .stolon-collapsible-header').textContent, /1 set by group/);
+    assert.equal(tile(sidecar, 'template-preferences'), 'gray');
+});
+
+test('the member list names the other group a user is in, who moves here on save', async function () {
+    installPage({});
+    var mod = await loadScript('necto_groups.js');
+    var t = { tr: function (k) { return k; } };
+    var groups = [{ Id: FAMILY, Name: 'Family' }, { Id: 'kids', Name: 'Kids' }];
+
+    assert.equal(mod.otherGroupName({ GroupIds: ['kids'] }, { Id: FAMILY }, groups, t), 'Kids');
+    assert.equal(mod.otherGroupName({ GroupIds: [FAMILY] }, { Id: FAMILY }, groups, t), null);
+    assert.equal(mod.otherGroupName({ GroupIds: [EVERYONE] }, { Id: FAMILY }, groups, t), null);
 });
 
 test('grantsAny holds while a switch is on or a list holds an entry, and eventGroups sorts events by tool without the tools that are off', async function () {
     installPage({ config: allToolsOn() });
     var mod = await loadScript('necto_groups.js');
 
-    assert.equal(mod.grantsAny({ Scripts: { AllScripts: false, ScriptIds: [] } }, ['Scripts.AllScripts', 'Scripts.ScriptIds']), false);
-    assert.equal(mod.grantsAny({ Scripts: { AllScripts: false, ScriptIds: ['a'] } }, ['Scripts.AllScripts', 'Scripts.ScriptIds']), true);
+    assert.equal(mod.grantsAny({ CustomPages: { AllPages: false, PageIds: [] } }, ['CustomPages.AllPages', 'CustomPages.PageIds']), false);
+    assert.equal(mod.grantsAny({ CustomPages: { AllPages: false, PageIds: ['a'] } }, ['CustomPages.AllPages', 'CustomPages.PageIds']), true);
     assert.equal(mod.grantsAny({}, ['Invites.MayCreate']), false);
     var events = [
         { Key: 'storage.disk_missing', Name: 'Disk missing', Tool: 'storage' },

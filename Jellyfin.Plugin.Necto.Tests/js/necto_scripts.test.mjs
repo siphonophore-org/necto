@@ -98,7 +98,7 @@ test('the Scripts section of Troubleshooting reads the run history and its chart
     assert.ok(opened.page.requests.some(function (r) { return r.url === 'Scripts/Catalog'; }));
 });
 
-test('the group editor lists the scripts a group runs, hidden while it runs every script', async function () {
+test('the group editor has no Scripts section, since each script picks its own groups', async function () {
     var page = installPage({ config: allToolsOn() });
     var dom = page.dom;
     routeApi(page, { 'GET Scripts/Names': [{ Id: SCRIPT.replace(/-/g, ''), Name: 'Notify' }] });
@@ -110,10 +110,7 @@ test('the group editor lists the scripts a group runs, hidden while it runs ever
     dom.document.documentElement.appendChild(editor.element);
     await settle(50);
 
-    var section = editor.element.querySelector('[data-section="scripts"]');
-    assert.equal(section.querySelector('[data-role="coming"]'), null);
-    assert.ok(section.querySelector('[data-field="Scripts.ScriptIds"]'));
-    assert.deepEqual(editor.getValue().Permissions.Scripts.ScriptIds, [SCRIPT.replace(/-/g, '')]);
+    assert.equal(editor.element.querySelector('[data-section="scripts"]'), null);
     var wireguard = editor.element.querySelector('[data-section="wireguard"]');
     assert.ok(wireguard.querySelector('[data-field="WireGuard.DataLimit"]'));
     assert.equal(wireguard.querySelector('[data-role="coming"]'), null);

@@ -54,13 +54,6 @@ public sealed class EffectivePermissions
     public bool MayOpenPage(string pageId) => IsAdministrator || CustomPages.AllPages || CustomPages.PageIds.Contains(pageId);
 
     /// <summary>
-    /// Works out whether a script runs for the user.
-    /// </summary>
-    /// <param name="scriptId">The script.</param>
-    /// <returns><c>true</c> when an administrator, when any group runs every script, or when any group names it.</returns>
-    public bool RunsScript(string scriptId) => IsAdministrator || Scripts.AllScripts || Scripts.ScriptIds.Contains(scriptId);
-
-    /// <summary>
     /// Works out whether the user receives an event.
     /// </summary>
     /// <param name="eventKey">The event.</param>

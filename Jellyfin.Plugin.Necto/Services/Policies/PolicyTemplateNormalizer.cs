@@ -18,6 +18,15 @@ public static class PolicyTemplateNormalizer
     {
         ArgumentNullException.ThrowIfNull(template);
         var a = template.Access ??= new AccessTemplate();
+        var p = template.Preferences ??= new PreferencesTemplate();
+
+        // A template stored with its rows off keeps them off, as rows left to the member.
+        if (!template.Enabled)
+        {
+            PolicyTemplateRows.Clear(template);
+            template.Enabled = true;
+        }
+
         a.SyncPlayAccess ??= "CreateAndJoinGroups";
         a.EnableContentDeletionFromFolders = Strings(a.EnableContentDeletionFromFolders);
         a.EnabledFolders = (a.EnabledFolders ?? new List<Guid>()).Where(g => g != Guid.Empty).Distinct().ToList();
@@ -28,7 +37,6 @@ public static class PolicyTemplateNormalizer
         a.BlockedTags = Strings(a.BlockedTags);
         a.AccessSchedules = (a.AccessSchedules ?? new List<AccessScheduleEntry>()).Where(s => s is not null).ToList();
 
-        var p = template.Preferences ??= new PreferencesTemplate();
         p.SubtitleMode ??= "Default";
         p.SubtitleLanguagePreference ??= string.Empty;
         p.AudioLanguagePreference ??= string.Empty;

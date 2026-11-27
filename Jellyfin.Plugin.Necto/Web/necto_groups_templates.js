@@ -1,6 +1,6 @@
 // necto_groups_templates.js
-// The template sections of the group editor. A group's template writes Jellyfin's own Access and features and
-// Preferences onto its members, and each setting is either left to the member or set by the group.
+// The Jellyfin sections of the group editor. A group writes Jellyfin's own access and preference settings onto its
+// members, and each setting is either left to the member or set by the group.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
@@ -87,29 +87,30 @@ export var HOME_SECTION_COUNT = 10;
 export var DEFAULT_HOME_SECTIONS = ['smalllibrarytiles', 'resume', 'resumeaudio', 'resumebook', 'livetv', 'nextup', 'latestmedia', 'none', 'none', 'none'];
 
 // accessSpecs
-// Describes the Access and features rows, by section, with Jellyfin's own labels.
+// Describes the Jellyfin access rows, by section, with Jellyfin's own labels.
 //
 // Inputs
 // t [object]: The strings.
 //
 // Output
-// [object[]]: Each section's title and rows. A row's key names its value in the template, and its type its field.
+// [object[]]: Each section's key, title, icon, and rows. A row's key names its value in the template, and its type its
+//   field.
 export function accessSpecs(t) {
     return [
-        { title: t.tr('HeaderLibraryAccess'), rows: [
+        { key: 'library', icon: 'video_library', title: t.tr('HeaderLibraryAccess'), rows: [
             { key: 'LibraryAccess', type: 'library', label: t.tr('OptionEnableAccessToAllLibraries') },
             { key: 'ChannelAccess', type: 'channels', label: t.tr('OptionEnableAccessToAllChannels') }
         ] },
-        { title: t.tr('HeaderDeviceAccess'), rows: [
+        { key: 'device', icon: 'devices', title: t.tr('HeaderDeviceAccess'), rows: [
             { key: 'DeviceAccess', type: 'devices', label: t.tr('OptionEnableAccessFromAllDevices') }
         ] },
-        { title: t.tr('GroupsTemplateMediaDeletion'), rows: [
+        { key: 'deletion', icon: 'delete_sweep', title: t.tr('GroupsTemplateMediaDeletion'), rows: [
             { key: 'EnableContentDeletion', type: 'deletion', label: t.tr('GroupsTemplateDeleteAll') }
         ] },
-        { title: t.tr('HeaderPlayback'), rows: [
+        { key: 'playback', icon: 'play_circle', title: t.tr('HeaderPlayback'), rows: [
             { key: 'EnableMediaPlayback', type: 'bool', label: t.tr('OptionAllowMediaPlayback') },
             { key: 'EnableAudioPlaybackTranscoding', type: 'bool', label: t.tr('OptionAllowAudioPlaybackTranscoding') },
-            { key: 'EnableVideoPlaybackTranscoding', type: 'bool', label: t.tr('OptionAllowVideoPlaybackTranscoding') },
+            { key: 'EnableVideoPlaybackTranscoding', type: 'bool', label: t.tr('OptionAllowVideoPlaybackTranscoding'), help: t.tr('OptionAllowMediaPlaybackTranscodingHelp') },
             { key: 'EnablePlaybackRemuxing', type: 'bool', label: t.tr('OptionAllowVideoPlaybackRemuxing') },
             { key: 'ForceRemoteSourceTranscoding', type: 'bool', label: t.tr('OptionForceRemoteSourceTranscoding') },
             { key: 'RemoteClientBitrateLimit', type: 'bitrate', label: t.tr('LabelRemoteClientBitrateLimit'), help: t.tr('HelpZeroNoLimit') },
@@ -119,31 +120,31 @@ export function accessSpecs(t) {
                 ['None', t.tr('LabelSyncPlayAccessNone')]
             ] }
         ] },
-        { title: t.tr('LiveTV'), rows: [
+        { key: 'livetv', icon: 'live_tv', title: t.tr('LiveTV'), rows: [
             { key: 'EnableLiveTvAccess', type: 'bool', label: t.tr('OptionAllowBrowsingLiveTv') },
             { key: 'EnableLiveTvManagement', type: 'bool', label: t.tr('OptionAllowManageLiveTv') }
         ] },
-        { title: t.tr('HeaderRemoteControl'), rows: [
+        { key: 'remote', icon: 'settings_remote', title: t.tr('HeaderRemoteControl'), rows: [
             { key: 'EnableRemoteControlOfOtherUsers', type: 'bool', label: t.tr('OptionAllowRemoteControlOthers') },
-            { key: 'EnableSharedDeviceControl', type: 'bool', label: t.tr('OptionAllowRemoteSharedDevices') }
+            { key: 'EnableSharedDeviceControl', type: 'bool', label: t.tr('OptionAllowRemoteSharedDevices'), help: t.tr('OptionAllowRemoteSharedDevicesHelp') }
         ] },
-        { title: t.tr('TabParentalControl'), rows: [
+        { key: 'parental', icon: 'family_restroom', title: t.tr('TabParentalControl'), rows: [
             { key: 'MaxParentalRating', type: 'rating', label: t.tr('LabelMaxParentalRating') },
             { key: 'BlockUnratedItems', type: 'unrated', label: t.tr('HeaderBlockItemsWithNoRating') },
-            { key: 'AllowedTags', type: 'tags', label: t.tr('LabelAllowContentWithTags') },
-            { key: 'BlockedTags', type: 'tags', label: t.tr('LabelBlockContentWithTags') },
-            { key: 'AccessSchedules', type: 'schedule', label: t.tr('HeaderAccessSchedule') }
+            { key: 'AllowedTags', type: 'tags', label: t.tr('LabelAllowContentWithTags'), help: t.tr('AllowContentWithTagsHelp') },
+            { key: 'BlockedTags', type: 'tags', label: t.tr('LabelBlockContentWithTags'), help: t.tr('BlockContentWithTagsHelp') },
+            { key: 'AccessSchedules', type: 'schedule', label: t.tr('HeaderAccessSchedule'), help: t.tr('HeaderAccessScheduleHelp') }
         ] },
-        { title: t.tr('Profile'), rows: [
-            { key: 'EnableRemoteAccess', type: 'bool', label: t.tr('AllowRemoteAccess') },
+        { key: 'profile', icon: 'badge', title: t.tr('Profile'), rows: [
+            { key: 'EnableRemoteAccess', type: 'bool', label: t.tr('AllowRemoteAccess'), help: t.tr('AllowRemoteAccessHelp') },
             { key: 'EnableCollectionManagement', type: 'bool', label: t.tr('AllowCollectionManagement') },
             { key: 'EnableSubtitleManagement', type: 'bool', label: t.tr('AllowSubtitleManagement') },
             { key: 'EnableLyricManagement', type: 'bool', label: t.tr('GroupsTemplateLyrics') },
             { key: 'EnableUserPreferenceAccess', type: 'bool', label: t.tr('GroupsTemplatePreferenceAccess') },
             { key: 'EnableContentDownloading', type: 'bool', label: t.tr('OptionAllowContentDownload') },
             { key: 'EnableMediaConversion', type: 'bool', label: t.tr('AllowMediaConversion') },
-            { key: 'EnableSyncTranscoding', type: 'bool', label: t.tr('GroupsTemplateSyncTranscoding') },
-            { key: 'EnablePublicSharing', type: 'bool', label: t.tr('GroupsTemplatePublicSharing') },
+            { key: 'EnableSyncTranscoding', type: 'bool', label: t.tr('OptionAllowSyncTranscoding') },
+            { key: 'EnablePublicSharing', type: 'bool', label: t.tr('OptionAllowLinkSharing') },
             { key: 'IsDisabled', type: 'bool', label: t.tr('OptionDisableUser'), help: t.tr('GroupsTemplateDisableHelp') },
             { key: 'IsHidden', type: 'bool', label: t.tr('OptionHideUser') },
             { key: 'LoginAttemptsBeforeLockout', type: 'int', label: t.tr('LabelUserLoginAttemptsBeforeLockout'), min: -1, help: t.tr('GroupsTemplateLockoutHelp') },
@@ -153,16 +154,16 @@ export function accessSpecs(t) {
 }
 
 // preferenceSpecs
-// Describes the Preferences rows, by section, with the labels of a user's own preference pages.
+// Describes the Jellyfin preference rows, by section, with the labels of a user's own preference pages.
 //
 // Inputs
 // t [object]: The strings.
 //
 // Output
-// [object[]]: Each section's title and rows.
+// [object[]]: Each section's key, title, icon, and rows.
 export function preferenceSpecs(t) {
     return [
-        { title: t.tr('Subtitles'), rows: [
+        { key: 'subtitles', icon: 'subtitles', title: t.tr('Subtitles'), rows: [
             { key: 'SubtitleMode', type: 'enum', label: t.tr('LabelSubtitlePlaybackMode'), options: [
                 ['Default', t.tr('Default')], ['Smart', t.tr('Smart')], ['OnlyForced', t.tr('OnlyForcedSubtitles')], ['Always', t.tr('AlwaysPlaySubtitles')], ['None', t.tr('None')]
             ], optionHelp: {
@@ -170,26 +171,26 @@ export function preferenceSpecs(t) {
                 Always: t.tr('AlwaysPlaySubtitlesHelp'), None: t.tr('NoSubtitlesHelp')
             } },
             { key: 'SubtitleLanguagePreference', type: 'culture', label: t.tr('LabelPreferredSubtitleLanguage') },
-            { key: 'RememberSubtitleSelections', type: 'bool', label: t.tr('RememberSubtitleSelections') }
+            { key: 'RememberSubtitleSelections', type: 'bool', label: t.tr('RememberSubtitleSelections'), help: t.tr('RememberSubtitleSelectionsHelp') }
         ] },
-        { title: t.tr('TitlePlayback'), rows: [
+        { key: 'playback', icon: 'queue_play_next', title: t.tr('TitlePlayback'), rows: [
             { key: 'AudioLanguagePreference', type: 'culture', label: t.tr('LabelAudioLanguagePreference') },
             { key: 'PlayDefaultAudioTrack', type: 'bool', label: t.tr('LabelPlayDefaultAudioTrack') },
-            { key: 'RememberAudioSelections', type: 'bool', label: t.tr('RememberAudioSelections') },
+            { key: 'RememberAudioSelections', type: 'bool', label: t.tr('RememberAudioSelections'), help: t.tr('RememberAudioSelectionsHelp') },
             { key: 'EnableNextEpisodeAutoPlay', type: 'bool', label: t.tr('PlayNextEpisodeAutomatically') },
             { key: 'CastReceiverId', type: 'cast', label: t.tr('LabelChromecastVersion') }
         ] },
-        { title: t.tr('Display'), rows: [
-            { key: 'DisplayMissingEpisodes', type: 'bool', label: t.tr('DisplayMissingEpisodesWithinSeasons') },
+        { key: 'display', icon: 'display_settings', title: t.tr('Display'), rows: [
+            { key: 'DisplayMissingEpisodes', type: 'bool', label: t.tr('DisplayMissingEpisodesWithinSeasons'), help: t.tr('DisplayMissingEpisodesWithinSeasonsHelp') },
             { key: 'DisplayCollectionsView', type: 'bool', label: t.tr('GroupsTemplateCollectionsView') }
         ] },
-        { title: t.tr('Home'), rows: [
+        { key: 'home', icon: 'home', title: t.tr('Home'), rows: [
             { key: 'HomeSections', type: 'homesections', label: t.tr('GroupsTemplateHomeSections') },
-            { key: 'HidePlayedInLatest', type: 'bool', label: t.tr('GroupsTemplateHideWatched') },
-            { key: 'OrderedViews', type: 'order', label: t.tr('GroupsTemplateLibraryOrder') },
-            { key: 'MyMediaExcludes', type: 'libgrid', invert: true, label: t.tr('GroupsTemplateHomeLibraries') },
-            { key: 'LatestItemsExcludes', type: 'libgrid', invert: true, label: t.tr('GroupsTemplateLatestLibraries') },
-            { key: 'GroupedFolders', type: 'libgrid', source: 'groupable', label: t.tr('GroupsTemplateGroupedFolders') }
+            { key: 'HidePlayedInLatest', type: 'bool', label: t.tr('HideWatchedContentFromLatestMedia') },
+            { key: 'OrderedViews', type: 'order', label: t.tr('HeaderLibraryOrder') },
+            { key: 'MyMediaExcludes', type: 'libgrid', invert: true, label: t.tr('DisplayInMyMedia') },
+            { key: 'LatestItemsExcludes', type: 'libgrid', invert: true, label: t.tr('DisplayInOtherHomeScreenSections') },
+            { key: 'GroupedFolders', type: 'libgrid', source: 'groupable', label: t.tr('LabelSelectFolderGroups'), help: t.tr('LabelSelectFolderGroupsHelp') }
         ] }
     ];
 }
@@ -364,9 +365,27 @@ export function loadSources(shared) {
     });
 }
 
+// SELF_LABELED
+// The row types whose field carries the row's label beside its checkbox, so the row draws no label over it.
+var SELF_LABELED = { bool: true, library: true, channels: true, devices: true, deletion: true };
+
+// setByGroupBadge
+// Names how many rows of a section the group sets, for the section's header.
+//
+// Inputs
+// count [number]: The rows on Group.
+// t [object]: The strings.
+//
+// Output
+// [object]: The badge, or null when the group sets none.
+export function setByGroupBadge(count, t) {
+    return count > 0 ? { label: t.format('GroupsBadgeSetByGroup', count), color: 'blue' } : null;
+}
+
 // drawTemplateSections
-// Adds the Jellyfin settings sections to a group editor: whether the group sets them, then Access and features and
-// Preferences, each row left to the member or set by the group. Preferences shows only while the group sets them.
+// Adds Jellyfin access and Jellyfin preferences to a group editor. Each holds a collapsible section per area, as on
+// Jellyfin's own user pages, and each row is left to the member or set by the group. A header counts the rows the
+// group sets, and its tile is green while it sets any.
 //
 // Inputs
 // section [function]: The editor's section(title, icon, content) adder.
@@ -383,64 +402,72 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
     var template = draft.Template = draft.Template || {};
     template.Access = template.Access || {};
     template.Preferences = template.Preferences || {};
+    // A template stored with its rows off sets nothing, so every row shows as the member's.
+    var stored = template.Enabled !== false;
 
-    var onId = 'necto-template-on-' + (++fieldSeq);
-    var on = h('input', { type: 'checkbox', is: 'emby-checkbox', id: onId, 'data-field': 'Template.Enabled' });
-    on.checked = template.Enabled === true;
-    var accessBody = h('div', { 'data-role': 'template-access' });
-    var prefsBody = h('div', { 'data-role': 'template-preferences' });
-    var intro = h('div', {}, [
-        h('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
-            h('label', {}, [on, h('span', { text: t.tr('GroupsTemplateEnable') })]),
-            h('div', { class: 'fieldDescription checkboxFieldDescription', text: t.tr('GroupsTemplateEnableHelp') })
-        ]),
-        accessBody
-    ]);
-    var access = section(t.tr('GroupsTemplateAccessTitle'), 'admin_panel_settings', intro);
+    var accessBody = h('div', { class: 'stolon-stack' }, [h('div', { class: 'fieldDescription', text: t.tr('GroupsTemplateAccessHelp') })]);
+    var prefsBody = h('div', { class: 'stolon-stack' }, [h('div', { class: 'fieldDescription', text: t.tr('GroupsTemplatePreferencesHelp') })]);
+    var access = section(t.tr('GroupsTemplateAccessTitle'), 'admin_panel_settings', accessBody);
     access.element.setAttribute('data-section', 'template-access');
     var prefs = section(t.tr('GroupsTemplatePreferencesTitle'), 'tune', prefsBody);
     prefs.element.setAttribute('data-section', 'template-preferences');
-    readers.push(function (out) { out.Template = out.Template || {}; out.Template.Enabled = !!on.checked; });
-    // Both tiles follow the switch. Preferences has nothing to show while it is off, so the section hides.
-    handles.push(nectoModule.bindTileToSwitch(access.element, on));
-    handles.push(nectoModule.bindTileToSwitch(prefs.element, on));
+    readers.push(function (out) { out.Template = out.Template || {}; out.Template.Enabled = true; });
 
-    var reflect = function () {
-        accessBody.classList.toggle('stolon-hidden', !on.checked);
-        prefs.element.classList.toggle('stolon-hidden', !on.checked);
-    };
-    on.addEventListener('change', reflect);
-    reflect();
-
+    var parts = [];
     var libraryAccess = null;
     var viewRefreshers = [];
     var refreshViews = function () { viewRefreshers.forEach(function (f) { f(); }); };
     var shownViews = function (views, sources) { return visibleViews(views, sources.libraries, libraryAccess ? libraryAccess.getValue() : null); };
 
+    // paint
+    // Counts the rows each section sets, and shows it on the section's header and tile, and on its part's.
+    var paint = function () {
+        parts.forEach(function (part) {
+            var total = 0;
+            part.sections.forEach(function (sub) {
+                var count = sub.rows.filter(function (row) { return !row.getValue().inherit; }).length;
+                total += count;
+                sub.handle.setBadge(setByGroupBadge(count, t));
+                sub.handle.setIconColor(count > 0 ? 'green' : 'gray');
+            });
+            part.handle.setBadge(setByGroupBadge(total, t));
+            part.handle.setIconColor(total > 0 ? 'green' : 'gray');
+        });
+    };
+    paint();
+
     return loadSources(shared).then(function (sources) {
-        drawPart(accessBody, accessSpecs(t), 'Access', template.Access, sources);
-        drawPart(prefsBody, preferenceSpecs(t), 'Preferences', template.Preferences, sources);
+        parts.push({ handle: access, sections: drawPart(accessBody, accessSpecs(t), 'Access', template.Access, sources) });
+        parts.push({ handle: prefs, sections: drawPart(prefsBody, preferenceSpecs(t), 'Preferences', template.Preferences, sources) });
+        paint();
     });
 
     // drawPart
     // Draws one part's sections and rows, and reads them back into the group.
     function drawPart(into, specs, partName, part, sources) {
-        specs.forEach(function (spec) {
-            into.appendChild(h('h3', { class: 'stolon-subsection-title', text: spec.title }));
-            spec.rows.forEach(function (row) {
+        return specs.map(function (spec) {
+            var content = h('div', { class: 'stolon-stack' });
+            var handle = nectoModule.createCollapsibleSection({ title: spec.title, icon: spec.icon, collapsed: true, content: content });
+            handle.element.setAttribute('data-section', partName.toLowerCase() + '-' + spec.key);
+            handles.push(handle);
+            into.appendChild(handle.element);
+            var rows = spec.rows.map(function (row) {
                 var start = rowValue(part, row);
                 var field = buildField(row, start.value, sources);
                 var inherit = nectoModule.createInheritField({
                     field: field,
-                    value: { inherit: !start.manage, value: start.value },
+                    value: { inherit: !(stored && start.manage), value: start.value },
                     inheritText: t.tr('GroupsTemplateMember'),
                     overrideText: t.tr('LabelGroup'),
                     label: row.label,
-                    onChange: row.type === 'library' ? refreshViews : undefined
+                    onChange: function () {
+                        if (row.type === 'library') refreshViews();
+                        paint();
+                    }
                 });
                 handles.push(inherit);
                 var rowElement = h('div', { class: 'necto-template-row', 'data-field': partName + '.' + row.key }, [
-                    h('div', { class: 'selectLabel', text: row.label }),
+                    SELF_LABELED[row.type] ? null : h('div', { class: 'selectLabel', text: row.label }),
                     inherit.element,
                     row.help ? h('div', { class: 'fieldDescription', text: row.help }) : null
                 ]);
@@ -448,14 +475,16 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
                     libraryAccess = inherit;
                     rowElement.addEventListener('change', refreshViews);
                 }
-                into.appendChild(rowElement);
+                content.appendChild(rowElement);
                 readers.push(function (out) {
                     out.Template = out.Template || {};
                     out.Template[partName] = out.Template[partName] || {};
                     var got = inherit.getValue();
                     setRowValue(out.Template[partName], row, { manage: !got.inherit, value: got.value });
                 });
+                return inherit;
             });
+            return { handle: handle, rows: rows };
         });
     }
 
@@ -467,7 +496,7 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
             case 'bool': {
                 var box = h('input', { type: 'checkbox', is: 'emby-checkbox', id: id });
                 box.checked = !!value;
-                return wrap(h('label', {}, [box, h('span', { text: t.tr('GroupsTemplateOn') })]), function () { return box.checked; }, function (v) { box.checked = !!v; });
+                return wrap(h('label', {}, [box, h('span', { text: row.label })]), function () { return box.checked; }, function (v) { box.checked = !!v; });
             }
             case 'int':
             case 'bitrate': {

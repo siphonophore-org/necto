@@ -16,7 +16,7 @@ using Xunit;
 namespace Jellyfin.Plugin.Necto.Tests.Services.Policies;
 
 /// <summary>
-/// A user takes the template of the first of their groups, in group order, that has one on, and the template is
+/// A user takes the Jellyfin settings their one group sets, and they are
 /// written onto their Jellyfin policy, settings, and home sections, never onto an administrator.
 /// </summary>
 public class PolicyTemplateServiceTests
@@ -27,7 +27,6 @@ public class PolicyTemplateServiceTests
     private static Group WithTemplate(string name, Action<Jellyfin.Plugin.Necto.Configuration.Policies.PolicyTemplate> set, params Guid[] members)
     {
         var group = TestGroups.Make(name, members);
-        group.Template.Enabled = true;
         set(group.Template);
         return group;
     }
@@ -35,39 +34,152 @@ public class PolicyTemplateServiceTests
     private PolicyTemplateService Service(IDisplayPreferencesManager? prefs = null) => new(_config, _users.Manager, NullLogger<PolicyTemplateService>.Instance, prefs);
 
     /// <summary>
-    /// The first group in the list with a template on wins, and a group with it off is passed over.
-    /// True: the group order decides whose template a member of several groups takes.
-    /// False: two templates would fight over one policy.
+    /// A user takes the rows of their one group, and a stored second group that lists them adds nothing.
+    /// True: one group decides a member's Jellyfin settings.
+    /// False: a second group would still change a member.
     /// </summary>
     [Fact]
-    public void GroupFor_TakesTheFirstGroupWithATemplateOn()
+    public void For_TakesTheUsersOneGroup()
     {
         var user = Guid.NewGuid();
-        var off = TestGroups.Make("Off", user);
-        off.Template.Access.ManageIsHidden = true;
-        var first = WithTemplate("First", _ => { }, user);
-        var second = WithTemplate("Second", _ => { }, user);
-        _config.Configuration.Groups.AddRange(new[] { off, first, second });
+        var first = WithTemplate("First", t => { t.Access.ManageIsHidden = true; t.Access.IsHidden = true; }, user);
+        var second = WithTemplate("Second", t =>
+        {
+            t.Access.ManageRemoteClientBitrateLimit = true;
+            t.Access.RemoteClientBitrateLimit = 8_000_000;
+        }, user);
+        _config.Configuration.Groups.AddRange(new[] { first, second });
 
-        Assert.Equal(first.Id, PolicyTemplateMerger.GroupFor(_config.Configuration, user)!.Id);
-
-        GroupOrder.Apply(_config.Configuration.Groups, new[] { second.Id, off.Id, first.Id });
-        Assert.Equal(second.Id, PolicyTemplateMerger.GroupFor(_config.Configuration, user)!.Id);
+        var merged = PolicyTemplateMerger.For(_config.Configuration, user);
+        Assert.True(merged.Access is { ManageIsHidden: true, IsHidden: true });
+        Assert.False(merged.Access.ManageRemoteClientBitrateLimit);
+        Assert.False(merged.Access.ManageLibraryAccess);
     }
 
     /// <summary>
-    /// A user in no group takes Everyone's template, and none when Everyone has none.
-    /// True: Everyone's template covers every loose user.
-    /// False: users in no group would never take a template.
+    /// A row carries every value it guards, such as the library list of Library access.
+    /// True: a merged Library access row keeps its libraries.
+    /// False: a member could get All off with no libraries.
     /// </summary>
     [Fact]
-    public void GroupFor_UserInNoGroup_TakesEveryones()
+    public void For_CopiesEveryValueOfARow()
     {
         var user = Guid.NewGuid();
-        Assert.Null(PolicyTemplateMerger.GroupFor(_config.Configuration, user));
+        var library = Guid.NewGuid();
+        _config.Configuration.Groups.Add(WithTemplate("Kids", t =>
+        {
+            t.Access.ManageLibraryAccess = true;
+            t.Access.EnableAllFolders = false;
+            t.Access.EnabledFolders = new List<Guid> { library };
+            t.Access.ManageMaxParentalRating = true;
+            t.Access.MaxParentalRating = 10;
+            t.Access.MaxParentalSubRating = 1;
+        }, user));
 
-        _config.Configuration.Everyone.Template.Enabled = true;
-        Assert.True(PolicyTemplateMerger.GroupFor(_config.Configuration, user)!.IsEveryone);
+        var merged = PolicyTemplateMerger.For(_config.Configuration, user).Access;
+        Assert.False(merged.EnableAllFolders);
+        Assert.Equal(new[] { library }, merged.EnabledFolders);
+        Assert.Equal(10, merged.MaxParentalRating);
+        Assert.Equal(1, merged.MaxParentalSubRating);
+    }
+
+    /// <summary>
+    /// A user in no group takes Everyone's rows.
+    /// True: Everyone's Jellyfin settings cover every loose user.
+    /// False: users in no group would never take them.
+    /// </summary>
+    [Fact]
+    public void For_UserInNoGroup_TakesEveryones()
+    {
+        var user = Guid.NewGuid();
+        Assert.False(PolicyTemplateRows.SetsAnything(PolicyTemplateMerger.For(_config.Configuration, user)));
+
+        _config.Configuration.Everyone.Template.Access.ManageIsHidden = true;
+        Assert.True(PolicyTemplateMerger.For(_config.Configuration, user).Access.ManageIsHidden);
+    }
+
+    /// <summary>
+    /// Every switch of a template guards values that exist, and every value has a switch.
+    /// True: no setting is left out of a merge.
+    /// False: a setting could be set by a group and never reach a member.
+    /// </summary>
+    [Theory]
+    [InlineData(typeof(Jellyfin.Plugin.Necto.Configuration.Policies.AccessTemplate))]
+    [InlineData(typeof(Jellyfin.Plugin.Necto.Configuration.Policies.PreferencesTemplate))]
+    public void Rows_CoverEveryValue(Type part)
+    {
+        var rows = PolicyTemplateRows.Of(part);
+        var guarded = rows.SelectMany(r => r.Values.Select(v => v.Name)).ToHashSet();
+        var values = part.GetProperties().Where(p => !p.Name.StartsWith("Manage", StringComparison.Ordinal)).Select(p => p.Name);
+        Assert.All(values, v => Assert.Contains(v, guarded));
+    }
+
+    /// <summary>
+    /// A template stored with its rows off loads with every row left to the member, and its values kept.
+    /// True: a group saved with Jellyfin settings off never starts writing them.
+    /// False: rows a group never applied would start changing members.
+    /// </summary>
+    [Fact]
+    public void Normalizer_StoredOff_ClearsEveryRow()
+    {
+        var template = new Jellyfin.Plugin.Necto.Configuration.Policies.PolicyTemplate { Enabled = false };
+        template.Access.ManageIsHidden = true;
+        template.Access.IsHidden = true;
+        template.Preferences.ManageSubtitleMode = true;
+
+        PolicyTemplateNormalizer.Complete(template);
+
+        Assert.True(template.Enabled);
+        Assert.False(template.Access.ManageIsHidden);
+        Assert.True(template.Access.IsHidden);
+        Assert.False(template.Preferences.ManageSubtitleMode);
+    }
+
+    /// <summary>
+    /// A stored configuration holding one group with Set Jellyfin settings off and one with it on loads, and only the
+    /// group that had it on sets rows.
+    /// True: saved groups keep doing what they did.
+    /// False: an upgrade would start writing rows a group never applied, or drop rows it did.
+    /// </summary>
+    [Fact]
+    public void StoredConfiguration_OldShape_LoadsAndKeepsWhatApplied()
+    {
+        const string Xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <PluginConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Groups>
+                <Group>
+                  <Id>0b9a23b3-307c-4752-98d7-61a7538d8141</Id>
+                  <Name>Off</Name>
+                  <MemberIds><guid>9c5dc8c7-c137-4821-97bd-56dabad697d2</guid></MemberIds>
+                  <Template>
+                    <Enabled>false</Enabled>
+                    <Access><ManageIsHidden>true</ManageIsHidden><IsHidden>true</IsHidden></Access>
+                  </Template>
+                </Group>
+                <Group>
+                  <Id>fd989b66-6edf-4259-89d0-73460ee2a064</Id>
+                  <Name>On</Name>
+                  <MemberIds><guid>1c5dc8c7-c137-4821-97bd-56dabad697d2</guid></MemberIds>
+                  <Template>
+                    <Enabled>true</Enabled>
+                    <Access><ManageRemoteClientBitrateLimit>true</ManageRemoteClientBitrateLimit><RemoteClientBitrateLimit>8000000</RemoteClientBitrateLimit></Access>
+                  </Template>
+                </Group>
+              </Groups>
+            </PluginConfiguration>
+            """;
+        using var reader = new System.IO.StringReader(Xml.Trim());
+        var config = (Jellyfin.Plugin.Necto.Configuration.PluginConfiguration)new System.Xml.Serialization.XmlSerializer(typeof(Jellyfin.Plugin.Necto.Configuration.PluginConfiguration)).Deserialize(reader)!;
+        Assert.False(PolicyTemplateMerger.For(config, Guid.Parse("9c5dc8c7-c137-4821-97bd-56dabad697d2")).Access.ManageIsHidden);
+        var on = PolicyTemplateMerger.For(config, Guid.Parse("1c5dc8c7-c137-4821-97bd-56dabad697d2")).Access;
+        Assert.True(on is { ManageRemoteClientBitrateLimit: true, RemoteClientBitrateLimit: 8_000_000 });
+
+        GroupNormalizer.Normalize(config);
+        Assert.All(config.Groups, g => Assert.True(g.Template.Enabled));
+        Assert.False(config.Groups[0].Template.Access.ManageIsHidden);
+        Assert.True(config.Groups[0].Template.Access.IsHidden);
+        Assert.True(config.Groups[1].Template.Access.ManageRemoteClientBitrateLimit);
     }
 
     /// <summary>
@@ -139,8 +251,6 @@ public class PolicyTemplateServiceTests
     {
         var admin = _users.Add("admin", admin: true);
         var loose = _users.Add("loose");
-        _config.Configuration.Everyone.Template.Enabled = false;
-
         Assert.False(await Service().ApplyAsync(admin));
         Assert.False(await Service().ApplyAsync(loose));
     }

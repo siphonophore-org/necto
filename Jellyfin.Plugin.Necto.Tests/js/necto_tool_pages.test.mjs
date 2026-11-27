@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { installPage, loadScript, paths, settle, routeApi } from './support.mjs';
+import { installPage, loadScript, paths, settle, routeApi, clickButton } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
@@ -86,10 +86,10 @@ async function openMarkupPage(name, config, answers) {
 
 test('the Scripts tool draws a saved script from its own markup', async function () {
     var opened = await openMarkupPage('necto_scripts', {
-        Scripts: { Scripts: [{ Id: 'cccccccc000000000000000000000001', Name: 'Notify', Enabled: true, Triggers: ['ItemAdded'], ItemKinds: [], Conditions: [], Operations: [{ Type: 'RunCommand', Command: '/bin/true' }], Secrets: [] }] }
+        Scripts: { Scripts: [{ Id: 'cccccccc000000000000000000000001', Name: 'Notify', Enabled: true, AllGroups: false, GroupIds: ['g'], Triggers: ['ItemAdded'], ItemKinds: [], Conditions: [], Operations: [{ Type: 'RunCommand', Command: '/bin/true' }], Secrets: [] }] }
     }, {
         'GET Scripts/Catalog': { Triggers: [{ Key: 'ItemAdded', Label: 'Item added', Category: 'Library', HasItem: true, Variables: [] }], Fields: [], ItemKinds: [], Collections: [], Libraries: [], Users: [], Tasks: [], ForEachVariables: { Items: [], Users: [] }, FailureVariables: [] },
-        'GET Groups': [{ Id: 'g', Name: 'Family', Permissions: { Scripts: { AllScripts: true } } }],
+        'GET Groups': [{ Id: 'e', Name: 'Everyone', IsEveryone: true }, { Id: 'g', Name: 'Family' }],
         'GET Scripts/Status': []
     });
 
@@ -101,7 +101,42 @@ test('the Scripts tool draws a saved script from its own markup', async function
     assert.deepEqual(Array.prototype.map.call(opened.view.querySelectorAll('.stolon-selector-actions button'), function (b) { return b.id; }),
         ['btnNewScript', 'btnRenameScript', 'btnRemoveScript', 'btnImportScripts', 'btnExportScripts']);
     assert.equal(opened.view.querySelector('#scriptEditor').classList.contains('stolon-hidden'), false);
-    assert.match(opened.view.querySelector('#groupList').innerHTML, /Family/);
+    assert.equal(opened.view.querySelector('#scriptAllGroups').checked, false);
+    assert.equal(opened.view.querySelector('#scriptGroupPicks').classList.contains('stolon-hidden'), false);
+    assert.match(opened.view.querySelector('#groupList').textContent, /Everyone/);
+    assert.equal(opened.view.querySelector('#groupList .stolon-filtered-check[data-id="g"]').checked, true);
+    assert.equal(opened.view.querySelector('#groupWarn').classList.contains('stolon-hidden'), true);
+});
+
+test('a script runs for everyone until Run for everyone is off, then saves the groups picked', async function () {
+    var saved = [];
+    var opened = await openMarkupPage('necto_scripts', {
+        Scripts: { Scripts: [{ Id: 'cccccccc000000000000000000000001', Name: 'Notify', Enabled: true, Triggers: ['ItemAdded'], ItemKinds: [], Conditions: [], Operations: [{ Type: 'RunCommand', Command: '/bin/true' }], Secrets: [] }] }
+    }, {
+        'GET Scripts/Catalog': { Triggers: [{ Key: 'ItemAdded', Label: 'Item added', Category: 'Library', HasItem: true, Variables: [] }], Fields: [], ItemKinds: [], Collections: [], Libraries: [], Users: [], Tasks: [], ForEachVariables: { Items: [], Users: [] }, FailureVariables: [] },
+        'GET Groups': [{ Id: 'e', Name: 'Everyone', IsEveryone: true }, { Id: 'g', Name: 'Family' }],
+        'GET Scripts/Status': []
+    });
+    globalThis.ApiClient.updatePluginConfiguration = function (id, config) { saved.push(JSON.parse(JSON.stringify(config))); return Promise.resolve(); };
+    var view = opened.view;
+    var all = view.querySelector('#scriptAllGroups');
+
+    assert.equal(all.checked, true);
+    assert.equal(view.querySelector('#scriptGroupPicks').classList.contains('stolon-hidden'), true);
+    all.checked = false;
+    all.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    assert.equal(view.querySelector('#scriptGroupPicks').classList.contains('stolon-hidden'), false);
+    assert.equal(view.querySelector('#groupWarn').classList.contains('stolon-hidden'), false);
+    var family = view.querySelector('#groupList .stolon-filtered-check[data-id="g"]');
+    family.checked = true;
+    family.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    assert.equal(view.querySelector('#groupWarn').classList.contains('stolon-hidden'), true);
+
+    clickButton(view, 'Save');
+    await settle(80);
+    var script = saved[saved.length - 1].Scripts.Scripts[0];
+    assert.equal(script.AllGroups, false);
+    assert.deepEqual(script.GroupIds, ['g']);
 });
 
 test('the WireGuard tool draws from its own markup', async function () {

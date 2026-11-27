@@ -101,19 +101,19 @@ public class SessionCleanupServiceTests
     }
 
     /// <summary>
-    /// A second group without cleanup keeps the device.
-    /// True: any one group lets a device stay.
-    /// False: one group's rule would log out a member another group keeps signed in.
+    /// A user stored in a second group follows only the first, since a user is in one group.
+    /// True: the first group's cleanup logs out the stale device.
+    /// False: a stored second group would still change the rules a user follows.
     /// </summary>
     [Fact]
-    public async Task Cleanup_SecondGroupWithoutCleanup_KeepsTheDevice()
+    public async Task Cleanup_UserStoredInASecondGroup_FollowsTheFirst()
     {
         var viewer = _users.Add("viewer");
         Clean(1, members: viewer.Id);
         _config.Configuration.Groups.Add(TestGroups.Make("Family", viewer.Id));
         Device(viewer.Id, "Infuse", 40);
 
-        Assert.Equal(0, await Run());
+        Assert.Equal(1, await Run());
     }
 
     /// <summary>

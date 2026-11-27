@@ -1,6 +1,6 @@
 // necto_templates.test.mjs
 // Tests for the group templates: each row reads and writes its value in the template, the editor draws Access and
-// features and Preferences, a row set by the group is saved as managed, and the group order is saved.
+// features and Preferences, a row set by the group is saved as managed, and a header counts the rows the group sets.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -23,7 +23,7 @@ var KIDS = '11111111-2222-3333-4444-666666666666';
 async function openPage(answers) {
     var page = installPage({ config: { InviteSettings: { Enabled: true } } });
     var dom = page.dom;
-    var view = pageView(dom, [dom.el('div', { id: 'groupList' }), dom.el('button', { id: 'btnAddGroup' }), dom.el('button', { id: 'btnOrderGroups' }), dom.el('span', { id: 'groupsStatus' })]);
+    var view = pageView(dom, [dom.el('div', { id: 'groupList' }), dom.el('button', { id: 'btnAddGroup' }), dom.el('span', { id: 'groupsStatus' })]);
     dom.document.documentElement.appendChild(view);
     routeApi(page, Object.assign({
         'GET Groups': [
@@ -169,10 +169,13 @@ test('the editor draws the template sections and saves the template, the notific
     await settle(80);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
 
-    assert.ok(texts(sidecar, '.stolon-collapsible-title').indexOf('Access and features') >= 0);
-    assert.ok(texts(sidecar, '.stolon-collapsible-title').indexOf('Preferences') >= 0);
-    assert.equal(sidecar.querySelector('[data-field="Template.Enabled"]').checked, true);
+    assert.ok(texts(sidecar, '.stolon-collapsible-title').indexOf('Jellyfin access') >= 0);
+    assert.ok(texts(sidecar, '.stolon-collapsible-title').indexOf('Jellyfin preferences') >= 0);
+    assert.equal(sidecar.querySelector('[data-field="Template.Enabled"]'), null);
     assert.ok(sidecar.querySelector('[data-field="Access.EnableRemoteAccess"]'));
+    assert.match(sidecar.querySelector('[data-section="template-access"] > .stolon-collapsible-header').textContent, /1 set by group/);
+    assert.match(sidecar.querySelector('[data-section="access-profile"] > .stolon-collapsible-header').textContent, /1 set by group/);
+    assert.equal(sidecar.querySelector('[data-section="access-playback"] > .stolon-collapsible-header').textContent.indexOf('set by group'), -1);
     assert.match(sidecar.querySelector('[data-field="Notifications.EventKeys"]').textContent, /Invite used/);
     assert.match(sidecar.querySelector('[data-field="Notifications.EventKeys"]').textContent, /Invites expired/);
     assert.equal(sidecar.querySelector('[data-field="Notifications.BrowserNotifications"]').checked, true);
@@ -193,23 +196,18 @@ test('the editor draws the template sections and saves the template, the notific
     assert.equal(body.Permissions.Notifications.JellyfinMessages, true);
 });
 
-test('groupOrder lists the ids without Everyone, in order', async function () {
-    installPage({});
-    var groups = await loadScript('necto_groups.js');
-
-    assert.deepEqual(groups.groupOrder([{ Id: KIDS }, { Id: EVERYONE, IsEveryone: true }, { Id: FAMILY }]), [KIDS, FAMILY]);
-});
-
-test('Group order opens a sidecar and saves the order to its route', async function () {
-    var opened = await openPage({ 'PUT Groups/Order': {} });
-    opened.view.querySelector('#btnOrderGroups').click();
-    await settle(50);
+test('a template stored with its rows off shows every row as the member\'s, and saves them so', async function () {
+    var family = { Id: FAMILY, Name: 'Family', MemberIds: [], Permissions: {}, Template: { Enabled: false, Access: { ManageIsHidden: true, IsHidden: true }, Preferences: {} } };
+    var opened = await openPage({ 'GET Groups': [{ Id: EVERYONE, Name: 'Everyone', IsEveryone: true, MemberIds: [], Permissions: {} }, family], ['PUT Groups/' + FAMILY]: function (o) { return JSON.parse(o.data); } });
+    opened.view.querySelectorAll('.stolon-record-list-row')[1].click();
+    await settle(80);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
 
-    assert.match(sidecar.textContent, /Family[\s\S]*Kids/);
+    assert.equal(sidecar.querySelector('[data-section="template-access"] .stolon-collapsible-badge'), null);
     clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Save');
-    await settle(50);
-
-    var put = opened.page.requests.find(function (r) { return r.type === 'PUT' && r.url === 'Groups/Order'; });
-    assert.deepEqual(JSON.parse(put.data), [FAMILY, KIDS]);
+    await settle(80);
+    var body = JSON.parse(opened.page.requests.find(function (r) { return r.type === 'PUT'; }).data);
+    assert.equal(body.Template.Enabled, true);
+    assert.equal(body.Template.Access.ManageIsHidden, false);
+    assert.equal(body.Template.Access.IsHidden, true);
 });

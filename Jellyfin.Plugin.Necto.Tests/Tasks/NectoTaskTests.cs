@@ -49,13 +49,13 @@ public sealed class NectoTaskTests : IDisposable
     /// False: templates would drift from what groups set.
     /// </summary>
     [Fact]
-    public void PolicyTemplatesTask_RunsAtStartup()
+    public void PolicyTemplatesTask_RunsAtStartupAndDaily()
     {
         var task = new PolicyTemplatesTask(_h.Templates, FakeServerConfig.Create());
 
         Assert.Equal("NectoPolicyTemplates", task.Key);
         Assert.Equal("Apply group Jellyfin settings", task.Name);
-        Assert.Equal(TaskTriggerInfoType.StartupTrigger, Assert.Single(task.GetDefaultTriggers()).Type);
+        Assert.Equal(new[] { TaskTriggerInfoType.StartupTrigger, TaskTriggerInfoType.DailyTrigger }, task.GetDefaultTriggers().Select(t => t.Type));
     }
 
     /// <summary>

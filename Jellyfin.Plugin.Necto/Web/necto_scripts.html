@@ -152,19 +152,22 @@
                         </div>
 
                         <!-- Groups -->
-                        <!-- The groups that run the script, which the Groups tool sets. -->
+                        <!-- Who the script runs for: every user, or the members of the groups picked. -->
                         <div class="stolon-section" data-fold="users" data-fold-icon="groups" data-fold-state="closed">
                             <div class="stolon-section-title" data-str="TabGroups">Groups</div>
                             <div class="stolon-section-content">
-                                <div class="fieldDescription" data-str="ScriptsHelpGroups">Runs for the members of its groups. Administrators run every script.</div>
-                                <div id="groupList"></div>
-                                <div id="userWarn" class="stolon-warn stolon-hidden"></div>
-                                <div class="stolon-button-row">
-                                    <button is="emby-button" type="button" id="btnOpenGroups" class="raised stolon-button stolon-secondary">
-                                        <span class="material-icons" aria-hidden="true">groups</span>
-                                        <span data-str="ScriptsButtonOpenGroups">Open groups</span>
-                                    </button>
+                                <div class="fieldDescription" data-str="ScriptsHelpGroups">Runs for every user, or only for the members of the groups picked. Administrators run every script.</div>
+                                <div class="checkboxContainer">
+                                    <label>
+                                        <input type="checkbox" is="emby-checkbox" id="scriptAllGroups" />
+                                        <span data-str="ScriptsLabelAllGroups">Run for everyone</span>
+                                    </label>
                                 </div>
+                                <div id="scriptGroupPicks" class="stolon-indent">
+                                    <div id="groupList"></div>
+                                    <div id="groupWarn" class="stolon-warn stolon-hidden" data-str="ScriptsWarnNoGroups">No group is picked, so the script runs for administrators only.</div>
+                                </div>
+                                <div id="userWarn" class="stolon-warn stolon-hidden"></div>
                             </div>
                         </div>
 

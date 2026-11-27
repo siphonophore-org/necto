@@ -144,9 +144,9 @@ export function accountTags(group, t) {
     var a = (group.Permissions && group.Permissions.Accounts) || {};
     var tags = [];
     if (a.Password && a.Password.Enabled) tags.push({ label: t.tr('HeaderPasswordRequirements'), icon: 'password' });
-    if (a.Expiry && a.Expiry.ExpiresOn) tags.push({ label: t.tr('HeaderExpiry'), icon: 'event' });
+    if (a.Expiry && a.Expiry.ExpiresOn) tags.push({ label: t.tr('HeaderExpiry'), icon: 'event_busy' });
     if (a.Inactivity && a.Inactivity.Enabled) tags.push({ label: t.tr('HeaderInactivity'), icon: 'bedtime' });
-    if (a.Sessions && a.Sessions.Enabled) tags.push({ label: t.tr('HeaderSessionManagement'), icon: 'devices' });
+    if (a.Sessions && a.Sessions.Enabled) tags.push({ label: t.tr('HeaderSessionManagement'), icon: 'logout' });
     return tags;
 }
 
@@ -284,13 +284,6 @@ export function sectionSpecs() {
             ]
         },
         {
-            key: 'scripts', title: 'TabScripts', icon: 'code', grants: ['Scripts.AllScripts', 'Scripts.ScriptIds'], fields: [
-                { path: 'Scripts.AllScripts', kind: 'check', label: 'LabelAllScripts', hides: [
-                    { path: 'Scripts.ScriptIds', kind: 'records', label: 'ScriptsLabelGroupScripts', help: 'ScriptsGroupScriptsHelp', source: 'Scripts/Names' }
-                ] }
-            ]
-        },
-        {
             key: 'pages', title: 'TabPages', icon: 'web', grants: ['CustomPages.AllPages', 'CustomPages.PageIds'], fields: [
                 { path: 'CustomPages.AllPages', kind: 'check', label: 'LabelAllPages', help: 'PagesAllPagesHelp' },
                 { path: 'CustomPages.PageIds', kind: 'pages', label: 'PagesLabelGroupPages', help: 'PagesGroupPagesHelp', hiddenBy: 'CustomPages.AllPages' }
@@ -306,14 +299,15 @@ export function sectionSpecs() {
 }
 
 // accountSpecs
-// Describes the Account rules subsections: password requirements, expiry, inactivity, and session management.
+// Describes the Account rules sections: password requirements, expiry, inactivity, and session management. The first
+// field of each turns the rule on.
 //
 // Output
-// [object[]]: Each subsection's title key and fields.
+// [object[]]: Each section's key, icon, title key, and fields.
 export function accountSpecs() {
     return [
         {
-            title: 'HeaderPasswordRequirements', fields: [
+            key: 'password', icon: 'password', title: 'HeaderPasswordRequirements', fields: [
                 { path: 'Accounts.Password.Enabled', kind: 'check', label: 'LabelEnforcePasswordRequirements', help: 'EnforcePasswordRequirementsHelp', reveals: [
                     { path: 'Accounts.Password.DisallowEmpty', kind: 'check', label: 'LabelDisallowEmptyPasswords', help: 'DisallowEmptyPasswordsHelp' },
                     { path: 'Accounts.Password.MinLength', kind: 'number', label: 'LabelMinimumLength', min: 1, fallback: 8 },
@@ -325,7 +319,7 @@ export function accountSpecs() {
             ]
         },
         {
-            title: 'HeaderExpiry', fields: [
+            key: 'expiry', icon: 'event_busy', title: 'HeaderExpiry', fields: [
                 { path: 'Accounts.Expiry.ExpiresOn', kind: 'expiry', label: 'LabelExpireMembersOnDate', help: 'ExpireMembersOnDateHelp', reveals: [
                     { path: 'Accounts.Expiry.ExpiresOn', kind: 'date', label: 'LabelExpiryDate', help: 'ExpiryDateHelp' },
                     { path: 'Accounts.Expiry.Action', kind: 'select', label: 'LabelExpirationMethod', help: 'ExpirationMethodHelp', names: EXPIRY_ACTIONS, options: ['OptionDisableAccount', 'OptionDeleteAccount'] }
@@ -333,14 +327,14 @@ export function accountSpecs() {
             ]
         },
         {
-            title: 'HeaderInactivity', fields: [
+            key: 'inactivity', icon: 'bedtime', title: 'HeaderInactivity', fields: [
                 { path: 'Accounts.Inactivity.Enabled', kind: 'check', label: 'LabelDisableInactiveUsers', help: 'DisableInactiveUsersHelp', reveals: [
                     { path: 'Accounts.Inactivity.Days', kind: 'number', label: 'LabelInactiveDays', help: 'InactiveDaysHelp', min: 1, fallback: 30 }
                 ] }
             ]
         },
         {
-            title: 'HeaderSessionManagement', fields: [
+            key: 'sessions', icon: 'logout', title: 'HeaderSessionManagement', fields: [
                 { path: 'Accounts.Sessions.Enabled', kind: 'check', label: 'LabelCleanUpOldSessions', help: 'CleanUpOldSessionsHelp', reveals: [
                     { path: 'Accounts.Sessions.Rules', kind: 'sessions', help: 'SessionRulesHelp' }
                 ] }
@@ -421,8 +415,26 @@ export function overlappingClients(clients, rules) {
     });
 }
 
+// otherGroupName
+// Names the group a user is in besides the one being edited, so the member list shows who would move here.
+//
+// Inputs
+// user [object]: The user, with GroupIds from Groups/Users.
+// group [object]: The group being edited.
+// groups [object[]]: Every group.
+// t [object]: The strings.
+//
+// Output
+// [string]: The other group's name, or null when the user is in no other group.
+export function otherGroupName(user, group, groups, t) {
+    var other = (user.GroupIds || []).find(function (id) { return !sameId(id, EVERYONE_ID) && !sameId(id, group && group.Id); });
+    var found = other ? (groups || []).find(function (g) { return sameId(g.Id, other); }) : null;
+    return found ? groupName(found, t) : null;
+}
+
 // createGroupEditor
-// Builds the body of a group's sidecar: its name, its members, Account rules, and a section per tool.
+// Builds the body of a group's sidecar: its name, its members, Account rules, Jellyfin access, Jellyfin preferences,
+// and a section per tool.
 //
 // Inputs
 // group [object]: The group to edit, or a new one.
@@ -482,6 +494,7 @@ export function createGroupEditor(group, ctx) {
         var members = shared.createUserMultiSelector({
             adminFilter: 'exclude',
             search: true,
+            noteFor: function (user) { return otherGroupName(user, draft, ctx.groups, t); },
             value: draft.MemberIds || [],
             fetchUsers: function () { return Promise.resolve(ctx.users || []); }
         });
@@ -747,13 +760,26 @@ export function createGroupEditor(group, ctx) {
         readers.push(function (out) { setPath(out.Permissions, spec.path, read()); });
     }
 
-    // Account rules
-    var accountsContent = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr('HelpAccountRulesMerge') })]);
-    accountSpecs().forEach(function (sub) {
-        accountsContent.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr(sub.title) }));
-        sub.fields.forEach(function (spec) { drawField(spec, accountsContent); });
+    // Account rules, one section per rule, each tile following the switch that turns the rule on.
+    var accountsContent = h('div', { class: 'stolon-stack' }, [h('div', { class: 'fieldDescription', text: t.tr('HelpAccountRulesMerge') })]);
+    var accounts = section(t.tr('HeaderAccountRules'), 'manage_accounts', accountsContent);
+    accounts.element.setAttribute('data-section', 'accounts');
+    var ruleSwitches = accountSpecs().map(function (sub) {
+        var content = h('div');
+        sub.fields.forEach(function (spec) { drawField(spec, content); });
+        var rule = nectoModule.createCollapsibleSection({ title: t.tr(sub.title), icon: sub.icon, collapsed: true, content: content });
+        rule.element.setAttribute('data-section', 'accounts-' + sub.key);
+        accountsContent.appendChild(rule.element);
+        handles.push(rule);
+        var lead = content.querySelector('[data-field="' + sub.fields[0].path + '"]');
+        handles.push(nectoModule.bindTileToSwitch(rule.element, lead));
+        return lead;
     });
-    section(t.tr('HeaderAccountRules'), 'manage_accounts', accountsContent).element.setAttribute('data-section', 'accounts');
+    var paintAccounts = function () {
+        accounts.setIconColor(ruleSwitches.some(function (box) { return box.checked; }) ? 'green' : 'gray');
+    };
+    accountsContent.addEventListener('change', paintAccounts);
+    paintAccounts();
 
     // Templates
     var templatesDrawn = nectoTemplates.drawTemplateSections(section, draft, ctx, readers, handles);
@@ -803,18 +829,6 @@ export function createGroupEditor(group, ctx) {
             handles.splice(0).forEach(function (h) { if (h && h.destroy) h.destroy(); });
         }
     };
-}
-
-// groupOrder
-// Lists the ids of groups in their order, for Groups/Order.
-//
-// Inputs
-// groups [object[]]: The groups, without Everyone, in the new order.
-//
-// Output
-// [string[]]: Their ids.
-export function groupOrder(groups) {
-    return (groups || []).filter(function (g) { return !isEveryone(g); }).map(function (g) { return g.Id; });
 }
 
 export default function (view) {
@@ -966,48 +980,10 @@ export default function (view) {
         });
     }
 
-    // openOrder
-    // Opens the group order in a sidecar, where the first group that sets Jellyfin settings gives a member theirs.
-    function openOrder() {
-        var t = shared.t;
-        var ordered = groups.filter(function (g) { return !isEveryone(g); });
-        var list = nectoModule.createOrderedList({
-            items: ordered,
-            render: function (g) { return h('span', { text: g.Name }); },
-            label: function (g) { return g.Name; }
-        });
-        var status = h('div', { class: 'stolon-status-text', role: 'status' });
-        var body = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr('GroupsOrderHelp') }), status, list.element]);
-        nectoModule.openEditorSidecar({
-            title: t.tr('GroupsButtonOrder'),
-            body: body,
-            page: page,
-            isNew: true,
-            size: 'medium',
-            serialize: function () { return JSON.stringify(groupOrder(list.getItems())); },
-            saveText: t.tr('Save'),
-            onSave: function () {
-                return shared.request('Groups/Order', 'PUT', groupOrder(list.getItems())).then(function () {
-                    report(t.tr('GroupsOrderSaved'), false);
-                    loadGroups();
-                    return true;
-                }).catch(function (err) {
-                    return shared.errorText(err, t.tr('GroupsErrorSaveOrder')).then(function (text) {
-                        shared.setStatus(status, text, true);
-                        return false;
-                    });
-                });
-            },
-            onClose: function () { list.destroy(); }
-        });
-    }
-
     var made = nectoModule.createNectoPage(view, {
         page: 'necto_groups',
         bind: function () {
             view.querySelector('#btnAddGroup').addEventListener('click', function () { openGroup(null); });
-            var order = view.querySelector('#btnOrderGroups');
-            if (order) order.addEventListener('click', openOrder);
         },
         load: function () { loadGroups(); }
     });

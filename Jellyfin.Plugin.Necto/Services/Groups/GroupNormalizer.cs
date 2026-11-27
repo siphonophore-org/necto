@@ -9,7 +9,7 @@ namespace Jellyfin.Plugin.Necto.Services.Groups;
 
 /// <summary>
 /// Brings the groups back to what Necto relies on: Everyone exists and holds no members, every group has an id and
-/// every section, no member is listed twice, administrators and deleted users hold no membership, and every setting
+/// every section, no user is in more than one group, administrators and deleted users hold no membership, and every setting
 /// that names a group names one that exists.
 /// </summary>
 public static class GroupNormalizer
@@ -20,8 +20,9 @@ public static class GroupNormalizer
     /// <param name="config">The configuration to normalize.</param>
     /// <param name="knownUsers">Every user on the server, or <c>null</c> when the list cannot be read. An empty list counts as unreadable, so a pass can never wipe membership.</param>
     /// <param name="administrators">The administrators on the server, or <c>null</c> when unknown.</param>
+    /// <param name="moved">Collects each user taken out of a later group, with the group kept and the group left. [optional]</param>
     /// <returns><c>true</c> when something changed.</returns>
-    public static bool Normalize(PluginConfiguration config, IReadOnlyCollection<Guid>? knownUsers = null, IReadOnlyCollection<Guid>? administrators = null)
+    public static bool Normalize(PluginConfiguration config, IReadOnlyCollection<Guid>? knownUsers = null, IReadOnlyCollection<Guid>? administrators = null, ICollection<(Guid UserId, string Kept, string Left)>? moved = null)
     {
         ArgumentNullException.ThrowIfNull(config);
         var before = Snapshot(config);
@@ -71,6 +72,24 @@ public static class GroupNormalizer
         {
             // Administrators are exempt from every group, so a promoted member is only dead weight in the list.
             group.MemberIds.RemoveAll(id => admins.Contains(id) || (known is not null && !known.Contains(id)));
+        }
+
+        // A user is in one group at most. A stored user in several keeps the first in group order.
+        var placed = new Dictionary<Guid, Group>();
+        foreach (var group in config.Groups)
+        {
+            foreach (var id in group.MemberIds.ToList())
+            {
+                if (placed.TryGetValue(id, out var first))
+                {
+                    group.MemberIds.Remove(id);
+                    moved?.Add((id, first.Name, group.Name));
+                }
+                else
+                {
+                    placed[id] = group;
+                }
+            }
         }
 
         // An administrator's record stays, since it puts them back on the provider they had before.
