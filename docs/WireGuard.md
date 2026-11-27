@@ -165,7 +165,7 @@ Every route is for administrators.
 | :--- | :--- |
 | `GET /WireGuard/Status` | Gives each running tunnel's state, with each peer's traffic and handshake |
 | `GET /WireGuard/Usage` | Gives each peer's and connection's traffic in the current window of each period, which are over their limit, and which peers their groups leave out |
-| `GET /WireGuard/Peers` | Lists every tunnel end with its state and the address it connects from, for the Dashboard map |
+| `GET /WireGuard/Peers` | Lists every tunnel end with its state and the address it connects from, which the [Dashboard](Dashboard.md) map places by country |
 | `POST /WireGuard/Peers` | Adds a peer |
 | `PUT /WireGuard/Peers/{id}` | Saves a peer |
 | `DELETE /WireGuard/Peers/{id}` | Removes a peer |

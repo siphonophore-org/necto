@@ -303,8 +303,11 @@ test('with the proxy on the page shows the map, the country table, and the share
 
     var mapHost = opened.view.querySelector('#dashboardMap');
     assert.equal(mapHost.classList.contains('stolon-hidden'), false);
-    var layerButtons = Array.prototype.filter.call(mapHost.querySelectorAll('.stolon-world-layer'), function (b) { return !b.classList.contains('stolon-hidden'); });
-    assert.deepEqual(layerButtons.map(function (b) { return b.getAttribute('data-value'); }), ['visitors', 'failed', 'blocked', 'server']);
+    var layerButtons = mapHost.querySelectorAll('.stolon-world-layer');
+    assert.deepEqual(Array.prototype.map.call(layerButtons, function (b) { return b.getAttribute('data-value'); }), ['visitors', 'failed', 'blocked', 'server']);
+    var headings = texts(mapHost, '.stolon-data-heading').join('|');
+    ['Country', 'Visitors', 'Failed sign-ins', 'Refused', 'This server'].forEach(function (label) { assert.ok(headings.indexOf(label) >= 0, label); });
+    assert.equal(headings.indexOf('Peers'), -1);
     assert.match(mapHost.textContent, /United States/);
     assert.match(mapHost.textContent, /IP geolocation by DB-IP/);
     var shareHost = opened.view.querySelector('#dashboardShare');

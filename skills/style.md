@@ -171,7 +171,6 @@ confirmDialog('The proxy stops answering for it. The upstream service stays.', {
 | Live list | `No <things> right now.` | No peers are connected right now. |
 | Filtered list | `No <things> match.` | No requests match. |
 | Feature off | `<Feature> is off. Turn it on in Settings to <result>.` | WireGuard is off. Turn it on in Settings to add peers. |
-| Tool not built | `This tool is coming.` | This tool is coming. |
 
 Use `shared.emptySection(text)` for a region and `shared.emptySection(text, { inline: true })` for a list.
 
@@ -472,7 +471,7 @@ A dialog is only for a confirmation. It never scrolls and has no close button. E
 Every word a person reads comes from a key. Stolon builds the strings in and checks them on every build. Its [Translations](https://siphonophore-org.github.io/stolon/Translations/) guide is the full reference.
 
 * Use a Jellyfin string whenever Jellyfin has the words, declared as `<JellyfinString Include="Key" />` in `Jellyfin.Plugin.Necto/Jellyfin.Plugin.Necto.csproj`.
-* Add a local key to `Localization/en-us.json` only when Jellyfin has no string for it. A key is PascalCase and says what the text is, such as `TabProxy` or `MessageToolComing`.
+* Add a local key to `Localization/en-us.json` only when Jellyfin has no string for it. A key is PascalCase and says what the text is, such as `TabProxy` or `DashboardErrorLoad`. A key that more than one tool uses takes a neutral name with no tool prefix, such as `ButtonClear`.
 * Mark markup with `data-str`, `data-str-title`, `data-str-label`, or `data-str-placeholder`, with the English as the element's own text. In a script, use `shared.t.tr('Key')` or `shared.t.format('Key', value)`. A sidebar name uses `tabName('Key', 'English')` in `necto_shared.js`, since the sidebar shows before the strings load.
 * Keep placeholders as `{0}`, `{1}`. Never build a sentence from pieces.
 * Add each word with special casing, such as "DDNS", to `Localization/casing.json`.

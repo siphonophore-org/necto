@@ -618,12 +618,13 @@ export default function (view) {
     var grid = null;
     var map = null;
     var countries = null;
-    var mapSection = null;
+    var mapHost = null;
+    var tableHost = null;
     var mapNote = null;
     var attribution = null;
     var layers = [];
     var mapData = null;
-    var layerSet = '';
+    var layerSet = null;
     var share = null;
     var qr = null;
     var shareNote = null;
@@ -633,12 +634,12 @@ export default function (view) {
     // Each load counts up, so an answer that lands after a later load began is dropped.
     var loads = 0;
 
-    var made = nectoModule.createNectoPage(view, {
+    nectoModule.createNectoPage(view, {
         page: 'necto_dashboard',
         bind: function (shared) { bind(shared); },
         load: function (shared, page) {
             load(shared);
-            page.createPoller(function () { load(shared); }, 60000).start(false);
+            page.createPoller(function () { return refresh(shared); }, 60000).start(false);
         },
         onHide: function () { clearCards(); }
     });
@@ -670,41 +671,43 @@ export default function (view) {
         }));
     }
 
-    // Draws the country table's columns for the layers there are, each shown while its layer is on.
+    // Fills the country table for the layers that are on, each with its column.
     function showLayers(active) {
         if (!countries || !mapData) return;
-        MAP_LAYERS.forEach(function (layer) {
-            var drawn = layers.some(function (l) { return l.key === layer.key; });
-            countries.setColumnHidden(layer.key, !drawn || active.indexOf(layer.key) < 0);
-        });
+        layers.forEach(function (layer) { countries.setColumnHidden(layer.key, active.indexOf(layer.key) < 0); });
         countries.setRows(countryRows(mapData, layers, active, map.countryName));
     }
 
     function buildMap(t) {
-        if (map) return;
         var body = nectoModule.el('div', { class: 'necto-detail' });
-        var help = nectoModule.el('div', { class: 'fieldDescription', text: t.tr('DashboardMapHelp') });
         mapNote = nectoModule.el('div', { class: 'stolon-info stolon-hidden', text: t.tr('DashboardMapLoading') });
-        var mapHost = nectoModule.el('div');
-        var tableHost = nectoModule.el('div');
+        mapHost = nectoModule.el('div');
+        tableHost = nectoModule.el('div');
         attribution = nectoModule.el('a', { class: 'button-link', href: 'https://db-ip.com', target: '_blank', rel: 'noopener noreferrer' });
-        body.appendChild(help);
+        body.appendChild(nectoModule.el('div', { class: 'fieldDescription', text: t.tr('DashboardMapHelp') }));
         body.appendChild(mapNote);
         body.appendChild(mapHost);
         body.appendChild(tableHost);
         body.appendChild(nectoModule.el('div', { class: 'fieldDescription' }, [attribution]));
-        mapSection = nectoModule.createCollapsibleSection({ title: t.tr('HeaderLocations'), icon: 'public', collapsible: false, content: body });
-        getEl('dashboardMap').appendChild(mapSection.element);
+        var section = nectoModule.createCollapsibleSection({ title: t.tr('HeaderLocations'), icon: 'public', collapsible: false, content: body });
+        getEl('dashboardMap').appendChild(section.element);
+    }
 
+    // Builds the map and its country table with a layer and a column for each kind the tools that are on give.
+    function buildLayers(t) {
+        if (map) map.destroy();
+        if (countries) countries.destroy();
+        mapHost.innerHTML = '';
+        tableHost.innerHTML = '';
         map = nectoModule.createWorldMap({
-            layers: MAP_LAYERS.map(function (l) { return { key: l.key, label: t.tr(l.label), color: l.color }; }),
+            layers: layers.map(function (l) { return { key: l.key, label: l.label, color: l.color }; }),
             label: t.tr('HeaderLocations'),
             onLayersChange: showLayers
         });
         mapHost.appendChild(map.element);
         countries = nectoModule.createDataTable({
-            columns: [{ key: 'name', label: t.tr('HeaderCountry') }].concat(MAP_LAYERS.map(function (l) {
-                return { key: l.key, label: t.tr(l.label), align: 'end' };
+            columns: [{ key: 'name', label: t.tr('HeaderCountry') }].concat(layers.map(function (l) {
+                return { key: l.key, label: l.label, align: 'end' };
             })),
             rows: [],
             rowKey: 'code',
@@ -716,20 +719,16 @@ export default function (view) {
         nectoModule.linkWorldMap(map, countries, { field: 'code', rowKey: 'code' });
     }
 
-    // Draws the map for the tools that are on. A tool that is off takes its layers with it.
+    // Draws the map for the tools that are on. A tool that is off takes its layers with it, and the viewer's own
+    // choice of layers stays until the tools change.
     function drawMap(shared, data) {
         mapData = data;
         layers = mapLayers(shared.t, data);
-        var keys = layers.map(function (l) { return l.key; });
-        // The layers start on when the set of tools changes, and otherwise keep what the viewer turned on or off.
-        if (keys.join() !== layerSet) {
-            layerSet = keys.join();
-            map.setActive(keys);
+        var keys = layers.map(function (l) { return l.key; }).join();
+        if (keys !== layerSet) {
+            layerSet = keys;
+            buildLayers(shared.t);
         }
-        // The layer buttons of a tool that is off are hidden, so they cannot be turned on.
-        Array.prototype.forEach.call(map.element.querySelectorAll('.stolon-world-layer'), function (button) {
-            button.classList.toggle('stolon-hidden', keys.indexOf(button.getAttribute('data-value')) < 0);
-        });
         map.setCounts(mapCounts(data, layers));
         shared.setVisible(mapNote, !data.LocationLoaded);
         attribution.textContent = data.Attribution || '';
@@ -782,6 +781,18 @@ export default function (view) {
         buildActivity(t);
     }
 
+    // Reads the map and the activity again, which change while the page is open. The cards are read on each show,
+    // since some of their routes check disks or look names up.
+    function refresh(shared) {
+        var load = loads;
+        var mapOn = !getEl('dashboardMap').classList.contains('stolon-hidden');
+        return Promise.all([mapOn ? read(shared, 'Dashboard/Map') : Promise.resolve(null), read(shared, 'Dashboard/Activity')]).then(function (answers) {
+            if (load !== loads) return;
+            if (answers[0]) drawMap(shared, answers[0]);
+            timeline.setItems(activityItems(answers[1], shared));
+        });
+    }
+
     function load(shared) {
         var load = ++loads;
         var t = shared.t;
@@ -803,7 +814,7 @@ export default function (view) {
                 drawCards(keys.map(function (key, i) { return cardFor(key, t, shared, config, answers[0][i], answers[1], now); }));
                 if (answers[1]) drawMap(shared, answers[1]);
                 drawShare(shared, answers[2]);
-                timeline.setItems(activityItems(answers[3] || [], shared));
+                timeline.setItems(activityItems(answers[3], shared));
             });
         }).catch(function () {
             if (load !== loads) return;

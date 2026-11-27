@@ -58,7 +58,7 @@ Every response drops the `Server`, `X-Powered-By`, and timing headers, and gets 
 
 The **Visitors** section shows the banned addresses with **Unban**, what each address did with **Block**, **Unblock**, or **Unblock** for its country, and the totals by country. Your network is never blocked. With **Record visitors** off, nothing is recorded. Locations are looked up on this server with DB-IP's free database, which the location task keeps current.
 
-The Dashboard map reads the same data from `GET /Proxy/Visitors`.
+The [Dashboard](Dashboard.md) map shows the same totals by country, through `GET /Dashboard/Map`, and its share card shows the proxy's public address from `GET /Proxy/PublicAddress`.
 
 ## Settings
 

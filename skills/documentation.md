@@ -52,7 +52,7 @@ A version number belongs in docs only when the reader needs it to act, such as t
 * Write a label exactly as the page shows it, in bold. **Update every (minutes)**.
 * Write a path through the UI with `>` between the steps, in bold. **Dashboard > Plugins > Necto > Settings**.
 * Write a tool as its sidebar name, in bold. **Proxy**, **DDNS**, **Custom pages**, **Settings**.
-* Quote activity log names and on-screen messages in double quotes. "This tool is coming."
+* Quote activity log names and on-screen messages in double quotes. "Route saved."
 * Write routes, files, settings keys, and values in code. `GET /Necto/Translations`.
 
 A docs page and the UI must use the same word for the same thing. When a label changes, search `docs/` for the old one and change it everywhere in the same commit.

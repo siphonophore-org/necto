@@ -26,7 +26,7 @@ The page is one Stolon tool app, as Zooid's is: a sidebar of the tools that are 
 
 | Tool | From | Holds |
 | :--- | :--- | :--- |
-| **Dashboard** | Remote Access, WireGuard, Requests | One map of proxy visitors and WireGuard peers, hidden when Proxy and WireGuard are both off. A status card per tool that is on. Recent activity. |
+| **Dashboard** | Remote Access, WireGuard, Requests | One map of proxy visitors and WireGuard peers, hidden when Proxy and WireGuard are both off. A status card per tool that is on. The share card. Recent activity. See [Dashboard](#dashboard). |
 | **Requests** | Requests | The request list and its detail sidecar, Radarr and Sonarr, discovery and imports. Who may request, the limits, and auto approval live on groups. |
 | **Issues** | Requests | Issue reports and their states and notes. Who may report lives on groups. |
 | **Invites** | User Management | Invite links and their signup page, the group a new user joins, limits, expiry. |
@@ -40,6 +40,19 @@ The page is one Stolon tool app, as Zooid's is: a sidebar of the tools that are 
 | **Notifications** | Every tool | Channels, and which events go to whom. See [Notifications](#notifications). |
 | **Settings** | Every tool | A collapsible section per tool, each with its own subsections. |
 | **Troubleshooting** | Every tool | A collapsible section per tool: resets, tests, logs, repairs. |
+
+### Dashboard
+
+A status card per tool that is on, one world map, the share card, and recent activity. See [Dashboard](Dashboard.md) for what is built.
+
+* A tool is on unless it has a switch that is off: **Enable issues**, **Enable proxy**, and **Enable WireGuard**. Every other tool always has a card. **Review**
+* The map comes from `GET /Dashboard/Map`, which joins the proxy's totals by country, the WireGuard tunnel ends, and this server's country on the server, rather than the page reading `GET /Proxy/Visitors` and `GET /WireGuard/Peers` itself. **Review**
+* The map's controller is named `NectoDashboardController` and answers at `/Dashboard`, since Jellyfin has a `DashboardController` of its own, whose routes are under `/web`. **Review**
+* While WireGuard is on, the location database stays loaded at country detail, even with **Record visitors** off, so the map can place the tunnel ends. The map loads it when it is missing, and looks up this server's own country while it is not known, each at most once every 10 minutes. **Review**
+* A tunnel end is placed only by an address. A connection whose endpoint is a name is placed once its tunnel reports the address, and no name is resolved for the map. The host is this server, so it marks **This server** rather than adding a peer. **Review**
+* The map keeps Remote Access's country table under it, joined to the map both ways, beside the Proxy page's own totals by country. **Review**
+* Recent activity lists Necto's entries by their types, which start with `Necto`, `Requests`, `WireGuard`, `Storage`, or `Scripts`, from the latest 500 entries of the activity log. **Review**
+* The map and recent activity are read again every minute while the page is open, as Remote Access's dashboard read its tables every 30 seconds. The cards are read each time the page opens, since the Storage and Proxy routes check disks and look names up. **Review**
 
 ### Groups
 
@@ -79,7 +92,7 @@ The proxy forwards to any service, not only Jellyfin. A route is a host name, an
 * A local client that asks by this server's address, or by a name no route has, reaches the first Jellyfin route, as it reached Jellyfin before. **Review**
 * **Trust the proxy** and **Undo** stay on the Proxy page, since they are actions rather than settings, and **Undo** is also a Troubleshooting repair. **Review**
 * The check from outside (check-host.net) is not a router step, so it stays as a Troubleshooting test and its hourly task. The router's shared address (CGNAT) check went with the router steps. **Review**
-* The visitor tables (bans, activity, countries) stay on the Proxy page. The world map and the share card are the Dashboard's, which reads `GET /Proxy/Visitors` and `GET /Proxy/PublicAddress`. **Review**
+* The visitor tables (bans, activity, countries) stay on the Proxy page. The world map and the share card are the Dashboard's, which reads `GET /Dashboard/Map` and `GET /Proxy/PublicAddress`. **Review**
 * Proxy carries no group permission, since only administrators use it. Groups choose who receives its events. **Review**
 * Routes and certificate passwords change only through the `/Proxy` routes. A save of the whole configuration, such as from another tool's Settings section, keeps them as stored. **Review**
 * Every tool's secrets share one key ring, `Jellyfin.Plugin.Necto.Keys`, through Stolon's `AddPluginSecretProtector`. On Windows its keys are wrapped with DPAPI, as Remote Access wrapped its own. **Review**
@@ -103,7 +116,7 @@ Turning WireGuard on asks to download `wireguard-go`, which is the only way Wire
 * The host's key pair is made the first time the host runs with wireguard-go downloaded, and a peer or connection that needs a new key pair is refused until then. A save from **Settings** keeps the stored peers, connections, and host keys, which only the WireGuard routes change. **Review**
 * **Data per user** moves onto groups as **Data per member (GB)** with its **Period**. Several groups give the largest limit of the groups that allow peers, with that group's period. **Review**
 * Groups decide which peers connect. A peer whose owner has no group with **Allow peers** is left out of the tunnel, and an owner past **Peers per member** keeps their oldest enabled peers. Administrators' peers and peers with no owner always connect, and administrators add peers for any user, as the WireGuard plugin let them. **Review**
-* The location lookups, the **Location** setting, and the **Refresh WireGuard locations** task are not in WireGuard. `GET /WireGuard/Peers` gives each tunnel end's public address, and the Dashboard map places it with the location database from Remote Access. **Review**
+* The location lookups, the **Location** setting, and the **Refresh WireGuard locations** task are not in WireGuard. `GET /WireGuard/Peers` gives each tunnel end's public address, and `GET /Dashboard/Map` places the same ends on the server with the location database from Remote Access. **Review**
 * Peers connecting, connections, data limits, and failing tunnels are written to the activity log as the WireGuard plugin wrote them, and each is also sent to Notifications. **Review**
 * The keys and the script secrets share one secret protector, named `Jellyfin.Plugin.Necto`. **Review**
 
@@ -175,13 +188,20 @@ Everything the Requests plugin did, on groups and Notifications. See [Requests](
 
 ## Routes
 
-Every route says what it does, as Zooid's do: `/Requests`, `/Issues`, `/Invites`, `/Groups`, `/Proxy`, `/Ddns`, `/WireGuard`, `/Scripts`, `/Pages`, `/Storage`, `/Notifications`, and `/Necto` only for the page's own strings. None of them is a route of Jellyfin 12.4 itself. The user pages are `/requests`, `/issues`, `/invites`, and the custom pages' own addresses.
+Every route says what it does, as Zooid's do: `/Dashboard`, `/Requests`, `/Issues`, `/Invites`, `/Groups`, `/Proxy`, `/Ddns`, `/WireGuard`, `/Scripts`, `/Pages`, `/Storage`, `/Notifications`, and `/Necto` only for the page's own strings. None of them is a route of Jellyfin 12.4 itself. The user pages are `/requests`, `/issues`, `/invites`, and the custom pages' own addresses.
 
 ## Settings and Troubleshooting
 
 **Settings** holds every setting that is not a permission, in one collapsible section per tool and subsections inside it. **Troubleshooting** holds the resets, tests, and repairs in the same sections. No tool page carries its own settings tab.
 
+## Strings
+
+* A string that more than one tool uses takes a neutral key, such as `ButtonClear`, `LabelSignedIn`, or `StatePending`, and a string only one tool uses takes that tool's prefix. **Review**
+* The group editor's section for a tool uses that tool's keys, such as `RequestsLabelSeeAll`, since the section is the tool's own. The request page at `/requests` shows issues too, so it uses the `Issues` keys for them, and Notifications' event list uses each tool's event names. **Review**
+
 ## Build Order
+
+Every step is done.
 
 1. **Scaffold.** The repository as Zooid's is laid out: build, tests, docs, release and unstable workflows, the tool app, translations, the brand images.
 2. **Core.** Groups and the permission check every tool calls, Notifications and its channels, Settings and Troubleshooting sections, the Dashboard's cards.
