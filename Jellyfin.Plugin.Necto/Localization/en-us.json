@@ -1451,7 +1451,6 @@
   "ProxyOptionRecordByZone": "The record whose zone covers it",
   "ProxyOptionSelfSigned": "Self-signed",
   "ProxyOptionServerCountry": "This server's country",
-  "ProxyOptionTypeName": "Type a name",
   "ProxyReachable": "The HTTPS port answers from the internet.",
   "ProxyReasonRecoveryFlag": "The recovery flag file is present.",
   "ProxyRecordHistoryHelp": "Keeps who connected from where, for the Dashboard map and the visitor tables.",

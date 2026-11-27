@@ -153,7 +153,7 @@ export function createRouteEditor(route, ctx) {
     var ddnsNames = nectoModule.createSelectField({
         label: t.tr('ProxyLabelDdnsName'),
         field: 'DdnsName',
-        options: [{ value: '', text: t.tr('ProxyOptionTypeName') }].concat((ctx.hostnames || []).map(function (name) { return { value: name.Hostname, text: name.Hostname }; })),
+        options: [{ value: '', text: t.tr('None') }].concat((ctx.hostnames || []).map(function (name) { return { value: name.Hostname, text: name.Hostname }; })),
         value: ''
     });
     var enabled = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelRouteEnabled'), field: 'Enabled', checked: draft.Enabled !== false, help: t.tr('ProxyRouteEnabledHelp') });
@@ -229,14 +229,20 @@ export function createRouteEditor(route, ctx) {
     var testBtn = actionButton('test', t.tr('ProxyButtonTestRoute'));
     upload.appendChild(h('div', { class: 'stolon-button-row' }, [uploadBtn]));
 
-    root.appendChild(host.element);
-    if ((ctx.hostnames || []).length) root.appendChild(ddnsNames.element);
-    [enabled, target, upstream, localOnly].forEach(function (f) { root.appendChild(f.element); });
-    root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyLabelUploadFile') }));
-    [mode, challenge, record, path, keyPath, password].forEach(function (f) { root.appendChild(f.element); });
-    root.appendChild(certStatus);
-    root.appendChild(upload);
-    root.appendChild(actions);
+    // The route and its certificate are the editor's two steps, each led by its tile.
+    var routePart = h('div', { class: 'stolon-stack' }, [host.element]);
+    if ((ctx.hostnames || []).length) routePart.appendChild(ddnsNames.element);
+    [enabled, target, upstream, localOnly].forEach(function (f) { routePart.appendChild(f.element); });
+    var certPart = h('div', { class: 'stolon-stack' });
+    [mode, challenge, record, path, keyPath, password].forEach(function (f) { certPart.appendChild(f.element); });
+    [certStatus, upload, actions].forEach(function (n) { certPart.appendChild(n); });
+    [
+        nectoModule.createCollapsibleSection({ title: t.tr('PagesRowRoute'), icon: 'alt_route', collapsible: false, content: routePart }),
+        nectoModule.createCollapsibleSection({ title: t.tr('ProxyLabelUploadFile'), icon: 'verified', collapsible: false, content: certPart })
+    ].forEach(function (part) {
+        handles.push(part);
+        root.appendChild(part.element);
+    });
 
     // reflect
     // Shows only what the picked choices use.
