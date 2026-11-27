@@ -177,6 +177,8 @@ test('the Proxy Settings section saves a value equal to its default as unset', a
     assert.deepEqual(out.TrustedNetworks, ['10.0.0.0/8']);
     assert.equal(out.CountryMode, 'Block');
     assert.deepEqual(out.Countries, ['FR']);
+    // An empty LAN address goes as an empty text, since the server refuses null for it.
+    assert.equal(out.LanAddress, '');
     assert.equal(proxy.isAuto({ Standard: { MaxConnections: 4000 }, LowMemory: { MaxConnections: 500 } }, 'MaxConnections'), true);
 });
 
@@ -498,4 +500,21 @@ test('Reset to defaults in Troubleshooting lists what goes back and keeps the li
     await settle(50);
     var advanced = JSON.parse(posts(opened, 'Proxy/Settings')[0].data).Advanced;
     assert.deepEqual(advanced, { TrustedNetworks: ['100.64.0.0/10'], BlockedAddresses: ['203.0.113.0/24'], CountryMode: 'Block', Countries: ['CN'] });
+});
+
+test('every text field of the Proxy settings is sent as text, never null', async function () {
+    var proxy = await loadScript('necto_proxy_sections.js');
+    var inputs = {};
+    var texts = [];
+    proxy.advancedSpecs().forEach(function (sub) {
+        sub.fields.forEach(function (spec) {
+            inputs[spec.key] = { input: { value: '', checked: false } };
+            if (spec.kind === 'text') texts.push(spec.key);
+        });
+    });
+
+    var out = proxy.readAdvanced(inputs, { Values: {} }, null);
+
+    assert.ok(texts.length > 0);
+    texts.forEach(function (key) { assert.equal(typeof out[key], 'string', key); });
 });

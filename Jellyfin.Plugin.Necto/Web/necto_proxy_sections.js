@@ -118,7 +118,8 @@ export function readAdvanced(inputs, defaults, countries) {
             else if (spec.kind === 'enum') v = f.input.value;
             else if (spec.kind === 'countries') v = countries ? countries.getValue().map(String) : [];
             else v = String(f.input.value || '').trim();
-            if (spec.kind === 'lines' || spec.kind === 'countries') { out[spec.key] = v; return; }
+            // Lists and text always go as they are, since the server reads an empty text as unset and refuses null.
+            if (spec.kind === 'lines' || spec.kind === 'countries' || spec.kind === 'text') { out[spec.key] = v; return; }
             if (v === null || v === '' || JSON.stringify(v) === JSON.stringify(values[spec.key])) v = null;
             out[spec.key] = v;
         });
