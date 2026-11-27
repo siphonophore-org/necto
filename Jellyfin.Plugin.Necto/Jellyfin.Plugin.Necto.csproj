@@ -329,6 +329,7 @@
     <JellyfinString Include="MusicArtist" Case="sentence" />
     <JellyfinString Include="MusicVideo" Case="sentence" />
     <JellyfinString Include="New" />
+    <JellyfinString Include="ButtonRename" />
     <JellyfinString Include="NotificationOptionPluginInstalled" />
     <JellyfinString Include="NotificationOptionPluginUninstalled" />
     <JellyfinString Include="NotificationOptionUserLockedOut" />

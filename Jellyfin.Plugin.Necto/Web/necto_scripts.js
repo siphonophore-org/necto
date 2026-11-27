@@ -156,6 +156,12 @@ export default function (view) {
         if (script && has(script, 'Webhook') && !script.WebhookToken) script.WebhookToken = newToken();
     }
 
+    // narrow
+    // Reads whether the page is as narrow as a phone.
+    function narrow() {
+        return !!(globalThis.matchMedia && globalThis.matchMedia('(max-width: 600px)').matches);
+    }
+
     // Every edit goes through here: it refreshes the counts, the picker, and the Save Bar's unsaved line.
     function edited() {
         renderCounts();
@@ -235,8 +241,8 @@ export default function (view) {
         el('emptyState').innerHTML = scripts.length ? '' : Shared.emptySection(t.tr('ScriptsEmptyScripts'));
         Shared.setVisible('emptyState', scripts.length === 0);
         Shared.setVisible('scriptEditor', scripts.length > 0);
-        el('btnDeleteScript').disabled = scripts.length === 0;
-        el('btnDuplicateScript').disabled = scripts.length === 0;
+        el('btnRemoveScript').disabled = scripts.length === 0;
+        el('btnRenameScript').disabled = scripts.length === 0;
     }
 
     function selectScript(id) {
@@ -250,7 +256,6 @@ export default function (view) {
         var script = current();
         if (!script) return;
         suppressWidgetEvents = true;
-        el('scriptName').value = script.Name || '';
         el('scriptDescription').value = script.Description || '';
         el('scriptEnabled').checked = !!script.Enabled;
         triggerList.setValue(script.Triggers || []);
@@ -275,15 +280,20 @@ export default function (view) {
     // ---- Sections ----
 
     // foldSections
-    // Turns each marked section into a Base Collapsible Section. Each starts closed and says what it holds under
-    // its title.
+    // Turns each marked section into a Stolon Collapsible Section led by its icon tile, its blocks a wide gap apart.
+    // Each starts closed and says what it holds under its title.
     function foldSections() {
         view.querySelectorAll('.stolon-section[data-fold]').forEach(function (section) {
             var fold = createCollapsibleSection({
                 title: section.querySelector('.stolon-section-title').textContent.trim(),
-                content: section.querySelector('.stolon-section-content'),
+                icon: section.getAttribute('data-fold-icon'),
                 collapsed: section.getAttribute('data-fold-state') === 'closed'
             });
+            // The blocks move straight into the section, since the section content's own padding would double its own.
+            var source = section.querySelector('.stolon-section-content');
+            while (source.firstChild) fold.content.appendChild(source.firstChild);
+            fold.content.classList.add('stolon-flow');
+            fold.element.setAttribute('data-fold', section.getAttribute('data-fold'));
             section.parentNode.replaceChild(fold.element, section);
             folds[section.getAttribute('data-fold')] = fold;
         });
@@ -917,7 +927,7 @@ export default function (view) {
                             ? t.tr('ScriptsHelpShellLine')
                             : t.tr('ScriptsHelpCommand')
                     }) +
-                    (op.RunThroughShell ? '' : '<button is="emby-button" type="button" class="raised stolon-button secondary small stolon-gap-below-wide" id="btnCheckPath"><span>' + esc(t.tr('ScriptsButtonCheckPath')) + '</span></button>') +
+                    (op.RunThroughShell ? '' : '<button is="emby-button" type="button" class="raised stolon-button stolon-secondary" id="btnCheckPath"><span>' + esc(t.tr('ScriptsButtonCheckPath')) + '</span></button>') +
                     (op.RunThroughShell ? '' : input(op, 'Arguments', t.tr('ScriptsLabelArguments'), {
                         textarea: true,
                         placeholder: '--title\n{{ITEM_NAME}}',
@@ -1031,7 +1041,7 @@ export default function (view) {
             operationFields(op) +
             stepExtras(op) +
             checkbox(op, 'ContinueOnError', t.tr('ScriptsLabelContinueOnError'), t.tr('ScriptsHelpContinueOnError')) +
-            '<button is="emby-button" type="button" class="raised stolon-button destructive small" id="btnRemoveOperation"><span>' + esc(t.tr('ScriptsButtonRemoveStep')) + '</span></button>';
+            '<button is="emby-button" type="button" class="raised stolon-button stolon-destructive" id="btnRemoveOperation"><span>' + esc(t.tr('ScriptsButtonRemoveStep')) + '</span></button>';
         mountStepNumbers(op);
         mountVariableField(op);
         var mode = editor.querySelector('.stolon-choice-group');
@@ -1423,19 +1433,46 @@ export default function (view) {
             script.Name = name;
             script.Description = (values.description || '').trim().slice(0, 500);
             addScript(script, template.key === 'blank' ? '' : t.format('ScriptsStatusStartedFromTemplate', template.label));
-            el('scriptName').focus();
-            el('scriptName').select();
         });
     }
 
-    function duplicateScript() {
-        var source = current();
-        if (!source) return;
-        var copyName = t.format('ScriptsScriptCopyName', source.Name);
-        var copy = sanitize(JSON.parse(JSON.stringify(source)), blankScript(copyName));
-        copy.Name = copyName;
-        copy.Enabled = false;
-        addScript(copy, t.tr('ScriptsStatusDuplicated'));
+    // renameScript
+    // Asks for the open script's new name in a sidecar, and keeps it for Save.
+    function renameScript() {
+        var script = current();
+        if (!script) return;
+        var name = script.Name || t.tr('ScriptsScriptUntitled');
+        promptSidecar([
+            { name: 'name', label: t.tr('LabelName'), value: script.Name || '', placeholder: t.tr('ScriptsPlaceholderNewName') }
+        ], { title: t.format('TitleRenameName', name), submitText: t.tr('ButtonRename') }).then(function (values) {
+            var next = values ? (values.name || '').trim().slice(0, 200) : '';
+            if (!next || next === script.Name) return;
+            script.Name = next;
+            renderEditor();
+            edited();
+        });
+    }
+
+    // removeScript
+    // Asks first, then removes the open script and saves only that, so edits to other scripts wait for Save.
+    function removeScript() {
+        var script = current();
+        if (!script) return;
+        var name = script.Name || t.tr('ScriptsScriptUntitled');
+        confirmDialog(t.tr('ScriptsConfirmRemoveScript'), { title: t.format('TitleRemoveName', name), confirmText: t.tr('ButtonRemove'), destructive: true }).then(function (ok) {
+            if (!ok) return;
+            var wasClean = !(tracker && tracker.isDirty());
+            Shared.saveConfigWith(function (config) {
+                config.Scripts = config.Scripts || {};
+                config.Scripts.Scripts = (config.Scripts.Scripts || []).filter(function (s) { return compactId(s.Id) !== script.Id; });
+            }, 'transferStatus', { success: t.tr('ScriptsStatusRemoved'), error: t.tr('ScriptsErrorRemoveRefused') }).then(function () {
+                scripts = scripts.filter(function (s) { return s.Id !== script.Id; });
+                selectedId = scripts.length ? scripts[0].Id : null;
+                if (wasClean && tracker) tracker.markClean();
+                edited();
+                if (selectedId) renderEditor();
+            }).catch(function () { /* the status line already says why */ });
+        });
     }
 
     function exportScripts() {
@@ -1515,34 +1552,12 @@ export default function (view) {
         foldSections();
         el('selectScript').addEventListener('change', function () { selectScript(this.value); });
         el('btnNewScript').addEventListener('click', newScript);
-        el('btnDuplicateScript').addEventListener('click', duplicateScript);
-        el('btnExportScripts').addEventListener('click', exportScripts);
+        el('btnRenameScript').addEventListener('click', renameScript);
+        el('btnRemoveScript').addEventListener('click', removeScript);
         el('btnImportScripts').addEventListener('click', importScripts);
+        el('btnExportScripts').addEventListener('click', exportScripts);
         el('btnOpenGroups').addEventListener('click', function () { openTool(view, 'groups'); });
 
-        el('btnDeleteScript').addEventListener('click', function () {
-            var script = current();
-            if (!script) return;
-            var name = script.Name || t.tr('ScriptsScriptUntitled');
-            confirmDialog(t.format('ScriptsConfirmDeleteScript', name), { title: t.tr('ScriptsTitleDeleteScript'), confirmText: t.tr('Delete'), destructive: true }).then(function (ok) {
-                if (!ok) return;
-                // Only the deletion is saved: the server's own copy loses this script, and edits to other scripts
-                // wait for Save as before.
-                var wasClean = !(tracker && tracker.isDirty());
-                Shared.saveConfigWith(function (config) {
-                    config.Scripts = config.Scripts || {};
-                    config.Scripts.Scripts = (config.Scripts.Scripts || []).filter(function (s) { return compactId(s.Id) !== script.Id; });
-                }, 'transferStatus', { success: t.format('ScriptsStatusDeleted', name), error: t.tr('ScriptsErrorDeleteRefused') }).then(function () {
-                    scripts = scripts.filter(function (s) { return s.Id !== script.Id; });
-                    selectedId = scripts.length ? scripts[0].Id : null;
-                    if (wasClean && tracker) tracker.markClean();
-                    edited();
-                    if (selectedId) renderEditor();
-                }).catch(function () { /* the status line already says why */ });
-            });
-        });
-
-        el('scriptName').addEventListener('input', function () { current().Name = this.value; edited(); });
         el('scriptDescription').addEventListener('input', function () { current().Description = this.value; edited(); });
         el('scriptEnabled').addEventListener('change', function () { current().Enabled = this.checked; edited(); });
         createNumbers();
@@ -1597,6 +1612,7 @@ export default function (view) {
                 if (op.ContinueOnError) badges.push({ label: t.tr('ScriptsBadgeContinuesOnError'), cls: 'gray' });
                 if (warning) badges.push({ label: t.tr('ScriptsBadgeSometimesSkipped'), cls: 'orange' });
                 return {
+                    icon: stepTypes[op.Type] ? stepTypes[op.Type].icon : 'extension',
                     title: stepTypes[op.Type] ? stepTypes[op.Type].label : op.Type,
                     subtitle: operationSummary(op),
                     badges: badges,
@@ -1668,11 +1684,12 @@ export default function (view) {
         triggerList = createCheckboxList({
             items: catalog.Triggers,
             idKey: 'Key',
-            placeholder: t.format('ScriptsPlaceholderSearchTriggers', catalog.Triggers.length),
+            placeholder: t.tr('ScriptsPlaceholderSearchTriggers'),
             searchKeys: ['Label', 'Description', 'Category'],
             // Every trigger shows at once, with the page scrolling, rather than in a box that scrolls inside.
             maxHeight: null,
-            renderRow: function (t) { return { label: t.Label, sublabel: t.Description, note: t.Category }; },
+            // A phone leaves out the category, so the description has the row's width.
+            renderRow: function (t) { return { label: t.Label, sublabel: t.Description, note: narrow() ? null : t.Category }; },
             onChange: function (ids) {
                 if (suppressWidgetEvents) return;
                 // Keep the catalog's order so the stored list reads the same however it was clicked.

@@ -47,6 +47,15 @@ test('the step types and operators read in the viewer\'s language once a page ha
     assert.ok(common.fieldGroups().length > 0);
 });
 
+test('every step type leads its card with an icon of its own, never a number', async function () {
+    installPage({});
+    var common = await loadScript('necto_scripts_common.js');
+    var icons = Object.values(common.operationTypes()).map(function (type) { return type.icon; });
+
+    assert.ok(icons.every(function (icon) { return typeof icon === 'string' && icon.length > 0; }));
+    assert.equal(new Set(icons).size, icons.length);
+});
+
 test('every template builds a script with a name and steps of known types', async function () {
     installPage({});
     var common = await loadScript('necto_scripts_common.js');
