@@ -109,7 +109,8 @@
     <JellyfinString Include="Movie" />
     <JellyfinString Include="Movies" />
     <JellyfinString Include="MusicVideo" />
-    <JellyfinString Include="NameSeasonNumber" />
+    <JellyfinString Include="NameSeasonNumber" Source="server" />
+    <JellyfinString Include="Series" />
     <JellyfinString Include="Next" />
     <JellyfinString Include="No" />
     <JellyfinString Include="Off" />
