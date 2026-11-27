@@ -73,6 +73,35 @@ test('the route editor reads an upstream only for another service and shows what
     assert.equal(editor.validate(), 'ErrorEnterHostName');
 });
 
+test('a route to Jellyfin shows its fixed settings, and one to another service a preset that fills in Advanced', async function () {
+    var bag = await strings();
+    var proxy = await loadScript('necto_proxy.js');
+    var editor = proxy.createRouteEditor(ROUTES[0], { shared: bag, status: null, records: [], hostnames: [] });
+    var field = function (name) { return editor.element.querySelector('[data-field="' + name + '"]'); };
+    var hidden = function (node) { return node.closest('.stolon-hidden') !== null; };
+    var note = editor.element.querySelector('[data-role="jellyfin-preset"]');
+
+    assert.equal(note.textContent, "Uses Jellyfin's recommended proxy settings.");
+    assert.deepEqual([hidden(note), hidden(field('Options.Preset')), hidden(editor.element.querySelector('[data-section="advanced"]'))], [false, true, true]);
+
+    field('Target').value = 'other';
+    field('Target').dispatchEvent(new globalThis.Event('change'));
+    field('Upstream').value = 'http://192.168.1.20:8080';
+    assert.deepEqual([hidden(note), hidden(field('Options.Preset'))], [true, false]);
+    assert.deepEqual(Array.prototype.map.call(field('Options.Preset').options, function (o) { return o.value; }), ['Generic', 'Seerr', 'Ombi', 'Arr', 'QBittorrent', 'HomeAssistant']);
+    field('Options.Preset').value = 'QBittorrent';
+    field('Options.Preset').dispatchEvent(new globalThis.Event('change'));
+    var value = editor.getValue().Options;
+    assert.deepEqual([value.Preset, value.PreserveHost, value.MaxBodyMb, value.TimeoutSeconds, value.WebSockets], ['QBittorrent', false, 50, null, true]);
+    field('Options.PathPrefix').value = '/qb';
+    field('Options.TimeoutSeconds').value = '90';
+    assert.deepEqual([editor.getValue().Options.PathPrefix, editor.getValue().Options.TimeoutSeconds], ['/qb', 90]);
+    assert.equal(editor.validate(), null);
+    var icons = Array.prototype.map.call(editor.element.querySelectorAll('.stolon-collapsible-tile'), function (n) { return n.textContent; });
+    assert.equal(new Set(icons).size, icons.length);
+    assert.deepEqual(proxy.presetOptions('HomeAssistant').TimeoutSeconds, 3600);
+});
+
 test('a DDNS name locks the host, and a wildcard takes a subdomain in front of its base', async function () {
     var bag = await strings();
     var proxy = await loadScript('necto_proxy.js');

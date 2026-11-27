@@ -81,6 +81,7 @@ public static partial class ProxySettingsValidator
         route.Host = normalized.Length > 0 ? normalized : (route.Host ?? string.Empty).Trim();
         route.Upstream = (route.Upstream ?? string.Empty).Trim().TrimEnd('/');
         route.DdnsHostname = HostnameMatcher.Normalize(route.DdnsHostname);
+        NormalizeOptions(route.Options ??= new RouteOptions());
         var c = route.Certificate ??= new ProxyCertificateSettings();
         c.Path = (c.Path ?? string.Empty).Trim();
         c.KeyPath = (c.KeyPath ?? string.Empty).Trim();
@@ -147,6 +148,11 @@ public static partial class ProxySettingsValidator
             errors.Add(Text(language, TranslationKeys.ProxyErrorUpstream, route.Upstream));
         }
 
+        if (!route.IsJellyfin)
+        {
+            CheckOptions(errors, language, route.Options);
+        }
+
         CheckEnum(errors, language, Text(language, TranslationKeys.ProxyErrorFieldCertificateSource), route.Certificate.Mode);
         CheckEnum(errors, language, Text(language, TranslationKeys.ProxyLabelChallenge), route.Certificate.Challenge);
         CheckCertificate(errors, language, route.Certificate);
@@ -160,6 +166,60 @@ public static partial class ProxySettingsValidator
 
         return errors;
     }
+
+    /// <summary>
+    /// Cleans a route's forwarding settings: numbers in range, the path prefix as <c>/a/b</c> or empty, and headers
+    /// trimmed with the nameless ones dropped.
+    /// </summary>
+    /// <param name="options">The settings, changed in place.</param>
+    public static void NormalizeOptions(RouteOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        options.MaxBodyMb = options.MaxBodyMb is { } mb ? Math.Max(0, mb) : null;
+        options.TimeoutSeconds = options.TimeoutSeconds is { } s ? Math.Clamp(s, 1, 86400) : null;
+        var prefix = (options.PathPrefix ?? string.Empty).Trim().Trim('/');
+        options.PathPrefix = prefix.Length == 0 ? string.Empty : "/" + prefix;
+        options.RequestHeaders = Clean(options.RequestHeaders);
+        options.ResponseHeaders = Clean(options.ResponseHeaders);
+
+        static List<HeaderEntry> Clean(List<HeaderEntry>? headers) => (headers ?? new List<HeaderEntry>())
+            .Where(h => h is not null && !string.IsNullOrWhiteSpace(h.Name))
+            .Select(h => new HeaderEntry { Name = h.Name.Trim(), Value = (h.Value ?? string.Empty).Trim() })
+            .ToList();
+    }
+
+    private static void CheckOptions(List<string> errors, string? language, RouteOptions options)
+    {
+        CheckEnum(errors, language, Text(language, TranslationKeys.ProxyLabelPreset), options.Preset);
+        if (options.PathPrefix.Length > 0 && !PathPrefixPattern().IsMatch(options.PathPrefix))
+        {
+            errors.Add(Text(language, TranslationKeys.ProxyErrorPathPrefix, options.PathPrefix));
+        }
+
+        CheckHeaders(errors, language, options.RequestHeaders, RoutePresets.ReservedRequestHeaders);
+        CheckHeaders(errors, language, options.ResponseHeaders, RoutePresets.ReservedResponseHeaders);
+    }
+
+    private static void CheckHeaders(List<string> errors, string? language, List<HeaderEntry> headers, IReadOnlySet<string> reserved)
+    {
+        foreach (var header in headers)
+        {
+            if (!HeaderNamePattern().IsMatch(header.Name) || header.Value.Any(c => c is '\r' or '\n' or '\0'))
+            {
+                errors.Add(Text(language, TranslationKeys.ProxyErrorHeader, header.Name));
+            }
+            else if (reserved.Contains(header.Name))
+            {
+                errors.Add(Text(language, TranslationKeys.ProxyErrorHeaderReserved, header.Name));
+            }
+        }
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex("^[A-Za-z0-9!#$%&'*+.^_`|~-]{1,128}$")]
+    private static partial System.Text.RegularExpressions.Regex HeaderNamePattern();
+
+    [System.Text.RegularExpressions.GeneratedRegex("^(/[A-Za-z0-9._~!$&'()*+,;=:@-]+)+$")]
+    private static partial System.Text.RegularExpressions.Regex PathPrefixPattern();
 
     /// <summary>
     /// Tells whether a host fits the DDNS name a route is locked to: the name itself, or for a wildcard such as

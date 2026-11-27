@@ -395,6 +395,97 @@ public sealed class ProxyHostTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task OtherService_SettingsShapeWhatIsForwarded()
+    {
+        await using var proxy = await StartProxyAsync(edit: s =>
+        {
+            var route = s.Routes[0];
+            route.Upstream = _jellyfinUri.ToString().TrimEnd('/');
+            route.Options = new RouteOptions
+            {
+                PreserveHost = false,
+                PathPrefix = "/app",
+                RequestHeaders = { new HeaderEntry { Name = "X-Example", Value = "on" } },
+                ResponseHeaders = { new HeaderEntry { Name = "X-Frame-Options", Value = "SAMEORIGIN" } }
+            };
+        });
+        using var client = Client(proxy.HttpsPort);
+
+        using var response = await client.GetAsync(new Uri($"https://{Host}:{proxy.HttpsPort}/Items"));
+        var echo = await ReadEcho(response);
+
+        Assert.Equal("/app/Items", echo["path"]);
+        Assert.Equal(_jellyfinUri.Authority, echo["host"]);
+        Assert.Equal("on", echo["x-example"]);
+        Assert.Equal("https", echo["x-forwarded-proto"]);
+        Assert.Equal("SAMEORIGIN", response.Headers.GetValues("X-Frame-Options").Single());
+    }
+
+    [Fact]
+    public async Task OtherService_KeepsTheVisitorsHostByDefault()
+    {
+        await using var proxy = await StartProxyAsync(edit: s => s.Routes[0].Upstream = _jellyfinUri.ToString().TrimEnd('/'));
+        using var client = Client(proxy.HttpsPort);
+
+        using var response = await client.GetAsync(new Uri($"https://{Host}:{proxy.HttpsPort}/Items"));
+        var echo = await ReadEcho(response);
+
+        Assert.Equal($"{Host}:{proxy.HttpsPort}", echo["host"]);
+        Assert.Equal("/Items", echo["path"]);
+    }
+
+    [Fact]
+    public async Task OtherService_OwnUploadLimitBeatsSettings()
+    {
+        await using var proxy = await StartProxyAsync(edit: s =>
+        {
+            s.Advanced.MaxRequestBodyMbWan = 100;
+            s.Routes[0].Upstream = _jellyfinUri.ToString().TrimEnd('/');
+            s.Routes[0].Options = new RouteOptions { MaxBodyMb = 1 };
+        });
+        using var client = Client(proxy.HttpsPort);
+        var upload = new Uri($"https://{Host}:{proxy.HttpsPort}/upload");
+
+        using var small = await client.PostAsync(upload, new ByteArrayContent(new byte[512 * 1024]));
+        Assert.Equal(HttpStatusCode.OK, small.StatusCode);
+        var uploadsBefore = _uploads;
+        try
+        {
+            using var large = await client.PostAsync(upload, new ByteArrayContent(new byte[2 * 1024 * 1024]));
+            Assert.Equal(HttpStatusCode.RequestEntityTooLarge, large.StatusCode);
+        }
+        catch (HttpRequestException)
+        {
+            // The connection may close mid-upload instead.
+        }
+
+        Assert.Equal(uploadsBefore, _uploads);
+    }
+
+    [Theory]
+    [InlineData(false, HttpStatusCode.Forbidden)]
+    [InlineData(true, HttpStatusCode.OK)]
+    public async Task OtherService_WebSocketsFollowTheSetting(bool allowed, HttpStatusCode expected)
+    {
+        await using var proxy = await StartProxyAsync(edit: s =>
+        {
+            s.Routes[0].Upstream = _jellyfinUri.ToString().TrimEnd('/');
+            s.Routes[0].Options = new RouteOptions { WebSockets = allowed };
+        });
+        using var client = Client(proxy.HttpsPort);
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"https://{Host}:{proxy.HttpsPort}/socket");
+        request.Headers.TryAddWithoutValidation("Connection", "Upgrade");
+        request.Headers.TryAddWithoutValidation("Upgrade", "websocket");
+        request.Headers.TryAddWithoutValidation("Sec-WebSocket-Version", "13");
+        request.Headers.TryAddWithoutValidation("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
+
+        using var response = await client.SendAsync(request);
+
+        // The echo backend answers the upgrade as a plain request, so a passed one comes back 200.
+        Assert.Equal(expected, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Logs_NeverContainTokens()
     {
         await using var proxy = await StartProxyAsync(backend: new Uri("http://127.0.0.1:" + FreePort()));
@@ -435,7 +526,8 @@ public sealed class ProxyHostTests : IAsyncLifetime
         ["x-forwarded-proto"] = ctx.Request.Headers["X-Forwarded-Proto"].ToString(),
         ["x-real-ip"] = ctx.Request.Headers["X-Real-IP"].ToString(),
         ["forwarded"] = ctx.Request.Headers["Forwarded"].ToString(),
-        ["route-header"] = ctx.Request.Headers[ProxyPolicyMiddleware.RouteHeader].ToString()
+        ["route-header"] = ctx.Request.Headers[ProxyPolicyMiddleware.RouteHeader].ToString(),
+        ["x-example"] = ctx.Request.Headers["X-Example"].ToString()
     };
 
     private static async Task<Dictionary<string, string>> ReadEcho(HttpResponseMessage response)

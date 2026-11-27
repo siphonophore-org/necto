@@ -75,7 +75,7 @@ public sealed class ProxyConfigProvider : IProxyConfigProvider
         var routes = new List<RouteConfig>();
         foreach (var route in runtime.Routes)
         {
-            routes.Add(Route(route.Id));
+            routes.Add(Route(route.Id, route.Options));
             if (route.IsJellyfin)
             {
                 routes.Add(Route(route.Id + ProxyRuntime.MediaSuffix));
@@ -104,7 +104,15 @@ public sealed class ProxyConfigProvider : IProxyConfigProvider
         var clusters = new List<ClusterConfig>();
         foreach (var route in runtime.Routes)
         {
-            clusters.Add(Cluster(route.Id, route.Backend, request));
+            // A route to another service may buffer, and may wait longer or shorter than Settings says.
+            var own = route.Options is { } o
+                ? request with
+                {
+                    AllowResponseBuffering = o.Buffering,
+                    ActivityTimeout = o.TimeoutSeconds is { } seconds ? TimeSpan.FromSeconds(seconds) : request.ActivityTimeout
+                }
+                : request;
+            clusters.Add(Cluster(route.Id, route.Backend, own));
 
             // YARP's activity timer only restarts when a read or write completes, and a paused player stops
             // reading, which stalls the write. Media gets a long timer so a pause does not end the stream.
@@ -128,10 +136,15 @@ public sealed class ProxyConfigProvider : IProxyConfigProvider
         HttpClient = new HttpClientConfig { MaxConnectionsPerServer = JellyfinConnections }
     };
 
-    private static RouteConfig Route(string id) => new()
+    /// <summary>The route metadata key that says whether the backend sees the visitor's host name.</summary>
+    public const string PreserveHostKey = "necto.preserveHost";
+
+    private static RouteConfig Route(string id, RouteOptions? options = null) => new()
     {
         RouteId = id,
         ClusterId = id,
+        Metadata = new Dictionary<string, string>(StringComparer.Ordinal) { [PreserveHostKey] = options?.PreserveHost == false ? "false" : "true" },
+        Transforms = Transforms(options),
         Match = new RouteMatch
         {
             Path = "{**catch-all}",
@@ -141,6 +154,33 @@ public sealed class ProxyConfigProvider : IProxyConfigProvider
             }
         }
     };
+
+    // The path prefix and the headers a route to another service sets, as YARP's own transforms.
+    private static List<IReadOnlyDictionary<string, string>>? Transforms(RouteOptions? options)
+    {
+        if (options is null)
+        {
+            return null;
+        }
+
+        var list = new List<IReadOnlyDictionary<string, string>>();
+        if (options.PathPrefix.Length > 0)
+        {
+            list.Add(new Dictionary<string, string> { ["PathPrefix"] = options.PathPrefix });
+        }
+
+        foreach (var header in options.RequestHeaders)
+        {
+            list.Add(new Dictionary<string, string> { ["RequestHeader"] = header.Name, ["Set"] = header.Value });
+        }
+
+        foreach (var header in options.ResponseHeaders)
+        {
+            list.Add(new Dictionary<string, string> { ["ResponseHeader"] = header.Name, ["Set"] = header.Value, ["When"] = "Always" });
+        }
+
+        return list;
+    }
 
     private static Snapshot Create(ProxyRuntime runtime) => new(BuildRoutes(runtime), BuildClusters(runtime));
 

@@ -25,6 +25,9 @@ public class ProxyRoute
     /// <summary>Gets or sets the address forwarded to, such as <c>http://192.168.1.20:8096</c>. Empty forwards to this Jellyfin.</summary>
     public string Upstream { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets how the route forwards to another service. A route to Jellyfin ignores it.</summary>
+    public RouteOptions Options { get; set; } = new();
+
     /// <summary>Gets or sets a value indicating whether the route answers only the local network and trusted networks.</summary>
     public bool LocalOnly { get; set; }
 

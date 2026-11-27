@@ -202,8 +202,12 @@ public sealed class ProxyHost : IAsyncDisposable
         context.AddResponseHeaderRemove("X-Powered-By", ResponseCondition.Always);
         context.AddResponseHeaderRemove(ProxyPolicyMiddleware.ResponseTimeHeader, ResponseCondition.Always);
 
-        // Jellyfin builds its links from the name the client asked for.
-        context.AddOriginalHost(true);
+        // Jellyfin builds its links from the name the client asked for. A route to another service may send the
+        // service its own address instead, for an app that refuses any other host.
+        var keepHost = context.Route.Metadata is not { } metadata
+            || !metadata.TryGetValue(ProxyConfigProvider.PreserveHostKey, out var preserve)
+            || preserve != "false";
+        context.AddOriginalHost(keepHost);
     }
 
     private static void ConfigureKestrel(

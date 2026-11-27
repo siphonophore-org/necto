@@ -58,7 +58,7 @@ public static class ProxyRuntimeFactory
             }
             else if (ProxySettingsValidator.ParseUpstream(route.Upstream) is { } upstream)
             {
-                routes.Add(new RuntimeRoute(route.Id, host, upstream, false, route.LocalOnly));
+                routes.Add(new RuntimeRoute(route.Id, host, upstream, false, route.LocalOnly, route.Options ?? new RouteOptions()));
             }
         }
 

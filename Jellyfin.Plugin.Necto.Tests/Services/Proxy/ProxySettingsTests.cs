@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -147,6 +148,64 @@ public class ProxySettingsTests
         Assert.Contains(RouteErrors(new ProxyRoute { Host = string.Empty }), e => e == "Enter the host name.");
         Assert.Contains(RouteErrors(new ProxyRoute { Id = "b", Host = "media.example.com" }, new ProxyRoute { Id = "a", Host = "media.example.com" }), e => e.Contains("already answers", System.StringComparison.Ordinal));
         Assert.Empty(RouteErrors(new ProxyRoute { Id = "a", Host = "media.example.com" }, new ProxyRoute { Id = "a", Host = "media.example.com" }));
+    }
+
+    /// <summary>
+    /// A route to another service refuses a header the proxy sets itself, a malformed header, and a bad path prefix,
+    /// and cleans its numbers and prefix.
+    /// True: a route's settings can never undo the proxy's own forwarding headers or split a request.
+    /// False: a route could claim a visitor's address for the app, or inject a header line.
+    /// </summary>
+    [Fact]
+    public void ValidateRoute_OtherServiceSettings_AreCheckedAndCleaned()
+    {
+        var route = new ProxyRoute
+        {
+            Host = "app.example.com",
+            Upstream = "http://192.168.1.20:5055",
+            Options = new RouteOptions
+            {
+                MaxBodyMb = -5,
+                TimeoutSeconds = 999999,
+                PathPrefix = " app/ ",
+                RequestHeaders = { new HeaderEntry { Name = " X-Ok ", Value = " yes " }, new HeaderEntry { Name = "", Value = "dropped" } }
+            }
+        };
+        Assert.Empty(RouteErrors(route));
+        Assert.Equal(0, route.Options.MaxBodyMb);
+        Assert.Equal(86400, route.Options.TimeoutSeconds);
+        Assert.Equal("/app", route.Options.PathPrefix);
+        Assert.Equal("X-Ok", Assert.Single(route.Options.RequestHeaders).Name);
+
+        Assert.NotEmpty(RouteErrors(new ProxyRoute { Host = "a.example.com", Upstream = "http://h:1", Options = new RouteOptions { RequestHeaders = { new HeaderEntry { Name = "X-Forwarded-For", Value = "1.2.3.4" } } } }));
+        Assert.NotEmpty(RouteErrors(new ProxyRoute { Host = "a.example.com", Upstream = "http://h:1", Options = new RouteOptions { RequestHeaders = { new HeaderEntry { Name = "Bad Name", Value = "x" } } } }));
+        Assert.NotEmpty(RouteErrors(new ProxyRoute { Host = "a.example.com", Upstream = "http://h:1", Options = new RouteOptions { ResponseHeaders = { new HeaderEntry { Name = "X-A", Value = "a\r\nSet-Cookie: x" } } } }));
+        Assert.NotEmpty(RouteErrors(new ProxyRoute { Host = "a.example.com", Upstream = "http://h:1", Options = new RouteOptions { PathPrefix = "/a b" } }));
+        Assert.NotEmpty(RouteErrors(new ProxyRoute { Host = "a.example.com", Upstream = "http://h:1", Options = new RouteOptions { Preset = (RoutePreset)99 } }));
+
+        // A route to Jellyfin never reads its settings, so a stray value there is no reason to refuse it.
+        Assert.Empty(RouteErrors(new ProxyRoute { Host = "j.example.com", Options = new RouteOptions { PathPrefix = "/a b" } }));
+    }
+
+    /// <summary>
+    /// Each preset fills in the settings its app's reverse proxy guide uses, and a stored route without settings keeps the proxy's own behaviour.
+    /// True: picking an app gives working settings, and existing routes forward as they did.
+    /// False: qBittorrent would refuse every request, or an old route would change on upgrade.
+    /// </summary>
+    [Fact]
+    public void Presets_FillTheirAppsSettings()
+    {
+        Assert.False(RoutePresets.For(RoutePreset.QBittorrent).PreserveHost);
+        Assert.Equal(3600, RoutePresets.For(RoutePreset.HomeAssistant).TimeoutSeconds);
+        Assert.Equal(300, RoutePresets.For(RoutePreset.Arr).TimeoutSeconds);
+        Assert.Equal(20, RoutePresets.For(RoutePreset.Seerr).MaxBodyMb);
+        Assert.All(Enum.GetValues<RoutePreset>(), p => Assert.True(RoutePresets.For(p).WebSockets && !RoutePresets.For(p).Buffering));
+
+        var stored = new ProxyRoute { Host = "a.example.com", Upstream = "http://h:1", Options = null! };
+        ProxySettingsValidator.NormalizeRoute(stored);
+        Assert.True(stored.Options.WebSockets && stored.Options.PreserveHost && !stored.Options.Buffering);
+        Assert.Null(stored.Options.MaxBodyMb);
+        Assert.Null(stored.Options.TimeoutSeconds);
     }
 
     /// <summary>

@@ -141,6 +141,40 @@ export function newRoute() {
     return { Id: '', Enabled: true, Host: '', DdnsHostname: '', Upstream: '', LocalOnly: false, Certificate: { Mode: 'Automatic', Challenge: 'Auto', DnsRecordId: '', Path: '', KeyPath: '', Password: '' } };
 }
 
+// PRESETS
+// What each preset fills in, after the reverse proxy guide each app publishes, as RoutePresets does on the server.
+export var PRESETS = {
+    Generic: { key: 'ProxyPresetGeneric' },
+    Seerr: { key: 'ProxyPresetSeerr', MaxBodyMb: 20 },
+    Ombi: { key: 'ProxyPresetOmbi', MaxBodyMb: 20 },
+    Arr: { key: 'ProxyPresetArr', TimeoutSeconds: 300, MaxBodyMb: 500 },
+    QBittorrent: { key: 'ProxyPresetQBittorrent', PreserveHost: false, MaxBodyMb: 50 },
+    HomeAssistant: { key: 'ProxyPresetHomeAssistant', TimeoutSeconds: 3600, MaxBodyMb: 0 }
+};
+
+// presetOptions
+// Builds the settings a preset fills in.
+//
+// Inputs
+// preset [string]: The preset's name.
+//
+// Output
+// [object]: The route's Options for the preset.
+export function presetOptions(preset) {
+    var p = PRESETS[preset] || PRESETS.Generic;
+    return {
+        Preset: PRESETS[preset] ? preset : 'Generic',
+        WebSockets: true,
+        Buffering: false,
+        MaxBodyMb: p.MaxBodyMb === undefined ? null : p.MaxBodyMb,
+        TimeoutSeconds: p.TimeoutSeconds === undefined ? null : p.TimeoutSeconds,
+        PreserveHost: p.PreserveHost !== false,
+        PathPrefix: '',
+        RequestHeaders: [],
+        ResponseHeaders: []
+    };
+}
+
 // subdomainOf
 // Reads the part of a host in front of a wildcard DDNS name's base, such as media from media.example.com under
 // *.example.com.
@@ -232,6 +266,81 @@ export function createRouteEditor(route, ctx) {
     });
     var upstream = nectoModule.createInputField({ label: t.tr('ProxyLabelUpstream'), field: 'Upstream', value: draft.Upstream, placeholder: 'http://192.168.1.20:8096', help: t.tr('ProxyUpstreamHelp') });
     var localOnly = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelLocalOnly'), field: 'LocalOnly', checked: !!draft.LocalOnly, help: t.tr('ProxyLocalOnlyHelp') });
+
+    // How a route to another service forwards: a preset, and each setting it fills in under Advanced.
+    var opts = Object.assign(presetOptions('Generic'), draft.Options || {});
+    var presetNames = Object.keys(PRESETS);
+    var preset = nectoModule.createSelectField({
+        label: t.tr('ProxyLabelPreset'),
+        field: 'Options.Preset',
+        options: presetNames.map(function (name) { return { value: name, text: t.tr(PRESETS[name].key) }; }),
+        value: presetNames[typeof opts.Preset === 'number' ? opts.Preset : -1] || (PRESETS[opts.Preset] ? opts.Preset : 'Generic'),
+        help: t.tr('ProxyPresetHelp')
+    });
+    var webSockets = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelWebSockets'), field: 'Options.WebSockets', checked: opts.WebSockets !== false, help: t.tr('ProxyWebSocketsHelp') });
+    var buffering = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelBuffering'), field: 'Options.Buffering', checked: !!opts.Buffering, help: t.tr('ProxyBufferingHelp') });
+    var bodyLimit = nectoModule.createInputField({ label: t.tr('ProxyLabelRouteBodyLimit'), field: 'Options.MaxBodyMb', type: 'number', min: 0, value: opts.MaxBodyMb == null ? '' : opts.MaxBodyMb, help: t.tr('ProxyRouteBodyLimitHelp') });
+    var timeout = nectoModule.createInputField({ label: t.tr('ProxyLabelRouteTimeout'), field: 'Options.TimeoutSeconds', type: 'number', min: 1, max: 86400, value: opts.TimeoutSeconds == null ? '' : opts.TimeoutSeconds, help: t.tr('ProxyRouteTimeoutHelp') });
+    var preserveHost = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelPreserveHost'), field: 'Options.PreserveHost', checked: opts.PreserveHost !== false, help: t.tr('ProxyPreserveHostHelp') });
+    var pathPrefix = nectoModule.createInputField({ label: t.tr('ProxyLabelPathPrefix'), field: 'Options.PathPrefix', value: opts.PathPrefix || '', placeholder: '/radarr', help: t.tr('ProxyPathPrefixHelp') });
+    var headerEditor = function (values) {
+        return nectoModule.createKeyValueEditor({
+            values: (values || []).map(function (x) { return { key: x.Name, value: x.Value }; }),
+            keyLabel: t.tr('LabelName'), valueLabel: t.tr('LabelValue'),
+            keyPlaceholder: 'X-Example', addText: t.tr('ProxyButtonAddHeader')
+        });
+    };
+    var requestHeaders = headerEditor(opts.RequestHeaders);
+    var responseHeaders = headerEditor(opts.ResponseHeaders);
+    handles.push(requestHeaders, responseHeaders);
+    var headerBlock = function (label, help, editor, role) {
+        return h('div', { class: 'inputContainer', 'data-role': role }, [
+            h('div', { class: 'inputLabel', text: label }),
+            editor.element,
+            h('div', { class: 'fieldDescription', text: help })
+        ]);
+    };
+    var jellyfinNote = h('div', { class: 'fieldDescription', 'data-role': 'jellyfin-preset', text: t.tr('ProxyJellyfinPreset') });
+    var advancedBody = h('div', { class: 'stolon-stack' }, [
+        webSockets.element, buffering.element, bodyLimit.element, timeout.element, preserveHost.element, pathPrefix.element,
+        headerBlock(t.tr('ProxyLabelRequestHeaders'), t.tr('ProxyRequestHeadersHelp'), requestHeaders, 'request-headers'),
+        headerBlock(t.tr('ProxyLabelResponseHeaders'), t.tr('ProxyResponseHeadersHelp'), responseHeaders, 'response-headers')
+    ]);
+    var advanced = nectoModule.createCollapsibleSection({ title: t.tr('TabAdvanced'), icon: 'settings', collapsed: true, content: advancedBody });
+    handles.push(advanced);
+    advanced.element.setAttribute('data-section', 'advanced');
+    var forwardingPart = h('div', { class: 'stolon-stack' }, [jellyfinNote, preset.element, advanced.element]);
+
+    // fillPreset
+    // Fills every setting from the picked preset.
+    function fillPreset() {
+        var p = presetOptions(preset.input.value);
+        webSockets.input.checked = p.WebSockets;
+        buffering.input.checked = p.Buffering;
+        bodyLimit.input.value = p.MaxBodyMb == null ? '' : String(p.MaxBodyMb);
+        timeout.input.value = p.TimeoutSeconds == null ? '' : String(p.TimeoutSeconds);
+        preserveHost.input.checked = p.PreserveHost;
+        pathPrefix.input.value = '';
+    }
+    preset.input.addEventListener('change', fillPreset);
+
+    // readOptions
+    // Reads the forwarding settings as the server keeps them.
+    function readOptions() {
+        var number = function (input) { var n = parseInt(input.value, 10); return input.value.trim() === '' || isNaN(n) ? null : n; };
+        var headers = function (editor) { return editor.getValue().filter(function (x) { return x.key; }).map(function (x) { return { Name: String(x.key).trim(), Value: String(x.value || '').trim() }; }); };
+        return {
+            Preset: preset.input.value,
+            WebSockets: !!webSockets.input.checked,
+            Buffering: !!buffering.input.checked,
+            MaxBodyMb: number(bodyLimit.input),
+            TimeoutSeconds: number(timeout.input),
+            PreserveHost: !!preserveHost.input.checked,
+            PathPrefix: pathPrefix.input.value.trim(),
+            RequestHeaders: headers(requestHeaders),
+            ResponseHeaders: headers(responseHeaders)
+        };
+    }
     var mode = nectoModule.createSelectField({
         label: t.tr('LabelSource'),
         field: 'Certificate.Mode',
@@ -303,11 +412,14 @@ export function createRouteEditor(route, ctx) {
     routePart.appendChild(subdomain.element);
     routePart.appendChild(host.element);
     [enabled, target, upstream, localOnly].forEach(function (f) { routePart.appendChild(f.element); });
+    var forwarding = nectoModule.createCollapsibleSection({ title: t.tr('ProxyHeaderForwarding'), icon: 'tune', collapsible: false, content: forwardingPart });
+    forwarding.element.setAttribute('data-section', 'forwarding');
     var certPart = h('div', { class: 'stolon-stack' });
     [mode, challenge, record, path, keyPath, password].forEach(function (f) { certPart.appendChild(f.element); });
     [certStatus, upload, actions].forEach(function (n) { certPart.appendChild(n); });
     [
         nectoModule.createCollapsibleSection({ title: t.tr('PagesRowRoute'), icon: 'alt_route', collapsible: false, content: routePart }),
+        forwarding,
         nectoModule.createCollapsibleSection({ title: t.tr('ProxyLabelUploadFile'), icon: 'verified', collapsible: false, content: certPart })
     ].forEach(function (part) {
         handles.push(part);
@@ -320,6 +432,9 @@ export function createRouteEditor(route, ctx) {
         var m = mode.input.value;
         var other = target.input.value === 'other';
         upstream.element.classList.toggle('stolon-hidden', !other);
+        jellyfinNote.classList.toggle('stolon-hidden', other);
+        preset.element.classList.toggle('stolon-hidden', !other);
+        advanced.element.classList.toggle('stolon-hidden', !other);
         challenge.element.classList.toggle('stolon-hidden', m !== 'Automatic');
         record.element.classList.toggle('stolon-hidden', m !== 'Automatic' || challenge.input.value === 'Http');
         path.element.classList.toggle('stolon-hidden', m !== 'Pkcs12File' && m !== 'PemFiles');
@@ -369,6 +484,7 @@ export function createRouteEditor(route, ctx) {
             out.Enabled = !!enabled.input.checked;
             out.Upstream = target.input.value === 'other' ? upstream.input.value.trim() : '';
             out.LocalOnly = !!localOnly.input.checked;
+            out.Options = target.input.value === 'other' ? readOptions() : (draft.Options || presetOptions('Generic'));
             out.Certificate = {
                 Mode: m,
                 Challenge: challenge.input.value,
@@ -384,6 +500,7 @@ export function createRouteEditor(route, ctx) {
             if (!value.Host) return 'ErrorEnterHostName';
             if (value.DdnsHostname.indexOf('*.') === 0 && !fitsDdnsName(value.Host, value.DdnsHostname)) return 'ProxyErrorEnterSubdomain';
             if (target.input.value === 'other' && !/^https?:\/\/[^/]+\/?$/i.test(value.Upstream)) return 'ProxyErrorEnterUpstream';
+            if (target.input.value === 'other' && (!requestHeaders.isValid() || !responseHeaders.isValid())) return 'ProxyErrorEnterHeaders';
             if (value.Certificate.Mode === 'Automatic' && value.Certificate.Challenge === 'Http' && (value.LocalOnly || value.Host.indexOf('*') === 0)) return 'ProxyErrorHttpChallengeNeedsInternet';
             return null;
         },

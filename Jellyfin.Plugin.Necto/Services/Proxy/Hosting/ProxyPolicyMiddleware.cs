@@ -147,14 +147,21 @@ public sealed class ProxyPolicyMiddleware
 
         // An upload that declares a size over the limit is refused before the backend hears about it; without
         // a declared size the limit still stops the body mid-stream.
-        var limitMb = EffectiveSettings.MaxRequestBodyMb(runtime, local);
+        var limitMb = route.Options?.MaxBodyMb ?? EffectiveSettings.MaxRequestBodyMb(runtime, local);
         if (limitMb > 0 && request.ContentLength > limitMb * 1024L * 1024L)
         {
             context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
             return;
         }
 
-        ApplyLimits(context, runtime, local);
+        // A route to another service may refuse WebSockets, for an app that should never hold one open.
+        if (route.Options is { WebSockets: false } && IsWebSocket(context))
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return;
+        }
+
+        ApplyLimits(context, runtime, local, limitMb);
         context.Response.OnStarting(() =>
         {
             ApplySecurityHeaders(context, runtime);
@@ -303,12 +310,24 @@ public sealed class ProxyPolicyMiddleware
         => status == StatusCodes.Status401Unauthorized
             || (status == StatusCodes.Status404NotFound && PathRules.IsQuickConnectSignIn(path));
 
-    private static void ApplyLimits(HttpContext context, ProxyRuntime runtime, bool local)
+    // A WebSocket opens as an HTTP/1.1 upgrade, or on HTTP/2 as an extended CONNECT for the websocket protocol.
+    private static bool IsWebSocket(HttpContext context)
+    {
+        if (context.Features.Get<IHttpUpgradeFeature>() is { IsUpgradableRequest: true }
+            && context.Request.Headers.Upgrade.ToString().Contains("websocket", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return context.Features.Get<IHttpExtendedConnectFeature>() is { IsExtendedConnect: true, Protocol: var protocol }
+            && string.Equals(protocol, "websocket", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void ApplyLimits(HttpContext context, ProxyRuntime runtime, bool local, int mb)
     {
         var bodyFeature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
         if (bodyFeature is { IsReadOnly: false })
         {
-            var mb = EffectiveSettings.MaxRequestBodyMb(runtime, local);
             bodyFeature.MaxRequestBodySize = mb <= 0 ? null : mb * 1024L * 1024L;
         }
 
