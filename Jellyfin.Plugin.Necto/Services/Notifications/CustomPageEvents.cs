@@ -4,7 +4,7 @@ using Siphonophore.Stolon;
 namespace Jellyfin.Plugin.Necto.Services.Notifications;
 
 /// <summary>
-/// The keys of every event Custom pages sends, so Notifications can list them. A store sends them only while its
+/// The keys of every event Pages sends, so Notifications can list them. A store sends them only while its
 /// Notify administrators is on.
 /// </summary>
 public static class CustomPageEvents
@@ -19,7 +19,7 @@ public static class CustomPageEvents
     public const string StoreCleared = "pages.store_cleared";
 
     /// <summary>
-    /// Gets every event Custom pages sends, in the order Notifications lists them.
+    /// Gets every event Pages sends, in the order Notifications lists them.
     /// </summary>
     public static IReadOnlyList<NectoEventInfo> All { get; } = new[]
     {

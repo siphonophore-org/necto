@@ -54,7 +54,7 @@ nav:
       - DDNS providers: providers/index.md
       - WireGuard: WireGuard.md
       - Scripts: Scripts.md
-      - Custom Pages: CustomPages.md
+      - Pages: Pages.md
       - Storage: Storage.md
       - Notifications: Notifications.md
   - Development:

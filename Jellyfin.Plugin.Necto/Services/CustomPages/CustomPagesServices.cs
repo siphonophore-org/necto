@@ -7,7 +7,7 @@ using Siphonophore.Stolon;
 namespace Jellyfin.Plugin.Necto.Services.CustomPages;
 
 /// <summary>
-/// Registers the services Custom pages needs beyond the ones marked for discovery.
+/// Registers the services Pages needs beyond the ones marked for discovery.
 /// </summary>
 public static class CustomPagesServices
 {

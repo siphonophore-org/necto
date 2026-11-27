@@ -31,6 +31,7 @@
 /* necto-storage-attention */
 /* The notice above the disk list when more than one thing needs a look, one line each. */
 /* Example: <div class="stolon-error necto-storage-attention"><ul><li>media2 went missing 2 hours ago.</li></ul></div> */
+.necto-storage-attention { margin-bottom: var(--stolon-gap-wide); }
 .necto-storage-attention ul { margin: 0; padding-inline-start: 1.25em; }
 
 /* necto-storage-toolbar */
@@ -115,3 +116,11 @@
 .stolon-record-list-aside:has(> .stolon-qr-code.stolon-inline) { flex: 0 1 22em; min-width: 0; }
 .stolon-record-list-aside > .stolon-qr-code.stolon-inline { min-width: 0; width: 100%; }
 .stolon-record-list-aside > .stolon-qr-code.stolon-inline .stolon-copy-field-text { min-width: 0; overflow-wrap: anywhere; }
+
+/* necto-stack */
+/* A column of a tool's blocks, such as an intro, a notice, cards, and a list, kept apart by the standard gap. */
+/* Example: <div class="necto-stack"><div class="fieldDescription"></div><div class="stolon-cards"></div></div> */
+.necto-stack { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
+.necto-stack > .fieldDescription,
+.necto-stack > .stolon-info,
+.necto-stack > .stolon-cards { margin-top: 0; margin-bottom: 0; }

@@ -1,6 +1,6 @@
-# Custom Pages
+# Pages
 
-**Custom pages** serves pages you write at their own addresses, with the images they use and the stores they keep records in.
+**Pages** serves pages you write at their own addresses, with the images they use and the stores they keep records in.
 
 ## What It Does
 
@@ -14,7 +14,7 @@
 
 ## The Custom Pages Tool
 
-**Custom pages** has three tabs: **Pages**, **Images**, and **Stores**. Each list opens a record in a sidecar, whose shelf holds **Delete**, **Cancel**, and **Save**. A save asks the server first whether it would take the change, so a refused save shows its reason, such as "Two pages use the slug rules.". The tool holds no settings, which are in **Settings > Custom pages**.
+**Pages** has three tabs: **Pages**, **Images**, and **Stores**. Each list opens a record in a sidecar, whose shelf holds **Delete**, **Cancel**, and **Save**. A save asks the server first whether it would take the change, so a refused save shows its reason, such as "Two pages use the slug rules.". The tool holds no settings, which are in **Settings > Pages**.
 
 ## Pages
 
@@ -46,7 +46,7 @@ A page that needs a signed in viewer is served through a sign in shell. The shel
 | **Signed in** | Administrators, and members of a group that gives the page |
 | **Administrators** | Administrators only |
 
-A group gives pages in **Groups > Custom pages**, with **Open every page** or **Pages members may open**. **Pages members may open** lists the **Signed in** pages, since the other tiers ignore groups, and keeps a page the group already gives after it moves to another tier. A user in no group takes **Everyone**, which gives no page until you choose one. The check runs before the page is built, so a refused viewer never receives its HTML, CSS, or JavaScript. An API key carries no user, so it cannot open a **Signed in** page.
+A group gives pages in **Groups > Pages**, with **Open every page** or **Pages members may open**. **Pages members may open** lists the **Signed in** pages, since the other tiers ignore groups, and keeps a page the group already gives after it moves to another tier. A user in no group takes **Everyone**, which gives no page until you choose one. The check runs before the page is built, so a refused viewer never receives its HTML, CSS, or JavaScript. An API key carries no user, so it cannot open a **Signed in** page.
 
 !!! note "A viewer reads the source"
     Groups narrow who receives a page. Everyone who receives it can read its source, since a browser needs the source to show it.
@@ -139,7 +139,7 @@ An API key reads and writes a store as an administrator with no user, so it owns
 
 ## Settings
 
-**Settings > Custom pages** sets what a new store starts with.
+**Settings > Pages** sets what a new store starts with.
 
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
@@ -149,15 +149,15 @@ An API key reads and writes a store as an administrator with no user, so it owns
 
 ## Troubleshooting
 
-**Troubleshooting > Custom pages** holds:
+**Troubleshooting > Pages** holds:
 
 * **Stores** lists each store with its records and limit. **Clear** asks first, then deletes every record in the store. A settings backup cannot bring them back.
-* **Run now** beside **Apply custom page store retention** runs the retention task.
+* **Run now** beside **Apply page store retention** runs the retention task.
 * **Check** beside **Check the settings** asks the server whether the saved pages, images, and stores would save again, and why not.
 
 | Reason | What to do |
 | :--- | :--- |
-| "Not authorized" on a **Signed in** page | Give the page to one of the viewer's groups in **Groups > Custom pages** |
+| "Not authorized" on a **Signed in** page | Give the page to one of the viewer's groups in **Groups > Pages** |
 | "Sign in required" | Sign in to the web client on this server, then open the page again |
 | "The saved password of the route *name* on the page *slug* could not be kept, since the route was renamed or points to another host. Enter the password again and save." | Enter the route's password again and save |
 | "The slug *slug* is kept for the pages' own routes. Pick another." | Pick another slug |
@@ -185,7 +185,7 @@ A store with **Notify administrators** on sends these events. Who receives them 
 
 | Task | What it does | Runs |
 | :--- | :--- | :--- |
-| **Apply custom page store retention** | Removes records past the retention set on their store | Every 6 hours |
+| **Apply page store retention** | Removes records past the retention set on their store | Every 6 hours |
 
 A read or write drops a store's expired records too, so the task is for stores nobody touches.
 
@@ -200,7 +200,7 @@ A read or write drops a store's expired records too, so the task is for stores n
 
 ## Permissions
 
-**Groups > Custom pages** sets which **Signed in** pages members may open, with **Open every page** or **Pages members may open**. See [Groups](Groups.md#tool-permissions). Stores keep their own **Read** and **Write** tiers.
+**Groups > Pages** sets which **Signed in** pages members may open, with **Open every page** or **Pages members may open**. See [Groups](Groups.md#tool-permissions). Stores keep their own **Read** and **Write** tiers.
 
 ## API
 

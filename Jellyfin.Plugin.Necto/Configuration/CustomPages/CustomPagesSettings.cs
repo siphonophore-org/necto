@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace Jellyfin.Plugin.Necto.Configuration.CustomPages;
 
 /// <summary>
-/// Everything Custom pages keeps in the settings: its pages, images, stores, and the values a new store starts with.
+/// Everything Pages keeps in the settings: its pages, images, stores, and the values a new store starts with.
 /// </summary>
 public class CustomPagesSettings
 {

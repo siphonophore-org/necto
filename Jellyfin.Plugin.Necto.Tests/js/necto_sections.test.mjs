@@ -11,7 +11,7 @@ globalThis.clearTimeout = function () {};
 globalThis.setInterval = function () { return 1; };
 globalThis.clearInterval = function () {};
 
-var TOOLS = ['Requests', 'Issues', 'Invites', 'Groups', 'Proxy', 'DDNS', 'WireGuard', 'Scripts', 'Custom pages', 'Storage', 'Notifications'];
+var TOOLS = ['Requests', 'Issues', 'Invites', 'Groups', 'Proxy', 'DDNS', 'WireGuard', 'Scripts', 'Pages', 'Storage', 'Notifications'];
 var FAMILY = '11111111-2222-3333-4444-555555555555';
 
 // openTool

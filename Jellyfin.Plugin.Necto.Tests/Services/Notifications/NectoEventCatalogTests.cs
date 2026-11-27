@@ -32,7 +32,7 @@ public class NectoEventCatalogTests
 
     /// <summary>
     /// Every tool's events class lists its events in the one shape the catalog reads, and the catalog holds them all.
-    /// True: Requests, Issues, Storage, Custom pages, Proxy, DDNS, WireGuard, Scripts, Invites, and Notifications
+    /// True: Requests, Issues, Storage, Pages, Proxy, DDNS, WireGuard, Scripts, Invites, and Notifications
     /// events each show in the channel and group pickers.
     /// False: a tool whose list had another shape would be left out of every picker, and its users would get nothing.
     /// </summary>

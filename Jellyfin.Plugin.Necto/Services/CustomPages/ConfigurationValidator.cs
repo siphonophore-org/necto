@@ -7,7 +7,7 @@ using Siphonophore.Stolon;
 namespace Jellyfin.Plugin.Necto.Services.CustomPages;
 
 /// <summary>
-/// Checks the Custom pages settings before they are saved. The page checks the same rules, but settings can come from
+/// Checks the Pages settings before they are saved. The page checks the same rules, but settings can come from
 /// any API client, so the server holds them too.
 /// </summary>
 public static partial class ConfigurationValidator

@@ -133,7 +133,7 @@ Everything the Scripts plugin does, with its history in **Troubleshooting** and 
 * Administrators run every script, since groups hold no administrators. The script editor says so, and an **Is administrator** condition leaves them out, where the Scripts plugin's users list could leave out an administrator. **Review**
 * `scripts.failed` goes to Notifications at most once a minute for each script, so a burst of failures sends one alert. **Review**
 * An export is marked `necto-scripts`, and import reads a Scripts plugin export too. A script's users are not carried over, since groups decide them.
-### Custom Pages
+### Pages
 
 Everything Custom Pages does. A page keeps its tier, **Anyone**, **Signed in**, or **Administrators**, and its list of named users is gone, since groups give pages.
 
@@ -142,7 +142,7 @@ Everything Custom Pages does. A page keeps its tier, **Anyone**, **Signed in**, 
 * Stores keep their **Read** and **Write** tiers, **Scope**, and **Writers edit own records** on the store. They name classes of caller, not users, and a store has no group section yet. **Review**
 * The pages keep their own addresses under `/pages`, since served pages and their helpers call them. The administrator routes are under `/Pages` with two segments or more, and the slugs `asset`, `store`, `stores`, and `configuration` are kept for them. **Review**
 * A server route never follows a redirect, so its credentials stay with the host it names. **Review**
-* **Settings > Custom pages** holds the record limit, retention, and notify a new store starts with, the only settings that are not on a page, image, or store. **Clear** for a store is in **Troubleshooting > Custom pages**. **Review**
+* **Settings > Pages** holds the record limit, retention, and notify a new store starts with, the only settings that are not on a page, image, or store. **Clear** for a store is in **Troubleshooting > Pages**. **Review**
 * Store writes go to Notifications as `pages.*` events, summed per burst like the activity log entries. **Review**
 
 ### Storage

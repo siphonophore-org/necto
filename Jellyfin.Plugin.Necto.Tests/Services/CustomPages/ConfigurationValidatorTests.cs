@@ -277,7 +277,7 @@ public class ConfigurationValidatorTests
 
     /// <summary>
     /// A refusal is a full sentence in the requested language that names the page.
-    /// True: the Custom pages tool shows the administrator what to fix.
+    /// True: the Pages tool shows the administrator what to fix.
     /// False: the save fails with a key or an exception message.
     /// </summary>
     [Fact]

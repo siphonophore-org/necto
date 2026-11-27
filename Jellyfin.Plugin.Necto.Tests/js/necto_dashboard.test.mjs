@@ -93,7 +93,7 @@ test('the Issues and Invites cards count what is open and active', async functio
     assert.equal(dashboard.invitesCard(t, []).status, 'Idle');
 });
 
-test('the Groups and Custom pages cards read the configuration', async function () {
+test('the Groups and Pages cards read the configuration', async function () {
     installPage({});
     var dashboard = await loadScript('necto_dashboard.js');
     var config = {
@@ -283,7 +283,7 @@ test('the page draws a card per tool that is on and hides the map and share card
     });
 
     var titles = texts(opened.view, '#dashboardCards .stolon-status-card-title');
-    assert.deepEqual(titles, ['Requests', 'Invites', 'Groups', 'DDNS', 'Scripts', 'Custom pages', 'Storage', 'Notifications']);
+    assert.deepEqual(titles, ['Requests', 'Invites', 'Groups', 'DDNS', 'Scripts', 'Pages', 'Storage', 'Notifications']);
     assert.ok(opened.view.querySelector('#dashboardMap').classList.contains('stolon-hidden'));
     assert.ok(opened.view.querySelector('#dashboardShare').classList.contains('stolon-hidden'));
     var urls = opened.page.requests.map(function (r) { return r.url; });

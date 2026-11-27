@@ -18,7 +18,7 @@ using Xunit;
 namespace Jellyfin.Plugin.Necto.Tests.Api.CustomPages;
 
 /// <summary>
-/// <c>POST /Pages/Configuration/Check</c> tells the Custom pages tool why a save would be refused, since Jellyfin
+/// <c>POST /Pages/Configuration/Check</c> tells the Pages tool why a save would be refused, since Jellyfin
 /// answers a refused save with no reason.
 /// </summary>
 public class ConfigurationCheckTests

@@ -84,7 +84,7 @@ public sealed class StoreActivityTests : IDisposable
 
     /// <summary>
     /// Every key the activity sends is in the list Notifications reads.
-    /// True: Notifications can offer each Custom pages event on groups.
+    /// True: Notifications can offer each Pages event on groups.
     /// False: an event is sent that no group can choose.
     /// </summary>
     [Fact]

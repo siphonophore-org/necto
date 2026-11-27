@@ -30,7 +30,7 @@ public class StoreRetentionTaskTests
     {
         var task = new StoreRetentionTask(new RecordingStoreService(), NullLogger<StoreRetentionTask>.Instance, FakeServerConfig.Create());
 
-        Assert.Equal("Apply custom page store retention", task.Name);
+        Assert.Equal("Apply page store retention", task.Name);
         Assert.StartsWith("Removes records past the retention", task.Description, StringComparison.Ordinal);
         Assert.Equal("NectoPagesStoreRetention", task.Key);
     }

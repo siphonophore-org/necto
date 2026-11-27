@@ -55,7 +55,7 @@ public sealed class StoreRetentionTask : PluginScheduledTask
         var removed = _stores.SweepAll(cancellationToken);
         if (removed > 0)
         {
-            _logger.LogInformation("Custom pages retention removed {Count} expired store records", removed);
+            _logger.LogInformation("Pages retention removed {Count} expired store records", removed);
         }
 
         progress.Report(100);

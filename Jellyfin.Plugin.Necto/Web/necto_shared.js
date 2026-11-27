@@ -96,7 +96,7 @@ export function nectoTools() {
         { key: 'ddns', name: tabName('TabDdns', 'DDNS'), icon: 'dns', page: 'necto_ddns' },
         { key: 'wireguard', name: tabName('TabWireGuard', 'WireGuard'), icon: 'vpn_lock', page: 'necto_wireguard' },
         { key: 'scripts', name: tabName('TabScripts', 'Scripts'), icon: 'code', page: 'necto_scripts' },
-        { key: 'pages', name: tabName('TabPages', 'Custom pages'), icon: 'web', page: 'necto_pages' },
+        { key: 'pages', name: tabName('TabPages', 'Pages'), icon: 'web', page: 'necto_pages' },
         { key: 'storage', name: tabName('TabStorage', 'Storage'), icon: 'storage', page: 'necto_storage' },
         { key: 'notifications', name: tabName('TabNotifications', 'Notifications'), icon: 'notifications', page: 'necto_notifications' },
         { key: 'settings', name: tabName('Settings', 'Settings'), icon: 'settings', page: 'necto_settings' },

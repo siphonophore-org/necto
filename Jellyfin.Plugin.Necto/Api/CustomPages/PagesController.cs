@@ -18,7 +18,7 @@ using Siphonophore.Stolon;
 namespace Jellyfin.Plugin.Necto.Api.CustomPages;
 
 /// <summary>
-/// The administrator routes of the Custom pages tool: the page list for groups, store counts and clearing, and the
+/// The administrator routes of the Pages tool: the page list for groups, store counts and clearing, and the
 /// check a save runs first. Every route has two segments or more, so no page slug is shadowed.
 /// </summary>
 [ApiController]

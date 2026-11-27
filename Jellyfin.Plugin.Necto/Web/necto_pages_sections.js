@@ -1,5 +1,5 @@
 // necto_pages_sections.js
-// The Custom pages sections of Settings and Troubleshooting, which this module adds to the registry when it loads.
+// The Pages sections of Settings and Troubleshooting, which this module adds to the registry when it loads.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
@@ -46,7 +46,7 @@ export function clampInt(value, min, max, fallback) {
 }
 
 // buildSettings
-// Fills the Custom pages section of Settings: the record limit, retention, and notifying a new store starts with.
+// Fills the Pages section of Settings: the record limit, retention, and notifying a new store starts with.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -129,7 +129,7 @@ export function clearMessage(count, t) {
 }
 
 // buildTroubleshooting
-// Fills the Custom pages section of Troubleshooting: each store with its records and Clear, running retention now,
+// Fills the Pages section of Troubleshooting: each store with its records and Clear, running retention now,
 // and checking the saved settings.
 //
 // Inputs
@@ -231,7 +231,7 @@ function buildTroubleshooting(content, ctx) {
     }
 
     // checkSettings
-    // Asks the server whether the saved Custom pages settings would save again, and reports why not.
+    // Asks the server whether the saved Pages settings would save again, and reports why not.
     function checkSettings() {
         return shared.getConfig().then(function (config) {
             return shared.request('Pages/Configuration/Check', 'POST', config);

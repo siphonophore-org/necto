@@ -1,5 +1,5 @@
 // necto_pages.test.mjs
-// Tests for Custom pages: the rows, counts, notices, and checks the tool draws, its page and store editors, saving
+// Tests for Pages: the rows, counts, notices, and checks the tool draws, its page and store editors, saving
 // through the server's check, its Settings and Troubleshooting sections, and the pages field of the group editor.
 
 import { test } from 'node:test';
@@ -211,7 +211,7 @@ test('the store editor keeps All for an Administrators store and reads a custom 
 });
 
 // openTool
-// Shows Settings or Troubleshooting over a view, answering its routes, and finds the Custom pages section.
+// Shows Settings or Troubleshooting over a view, answering its routes, and finds the Pages section.
 async function openTool(name, config, answers) {
     var page = installPage({ config: config });
     var dom = page.dom;
@@ -228,7 +228,7 @@ async function openTool(name, config, answers) {
     return { page: page, dom: dom, view: view, saved: saved, section: view.querySelector('[data-tool="pages"]') };
 }
 
-test('the Custom pages section of Settings shows what a new store starts with and saves only those fields', async function () {
+test('the Pages section of Settings shows what a new store starts with and saves only those fields', async function () {
     var opened = await openTool('settings', { CustomPages: { Pages: [{ Slug: 'kept' }], NewStoreMaxRecords: 250, NewStoreRetentionDays: 7 } });
     var section = opened.section;
 
@@ -247,7 +247,7 @@ test('the Custom pages section of Settings shows what a new store starts with an
     assert.equal(config.CustomPages.NewStoreNotifyOnWrite, true);
 });
 
-test('the Custom pages section of Troubleshooting lists each store with its records and asks before Clear', async function () {
+test('the Pages section of Troubleshooting lists each store with its records and asks before Clear', async function () {
     var cleared = [];
     var opened = await openTool('troubleshooting', { CustomPages: { Stores: [{ Name: 'queue', MaxRecords: 50 }] } }, {
         'GET Pages/Stores/queue/Stats': { count: 3, limit: 50 },
@@ -271,7 +271,7 @@ test('the Custom pages section of Troubleshooting lists each store with its reco
     assert.equal(cleared.length, 1);
 });
 
-test('the Custom pages tool holds no settings, and a page saves only after the server check passes', async function () {
+test('the Pages tool holds no settings, and a page saves only after the server check passes', async function () {
     var page = installPage({ config: { CustomPages: { Pages: [{ Id: 'p1', Slug: 'rules', Title: 'Rules', Visibility: 'User' }], Assets: [], Stores: [] } } });
     var dom = page.dom;
     var saved = [];

@@ -39,7 +39,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Gets or sets the Storage settings.</summary>
     public Storage.StorageConfiguration Storage { get; set; } = new();
 
-    /// <summary>Gets or sets the Custom pages settings: pages, images, and stores.</summary>
+    /// <summary>Gets or sets the Pages settings: pages, images, and stores.</summary>
     public CustomPages.CustomPagesSettings CustomPages { get; set; } = new();
 
     /// <summary>Gets or sets the Notifications settings and channels.</summary>

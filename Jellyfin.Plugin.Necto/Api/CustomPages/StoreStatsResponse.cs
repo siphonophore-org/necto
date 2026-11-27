@@ -1,7 +1,7 @@
 namespace Jellyfin.Plugin.Necto.Api.CustomPages;
 
 /// <summary>
-/// The answer of <c>GET /Pages/Stores/{name}/Stats</c>, for the Custom pages tool.
+/// The answer of <c>GET /Pages/Stores/{name}/Stats</c>, for the Pages tool.
 /// </summary>
 public class StoreStatsResponse
 {

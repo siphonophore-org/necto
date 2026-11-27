@@ -20,7 +20,7 @@ using Xunit;
 namespace Jellyfin.Plugin.Necto.Tests.Api.CustomPages;
 
 /// <summary>
-/// The Custom pages controller decides who opens a page, from its tier and the caller's groups, and hardens every
+/// The Pages controller decides who opens a page, from its tier and the caller's groups, and hardens every
 /// page it serves.
 /// </summary>
 public class CustomPagesControllerTests

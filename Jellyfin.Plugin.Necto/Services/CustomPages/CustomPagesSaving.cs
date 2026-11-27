@@ -10,7 +10,7 @@ using Siphonophore.Stolon;
 namespace Jellyfin.Plugin.Necto.Services.CustomPages;
 
 /// <summary>
-/// Readies the Custom pages settings of a configuration about to be saved: every page gets an id, the new store values
+/// Readies the Pages settings of a configuration about to be saved: every page gets an id, the new store values
 /// come into range, the settings are checked, and route passwords are encrypted.
 /// </summary>
 public static class CustomPagesSaving
@@ -24,7 +24,7 @@ public static class CustomPagesSaving
     /// <summary>
     /// Readies the incoming settings for saving.
     /// </summary>
-    /// <param name="incoming">The configuration about to be saved. Its Custom pages settings change in place.</param>
+    /// <param name="incoming">The configuration about to be saved. Its Pages settings change in place.</param>
     /// <param name="stored">The configuration in effect, or <c>null</c> on a first save.</param>
     /// <param name="paths">Locates the key folder, or <c>null</c> when it is not known, which keeps passwords in plain text.</param>
     /// <exception cref="ArgumentException">When the settings must not be saved.</exception>
@@ -38,7 +38,7 @@ public static class CustomPagesSaving
     /// <summary>
     /// Readies the incoming settings for saving with a given protector.
     /// </summary>
-    /// <param name="incoming">The configuration about to be saved. Its Custom pages settings change in place.</param>
+    /// <param name="incoming">The configuration about to be saved. Its Pages settings change in place.</param>
     /// <param name="stored">The configuration in effect, or <c>null</c> on a first save.</param>
     /// <param name="secrets">Encrypts route passwords.</param>
     /// <exception cref="ArgumentException">When the settings must not be saved.</exception>

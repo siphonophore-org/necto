@@ -16,7 +16,7 @@ A status card sums up each tool that is on, in sidebar order. Select a card to o
 | **DDNS** | Records that are on | A dot per record, or per name for a record that follows the proxy, in the color of its last result | **Failed** for a failed record, **Needs attention** for a warning, else **Healthy** |
 | **WireGuard** | Connected peers and connections | A dot per peer and connection | **Failed** for a failed tunnel, **Connected** while any is, **Running** while only the host runs, else **Offline** |
 | **Scripts** | Runs that failed in the last 14 days | The runs of each day | **Failed** while any failed, **Healthy** with runs, else **Idle** |
-| **Custom pages** | Pages that are on | None | None |
+| **Pages** | Pages that are on | None | None |
 | **Storage** | Disks | A dot per disk in the color the **Storage** tool gives it | **Needs attention** for a disk that is missing, unresponsive, failing, low, or full, else **Healthy** |
 | **Notifications** | Sends in the send log | One bar split into sent and failed | **Failed** when the latest send failed, **Needs attention** when an earlier one did, **Healthy** with sends, else **Idle** |
 

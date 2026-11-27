@@ -26,7 +26,7 @@ changelog:
   - "Settings and Troubleshooting, with a section per tool"
   - "WireGuard from the WireGuard plugin, with the host, peers, connections, DNS, and limits, and wireguard-go downloaded when WireGuard is turned on"
   - "Scripts from the Scripts plugin, with triggers, conditions, steps, secrets, variables, history, export, and import, run for the groups that run them"
-  - "Custom pages from Custom Pages, with pages, images, server routes, and stores. Who may open a signed in page is set on groups, and store writes go to Notifications"
+  - "Pages from Custom Pages, with pages, images, server routes, and stores. Who may open a signed in page is set on groups, and store writes go to Notifications"
   - "Storage from Storage Manager, with disks, space, SMART health, missing disks and remounting, formatting, new folders, and libraries per disk. Its alerts go to Notifications"
   - "Notifications, with browser notifications, Jellyfin messages, Discord, webhooks, email, and the activity log, a test for each channel, and a send log. Groups pick the events and channels their members get, and each post channel picks what its posts carry"
   - "Invites from User Management, with PINs, limits, expiry, QR codes, and the signup page at /invites, and a page where members make their own invites as their groups allow"

@@ -19,7 +19,7 @@ using Siphonophore.Stolon;
 namespace Jellyfin.Plugin.Necto.Tests.Fakes.CustomPages;
 
 /// <summary>
-/// Builds the Custom pages controller over stand-ins, with a caller a test picks and groups from a configuration.
+/// Builds the Pages controller over stand-ins, with a caller a test picks and groups from a configuration.
 /// </summary>
 public static class TestController
 {

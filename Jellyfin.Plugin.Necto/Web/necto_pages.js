@@ -1,5 +1,5 @@
 // necto_pages.js
-// The Custom pages tool. It lists the pages, their images, and the stores pages write to, and edits each in a sidecar.
+// The Pages tool. It lists the pages, their images, and the stores pages write to, and edits each in a sidecar.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
@@ -138,7 +138,7 @@ export function newPage() {
 // Builds a store as Add store starts it, with the record limit, retention, and notify the settings give a new store.
 //
 // Inputs
-// settings [object]: The Custom pages settings.
+// settings [object]: The Pages settings.
 //
 // Output
 // [object]: The store.
@@ -723,7 +723,7 @@ export default function (view) {
     }
 
     // persist
-    // Saves a change to the Custom pages settings into a fresh copy of the config, after the server says it would take it.
+    // Saves a change to the Pages settings into a fresh copy of the config, after the server says it would take it.
     //
     // Inputs
     // mutate [function]: Changes the settings it is given.
@@ -1059,6 +1059,7 @@ export default function (view) {
     function renderTab(tab, panel) {
         var t = shared.t;
         panels[tab.id] = panel;
+        panel.classList.add('necto-stack');
         if (tab.id === 'pages') {
             var pagesIntro = el('div', { class: 'fieldDescription' });
             fillWithCode(pagesIntro, t.tr('PagesPagesIntro'), ['/pages/{slug}']);
@@ -1116,7 +1117,7 @@ export default function (view) {
         tabs = nectoModule.createSubTabs({
             label: t.tr('TabPages'),
             tabs: [
-                { id: 'pages', label: t.tr('PagesTabPages') },
+                { id: 'pages', label: t.tr('TabPages') },
                 { id: 'assets', label: t.tr('Images') },
                 { id: 'stores', label: t.tr('PagesTabStores') }
             ],

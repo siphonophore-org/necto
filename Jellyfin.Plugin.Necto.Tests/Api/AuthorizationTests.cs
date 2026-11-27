@@ -11,7 +11,7 @@ using Xunit;
 namespace Jellyfin.Plugin.Necto.Tests.Api;
 
 /// <summary>
-/// Every controller asks for an administrator, apart from the ones behind user pages. Custom pages decide access per
+/// Every controller asks for an administrator, apart from the ones behind user pages. Pages decide access per
 /// route, and the request and issue pages sign every data call in and serve only their own files to anyone.
 /// </summary>
 public class AuthorizationTests

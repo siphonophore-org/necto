@@ -52,7 +52,7 @@ public sealed partial class PageService : IPageService
     /// <summary>
     /// Initializes a new instance of the <see cref="PageService"/> class.
     /// </summary>
-    /// <param name="store">Reads the Custom pages settings.</param>
+    /// <param name="store">Reads the Pages settings.</param>
     public PageService(IConfigurationStore store)
     {
         ArgumentNullException.ThrowIfNull(store);
@@ -62,7 +62,7 @@ public sealed partial class PageService : IPageService
     /// <summary>
     /// Initializes a new instance of the <see cref="PageService"/> class over a settings source, for tests.
     /// </summary>
-    /// <param name="settings">Gives the Custom pages settings, or <c>null</c> when there are none.</param>
+    /// <param name="settings">Gives the Pages settings, or <c>null</c> when there are none.</param>
     internal PageService(Func<CustomPagesSettings?> settings)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));

@@ -81,8 +81,8 @@ public sealed class CustomPagesSavingTests : IDisposable
     }
 
     /// <summary>
-    /// A save with no Custom pages settings at all gets empty ones.
-    /// True: a save from another tool's section never wipes or breaks Custom pages.
+    /// A save with no Pages settings at all gets empty ones.
+    /// True: a save from another tool's section never wipes or breaks Pages.
     /// False: a configuration without the section fails to save.
     /// </summary>
     [Fact]

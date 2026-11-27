@@ -104,7 +104,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 | **Invites** | **Allow invites**, **Open invites**, **Invite to any group**, **Invite groups**. See [Invites](Invites.md#members-invites) |
 | **WireGuard** | **Allow peers**, **Peers per member**, **Data per member (GB)**, **Period**. See [WireGuard](WireGuard.md#permissions) |
 | **Scripts** | **Run every script**, **Scripts that run**. See [Scripts](Scripts.md#groups) |
-| **Custom pages** | **Open every page**, **Pages members may open** |
+| **Pages** | **Open every page**, **Pages members may open** |
 | **Notifications** | **Receive every event**, **Events**, **Browser notifications**, **Jellyfin messages**. See [Notifications](Notifications.md#who-gets-an-event) |
 
 ## Scheduled Tasks

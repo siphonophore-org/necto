@@ -38,7 +38,7 @@ Every string is in sentence case, mirroring Jellyfin, such as "Allow media playb
 
 | Text | Example |
 | :--- | :--- |
-| Tool, short | Custom pages |
+| Tool, short | Pages |
 | Section and collapsible title | Certificate renewal |
 | Field label | Update interval |
 | Checkbox label | Allow requests |
@@ -257,7 +257,7 @@ Every tool page uses Jellyfin's page shell. The tool app takes the page's view o
 * A page has no title of its own. The shell's heading names it, and `setPageTitle` changes the heading when a page needs another.
 * Entry names are short, each with a Material icon.
 * Keep the list in one place, `nectoTools` in the shared module, never copied into each page. `Plugin.ToolKeys` registers the same tools in the same order.
-* Order entries from what is used most to what is set once. Necto is **Dashboard**, **Requests**, **Issues**, **Invites**, **Groups**, **Proxy**, **DDNS**, **WireGuard**, **Scripts**, **Custom pages**, **Storage**, **Notifications**, **Settings**, **Troubleshooting**.
+* Order entries from what is used most to what is set once. Necto is **Dashboard**, **Requests**, **Issues**, **Invites**, **Groups**, **Proxy**, **DDNS**, **WireGuard**, **Scripts**, **Pages**, **Storage**, **Notifications**, **Settings**, **Troubleshooting**.
 * A tool turned off in **Settings** leaves the sidebar.
 * A tool page holds no settings and no permissions. Settings go in the tool's section of **Settings**, and permissions go on groups.
 

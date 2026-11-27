@@ -84,7 +84,7 @@ public sealed class StoreService : IStoreService
     /// </summary>
     /// <param name="paths">Places the stores under Jellyfin's data folder.</param>
     /// <param name="logger">Writes the server log.</param>
-    /// <param name="configuration">Gives the Custom pages settings, or <c>null</c> when there are none.</param>
+    /// <param name="configuration">Gives the Pages settings, or <c>null</c> when there are none.</param>
     /// <param name="activity">Writes store entries, or <c>null</c> to write none.</param>
     /// <param name="time">The clock, so retention can be tested without waiting out a day.</param>
     internal StoreService(
@@ -463,7 +463,7 @@ public sealed class StoreService : IStoreService
             state.PayloadBytes = MeasureAll(state.Records);
             Persist(state);
             _logger.LogDebug(
-                "Custom pages: removed {Count} expired records from store {Store}", removed, store.Name);
+                "Pages: removed {Count} expired records from store {Store}", removed, store.Name);
         }
 
         return removed;
@@ -590,7 +590,7 @@ public sealed class StoreService : IStoreService
             // Starting empty would silently discard the file on the next write, so refuse to load
             // instead: the store answers as empty this run and the unreadable file is left untouched
             // for an administrator to look at.
-            _logger.LogError(ex, "Custom pages: could not read the store at {File}. It will answer as empty and refuse writes until the file is repaired or removed and Jellyfin is restarted", state.File);
+            _logger.LogError(ex, "Pages: could not read the store at {File}. It will answer as empty and refuse writes until the file is repaired or removed and Jellyfin is restarted", state.File);
             state.Records = new List<StoreRecord>();
             state.Readable = false;
         }
@@ -613,7 +613,7 @@ public sealed class StoreService : IStoreService
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException)
         {
-            _logger.LogError(ex, "Custom pages: could not write the store at {File}", state.File);
+            _logger.LogError(ex, "Pages: could not write the store at {File}", state.File);
             return false;
         }
     }

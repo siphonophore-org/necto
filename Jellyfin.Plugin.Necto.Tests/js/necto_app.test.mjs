@@ -9,7 +9,7 @@ globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
 
 var KEYS = ['dashboard', 'requests', 'issues', 'invites', 'groups', 'proxy', 'ddns', 'wireguard', 'scripts', 'pages', 'storage', 'notifications', 'settings', 'troubleshooting'];
-var NAMES = ['Dashboard', 'Requests', 'Issues', 'Invites', 'Groups', 'Proxy', 'DDNS', 'WireGuard', 'Scripts', 'Custom pages', 'Storage', 'Notifications', 'Settings', 'Troubleshooting'];
+var NAMES = ['Dashboard', 'Requests', 'Issues', 'Invites', 'Groups', 'Proxy', 'DDNS', 'WireGuard', 'Scripts', 'Pages', 'Storage', 'Notifications', 'Settings', 'Troubleshooting'];
 var ICONS = ['dashboard', 'movie_filter', 'report_problem', 'mail', 'groups', 'security', 'dns', 'vpn_lock', 'code', 'web', 'storage', 'notifications', 'settings', 'bug_report'];
 
 // openApp
