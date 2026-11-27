@@ -879,7 +879,7 @@ export default function (view) {
     function openGroup(group) {
         var t = shared.t;
         var isNew = !group;
-        var editor = createGroupEditor(group || { Name: '', MemberIds: [], Permissions: {} }, { shared: shared, users: users, groups: groups, devices: devices, events: events, profiles: profiles });
+        var editor = createGroupEditor(group || newGroup(), { shared: shared, users: users, groups: groups, devices: devices, events: events, profiles: profiles });
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('TitleNewGroup') : groupName(group, t),
             body: editor.element,
@@ -942,4 +942,18 @@ export default function (view) {
     });
     shared = made.shared;
     page = made.page;
+}
+
+// newGroup
+// Starts a new group. Its members hear what happens to their own requests and issue reports, as Everyone's do on a
+// fresh install, and it gives nothing else until it is set.
+//
+// Output
+// [object]: The group the editor opens with.
+export function newGroup() {
+    return {
+        Name: '',
+        MemberIds: [],
+        Permissions: { Notifications: { AllEvents: false, EventKeys: ['requests.approved', 'requests.declined', 'requests.available', 'issues.updated'] } }
+    };
 }

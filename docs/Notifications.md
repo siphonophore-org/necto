@@ -25,7 +25,7 @@ A test of **Browser notifications**, **Jellyfin messages**, or **Administrators*
 * Any other event, such as a proxy ban or a missing disk, goes to every member who is not an administrator and whose groups give them the event. Administrators get these through **Administrators**.
 * Every event goes to each administrators' channel that picks it, or takes every event.
 * An administrator the event is about gets it once, as a user, and not again through **Administrators**. An event can also leave people out of **Administrators** and the groups, such as the administrator who approved a request.
-* **Everyone** gives **Request approved**, **Request rejected**, **Request available**, and **Issue resolved** on a fresh install, so a user in no group hears about their own requests and issues. A new group gives no event until one is picked.
+* **Everyone** gives **Request approved**, **Request rejected**, **Request available**, and **Issue resolved** on a fresh install, so a user in no group hears about their own requests and issues. A new group starts with the same four, and can drop them.
 
 ## Settings
 
