@@ -4,7 +4,7 @@ Invites are links anyone may use to make their own account on the server, in the
 
 ## The Invites Tool
 
-**Invites** lists every invite, oldest first, with its group, its uses, its expiry, and its state. A PIN tag marks an invite that asks for a PIN, and a person tag names the member who made it. Select **Add invite** to make one, or select a row to open it in a sidecar.
+**Invites** counts the invites in each state at the top, then lists every invite, oldest first, with its group, its uses, its expiry, and its state. A PIN tag marks an invite that asks for a PIN, and a person tag names the member who made it. Select **Add invite** to make one, or select a row to open it in a sidecar.
 
 | State | Means |
 | :--- | :--- |
@@ -18,7 +18,7 @@ The sidecar of an invite shows its link with **Copy** and a QR button, which ope
 
 * **Name** names the invite in the Invites tool. The signup page never shows it.
 * **Welcome message** shows under the signup page's heading.
-* **Group** sets the group a new account joins. **Group for new users** follows **Settings > Groups > Group for new users** at the moment the link is used, and **Everyone** joins no group. A group that disallows password changes cannot take invites, so it is not listed.
+* **Group** sets the group a new account joins. **Group for new users** follows **Settings > Groups > Group for new users** at the moment the link is used, and **Everyone** joins no group. A group that disallows password changes cannot take invites, so it is not listed. A warning shows while the picked group has expired, since signups into it are refused.
 * **Accounts it may make** sets how many accounts the link makes. 0 is no limit.
 * **Expiry date** stops the link on that day. Leave it blank to keep the link.
 * **PIN** asks for six digits on the signup page. A stored PIN stays hidden, and **Remove PIN** clears it on save.
@@ -58,7 +58,7 @@ A member deletes only their own invites. The page also holds **Turn on notificat
 
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
-| **Invite link address** | Starts every invite link, such as your reverse proxy's address. Blank uses the address the page is open at | Blank |
+| **Invite link address** | Starts every invite link, such as your reverse proxy's address. Blank uses the address the page is open at. A warning shows while links would use plain http | Blank |
 | **Signups before a pause** | Pauses an invite after this many accounts in the window | 10 |
 | **Pause window (minutes)** | Sets the window the signups count over | 60 |
 | **Wrong PINs before a lock** | Locks an invite after this many wrong PINs | 5 |
