@@ -61,7 +61,7 @@ public sealed class GroupStore
     /// </summary>
     /// <returns>Copies of the groups.</returns>
     public IReadOnlyList<Group> List()
-        => _store.Read(c => new[] { c.Everyone ?? PluginConfiguration.NewEveryone() }.Concat(c.Groups ?? new List<Group>()).Select(ConfigurationCopy.Of).ToList());
+        => _store.Read(c => new[] { c.Everyone ?? PluginConfiguration.NewEveryone() }.Concat(c.Groups ?? new List<Group>()).Select(SecretJson.Copy).ToList());
 
     /// <summary>
     /// Finds a group.
@@ -78,7 +78,7 @@ public sealed class GroupStore
     public GroupChange Create(Group incoming)
     {
         ArgumentNullException.ThrowIfNull(incoming);
-        var group = ConfigurationCopy.Of(incoming);
+        var group = SecretJson.Copy(incoming);
         group.Id = Guid.NewGuid();
         GroupNormalizer.Complete(group);
         group.Name = group.Name.Trim();
@@ -96,7 +96,7 @@ public sealed class GroupStore
 
             config.Groups.Add(group);
             GroupNormalizer.Normalize(config, known, admins);
-            result = new GroupChange(ConfigurationCopy.Of(config.Groups.First(g => g.Id == group.Id)), GroupChangeError.None);
+            result = new GroupChange(SecretJson.Copy(config.Groups.First(g => g.Id == group.Id)), GroupChangeError.None);
             return true;
         });
 
@@ -118,7 +118,7 @@ public sealed class GroupStore
     public GroupChange Update(Guid id, Group incoming)
     {
         ArgumentNullException.ThrowIfNull(incoming);
-        var group = ConfigurationCopy.Of(incoming);
+        var group = SecretJson.Copy(incoming);
         group.Id = id;
         GroupNormalizer.Complete(group);
         group.Name = group.Name.Trim();
@@ -152,7 +152,7 @@ public sealed class GroupStore
 
             GroupNormalizer.Normalize(config, known, admins);
             var saved = id == Group.EveryoneId ? config.Everyone : config.Groups.First(g => g.Id == id);
-            result = new GroupChange(ConfigurationCopy.Of(saved), GroupChangeError.None);
+            result = new GroupChange(SecretJson.Copy(saved), GroupChangeError.None);
             return true;
         });
 

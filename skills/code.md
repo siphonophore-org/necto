@@ -230,7 +230,7 @@ Every secret takes one of two places, and no JSON the server sends ever carries 
 | The tool's own encrypted file beside the configuration | Only the tool's own routes change it | The configuration holds nothing, or `SECRET_KEPT` where a page needs to know one is set. The file is written with `AtomicFile` and `ownerOnly: true`. Notifications keeps `NotificationSecretStore` and Scripts keeps `SecretVault`. |
 | The configuration, encrypted | A page saves it with the whole configuration, or a tool reads it from a copy | The property carries `[JsonConverter(typeof(KeptSecretConverter))]`, so any JSON writes `SECRET_KEPT`, or empty when none is set. |
 
-* Copy a part of the configuration with `ConfigurationCopy.Of`, or serialize it with `ConfigurationCopy.Json`. They alone keep a secret's value, so a server-side copy still signs in.
+* Copy a part of the configuration with `SecretJson.Copy`, or serialize it with `SecretJson.ServerCopyOptions`. They alone keep a secret's value, so a server-side copy still signs in.
 * Never deep copy a configuration type with plain `JsonSerializer` options. The copy would hold `SECRET_KEPT` in place of every secret.
 * A whole configuration save brings each secret back as `SECRET_KEPT`. `OnConfigurationSaving` resolves it against the stored value, or takes the stored part whole, so a save from any page never wipes a secret.
 * A new secret property gets the converter, or a store, in the same change, and a line in `KeptSecretConverterTests`.

@@ -254,10 +254,10 @@ public class ProxyController : ControllerBase
 
         var slot = _paths.ForRoute(existing.Id);
         Directory.CreateDirectory(slot.Directory);
-        SecretFile.Write(slot.UploadedFile, certBytes);
+        AtomicFile.WriteAllBytes(slot.UploadedFile, certBytes, ownerOnly: true);
         if (keyBytes is not null)
         {
-            SecretFile.Write(slot.UploadedKeyFile, keyBytes);
+            AtomicFile.WriteAllBytes(slot.UploadedKeyFile, keyBytes, ownerOnly: true);
         }
         else if (System.IO.File.Exists(slot.UploadedKeyFile))
         {
@@ -574,7 +574,7 @@ public class ProxyController : ControllerBase
     /// <returns>The changed parts.</returns>
     internal static List<string> ChangedSections(ProxySettings before, ProxySettings after)
     {
-        static string Json<T>(T value) => System.Text.Json.JsonSerializer.Serialize(value, Jellyfin.Plugin.Necto.Configuration.ConfigurationCopy.Json);
+        static string Json<T>(T value) => System.Text.Json.JsonSerializer.Serialize(value, Siphonophore.Stolon.SecretJson.ServerCopyOptions);
         var changed = new List<string>();
         if (before.Enabled != after.Enabled)
         {
@@ -710,7 +710,7 @@ public class ProxyController : ControllerBase
     }
 
     private static ProxyRoute Clone(ProxyRoute route)
-        => Jellyfin.Plugin.Necto.Configuration.ConfigurationCopy.Of(route);
+        => Siphonophore.Stolon.SecretJson.Copy(route);
 
     private static ProxyRoute Redact(ProxyRoute route)
     {

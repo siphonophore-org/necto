@@ -18,6 +18,7 @@ using Jellyfin.Plugin.Necto.Services.Proxy.Network;
 using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
 using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
 using Jellyfin.Plugin.Necto.Api.Ddns;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Services.Proxy;
 
@@ -29,7 +30,7 @@ namespace Jellyfin.Plugin.Necto.Services.Proxy;
 /// On Windows each key is wrapped with DPAPI for this machine: a copy taken elsewhere cannot be read, and the
 /// key still works if Jellyfin later runs under another account. Data Protection reads a wrapped key without
 /// being told how, so nothing else changes. Linux and macOS have no such store a service can use; there the
-/// folder is kept private instead (<see cref="SecretFile.ProtectFolder"/>).
+/// folder is kept private instead (<see cref="OwnerOnly.ProtectFolder"/>).
 /// </para>
 /// </summary>
 internal static class KeyRingProtection
@@ -118,7 +119,7 @@ internal static class KeyRingProtection
 
         using var buffer = new MemoryStream();
         document.Save(buffer, SaveOptions.DisableFormatting);
-        SecretFile.Write(file, buffer.ToArray());
+        AtomicFile.WriteAllBytes(file, buffer.ToArray(), ownerOnly: true);
         return true;
     }
 }

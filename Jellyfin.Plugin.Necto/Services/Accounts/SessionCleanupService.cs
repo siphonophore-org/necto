@@ -83,7 +83,7 @@ public sealed class SessionCleanupService
     public async Task<int> CleanupAsync(IProgress<double>? progress, CancellationToken cancellationToken)
     {
         var now = _time.GetUtcNow().UtcDateTime;
-        var config = _store.Read(c => Jellyfin.Plugin.Necto.Configuration.ConfigurationCopy.Of(c));
+        var config = _store.Read(c => Siphonophore.Stolon.SecretJson.Copy(c));
         var users = _userManager.GetUsers().Where(u => !u.HasPermission(PermissionKind.IsAdministrator)).ToList();
         var language = StolonTranslations.ServerLanguage(_serverConfig);
         var unknownApp = StolonTranslations.Get(TranslationKeys.UnknownApp, language);

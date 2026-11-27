@@ -103,7 +103,7 @@ public sealed class KeptSecretConverterTests : IDisposable
     {
         var (config, _) = EverySecret();
 
-        var copy = ConfigurationCopy.Of(config);
+        var copy = SecretJson.Copy(config);
 
         Assert.Equal(config.WireGuard.HostPrivateKey, copy.WireGuard.HostPrivateKey);
         Assert.Equal(config.WireGuard.Peers[0].PresharedKey, copy.WireGuard.Peers[0].PresharedKey);

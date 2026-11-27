@@ -7,6 +7,7 @@ using Jellyfin.Plugin.Necto.Services.Requests;
 using Jellyfin.Plugin.Necto.Services.Requests.Models;
 using Jellyfin.Plugin.Necto.Services.Issues;
 using Jellyfin.Plugin.Necto.Services.Issues.Models;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Configuration.Requests;
 

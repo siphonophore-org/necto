@@ -28,7 +28,7 @@ public static class ProxyRuntimeFactory
     public static ProxySettings Clone(ProxySettings? settings)
         => settings is null
             ? new ProxySettings()
-            : Jellyfin.Plugin.Necto.Configuration.ConfigurationCopy.Of(settings);
+            : Siphonophore.Stolon.SecretJson.Copy(settings);
 
     /// <summary>The id of the one Jellyfin route a probe runs with.</summary>
     public const string ProbeRouteId = "probe";

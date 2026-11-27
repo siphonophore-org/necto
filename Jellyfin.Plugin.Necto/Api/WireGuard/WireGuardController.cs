@@ -100,7 +100,7 @@ public class WireGuardController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<IReadOnlyList<PeerConnection>> Peers()
     {
-        var settings = _store.Read(c => ConfigurationCopy.Of(c.WireGuard));
+        var settings = _store.Read(c => SecretJson.Copy(c.WireGuard));
         return Ok(PeerMap.Build(settings, _supervisor.Status(), _supervisor.Blocked(), _supervisor.Refused(), id => _users.GetUserById(id)?.Username));
     }
 
@@ -148,7 +148,7 @@ public class WireGuardController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public IActionResult PeerConfig([FromRoute] Guid id)
     {
-        var settings = _store.Read(c => ConfigurationCopy.Of(c.WireGuard));
+        var settings = _store.Read(c => SecretJson.Copy(c.WireGuard));
         if (settings.Peers.FirstOrDefault(p => p.Id == id) is not { } peer)
         {
             return NotFound(new ApiError("No peer has that id."));

@@ -40,7 +40,7 @@ public sealed partial class RequestNotifier
     private readonly INotifier _notifier;
     private readonly ILogger<RequestNotifier> _logger;
     private readonly IUserManager? _userManager;
-    private readonly NotificationHeldStore? _held;
+    private readonly JsonNotifyHeldStore? _held;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RequestNotifier"/> class.
@@ -60,7 +60,7 @@ public sealed partial class RequestNotifier
         _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _userManager = userManager;
-        _held = held as NotificationHeldStore;
+        _held = held as JsonNotifyHeldStore;
     }
 
     /// <summary>Gets the name a request shows for a requester with none.</summary>
@@ -559,7 +559,7 @@ public sealed partial class RequestNotifier
     // The settings and lookups for events built now, from the loaded plugin and the server's users.
     private NoticeContext Context(DateTime now)
     {
-        var config = Plugin.Instance?.ReadConfiguration(ConfigurationCopy.Of) ?? new PluginConfiguration();
+        var config = Plugin.Instance?.ReadConfiguration(SecretJson.Copy) ?? new PluginConfiguration();
         var users = _userManager;
         return new NoticeContext(
             config.Requests?.AutoDeclineAfterDays ?? 0,

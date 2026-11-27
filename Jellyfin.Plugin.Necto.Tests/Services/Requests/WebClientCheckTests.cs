@@ -60,17 +60,16 @@ public class WebClientCheckTests
     /// False: the page's own classes would be logged as missing from the web client on every start.
     /// </summary>
     [Fact]
-    public void CheckedClasses_LeaveOutThePagesOwnStyles()
+    public void ClassesToCheck_LeaveOutThePagesOwnStyles()
     {
         var markup = "<style>.rq-home { color: red; } .appDrawer > .appDrawerItem:hover { }</style><div class=\"rq-home cardBox appDrawer\"><span class=\"appDrawerItem\"></span></div>";
 
-        var classes = WebClientCheck.CheckedClasses(markup);
+        var classes = Siphonophore.Stolon.WebClientCheck.ClassesToCheck(markup, WebClientCheck.Built);
 
         Assert.Contains("cardBox", classes);
         Assert.DoesNotContain("rq-home", classes);
         Assert.DoesNotContain("appDrawer", classes);
         Assert.DoesNotContain("appDrawerItem", classes);
-        Assert.Contains(WebClientCheck.Built[0], classes);
     }
 
     /// <summary>
@@ -79,9 +78,9 @@ public class WebClientCheckTests
     /// False: the check would report them as missing.
     /// </summary>
     [Fact]
-    public void CheckedClasses_RequestPage_LeaveOutItsOwnClasses()
+    public void ClassesToCheck_RequestPage_LeaveOutItsOwnClasses()
     {
-        var classes = WebClientCheck.CheckedClasses(WebClientCheck.PageMarkup());
+        var classes = Siphonophore.Stolon.WebClientCheck.ClassesToCheck(WebClientCheck.PageMarkup(), WebClientCheck.Built);
 
         Assert.DoesNotContain(classes, c => c.StartsWith("rq-", StringComparison.Ordinal));
         Assert.DoesNotContain("appDrawer", classes);

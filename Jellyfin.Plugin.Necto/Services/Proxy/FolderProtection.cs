@@ -68,7 +68,7 @@ public sealed class FolderProtection : IHostedService
         {
             try
             {
-                SecretFile.ProtectFolder(folder);
+                OwnerOnly.ProtectFolder(folder);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException or InvalidOperationException or System.Security.SecurityException)
             {

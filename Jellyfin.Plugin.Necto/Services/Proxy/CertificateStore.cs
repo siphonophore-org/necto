@@ -402,7 +402,7 @@ public sealed class CertificateStore : IDisposable
             }
 
             var issued = LocalAuthority.Issue(root, wanted);
-            SecretFile.Write(path, issued);
+            AtomicFile.WriteAllBytes(path, issued, ownerOnly: true);
             _logger.LogInformation("Issued a self-signed proxy certificate for {Names}", string.Join(", ", wanted));
             return Build(X509CertificateLoader.LoadPkcs12(issued, null), new X509Certificate2Collection(), "self-signed");
         }

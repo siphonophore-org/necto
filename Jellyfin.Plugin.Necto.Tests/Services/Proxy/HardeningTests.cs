@@ -605,19 +605,6 @@ public sealed class HardeningTests : IDisposable
     }
 
     [Fact]
-    public void ProtectedFolder_IsOwnerOnly()
-    {
-        if (OperatingSystem.IsWindows())
-        {
-            return;
-        }
-
-        var folder = Path.Join(_dir, "private");
-        SecretFile.ProtectFolder(folder);
-        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute, File.GetUnixFileMode(folder));
-    }
-
-    [Fact]
     public void FolderAccess_NamesTheFolderAndTheFix_WhenAFileCannotBeOpened()
     {
         if (OperatingSystem.IsWindows())

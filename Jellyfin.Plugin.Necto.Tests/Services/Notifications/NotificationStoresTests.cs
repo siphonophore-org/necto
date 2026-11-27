@@ -22,7 +22,7 @@ public sealed class NotificationStoresTests : IDisposable
 
     private NotificationSecretStore Kept() => new(_folder.File("secrets.json"), _secrets, null);
 
-    private NotificationPushStore Push() => new(_config, _secrets, Kept(), _folder.File("push.json"), NullLogger.Instance);
+    private JsonWebPushStore Push() => NotificationServices.CreatePushStore(_config, _secrets, Kept(), _folder.File("push.json"), NullLogger.Instance);
 
     private static WebPushSubscription Browser(Guid user, string endpoint) => new(user, endpoint, "p", "a", "Safari", DateTime.UtcNow);
 
@@ -93,7 +93,7 @@ public sealed class NotificationStoresTests : IDisposable
     public void Held_IsTakenOnce_AndDropsOldMessages()
     {
         var now = new DateTimeOffset(2026, 11, 26, 12, 0, 0, TimeSpan.Zero);
-        var held = new NotificationHeldStore(_folder.File("held.json"), null, new FixedTime(now));
+        var held = new JsonNotifyHeldStore(_folder.File("held.json"), time: new FixedTime(now));
         var user = Guid.NewGuid();
         held.Hold(new NotifyHeldMessage(Guid.NewGuid(), user, "Second", "b", now.UtcDateTime.AddMinutes(-1)));
         held.Hold(new NotifyHeldMessage(Guid.NewGuid(), user, "First", "a", now.UtcDateTime.AddMinutes(-2)));
@@ -112,15 +112,74 @@ public sealed class NotificationStoresTests : IDisposable
     public void Held_KeepsTheNewestPastTheCap()
     {
         var now = new DateTimeOffset(2026, 11, 26, 12, 0, 0, TimeSpan.Zero);
-        var held = new NotificationHeldStore(_folder.File("held.json"), null, new FixedTime(now));
+        var held = new JsonNotifyHeldStore(_folder.File("held.json"), time: new FixedTime(now));
         var user = Guid.NewGuid();
-        for (var i = 0; i < NotificationHeldStore.MaxPerUser + 5; i++)
+        for (var i = 0; i < JsonNotifyHeldStore.DefaultMaxPerUser + 5; i++)
         {
             held.Hold(new NotifyHeldMessage(Guid.NewGuid(), user, i.ToString(System.Globalization.CultureInfo.InvariantCulture), string.Empty, now.UtcDateTime.AddSeconds(i - 100)));
         }
 
-        Assert.Equal(NotificationHeldStore.MaxPerUser, held.Counts()[user]);
-        Assert.Equal(NotificationHeldStore.MaxPerUser, held.Clear());
+        Assert.Equal(JsonNotifyHeldStore.DefaultMaxPerUser, held.Counts()[user]);
+        Assert.Equal(JsonNotifyHeldStore.DefaultMaxPerUser, held.Clear());
+    }
+
+    /// <summary>
+    /// A Push.json written before the move to Stolon's store reads back whole.
+    /// True: every browser stays subscribed after an upgrade.
+    /// False: an upgrade would forget every subscription.
+    /// </summary>
+    [Fact]
+    public void Push_ReadsAFileInTheOldFormat()
+    {
+        var user = Guid.Parse("0f8fad5b-d9cb-469f-a165-70867728950e");
+        System.IO.File.WriteAllText(_folder.File("push.json"), """
+            [
+              {
+                "UserId": "0f8fad5b-d9cb-469f-a165-70867728950e",
+                "Endpoint": "https://push.example.com/1",
+                "P256dh": "p",
+                "Auth": "a",
+                "Label": "Safari \u00B7 iPhone",
+                "CreatedUtc": "2026-11-01T10:00:00Z"
+              }
+            ]
+            """);
+
+        var browser = Assert.Single(Push().GetSubscriptions(user));
+
+        Assert.Equal("https://push.example.com/1", browser.Endpoint);
+        Assert.Equal("Safari \u00B7 iPhone", browser.Label);
+    }
+
+    /// <summary>
+    /// A Held.json written before the move to Stolon's store reads back whole.
+    /// True: messages held before an upgrade still show once the user comes online.
+    /// False: an upgrade would drop every held message.
+    /// </summary>
+    [Fact]
+    public void Held_ReadsAFileInTheOldFormat()
+    {
+        var now = new DateTimeOffset(2026, 11, 26, 12, 0, 0, TimeSpan.Zero);
+        var user = Guid.Parse("0f8fad5b-d9cb-469f-a165-70867728950e");
+        System.IO.File.WriteAllText(_folder.File("held.json"), """
+            [
+              {
+                "Id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+                "UserId": "0f8fad5b-d9cb-469f-a165-70867728950e",
+                "Header": "Request approved",
+                "Text": "Dune is on its way.",
+                "CreatedUtc": "2026-11-26T11:00:00Z",
+                "OneDevice": false,
+                "Subject": "request:1"
+              }
+            ]
+            """);
+        var held = new JsonNotifyHeldStore(_folder.File("held.json"), time: new FixedTime(now));
+
+        var message = Assert.Single(held.Take(user));
+
+        Assert.Equal("Request approved", message.Header);
+        Assert.Equal("request:1", message.Subject);
     }
 
     /// <summary>

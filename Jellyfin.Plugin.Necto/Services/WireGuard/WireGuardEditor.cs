@@ -220,7 +220,7 @@ public sealed class WireGuardEditor
     {
         _store.Mutate(config =>
         {
-            var copy = ConfigurationCopy.Of(config.WireGuard);
+            var copy = SecretJson.Copy(config.WireGuard);
             change(copy);
             WireGuardValidator.Validate(copy);
             WireGuardValidator.ValidateAddresses(copy);

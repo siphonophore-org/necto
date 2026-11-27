@@ -86,7 +86,7 @@ public sealed class Notifier : INotifier
         ArgumentNullException.ThrowIfNull(nectoEvent);
         try
         {
-            var config = _store.Read(ConfigurationCopy.Of);
+            var config = _store.Read(SecretJson.Copy);
             config.Notifications = _kept.Fill(NotificationNormalizer.Normalize(config.Notifications));
             if (NectoEventCatalog.Find(nectoEvent.Key) is null)
             {
@@ -117,7 +117,7 @@ public sealed class Notifier : INotifier
     /// <returns>What happened, or <c>null</c> when no channel has the id.</returns>
     public async Task<NotificationResult?> TestAsync(string channelId, Guid userId, string? language, CancellationToken cancellationToken)
     {
-        var config = _store.Read(ConfigurationCopy.Of);
+        var config = _store.Read(SecretJson.Copy);
         config.Notifications = _kept.Fill(NotificationNormalizer.Normalize(config.Notifications));
         var test = TestEvent(userId, language);
         NotificationSend? send = channelId switch

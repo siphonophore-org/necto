@@ -70,6 +70,29 @@ public sealed class NotificationSecretStoreTests : IDisposable
     }
 
     /// <summary>
+    /// A secrets file written as plain JSON before the move to Stolon's protected store reads back whole, and the next
+    /// save encrypts it.
+    /// True: an upgrade keeps the SMTP password, the push key, and every channel's address.
+    /// False: an upgrade would wipe every Notifications secret.
+    /// </summary>
+    [Fact]
+    public void Load_ReadsAFileInTheOldFormat_AndTheNextSaveEncryptsIt()
+    {
+        var password = _secrets.Protect("hunter2");
+        var url = _secrets.Protect("https://hooks.example.com/x");
+        File.WriteAllText(_folder.File("secrets.json"), "{\"SmtpPassword\":\"" + password + "\",\"PushPrivateKey\":\"enc:v1:push\",\"Channels\":{\"hook\":{\"Url\":\"" + url + "\",\"Headers\":\"\",\"Recipients\":\"\"}}}");
+
+        var read = Store().Load();
+        Store().SetPushPrivateKey("enc:v1:next");
+
+        Assert.Equal("hunter2", _secrets.Unprotect(read.SmtpPassword));
+        Assert.Equal("enc:v1:push", read.PushPrivateKey);
+        Assert.Equal("https://hooks.example.com/x", _secrets.Unprotect(read.Channels["hook"].Url));
+        Assert.True(SecretProtector.IsProtected(File.ReadAllText(_folder.File("secrets.json"))));
+        Assert.Equal("hunter2", _secrets.Unprotect(Store().Load().SmtpPassword));
+    }
+
+    /// <summary>
     /// A missing or unreadable file gives no secrets and does not throw.
     /// True: a fresh server, or a damaged file, still loads Notifications.
     /// False: Notifications would fail on every send until the file was fixed by hand.

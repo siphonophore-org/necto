@@ -13,6 +13,7 @@ using MediaBrowser.Controller.Library;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Api.Dashboard;
 
@@ -75,7 +76,7 @@ public class NectoDashboardController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<DashboardMap> Map()
     {
-        var (proxyOn, wireGuardOn, wireGuard) = _store.Read(c => (c.Proxy.Enabled, c.WireGuard.Enabled, ConfigurationCopy.Of(c.WireGuard)));
+        var (proxyOn, wireGuardOn, wireGuard) = _store.Read(c => (c.Proxy.Enabled, c.WireGuard.Enabled, SecretJson.Copy(c.WireGuard)));
         if (proxyOn || wireGuardOn)
         {
             _locations.Prepare();

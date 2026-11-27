@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using Jellyfin.Plugin.Necto.Configuration.Notifications;
 using MediaBrowser.Common.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,7 +12,8 @@ namespace Jellyfin.Plugin.Necto.Services.Notifications;
 /// <summary>
 /// Keeps the Notifications secrets in an encrypted file beside the configuration, readable by the server's account
 /// alone: the SMTP password, the VAPID private key, and each channel's address, headers, and email addresses. The
-/// configuration holds none of them.
+/// configuration holds none of them. Stolon's <see cref="ProtectedJsonFileStore{T}"/> writes the file, and reads one
+/// written as plain JSON too.
 /// </summary>
 [PluginService(ServiceLifetime.Singleton)]
 public sealed class NotificationSecretStore
@@ -21,10 +21,8 @@ public sealed class NotificationSecretStore
     /// <summary>The file the secrets are kept in, in the plugin configurations folder.</summary>
     public const string FileName = "Jellyfin.Plugin.Necto.Notifications.Secrets.json";
 
-    private readonly string _path;
+    private readonly ProtectedJsonFileStore<NotificationSecrets> _file;
     private readonly SecretProtector _secrets;
-    private readonly ILogger? _logger;
-    private readonly object _lock = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NotificationSecretStore"/> class.
@@ -45,10 +43,8 @@ public sealed class NotificationSecretStore
     /// <param name="logger">Writes the server log, or <c>null</c>.</param>
     internal NotificationSecretStore(string path, SecretProtector secrets, ILogger? logger)
     {
-        ArgumentException.ThrowIfNullOrEmpty(path);
-        _path = path;
         _secrets = secrets ?? throw new ArgumentNullException(nameof(secrets));
-        _logger = logger;
+        _file = new ProtectedJsonFileStore<NotificationSecrets>(path, secrets, logger);
     }
 
     /// <summary>
@@ -57,10 +53,9 @@ public sealed class NotificationSecretStore
     /// <returns>The secrets, or none when the file is missing or cannot be read.</returns>
     public NotificationSecrets Load()
     {
-        lock (_lock)
-        {
-            return Read();
-        }
+        var read = _file.Load();
+        read.Channels = new(read.Channels ?? new(), StringComparer.Ordinal);
+        return read;
     }
 
     /// <summary>
@@ -100,9 +95,9 @@ public sealed class NotificationSecretStore
     public void Keep(NotificationSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        lock (_lock)
+        _file.Update(next =>
         {
-            var next = new NotificationSecrets { PushPrivateKey = Read().PushPrivateKey };
+            next.Channels = new(StringComparer.Ordinal);
             settings.Smtp ??= new SmtpSettings();
             next.SmtpPassword = _secrets.Protect(settings.Smtp.Password);
             settings.Smtp.Password = string.Empty;
@@ -123,9 +118,7 @@ public sealed class NotificationSecretStore
                     next.Channels[channel.Id] = own;
                 }
             }
-
-            Write(next);
-        }
+        });
     }
 
     /// <summary>
@@ -134,44 +127,6 @@ public sealed class NotificationSecretStore
     /// <param name="protectedKey">The encrypted key.</param>
     public void SetPushPrivateKey(string protectedKey)
     {
-        lock (_lock)
-        {
-            var stored = Read();
-            stored.PushPrivateKey = protectedKey ?? string.Empty;
-            Write(stored);
-        }
-    }
-
-    // Called under _lock.
-    private NotificationSecrets Read()
-    {
-        try
-        {
-            if (!File.Exists(_path))
-            {
-                return new NotificationSecrets();
-            }
-
-            var read = JsonSerializer.Deserialize<NotificationSecrets>(File.ReadAllBytes(_path)) ?? new NotificationSecrets();
-            read.Channels = new(read.Channels ?? new(), StringComparer.Ordinal);
-            return read;
-        }
-        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
-        {
-            _logger?.LogWarning(ex, "Could not read the Notifications secrets, so none are used");
-            return new NotificationSecrets();
-        }
-    }
-
-    // Called under _lock.
-    private void Write(NotificationSecrets secrets)
-    {
-        var folder = Path.GetDirectoryName(_path);
-        if (!string.IsNullOrEmpty(folder))
-        {
-            Directory.CreateDirectory(folder);
-        }
-
-        AtomicFile.WriteAllBytes(_path, JsonSerializer.SerializeToUtf8Bytes(secrets), ownerOnly: true, logger: _logger);
+        _file.Update(stored => stored.PushPrivateKey = protectedKey ?? string.Empty);
     }
 }

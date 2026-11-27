@@ -17,6 +17,7 @@ using Jellyfin.Plugin.Necto.Services.Proxy.Network;
 using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
 using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
 using Jellyfin.Plugin.Necto.Api.Ddns;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Services.Proxy;
 
@@ -110,7 +111,7 @@ internal static class LocalAuthority
         request.CertificateExtensions.Add(NameConstraints(permitted));
         using var root = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.Add(RootLifetime));
         var bytes = root.Export(X509ContentType.Pkcs12);
-        SecretFile.Write(path, bytes);
+        AtomicFile.WriteAllBytes(path, bytes, ownerOnly: true);
         created = true;
         return X509CertificateLoader.LoadPkcs12(bytes, null);
     }

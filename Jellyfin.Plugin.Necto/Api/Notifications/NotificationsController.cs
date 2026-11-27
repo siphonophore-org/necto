@@ -33,8 +33,8 @@ public class NotificationsController : ControllerBase
     private readonly NotificationLog _log;
     private readonly IConfigurationStore _store;
     private readonly IUserManager _userManager;
-    private readonly NotificationPushStore? _push;
-    private readonly NotificationHeldStore? _held;
+    private readonly JsonWebPushStore? _push;
+    private readonly JsonNotifyHeldStore? _held;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NotificationsController"/> class.
@@ -57,8 +57,8 @@ public class NotificationsController : ControllerBase
         _log = log ?? throw new ArgumentNullException(nameof(log));
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
-        _push = push as NotificationPushStore;
-        _held = held as NotificationHeldStore;
+        _push = push as JsonWebPushStore;
+        _held = held as JsonNotifyHeldStore;
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public class NotificationsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<IEnumerable<NotificationChannelView>> Channels()
     {
-        var settings = _store.Read(c => NotificationNormalizer.Normalize(ConfigurationCopy.Of(c.Notifications ?? new NotificationSettings())));
+        var settings = _store.Read(c => NotificationNormalizer.Normalize(SecretJson.Copy(c.Notifications ?? new NotificationSettings())));
         return Ok(NotificationChannelView.List(_kept.Fill(settings)));
     }
 
@@ -117,9 +117,9 @@ public class NotificationsController : ControllerBase
         }
 
         var language = StolonTranslations.RequestLanguage(Request);
-        var settings = _store.Read(c => ConfigurationCopy.Of(c.Notifications ?? new NotificationSettings()));
+        var settings = _store.Read(c => SecretJson.Copy(c.Notifications ?? new NotificationSettings()));
         var test = Notifier.TestEvent(Caller.UserId(User), language);
-        var copy = ConfigurationCopy.Of(channel);
+        var copy = SecretJson.Copy(channel);
         copy.Kind = channel.Kind;
         var message = NotificationMessages.Post(test, copy, settings, StolonTranslations.Get(TranslationKeys.NotificationsEventTest, language), DateTimeOffset.UtcNow, language);
         if (copy.Kind is NotificationChannelKind.Email or NotificationChannelKind.ActivityLog)

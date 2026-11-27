@@ -651,5 +651,5 @@ public sealed class AcmeCertificateService : IDisposable
     }
 
     private static void WriteSecret(string path, string contents)
-        => SecretFile.Write(path, System.Text.Encoding.UTF8.GetBytes(contents));
+        => AtomicFile.WriteAllBytes(path, System.Text.Encoding.UTF8.GetBytes(contents), ownerOnly: true);
 }

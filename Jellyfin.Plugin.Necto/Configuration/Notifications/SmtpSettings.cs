@@ -1,3 +1,5 @@
+using Siphonophore.Stolon;
+
 namespace Jellyfin.Plugin.Necto.Configuration.Notifications;
 
 /// <summary>

@@ -35,6 +35,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         serviceCollection.AddBaseNotifier();
         Services.Ddns.DdnsServices.Register(serviceCollection);
         Services.Proxy.ProxyServices.Register(serviceCollection);
+        Services.Notifications.NotificationServices.Register(serviceCollection);
     }
 
     /// <summary>

@@ -68,7 +68,7 @@ public sealed class AccountRuleService
         var language = StolonTranslations.ServerLanguage(_serverConfig);
         var everyone = StolonTranslations.Get(TranslationKeys.GroupEveryone, language);
         var users = _userManager.GetUsers().Where(u => !u.HasPermission(PermissionKind.IsAdministrator)).ToList();
-        var config = _store.Read(c => Jellyfin.Plugin.Necto.Configuration.ConfigurationCopy.Of(c));
+        var config = _store.Read(c => Siphonophore.Stolon.SecretJson.Copy(c));
 
         var deleted = new UserRunTally();
         var expired = new UserRunTally();

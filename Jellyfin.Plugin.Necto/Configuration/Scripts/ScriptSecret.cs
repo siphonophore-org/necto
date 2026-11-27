@@ -1,4 +1,5 @@
 using System.Xml.Serialization;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Configuration.Scripts;
 

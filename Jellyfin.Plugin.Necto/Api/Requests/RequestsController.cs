@@ -2407,5 +2407,5 @@ public partial class RequestsController : ControllerBase, IActionFilter
     // A deep copy through JSON, so changing it leaves the original (the stored configuration, a cached request) alone.
     private static T Clone<T>(T value)
         where T : class, new()
-        => Jellyfin.Plugin.Necto.Configuration.ConfigurationCopy.Of(value);
+        => Siphonophore.Stolon.SecretJson.Copy(value);
 }

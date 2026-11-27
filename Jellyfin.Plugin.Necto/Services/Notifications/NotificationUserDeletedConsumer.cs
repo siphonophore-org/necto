@@ -4,6 +4,7 @@ using Jellyfin.Data.Events.Users;
 using MediaBrowser.Controller.Events;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Services.Notifications;
 
@@ -13,8 +14,8 @@ namespace Jellyfin.Plugin.Necto.Services.Notifications;
 [PluginService(ServiceLifetime.Singleton, ServiceType = typeof(IEventConsumer<UserDeletedEventArgs>))]
 public sealed class NotificationUserDeletedConsumer : IEventConsumer<UserDeletedEventArgs>
 {
-    private readonly NotificationPushStore? _push;
-    private readonly NotificationHeldStore? _held;
+    private readonly JsonWebPushStore? _push;
+    private readonly JsonNotifyHeldStore? _held;
     private readonly ILogger<NotificationUserDeletedConsumer> _logger;
 
     /// <summary>
@@ -23,10 +24,10 @@ public sealed class NotificationUserDeletedConsumer : IEventConsumer<UserDeleted
     /// <param name="push">The browsers users turned notifications on in.</param>
     /// <param name="held">The held Jellyfin messages.</param>
     /// <param name="logger">Writes the server log.</param>
-    public NotificationUserDeletedConsumer(Siphonophore.Stolon.IWebPushStore push, Siphonophore.Stolon.INotifyHeldStore held, ILogger<NotificationUserDeletedConsumer> logger)
+    public NotificationUserDeletedConsumer(IWebPushStore push, INotifyHeldStore held, ILogger<NotificationUserDeletedConsumer> logger)
     {
-        _push = push as NotificationPushStore;
-        _held = held as NotificationHeldStore;
+        _push = push as JsonWebPushStore;
+        _held = held as JsonNotifyHeldStore;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 

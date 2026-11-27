@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Configuration.Notifications;
 

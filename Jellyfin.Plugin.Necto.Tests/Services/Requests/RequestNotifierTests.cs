@@ -513,7 +513,7 @@ public class RequestNotifierTests
         var path = Path.Combine(Path.GetTempPath(), "necto-held-" + Guid.NewGuid().ToString("N") + ".json");
         try
         {
-            var held = new NotificationHeldStore(path, null, TimeProvider.System);
+            var held = new JsonNotifyHeldStore(path, time: TimeProvider.System);
             var request = Guid.NewGuid();
             var user = Guid.NewGuid();
             held.Hold(new NotifyHeldMessage(Guid.NewGuid(), user, "Approved", "Dune", DateTime.UtcNow, false, RequestNotifier.RequestSubject(request)));

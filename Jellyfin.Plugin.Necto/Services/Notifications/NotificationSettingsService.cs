@@ -40,7 +40,7 @@ public sealed class NotificationSettingsService
     /// <returns>A copy for a page.</returns>
     public NotificationSettings Read()
     {
-        var copy = _store.Read(c => NotificationNormalizer.Normalize(ConfigurationCopy.Of(c.Notifications ?? new NotificationSettings())));
+        var copy = _store.Read(c => NotificationNormalizer.Normalize(SecretJson.Copy(c.Notifications ?? new NotificationSettings())));
         return Hide(_kept.Fill(copy));
     }
 
@@ -72,7 +72,7 @@ public sealed class NotificationSettingsService
     public string? Save(NotificationSettings incoming, string? language)
     {
         ArgumentNullException.ThrowIfNull(incoming);
-        var settings = NotificationNormalizer.Normalize(ConfigurationCopy.Of(incoming));
+        var settings = NotificationNormalizer.Normalize(SecretJson.Copy(incoming));
         var error = Check(settings, language);
         if (error is not null)
         {
@@ -81,7 +81,7 @@ public sealed class NotificationSettingsService
 
         _store.Mutate(config =>
         {
-            var stored = _kept.Fill(ConfigurationCopy.Of(config.Notifications ?? new NotificationSettings()));
+            var stored = _kept.Fill(SecretJson.Copy(config.Notifications ?? new NotificationSettings()));
             foreach (var channel in settings.Channels)
             {
                 var old = stored.Channels?.FirstOrDefault(c => c is not null && string.Equals(c.Id, channel.Id, StringComparison.Ordinal));

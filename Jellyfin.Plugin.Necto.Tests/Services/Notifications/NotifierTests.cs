@@ -27,7 +27,7 @@ public sealed class NotifierTests : IDisposable
     private readonly FakeEmail _email = new();
     private readonly NotificationLog _log = new();
     private readonly SecretProtector _secrets = TestSecrets.Create();
-    private NotificationHeldStore? _held;
+    private JsonNotifyHeldStore? _held;
     private NotificationSecretStore? _kept;
 
     private NotificationSecretStore Kept => _kept ??= new NotificationSecretStore(_folder.File("secrets.json"), _secrets, null);
@@ -39,8 +39,8 @@ public sealed class NotifierTests : IDisposable
         var (sessions, stub) = InterfaceStub.Create<ISessionManager>();
         stub.Answer("get_Sessions", _ => new List<SessionInfo>());
         var (http, _) = InterfaceStub.Create<IHttpClientFactory>();
-        _held = new NotificationHeldStore(_folder.File("held.json"), null, TimeProvider.System);
-        var push = new NotificationPushStore(_config, _secrets, Kept, _folder.File("push.json"), NullLogger.Instance);
+        _held = new JsonNotifyHeldStore(_folder.File("held.json"), time: TimeProvider.System);
+        var push = NotificationServices.CreatePushStore(_config, _secrets, Kept, _folder.File("push.json"), NullLogger.Instance);
         var stolon = new StolonNotifier(http, sessions, NullLogger<StolonNotifier>.Instance, _secrets, _held, push);
         return new Notifier(stolon, _config, _users.Manager, _email, _activity.Logger, _secrets, Kept, _log, FakeServerConfig.Create(), NullLogger<Notifier>.Instance, push);
     }

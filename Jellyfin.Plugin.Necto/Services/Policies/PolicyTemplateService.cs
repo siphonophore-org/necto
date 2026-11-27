@@ -15,6 +15,7 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Dto;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Services.Policies;
 
@@ -69,7 +70,7 @@ public sealed class PolicyTemplateService
         var (template, accounts) = _store.Read(c =>
         {
             var group = PolicyTemplateMerger.GroupFor(c, user.Id);
-            return (group is null ? null : ConfigurationCopy.Of(group.Template), PermissionService.Resolve(c, user.Id, false).Accounts);
+            return (group is null ? null : SecretJson.Copy(group.Template), PermissionService.Resolve(c, user.Id, false).Accounts);
         });
         if (template is null)
         {

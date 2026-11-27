@@ -216,7 +216,7 @@ public sealed class TunnelSupervisor : IDisposable
     // window ended or a user became an administrator.
     private void CheckLimits()
     {
-        var config = _store.Read(c => ConfigurationCopy.Of(c.WireGuard));
+        var config = _store.Read(c => SecretJson.Copy(c.WireGuard));
         var over = _usage.OverLimit(config, OwnerLimit);
         var refused = PeerAccess.Refused(config, _permissions.For);
         bool changed;
@@ -266,7 +266,7 @@ public sealed class TunnelSupervisor : IDisposable
     // Counts a tunnel's traffic, and applies again when a limit is crossed or a limit's window ends.
     private void OnStats(string tunnelKey, List<PeerStatus> peers)
     {
-        var config = _store.Read(c => ConfigurationCopy.Of(c.WireGuard));
+        var config = _store.Read(c => SecretJson.Copy(c.WireGuard));
         _usage.Record(tunnelKey, peers, key => IdOf(config, tunnelKey, key));
         CheckLimits();
     }
@@ -351,12 +351,12 @@ public sealed class TunnelSupervisor : IDisposable
                 return;
             }
 
-            var config = _store.Read(c => ConfigurationCopy.Of(c.WireGuard));
+            var config = _store.Read(c => SecretJson.Copy(c.WireGuard));
             var path = config.Enabled ? _sidecar.Find() : null;
             // A key made here is saved without a configuration change event, so the settings are read again.
             if (EnsurePresharedKeys(config) | (path is not null && EnsureHostKey(config, path)))
             {
-                config = _store.Read(c => ConfigurationCopy.Of(c.WireGuard));
+                config = _store.Read(c => SecretJson.Copy(c.WireGuard));
             }
 
             var over = _usage.OverLimit(config, OwnerLimit);

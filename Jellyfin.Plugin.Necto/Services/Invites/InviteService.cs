@@ -276,7 +276,7 @@ public sealed class InviteService : IDisposable
             }
 
             found = true;
-            var copy = ConfigurationCopy.Of(stored);
+            var copy = SecretJson.Copy(stored);
             error = Fill(copy, request, language, keepPin: request.Pin is null);
             if (error is not null)
             {
@@ -324,7 +324,7 @@ public sealed class InviteService : IDisposable
                 return false;
             }
 
-            copy = ConfigurationCopy.Of(stored);
+            copy = SecretJson.Copy(stored);
             copy.Id = Guid.NewGuid();
             copy.Token = NewToken();
             copy.CreatedAt = Now;
@@ -496,7 +496,7 @@ public sealed class InviteService : IDisposable
         }
 
         var candidate = Encoding.UTF8.GetBytes(token);
-        return _store.Read(c => c.Invites.FirstOrDefault(i => TokenMatches(i.Token, candidate)) is { } match ? ConfigurationCopy.Of(match) : null);
+        return _store.Read(c => c.Invites.FirstOrDefault(i => TokenMatches(i.Token, candidate)) is { } match ? SecretJson.Copy(match) : null);
     }
 
     /// <summary>
@@ -568,7 +568,7 @@ public sealed class InviteService : IDisposable
             return InviteRedeemResult.Fail(StolonTranslations.Get(TranslationKeys.InvitesErrorUsedUp, language));
         }
 
-        var settings = _store.Read(c => ConfigurationCopy.Of(c.InviteSettings ?? new InviteSettings()));
+        var settings = _store.Read(c => SecretJson.Copy(c.InviteSettings ?? new InviteSettings()));
         if (settings.RateLimitCount > 0 && settings.RateLimitWindowMinutes > 0)
         {
             var cutoff = Now.AddMinutes(-settings.RateLimitWindowMinutes);
@@ -594,7 +594,7 @@ public sealed class InviteService : IDisposable
             return InviteRedeemResult.Fail(StolonTranslations.Get(TranslationKeys.InvitesErrorChoosePassword, language));
         }
 
-        var group = _store.Read(c => ConfigurationCopy.Of(InviteNormalizer.TargetGroup(c, invite)));
+        var group = _store.Read(c => SecretJson.Copy(InviteNormalizer.TargetGroup(c, invite)));
 
         // A group switched to disallow password changes after the invite went out is caught here as well.
         if (InviteNormalizer.BlocksInvites(group))

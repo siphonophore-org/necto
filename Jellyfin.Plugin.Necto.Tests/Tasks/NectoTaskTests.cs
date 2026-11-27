@@ -65,8 +65,6 @@ public sealed class NectoTaskTests : IDisposable
     /// </summary>
     [Theory]
     [InlineData(typeof(INotifier), typeof(Notifier))]
-    [InlineData(typeof(IWebPushStore), typeof(NotificationPushStore))]
-    [InlineData(typeof(INotifyHeldStore), typeof(NotificationHeldStore))]
     [InlineData(typeof(IEmailSender), typeof(SmtpEmailSender))]
     [InlineData(typeof(NotificationLog), typeof(NotificationLog))]
     [InlineData(typeof(NotificationSettingsService), typeof(NotificationSettingsService))]
@@ -83,5 +81,26 @@ public sealed class NectoTaskTests : IDisposable
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
         Assert.Contains(services, d => d.ServiceType == typeof(StolonNotifier));
         Assert.Contains(services, d => d.ServiceType == typeof(SecretProtector));
+    }
+
+    /// <summary>
+    /// The web push and held message stores are Stolon's, each registered once as a singleton under its own type and
+    /// under Stolon's interface.
+    /// True: the notifier, the routes, and the user cleanup share one store of each.
+    /// False: two stores could write the same file, or the notifier would fail to start.
+    /// </summary>
+    [Theory]
+    [InlineData(typeof(IWebPushStore))]
+    [InlineData(typeof(JsonWebPushStore))]
+    [InlineData(typeof(INotifyHeldStore))]
+    [InlineData(typeof(JsonNotifyHeldStore))]
+    public void StolonStores_AreRegisteredOnce(Type service)
+    {
+        var services = new ServiceCollection();
+        new PluginServiceRegistrator().RegisterServices(services, null!);
+
+        var descriptor = Assert.Single(services, d => d.ServiceType == service);
+        Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
+        Assert.NotNull(descriptor.ImplementationFactory);
     }
 }

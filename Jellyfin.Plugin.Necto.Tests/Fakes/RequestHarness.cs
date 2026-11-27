@@ -77,7 +77,7 @@ public sealed class RequestHarness : IDisposable
         var matcher = new LibraryMatcher(_library, InterfaceStub.Of<IUserDataManager>(), Users.Manager);
         Arr = new ArrClient(NullLogger<ArrClient>.Instance, null, http);
         var tmdb = new TmdbDiscovery(http, InterfaceStub.Of<IPluginManager>(), InterfaceStub.Of<IServerConfigurationManager>(), NullLogger<TmdbDiscovery>.Instance);
-        Held = new Jellyfin.Plugin.Necto.Services.Notifications.NotificationHeldStore(Path.Join(_folder, "held.json"), null, TimeProvider.System);
+        Held = new Siphonophore.Stolon.JsonNotifyHeldStore(Path.Join(_folder, "held.json"), time: TimeProvider.System);
         Notifier = new RequestNotifier(Events, NullLogger<RequestNotifier>.Instance, FakeServerConfig.Create(), held: Held);
         Requests = new RequestService(
             Db,
@@ -98,7 +98,7 @@ public sealed class RequestHarness : IDisposable
     }
 
     /// <summary>Gets the Jellyfin messages held for users with no app online.</summary>
-    public Jellyfin.Plugin.Necto.Services.Notifications.NotificationHeldStore Held { get; }
+    public Siphonophore.Stolon.JsonNotifyHeldStore Held { get; }
 
     /// <summary>Gets every activity log entry the services wrote, in order.</summary>
     public FakeActivity Activity { get; } = new();

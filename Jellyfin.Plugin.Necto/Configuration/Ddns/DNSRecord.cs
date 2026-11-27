@@ -10,6 +10,7 @@ using Jellyfin.Plugin.Necto.Services.Proxy.Network;
 using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
 using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
 using Jellyfin.Plugin.Necto.Api.Ddns;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Configuration.Ddns;
 
