@@ -1241,4 +1241,32 @@ public sealed class RequestServiceTests : IDisposable
             new ArrServer { Id = "tv", Type = RequestType.Series, Url = "http://sonarr", ApiKey = string.Empty, Profiles = { new ArrProfileOption { Id = "nokey", QualityProfileId = 1, RootFolder = "/tv" } } }
         }
     };
+
+    /// <summary>
+    /// The cleanup removes old finished requests and drops the Jellyfin messages still held about them, and leaves
+    /// those about other requests.
+    /// True: a user coming online never gets a message about a request that is gone.
+    /// False: held messages about removed requests would wait until they aged out, then show a request nobody can open.
+    /// </summary>
+    [Fact]
+    public void Cleanup_RemovedRequests_DropTheirHeldMessages()
+    {
+        H.Plugin.MutateConfiguration(c =>
+        {
+            c.Requests.RetentionDays = 30;
+            return false;
+        });
+        var old = DateTime.UtcNow.AddDays(-100);
+        var gone = new MediaRequest { Id = Guid.NewGuid(), Type = RequestType.Movie, Title = "Gone", ProviderIds = new Dictionary<string, string> { ["Tmdb"] = "1" }, UserId = Guid.NewGuid(), UserName = "viewer", CreatedUtc = old, UpdatedUtc = old, Status = RequestStatus.Declined };
+        var kept = new MediaRequest { Id = Guid.NewGuid(), Type = RequestType.Movie, Title = "Kept", ProviderIds = new Dictionary<string, string> { ["Tmdb"] = "2" }, UserId = gone.UserId, UserName = "viewer", CreatedUtc = DateTime.UtcNow, UpdatedUtc = DateTime.UtcNow, Status = RequestStatus.Pending };
+        H.Db.Insert(gone);
+        H.Db.Insert(kept);
+        H.Held.Hold(new NotifyHeldMessage(Guid.NewGuid(), gone.UserId, "Rejected", "Gone", DateTime.UtcNow, false, RequestNotifier.RequestSubject(gone.Id)));
+        H.Held.Hold(new NotifyHeldMessage(Guid.NewGuid(), gone.UserId, "Waiting", "Kept", DateTime.UtcNow, false, RequestNotifier.RequestSubject(kept.Id)));
+
+        Assert.Equal(1, H.Requests.Cleanup());
+
+        Assert.Null(H.Db.Get(gone.Id));
+        Assert.Equal(new[] { "Kept" }, H.Held.Take(gone.UserId).Select(m => m.Text));
+    }
 }

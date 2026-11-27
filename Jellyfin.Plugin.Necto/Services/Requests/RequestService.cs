@@ -1613,7 +1613,8 @@ public sealed partial class RequestService : IDisposable
     }
 
     /// <summary>
-    /// Removes declined and available requests older than the retention setting.
+    /// Removes declined and available requests older than the retention setting, and the Jellyfin messages still held
+    /// about them.
     /// </summary>
     /// <returns>How many were removed.</returns>
     public int Cleanup()
@@ -1630,12 +1631,17 @@ public sealed partial class RequestService : IDisposable
         // Requests inside the longest quota window still count toward it, so they stay until they age out of it.
         var quotaDays = RequestConfig.Instance?.ReadAll(PermissionRules.LongestQuotaDays) ?? 0;
         var removed = _db.DeleteClosedBefore(DateTime.UtcNow.AddDays(-days), quotaDays > 0 ? DateTime.UtcNow.AddDays(-quotaDays) : null);
-        if (removed > 0)
+        foreach (var id in removed)
         {
-            _logger.LogInformation("Removed {Count} rejected and available requests older than {Days} days", removed, days);
+            _notifier.Forget(id);
         }
 
-        return removed;
+        if (removed.Count > 0)
+        {
+            _logger.LogInformation("Removed {Count} rejected and available requests older than {Days} days", removed.Count, days);
+        }
+
+        return removed.Count;
     }
 
     /// <summary>

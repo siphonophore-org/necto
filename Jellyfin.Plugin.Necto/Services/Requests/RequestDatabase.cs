@@ -34,12 +34,10 @@ public sealed partial class RequestDatabase : IDisposable
     // 2 added BackdropUrl, 3 ExpectedEpisodes, 5 the held messages, 6 ServerId and ProfileId, 7 QuotaCost, 8 RemovedFromArr,
     // 9 AgingNotifiedUtc, ExpiringNotifiedDays and the held messages' OneDevice, 10 DecidedUtc, 11 Joined, 12 SeasonProgress, 13 Genres,
     // 14 MarkedAvailable and DownloadDoneUtc, 15 indexes for the library item, the date and the per-requester counts,
-    // 16 Specials, 17 the browsers signed up for notifications, 18 the Issues table.
+    // 16 Specials, 17 the browsers signed up for notifications, 18 the Issues table, 19 drops the held messages and the
+    // browsers, which Notifications keeps.
     // Older builds name their columns, so they can still read what this one writes.
-    private const int SchemaVersion = 18;
-
-    // The most messages held for one person; older ones go as new ones come.
-    private const int MaxHeldPerUser = 25;
+    private const int SchemaVersion = 19;
 
     // Version 4 renamed the Kind column, so older builds can't read it.
     private const int MinReaderSchemaVersion = 4;
@@ -93,7 +91,7 @@ public sealed partial class RequestDatabase : IDisposable
             DownloadDoneUtc TEXT,
             Specials TEXT
         );
-        CREATE INDEX IF NOT EXISTS idx_requests_user ON Requests(UserId, CreatedUtc);" + Indexes + HeldSchema + PushSchema + IssuesSchema;
+        CREATE INDEX IF NOT EXISTS idx_requests_user ON Requests(UserId, CreatedUtc);" + Indexes + IssuesSchema;
 
     // Lists by status come newest first, as do pages without a status; the library item finds what a removed title
     // fulfilled; the per-requester counts read the index alone, the name included.
@@ -102,33 +100,6 @@ public sealed partial class RequestDatabase : IDisposable
         CREATE INDEX IF NOT EXISTS idx_requests_created ON Requests(CreatedUtc);
         CREATE INDEX IF NOT EXISTS idx_requests_library ON Requests(LibraryItemId);
         CREATE INDEX IF NOT EXISTS idx_requests_user_counts ON Requests(UserId, Type, Status, UserName);";
-
-    // Messages for people in Jellyfin, kept until one of their devices that can show messages comes online.
-    private const string HeldSchema = @"
-        CREATE TABLE IF NOT EXISTS HeldMessages (
-            Id TEXT PRIMARY KEY,
-            RequestId TEXT NOT NULL,
-            UserId TEXT NOT NULL,
-            Header TEXT NOT NULL,
-            Text TEXT NOT NULL,
-            CreatedUtc TEXT NOT NULL,
-            OneDevice INTEGER NOT NULL DEFAULT 0);
-        CREATE INDEX IF NOT EXISTS idx_held_user ON HeldMessages(UserId, CreatedUtc);
-        CREATE INDEX IF NOT EXISTS idx_held_request ON HeldMessages(RequestId);";
-
-    // The browsers each person turned on notifications in, by the address their push service gave.
-    private const string PushSchema = @"
-        CREATE TABLE IF NOT EXISTS PushSubscriptions (
-            Endpoint TEXT PRIMARY KEY,
-            UserId TEXT NOT NULL,
-            P256dh TEXT NOT NULL,
-            Auth TEXT NOT NULL,
-            Label TEXT NOT NULL,
-            CreatedUtc TEXT NOT NULL);
-        CREATE INDEX IF NOT EXISTS idx_push_user ON PushSubscriptions(UserId);";
-
-    // The most browsers kept for one person; the oldest goes as a new one comes.
-    private const int MaxPushPerUser = 20;
 
     private readonly ILogger<RequestDatabase> _logger;
     private readonly string _path;
@@ -251,127 +222,11 @@ public sealed partial class RequestDatabase : IDisposable
         Write(request, "UPDATE Requests SET " + sets + " WHERE Id = @Id");
     }
 
-    /// <summary>Removes a request, and any message still held about it.</summary>
+    /// <summary>Removes a request.</summary>
     /// <param name="id">The request id.</param>
     /// <returns>True when there was one.</returns>
-    public bool Delete(Guid id) => Atomic(() =>
-    {
-        Execute("DELETE FROM HeldMessages WHERE RequestId = @id", p => p.AddWithValue("@id", Key(id)));
-        return Execute("DELETE FROM Requests WHERE Id = @id", p => p.AddWithValue("@id", Key(id)), requests: true) > 0;
-    });
-
-    /// <summary>Keeps a message until one of its person's devices that can show messages comes online.</summary>
-    /// <param name="message">The message. Its subject is the request it is about, so removing the request removes it.</param>
-    public void Hold(NotifyHeldMessage message)
-    {
-        ArgumentNullException.ThrowIfNull(message);
-        var request = Guid.TryParse(message.Subject, out var id) ? id : Guid.Empty;
-        Atomic(() =>
-        {
-            Execute(
-                "INSERT INTO HeldMessages (Id, RequestId, UserId, Header, Text, CreatedUtc, OneDevice) VALUES (@id, @request, @user, @header, @text, @created, @one)",
-                p =>
-                {
-                    p.AddWithValue("@id", Key(message.Id));
-                    p.AddWithValue("@request", Key(request));
-                    p.AddWithValue("@user", Key(message.UserId));
-                    p.AddWithValue("@header", message.Header);
-                    p.AddWithValue("@text", message.Text);
-                    p.AddWithValue("@created", UtcTime.Format(message.CreatedUtc));
-                    p.AddWithValue("@one", message.OneDevice ? 1 : 0);
-                });
-
-            // Only the newest are kept for someone who never comes online, so they don't pile up without end.
-            Execute(
-                "DELETE FROM HeldMessages WHERE UserId = @user AND Id NOT IN (SELECT Id FROM HeldMessages WHERE UserId = @user ORDER BY CreatedUtc DESC LIMIT " + MaxHeldPerUser.ToString(CultureInfo.InvariantCulture) + ")",
-                p => p.AddWithValue("@user", Key(message.UserId)));
-            return true;
-        });
-    }
-
-    // Whether anything is held for someone: asked on every device that comes online, so read without the write lock.
-    private bool AnyHeld(Guid userId) => Query((connection, transaction) =>
-    {
-        using var cmd = Command(connection, transaction, "SELECT 1 FROM HeldMessages WHERE UserId = @user LIMIT 1");
-        cmd.Parameters.AddWithValue("@user", Key(userId));
-        return cmd.ExecuteScalar() is not null;
-    });
-
-    /// <summary>Takes the messages held for someone, oldest first. They are no longer held once taken.</summary>
-    /// <param name="userId">Who they are for.</param>
-    /// <returns>The messages, each with the request it is about as its subject.</returns>
-    public List<NotifyHeldMessage> TakeHeld(Guid userId) => !AnyHeld(userId) ? new List<NotifyHeldMessage>() : Atomic(() =>
-    {
-        var list = Query((connection, transaction) =>
-        {
-            var held = new List<NotifyHeldMessage>();
-            using var cmd = Command(connection, transaction, "SELECT Id, RequestId, UserId, Header, Text, CreatedUtc, OneDevice FROM HeldMessages WHERE UserId = @user ORDER BY CreatedUtc");
-            cmd.Parameters.AddWithValue("@user", Key(userId));
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-            {
-                held.Add(new NotifyHeldMessage(Guid.Parse(reader.GetString(0)), Guid.Parse(reader.GetString(2)), reader.GetString(3), reader.GetString(4), UtcTime.Parse(reader.GetString(5)), reader.GetInt32(6) != 0, Key(Guid.Parse(reader.GetString(1)))));
-            }
-
-            return held;
-        });
-
-        if (list.Count > 0)
-        {
-            Execute("DELETE FROM HeldMessages WHERE UserId = @user", p => p.AddWithValue("@user", Key(userId)));
-        }
-
-        return list;
-    });
-
-    /// <summary>Keeps a browser someone turned notifications on in, replacing any with the same push address.</summary>
-    /// <param name="subscription">The browser's subscription.</param>
-    public void SavePush(WebPushSubscription subscription)
-    {
-        ArgumentNullException.ThrowIfNull(subscription);
-        Atomic(() =>
-        {
-            Execute(
-                "INSERT OR REPLACE INTO PushSubscriptions (Endpoint, UserId, P256dh, Auth, Label, CreatedUtc) VALUES (@endpoint, @user, @key, @auth, @label, @created)",
-                p =>
-                {
-                    p.AddWithValue("@endpoint", subscription.Endpoint);
-                    p.AddWithValue("@user", Key(subscription.UserId));
-                    p.AddWithValue("@key", subscription.P256dh);
-                    p.AddWithValue("@auth", subscription.Auth);
-                    p.AddWithValue("@label", subscription.Label);
-                    p.AddWithValue("@created", UtcTime.Format(subscription.CreatedUtc));
-                });
-
-            // A person's oldest browsers go once they pass the limit, so a browser that keeps signing up anew can't pile them up.
-            Execute(
-                "DELETE FROM PushSubscriptions WHERE UserId = @user AND Endpoint NOT IN (SELECT Endpoint FROM PushSubscriptions WHERE UserId = @user ORDER BY CreatedUtc DESC LIMIT " + MaxPushPerUser.ToString(CultureInfo.InvariantCulture) + ")",
-                p => p.AddWithValue("@user", Key(subscription.UserId)));
-            return true;
-        });
-    }
-
-    /// <summary>Gets the browsers someone turned notifications on in, oldest first.</summary>
-    /// <param name="userId">Who they belong to.</param>
-    /// <returns>The subscriptions.</returns>
-    public List<WebPushSubscription> PushSubscriptions(Guid userId) => Query((connection, transaction) =>
-    {
-        var list = new List<WebPushSubscription>();
-        using var cmd = Command(connection, transaction, "SELECT Endpoint, P256dh, Auth, Label, CreatedUtc FROM PushSubscriptions WHERE UserId = @user ORDER BY CreatedUtc");
-        cmd.Parameters.AddWithValue("@user", Key(userId));
-        using var reader = cmd.ExecuteReader();
-        while (reader.Read())
-        {
-            list.Add(new WebPushSubscription(userId, reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), UtcTime.Parse(reader.GetString(4))));
-        }
-
-        return list;
-    });
-
-    /// <summary>Forgets a browser, such as one its push service no longer knows.</summary>
-    /// <param name="endpoint">The browser's push address.</param>
-    public void RemovePush(string endpoint)
-        => Execute("DELETE FROM PushSubscriptions WHERE Endpoint = @endpoint", p => p.AddWithValue("@endpoint", endpoint ?? string.Empty));
+    public bool Delete(Guid id)
+        => Execute("DELETE FROM Requests WHERE Id = @id", p => p.AddWithValue("@id", Key(id)), requests: true) > 0;
 
     /// <summary>Returns requests, newest first.</summary>
     /// <param name="userId">Only this user's, when set.</param>
@@ -639,8 +494,8 @@ public sealed partial class RequestDatabase : IDisposable
     /// </summary>
     /// <param name="beforeUtc">The cut-off.</param>
     /// <param name="keepCreatedSinceUtc">Requests made since this time are kept.</param>
-    /// <returns>How many were removed.</returns>
-    public int DeleteClosedBefore(DateTime beforeUtc, DateTime? keepCreatedSinceUtc = null) => Atomic(() =>
+    /// <returns>The ids of the requests removed.</returns>
+    public List<Guid> DeleteClosedBefore(DateTime beforeUtc, DateTime? keepCreatedSinceUtc = null) => Atomic(() =>
     {
         var closed = "Status IN (" + Number(RequestStatus.Declined) + ", " + Number(RequestStatus.Available) + ") AND UpdatedUtc < @before AND CreatedUtc < @created";
         void Bind(SqliteParameterCollection p)
@@ -649,9 +504,25 @@ public sealed partial class RequestDatabase : IDisposable
             p.AddWithValue("@created", UtcTime.Format(keepCreatedSinceUtc ?? DateTime.MaxValue.AddDays(-1)));
         }
 
-        // Messages still held about these requests go with them.
-        Execute("DELETE FROM HeldMessages WHERE RequestId IN (SELECT Id FROM Requests WHERE " + closed + ")", Bind);
-        return Execute("DELETE FROM Requests WHERE " + closed, Bind, requests: true);
+        var ids = Query((connection, transaction) =>
+        {
+            using var cmd = Command(connection, transaction, "SELECT Id FROM Requests WHERE " + closed);
+            Bind(cmd.Parameters);
+            using var reader = cmd.ExecuteReader();
+            var found = new List<Guid>();
+            while (reader.Read())
+            {
+                found.Add(Guid.Parse(reader.GetString(0)));
+            }
+
+            return found;
+        });
+        if (ids.Count > 0)
+        {
+            Execute("DELETE FROM Requests WHERE " + closed, Bind, requests: true);
+        }
+
+        return ids;
     });
 
     /// <inheritdoc />
@@ -783,12 +654,6 @@ public sealed partial class RequestDatabase : IDisposable
             Run(connection, "ALTER TABLE Requests RENAME COLUMN Kind TO Type");
         }
 
-        if (from < 5)
-        {
-            // Created as it is now, OneDevice included, so step 9 only adds that column to a table made before it.
-            Run(connection, HeldSchema);
-        }
-
         if (from < 6)
         {
             Run(connection, "ALTER TABLE Requests ADD COLUMN ServerId TEXT");
@@ -809,10 +674,6 @@ public sealed partial class RequestDatabase : IDisposable
         {
             Run(connection, "ALTER TABLE Requests ADD COLUMN AgingNotifiedUtc TEXT");
             Run(connection, "ALTER TABLE Requests ADD COLUMN ExpiringNotifiedDays INTEGER");
-            if (from >= 5)
-            {
-                Run(connection, "ALTER TABLE HeldMessages ADD COLUMN OneDevice INTEGER NOT NULL DEFAULT 0");
-            }
         }
 
         if (from < 10)
@@ -853,14 +714,15 @@ public sealed partial class RequestDatabase : IDisposable
             Run(connection, "ALTER TABLE Requests ADD COLUMN Specials TEXT");
         }
 
-        if (from < 17)
-        {
-            Run(connection, PushSchema);
-        }
-
         if (from < 18)
         {
             Run(connection, IssuesSchema);
+        }
+
+        if (from < 19)
+        {
+            // Notifications keeps held messages and browsers in its own files, so these tables are never read.
+            Run(connection, "DROP TABLE IF EXISTS HeldMessages; DROP TABLE IF EXISTS PushSubscriptions;");
         }
 
         return true;

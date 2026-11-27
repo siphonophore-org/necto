@@ -307,49 +307,20 @@ public sealed class RequestDatabaseTests : IDisposable
         _db.Insert(Make("Old pending", RequestStatus.Pending, created: old));
         _db.Insert(Make("New declined", RequestStatus.Declined));
 
-        Assert.Equal(2, _db.DeleteClosedBefore(DateTime.UtcNow.AddDays(-90)));
+        Assert.Equal(2, _db.DeleteClosedBefore(DateTime.UtcNow.AddDays(-90)).Count);
         Assert.Equal(new[] { "New declined", "Old pending" }, _db.List().Select(r => r.Title).Order().ToArray());
     }
 
     /// <summary>
-    /// Held messages wait for their person and are removed with their request.
-    /// True: a person away from every device gets only what is still about a request.
-    /// False: a removed request's messages would still be delivered, or to someone else.
+    /// Which reminders were sent is kept.
+    /// True: a reminder is sent once after a restart.
+    /// False: reminders would repeat after a restart.
     /// </summary>
     [Fact]
-    public void TakeHeld_HeldMessages_WaitForTheirPersonAndGoWithTheirRequest()
-    {
-        var mine = Make("Dune");
-        var other = Make("Arrival");
-        _db.Insert(mine);
-        _db.Insert(other);
-        var person = Guid.NewGuid();
-        _db.Hold(new NotifyHeldMessage(Guid.NewGuid(), person, "Approved: Dune", "Dune was approved.", DateTime.UtcNow.AddMinutes(-1), Subject: RequestDatabase.Key(mine.Id)));
-        _db.Hold(new NotifyHeldMessage(Guid.NewGuid(), person, "Approved: Arrival", "Arrival was approved.", DateTime.UtcNow, Subject: RequestDatabase.Key(other.Id)));
-        _db.Hold(new NotifyHeldMessage(Guid.NewGuid(), Guid.NewGuid(), "For someone else", "", DateTime.UtcNow, Subject: RequestDatabase.Key(other.Id)));
-
-        // Removing a request removes what was held about it; taking the rest empties them for that person only.
-        Assert.True(_db.Delete(mine.Id));
-        var taken = _db.TakeHeld(person);
-        Assert.Equal(new[] { "Approved: Arrival" }, taken.Select(m => m.Header));
-        Assert.Empty(_db.TakeHeld(person));
-    }
-
-    /// <summary>
-    /// Which held messages are for one device, and which reminders were sent, are kept.
-    /// True: a reminder is sent once and to one device after a restart.
-    /// False: reminders would repeat after a restart or reach every device.
-    /// </summary>
-    [Fact]
-    public void Hold_OneDeviceAndReminders_AreKept()
+    public void Update_Reminders_AreKept()
     {
         var r = Make("Dune");
         _db.Insert(r);
-        var person = Guid.NewGuid();
-        _db.Hold(new NotifyHeldMessage(Guid.NewGuid(), person, "Waiting on approval: Dune", "", DateTime.UtcNow, OneDevice: true, Subject: RequestDatabase.Key(r.Id)));
-        _db.Hold(new NotifyHeldMessage(Guid.NewGuid(), person, "New request: Dune", "", DateTime.UtcNow.AddMinutes(1), Subject: RequestDatabase.Key(r.Id)));
-        Assert.Equal(new[] { true, false }, _db.TakeHeld(person).Select(m => m.OneDevice));
-
         r.AgingNotifiedUtc = new DateTime(2026, 10, 29, 12, 0, 0, DateTimeKind.Utc);
         r.ExpiringNotifiedDays = 2;
         _db.Update(r);
@@ -359,12 +330,13 @@ public sealed class RequestDatabaseTests : IDisposable
     }
 
     /// <summary>
-    /// A version 8 database with held messages is brought up to date, its messages kept as Stolon holds them.
-    /// True: an upgrade keeps the messages waiting for people.
-    /// False: an older database would fail to open, or lose its held messages.
+    /// A version 8 database with held messages is brought up to date, and the held messages table, which Notifications
+    /// keeps in its own file, is dropped.
+    /// True: an upgrade opens, and leaves no table nothing reads.
+    /// False: an older database would fail to open, or keep a table of stale messages.
     /// </summary>
     [Fact]
-    public void Open_VersionEight_MigratesItsHeldMessages()
+    public void Open_VersionEight_DropsTheHeldMessages()
     {
         _db.Dispose();
         Directory.CreateDirectory(_dir);
@@ -392,12 +364,14 @@ public sealed class RequestDatabaseTests : IDisposable
         var old = migrated.Get(Guid.Parse("0123456789abcdef0123456789abcdef"))!;
         Assert.Null(old.AgingNotifiedUtc);
         Assert.Null(old.ExpiringNotifiedDays);
-        var held = Assert.Single(migrated.TakeHeld(Guid.Parse("fedcba9876543210fedcba9876543210")));
-        Assert.False(held.OneDevice);
-
-        // A message held by an older release comes back as Base holds it, about the request it was held for.
-        Assert.Equal("Approved: Old", held.Header);
-        Assert.Equal("0123456789abcdef0123456789abcdef", held.Subject);
+        migrated.Dispose();
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+        using var check = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + path + ";Pooling=False");
+        check.Open();
+        using var tables = check.CreateCommand();
+        tables.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('HeldMessages', 'PushSubscriptions')";
+        Assert.Equal(0L, (long)tables.ExecuteScalar()!);
+        Assert.Equal(19, DatabaseSchema.GetVersion(check));
     }
 
     /// <summary>
@@ -513,7 +487,7 @@ public sealed class RequestDatabaseTests : IDisposable
         _db.Insert(old);
 
         // Retention of two days, with a thirty-day quota window: only the request outside the window goes.
-        Assert.Equal(1, _db.DeleteClosedBefore(DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-30)));
+        Assert.Single(_db.DeleteClosedBefore(DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(-30)));
         Assert.NotNull(_db.Get(recent.Id));
         Assert.Null(_db.Get(old.Id));
     }
@@ -598,11 +572,9 @@ public sealed class RequestDatabaseTests : IDisposable
         _db.Insert(waiting);
         var open = _db.OpenRequests();
 
-        // Held messages, a delete that found nothing and an Atomic that only read change no request.
-        _db.Hold(new NotifyHeldMessage(Guid.NewGuid(), waiting.UserId, "Approved: Waiting", string.Empty, DateTime.UtcNow, false, RequestDatabase.Key(waiting.Id)));
-        Assert.Single(_db.TakeHeld(waiting.UserId));
+        // A delete that found nothing and an Atomic that only read change no request.
         Assert.False(_db.Delete(Guid.NewGuid()));
-        Assert.Equal(0, _db.DeleteClosedBefore(DateTime.UtcNow.AddDays(-1)));
+        Assert.Empty(_db.DeleteClosedBefore(DateTime.UtcNow.AddDays(-1)));
         _db.Atomic(() => _db.Get(waiting.Id));
         Assert.Same(open, _db.OpenRequests());
 
@@ -714,7 +686,7 @@ public sealed class RequestDatabaseTests : IDisposable
         using (var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + path + ";Pooling=False"))
         {
             connection.Open();
-            Assert.Equal(18, DatabaseSchema.GetVersion(connection));
+            Assert.Equal(19, DatabaseSchema.GetVersion(connection));
             Assert.Equal(
                 new[] { "idx_requests_created", "idx_requests_library", "idx_requests_status_created", "idx_requests_user", "idx_requests_user_counts" },
                 Indexes(connection).Order(StringComparer.Ordinal));
@@ -724,85 +696,6 @@ public sealed class RequestDatabaseTests : IDisposable
             Assert.Contains("idx_requests_status_created", Plan(connection, "SELECT Id FROM Requests WHERE Status IN (0, 1, 4, 5) ORDER BY CreatedUtc DESC"), StringComparison.Ordinal);
             Assert.Contains("idx_requests_created", Plan(connection, "SELECT Id FROM Requests ORDER BY CreatedUtc DESC LIMIT 50"), StringComparison.Ordinal);
             Assert.Contains("COVERING INDEX idx_requests_user_counts", Plan(connection, "SELECT UserId, MAX(UserName), Type, Status, COUNT(*) FROM Requests GROUP BY UserId, Type, Status"), StringComparison.Ordinal);
-        }
-    }
-
-    /// <summary>
-    /// Each person's browsers are kept by their push address, a second sign up replacing the first.
-    /// True: a browser signed up again holds one entry with its newest keys.
-    /// False: a browser would be pushed to twice, or with old keys.
-    /// </summary>
-    [Fact]
-    public void SavePush_SameBrowser_IsReplaced()
-    {
-        var alice = Guid.NewGuid();
-        var bob = Guid.NewGuid();
-        _db.SavePush(new WebPushSubscription(alice, "https://push.example.com/a", "key-a", "auth-a", "Firefox · Linux", DateTime.UtcNow.AddMinutes(-2)));
-        _db.SavePush(new WebPushSubscription(alice, "https://push.example.com/b", "key-b", "auth-b", "Safari · iPhone", DateTime.UtcNow.AddMinutes(-1)));
-        _db.SavePush(new WebPushSubscription(bob, "https://push.example.com/c", "key-c", "auth-c", "Chrome · Android", DateTime.UtcNow));
-
-        // Signing up again in the same browser replaces it, keeping one entry with the newest keys.
-        _db.SavePush(new WebPushSubscription(alice, "https://push.example.com/a", "key-a2", "auth-a2", "Firefox · Linux", DateTime.UtcNow));
-        Assert.Equal(new[] { "https://push.example.com/b", "https://push.example.com/a" }, _db.PushSubscriptions(alice).Select(s => s.Endpoint));
-        Assert.Equal("key-a2", _db.PushSubscriptions(alice).Single(s => s.Endpoint.EndsWith("/a", StringComparison.Ordinal)).P256dh);
-
-        _db.RemovePush("https://push.example.com/b");
-        Assert.Single(_db.PushSubscriptions(alice));
-        Assert.Single(_db.PushSubscriptions(bob));
-    }
-
-    /// <summary>
-    /// Only a person's newest twenty browsers are kept.
-    /// True: a browser signing up anew every visit cannot fill the table.
-    /// False: one person could grow the table without limit.
-    /// </summary>
-    [Fact]
-    public void SavePush_ManyBrowsers_KeepsTheNewestTwenty()
-    {
-        var person = Guid.NewGuid();
-        for (var i = 0; i < 25; i++)
-        {
-            _db.SavePush(new WebPushSubscription(person, "https://push.example.com/" + i, "key", "auth", string.Empty, DateTime.UtcNow.AddMinutes(i)));
-        }
-
-        var kept = _db.PushSubscriptions(person);
-        Assert.Equal(20, kept.Count);
-        Assert.Equal("https://push.example.com/5", kept[0].Endpoint);
-    }
-
-    /// <summary>
-    /// A version 16 database gains the table of browsers.
-    /// True: an upgrade can keep browser sign ups.
-    /// False: signing up a browser would fail after an upgrade.
-    /// </summary>
-    [Fact]
-    public void Open_VersionSixteen_GainsTheBrowsersTable()
-    {
-        var r = Make("Before");
-        _db.Insert(r);
-        _db.Dispose();
-        var path = Path.Combine(_dir, "requests.db");
-        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + path + ";Pooling=False"))
-        {
-            connection.Open();
-            using var cmd = connection.CreateCommand();
-            cmd.CommandText = "DROP TABLE PushSubscriptions";
-            cmd.ExecuteNonQuery();
-            DatabaseSchema.Stamp(connection, 16, 4);
-        }
-
-        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-        using (var migrated = new RequestDatabase(path, NullLogger<RequestDatabase>.Instance))
-        {
-            Assert.Equal("Before", migrated.Get(r.Id)!.Title);
-            migrated.SavePush(new WebPushSubscription(r.UserId, "https://push.example.com/a", "key", "auth", "Edge · Windows", DateTime.UtcNow));
-            Assert.Single(migrated.PushSubscriptions(r.UserId));
-        }
-
-        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + path + ";Pooling=False"))
-        {
-            connection.Open();
-            Assert.Equal(18, DatabaseSchema.GetVersion(connection));
         }
     }
 
@@ -851,7 +744,7 @@ public sealed class RequestDatabaseTests : IDisposable
         using (var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + path + ";Pooling=False"))
         {
             connection.Open();
-            Assert.Equal(18, DatabaseSchema.GetVersion(connection));
+            Assert.Equal(19, DatabaseSchema.GetVersion(connection));
         }
     }
 }
