@@ -148,4 +148,21 @@ public class NotificationRouterTests
 
         Assert.Equal(NotificationTarget.ActivityLog, Assert.Single(NotificationRouter.Plan(config, Used(null), Users())).Target);
     }
+
+    /// <summary>
+    /// Each other user an event names gets it too, when their groups give it, once each.
+    /// True: everyone who joined a request hears about it.
+    /// False: only the first user an event names would hear about it.
+    /// </summary>
+    [Fact]
+    public void Plan_OtherUsers_GetItWhenTheirGroupsGiveIt()
+    {
+        var stranger = Guid.NewGuid();
+        var users = Users().Append(new NotificationUser(stranger, false, false)).ToArray();
+        var e = Used(Viewer) with { OtherUserIds = new[] { Viewer, Admin, stranger } };
+
+        var apps = NotificationRouter.Plan(Config(null, InvitesEvents.Used), e, users).Single(s => s.Target == NotificationTarget.UserApps);
+
+        Assert.Equal(new[] { Viewer, Admin }, apps.Recipients);
+    }
 }

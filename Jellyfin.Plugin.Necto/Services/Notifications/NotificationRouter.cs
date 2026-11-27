@@ -34,28 +34,28 @@ public static class NotificationRouter
         var settings = config.Notifications ?? new NotificationSettings();
         var sends = new List<NotificationSend>();
 
-        var person = UserRecipient(config, nectoEvent, users);
-        if (person is { } id)
+        var people = UserRecipients(config, nectoEvent, users);
+        if (people.Count > 0)
         {
             if (settings.BrowserNotifications)
             {
-                sends.Add(new NotificationSend(NotificationTarget.UserBrowsers, BrowsersId, new[] { id }));
+                sends.Add(new NotificationSend(NotificationTarget.UserBrowsers, BrowsersId, people));
             }
 
             if (settings.JellyfinMessages)
             {
-                sends.Add(new NotificationSend(NotificationTarget.UserApps, AppsId, new[] { id }));
+                sends.Add(new NotificationSend(NotificationTarget.UserApps, AppsId, people));
             }
         }
 
-        Guid? reached = sends.Count > 0 ? person : null;
+        var reached = sends.Count > 0 ? people : Array.Empty<Guid>();
         foreach (var channel in (settings.Channels ?? new List<NotificationChannel>()).Where(c => c is not null && c.Takes(nectoEvent.Key)))
         {
             switch (channel.Kind)
             {
                 case NotificationChannelKind.Administrators:
                     // An administrator the event is about already has it as a user, so it comes once.
-                    var admins = users.Where(u => u.IsAdministrator && !u.IsDisabled && reached != u.Id).Select(u => u.Id).ToList();
+                    var admins = users.Where(u => u.IsAdministrator && !u.IsDisabled && !reached.Contains(u.Id)).Select(u => u.Id).ToList();
                     if (admins.Count > 0)
                     {
                         sends.Add(new NotificationSend(NotificationTarget.Administrators, channel.Id, admins));
@@ -81,8 +81,23 @@ public static class NotificationRouter
     }
 
     /// <summary>
-    /// Finds the user a user facing event goes to: the user it is about, when the account works and their groups give
+    /// Finds the users a user facing event goes to: each user it is about, when the account works and their groups give
     /// them the event.
+    /// </summary>
+    /// <param name="config">The configuration, for the groups.</param>
+    /// <param name="nectoEvent">The event.</param>
+    /// <param name="users">Every user on the server.</param>
+    /// <returns>The users, each once, the event's own user first.</returns>
+    public static IReadOnlyList<Guid> UserRecipients(PluginConfiguration config, NectoEvent nectoEvent, IReadOnlyCollection<NotificationUser> users)
+    {
+        ArgumentNullException.ThrowIfNull(nectoEvent);
+        var ids = (nectoEvent.UserId is { } first ? new[] { first } : Array.Empty<Guid>()).Concat(nectoEvent.OtherUserIds ?? Array.Empty<Guid>()).Distinct();
+        return ids.Select(id => UserRecipient(config, nectoEvent with { UserId = id }, users)).OfType<Guid>().ToList();
+    }
+
+    /// <summary>
+    /// Finds whether the user an event names gets it: when the event is user facing, the account works, and their
+    /// groups give them the event.
     /// </summary>
     /// <param name="config">The configuration, for the groups.</param>
     /// <param name="nectoEvent">The event.</param>

@@ -84,4 +84,21 @@ public class NotificationMessagesTests
         Assert.DoesNotContain('\r', subject);
         Assert.Equal("viewer joined\n\nhttps://media.example.com/invites", body);
     }
+
+    /// <summary>
+    /// The event's hold, one device, and image reach the message.
+    /// True: a reminder shows on one app, a dated one is not held, and a poster shows in Discord and the browser.
+    /// False: every message would be held and shown everywhere, with no image.
+    /// </summary>
+    [Fact]
+    public void Build_CarriesHoldOneDeviceAndImage()
+    {
+        var e = new NectoEvent("requests.aging", "Waiting", string.Empty) { Hold = false, OneDevice = true, ImageUrl = "https://example.com/p.jpg" };
+
+        var message = NotificationMessages.Build(e, null, "Waiting", Now);
+
+        Assert.False(message.Hold);
+        Assert.True(message.OneDevice);
+        Assert.Equal("https://example.com/p.jpg", message.ThumbnailUrl);
+    }
 }

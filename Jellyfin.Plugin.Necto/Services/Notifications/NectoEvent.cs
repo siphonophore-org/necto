@@ -22,4 +22,16 @@ public sealed record NectoEvent(string Key, string Title, string Body)
 
     /// <summary>Gets extra values a webhook carries.</summary>
     public IReadOnlyDictionary<string, string> Data { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>Gets more users the event is about, such as those who joined a request. Each receives it if their groups allow.</summary>
+    public IReadOnlyList<Guid> OtherUserIds { get; init; } = Array.Empty<Guid>();
+
+    /// <summary>Gets a value indicating whether a Jellyfin message for a user with no app online waits until one comes online.</summary>
+    public bool Hold { get; init; } = true;
+
+    /// <summary>Gets a value indicating whether a Jellyfin message shows on each user's most recent app only, such as a reminder.</summary>
+    public bool OneDevice { get; init; }
+
+    /// <summary>Gets the absolute http or https address of a small image, such as a poster, for Discord and browser notifications.</summary>
+    public string? ImageUrl { get; init; }
 }

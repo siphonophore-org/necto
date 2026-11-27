@@ -269,7 +269,6 @@ public sealed class Notifier : INotifier
     private async Task<NotificationResult> AppsAsync(NotificationSettings settings, NectoEvent nectoEvent, string name, DateTimeOffset now, IReadOnlyList<Guid> recipients, CancellationToken cancellationToken)
     {
         var message = NotificationMessages.Build(nectoEvent, settings, name, now, StolonTranslations.ServerLanguage(_serverConfig));
-        message.Hold = true;
         message.Subject = nectoEvent.Key;
         foreach (var id in recipients)
         {
