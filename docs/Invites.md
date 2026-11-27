@@ -4,7 +4,13 @@ Invites are links anyone may use to make their own account on the server, in the
 
 ## The Invites Tool
 
-**Invites** counts the invites in each state at the top, then lists every invite, oldest first, with its group, its uses, and its expiry, and at the row's end its state badge, **Copy link**, and **Show QR code**, which opens the code with **Copy image** and **Download** in a sidecar. A PIN tag marks an invite that asks for a PIN, and a person tag names the member who made it. Select **Add invite** to make one, or select a row to open it in a sidecar.
+**Invites** counts the invites in each state at the top, then lists every invite, oldest first, in a table. Each row holds the invite's name, its link, and its group, uses, and expiry, with "Asks for a PIN" when it has a PIN and "Made by" and the member's name when a member made it. At the row's end sit its state badge, **Copy link**, and **Show QR code**, which opens the code with **Copy image** and **Download** in a sidecar. Select a row to open the invite in a sidecar.
+
+* **Search invites** finds invites by name, group, or the member who made them.
+* The state filter shows **All** or one state, in the same words as the counts.
+* **Add invite** at the end of the toolbar opens a new invite.
+* Ticking rows shows **Turn on**, **Turn off**, and **Remove** for them. **Turn on** skips the invites already on and **Turn off** the ones already off, and **Remove** asks first.
+* With no invites the table says "No invites yet.", and "No invites match." while a search or filter finds none.
 
 | Invites | Invites on a phone |
 | :---: | :---: |
@@ -118,6 +124,7 @@ See [Notifications](Notifications.md#events) for who gets each event.
 | Route | Who | What it does |
 | :--- | :--- | :--- |
 | `GET /Invites/List` | Administrators | Lists every invite |
+| `GET /Invites/All` | Administrators | Gives one page of invites, with `skip`, `take`, `search`, and a state name or `All` as `filter` |
 | `POST /Invites` | Administrators | Makes an invite |
 | `PUT /Invites/{id}` | Administrators | Changes an invite. A `Pin` of `null` keeps it, and an empty one removes it |
 | `POST /Invites/{id}/Duplicate` | Administrators | Makes a copy with a new link |
@@ -132,4 +139,4 @@ See [Notifications](Notifications.md#events) for who gets each event.
 | `GET /invites/{token}/Info` | Anyone | Says whether the invite works, its welcome message, and whether it asks for a PIN |
 | `POST /invites/{token}/Redeem` | Anyone | Makes the account |
 
-The list is at `/Invites/List` because `/invites` is the member page. A refused change answers `400` with `{ "Error": "..." }`, and the sign-up routes answer `429` past the address limit.
+The lists are at `/Invites/List` and `/Invites/All` because `/invites` is the member page. A refused change answers `400` with `{ "Error": "..." }`, and the sign-up routes answer `429` past the address limit.

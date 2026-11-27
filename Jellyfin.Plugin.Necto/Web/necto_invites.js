@@ -1,10 +1,12 @@
 // necto_invites.js
-// The Invites tool. It lists every invite link with its state, Copy, and its QR code, and opens each in an editor
-// sidecar with its link, its group, limits, PIN, message, and links, with Turn on or Turn off, Duplicate, and Delete.
+// The Invites tool. It counts the invites by state and lists them with search and a state filter, each row with its
+// state, Copy link, and its QR code, and turns on, turns off, or removes the rows picked. Each invite opens in an editor
+// sidecar with its link, its group, limits, PIN, message, and links, with Turn on or Turn off, Duplicate, and Remove.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
 var h = nectoModule.h;
+var esc = nectoModule.escapeHtml;
 
 // EVERYONE_ID
 // The id of the Everyone group, which an invite names for no group.
@@ -61,63 +63,114 @@ export function usesText(invite, t) {
     return invite.MaxUses > 0 ? t.format('InvitesUsesOf', invite.UsedCount, invite.MaxUses) : t.format('InvitesUses', invite.UsedCount);
 }
 
-// inviteAside
-// Builds the end of an invite's row: its state badge, then Copy and Show QR code for its link.
+// PAGE_SIZE
+// The rows a page of the list holds.
+export var PAGE_SIZE = 50;
+
+// expiryDay
+// Writes an invite's expiry as its day alone, in the viewer's locale, since an invite stops at the start of its day.
+//
+// Inputs
+// iso [string]: The expiry, such as 2026-12-31T00:00:00Z.
+//
+// Output
+// [string]: The day, such as 12/31/2026.
+export function expiryDay(iso) {
+    var day = String(iso || '').slice(0, 10);
+    var d = new Date(day + 'T00:00:00');
+    return isNaN(d) ? day : d.toLocaleDateString();
+}
+
+// inviteLine
+// Writes the line under an invite's link: its group, uses, expiry, PIN, and maker.
 //
 // Inputs
 // invite [object]: The invite.
 // shared [object]: The Necto helper bag.
-// link [string]: The invite's link, or empty for a row without one.
-// onCopied [function]: Hears whether the link was copied. [optional]
 //
 // Output
-// [HTMLElement]: The aside.
-export function inviteAside(invite, shared, link, onCopied) {
+// [string]: The line, such as "Family · 2 of 5 uses · Never expires".
+export function inviteLine(invite, shared) {
     var t = shared.t;
-    var state = stateName(invite.State);
-    var badge = h('span', { 'data-role': 'invite-state' });
-    badge.innerHTML = shared.badge(STATE_COLORS[state], t.tr(STATE_KEYS[state]));
-    var box = h('div', { class: 'necto-row-aside', 'data-role': 'invite-aside' }, [badge]);
-    if (!link) return box;
-    var iconButton = function (icon, label, action) {
-        return h('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn', title: label, 'aria-label': label, 'data-action': action }, [
-            h('span', { class: 'material-icons', 'aria-hidden': 'true', text: icon })
-        ]);
-    };
-    var copy = iconButton('content_copy', t.tr('InvitesButtonCopyLink'), 'copy-link');
-    copy.addEventListener('click', function () {
-        shared.copyToClipboard(link).then(function (ok) { if (onCopied) onCopied(ok); });
-    });
-    // The row's own button copies the link, so the code is its QR button alone.
-    var qr = nectoModule.createQrCode({ value: link, layout: 'inline', showValue: false, showText: t.tr('InvitesButtonShowQr'), label: invite.Label || t.tr('InvitesUntitled'), fileName: 'invite.png' });
-    box.appendChild(copy);
-    box.appendChild(qr.element);
-    return box;
+    return [
+        invite.GroupName,
+        usesText(invite, t),
+        invite.ExpiresAt ? t.format('ExpiresOnDate', expiryDay(invite.ExpiresAt)) : t.tr('InvitesNeverExpires'),
+        invite.HasPin ? t.tr('InvitesValueHasPin') : '',
+        invite.CreatedByName ? t.format('InvitesValueMadeBy', invite.CreatedByName) : ''
+    ].filter(Boolean).join(' · ');
 }
 
-// inviteItems
-// Turns the invites into rows, each with its group, uses, expiry, PIN, and maker, and at its end its state badge with
-// Copy and Show QR code for its link.
+// stateFilters
+// Lists the state filter's choices, in the words and order of the count cards.
 //
 // Inputs
-// invites [object[]]: The invites from Invites/List.
-// shared [object]: The Necto helper bag.
-// linkOf [function]: Gives an invite's link, or is left out for rows without one.
-// onCopied [function]: Hears whether a link was copied. [optional]
+// t [object]: The strings.
 //
 // Output
-// [object[]]: The rows, each carrying its invite.
-export function inviteItems(invites, shared, linkOf, onCopied) {
+// [object[]]: Each choice's value and label.
+export function stateFilters(t) {
+    return STATES.map(function (state) { return { value: state, label: t.tr(STATE_KEYS[state]) }; });
+}
+
+// stateCell
+// Draws the end of an invite's row: its state badge, then Copy link and Show QR code for its link.
+//
+// Inputs
+// invite [object]: The invite.
+// shared [object]: The Necto helper bag.
+//
+// Output
+// [string]: The cell's HTML.
+export function stateCell(invite, shared) {
     var t = shared.t;
-    return (invites || []).map(function (invite) {
-        var parts = [invite.GroupName, usesText(invite, t)];
-        parts.push(invite.ExpiresAt ? t.format('ExpiresOnDate', shared.formatDate(invite.ExpiresAt)) : t.tr('InvitesNeverExpires'));
-        var tags = [];
-        if (invite.HasPin) tags.push({ label: t.tr('InvitesLabelPin'), icon: 'pin' });
-        if (invite.CreatedByName) tags.push({ label: invite.CreatedByName, icon: 'person' });
-        var link = linkOf && invite.Token ? linkOf(invite) : '';
-        return { id: invite.Id, title: invite.Label || t.tr('InvitesUntitled'), secondary: parts.join(' · '), tags: tags, aside: inviteAside(invite, shared, link, onCopied), invite: invite };
-    });
+    var state = stateName(invite.State);
+    var button = function (action, icon, label) {
+        return '<button is="emby-button" type="button" class="stolon-row-btn" data-action="' + action + '" data-id="' + esc(invite.Id) + '" title="' + esc(label) + '" aria-label="' + esc(label) + '">'
+            + '<span class="material-icons" aria-hidden="true">' + icon + '</span></button>';
+    };
+    var html = '<span data-role="invite-state">' + shared.badge(STATE_COLORS[state], t.tr(STATE_KEYS[state])) + '</span>';
+    if (!invite.Token) return html;
+    return html + button('copy-link', 'content_copy', t.tr('InvitesButtonCopyLink')) + button('show-qr', 'qr_code_2', t.tr('InvitesButtonShowQr'));
+}
+
+// BULK_VERBS
+// The changes the bulk bar offers, each with its button's string key and class.
+export var BULK_VERBS = [['on', 'ButtonTurnOn', 'stolon-primary'], ['off', 'ButtonTurnOff', 'stolon-secondary'], ['remove', 'ButtonRemove', 'stolon-destructive']];
+
+// canChange
+// Tells whether a bulk change applies to an invite, so Turn on skips the invites already on and Turn off the ones off.
+//
+// Inputs
+// invite [object]: The invite.
+// verb [string]: on, off, or remove.
+//
+// Output
+// [boolean]: Whether the invite takes it.
+export function canChange(invite, verb) {
+    if (verb === 'on') return !invite.Enabled;
+    if (verb === 'off') return !!invite.Enabled;
+    return true;
+}
+
+// bulkResultText
+// Words what a bulk change did, a sentence for each outcome.
+//
+// Inputs
+// verb [string]: on, off, or remove.
+// done [number]: How many it changed.
+// failed [number]: How many the server refused.
+// skipped [number]: How many were already on or off.
+// t [object]: The strings.
+//
+// Output
+// [object]: text, the sentences, and isError, true when some failed.
+export function bulkResultText(verb, done, failed, skipped, t) {
+    var keys = { on: ['InvitesBulkTurnedOnOne', 'InvitesBulkTurnedOnMany'], off: ['InvitesBulkTurnedOffOne', 'InvitesBulkTurnedOffMany'], remove: ['InvitesBulkRemovedOne', 'InvitesBulkRemovedMany'] }[verb];
+    var text = [t.plural(done, keys[0], keys[1])];
+    if (failed) text.push(t.plural(failed, 'InvitesBulkFailedOne', 'InvitesBulkFailedMany'));
+    if (skipped) text.push(t.plural(skipped, verb === 'on' ? 'InvitesBulkSkippedOnOne' : 'InvitesBulkSkippedOffOne', verb === 'on' ? 'InvitesBulkSkippedOnMany' : 'InvitesBulkSkippedOffMany'));
+    return { text: text.join(' '), isError: !!failed };
 }
 
 // stateCards
@@ -316,8 +369,8 @@ export default function (view) {
 
     var shared = null;
     var page = null;
-    var list = null;
-    var invites = [];
+    var table = null;
+    var qr = null;
     var groups = [];
     var linkUrl = '';
     var newUserGroupId = '';
@@ -326,7 +379,7 @@ export default function (view) {
     // report
     // Shows a result on the page's status line.
     function report(message, isError) {
-        shared.setStatus('invitesStatus', message, !!isError, { timeout: 10000 });
+        shared.setStatus('invitesStatus', message, !!isError, isError ? { timeout: 0 } : { timeout: 10000 });
     }
 
     // serverAddress
@@ -335,9 +388,15 @@ export default function (view) {
         try { return ApiClient.serverAddress(); } catch (e) { return ''; }
     }
 
-    // loadInvites
-    // Reads the invites, the groups, and the link address, then draws the list.
-    function loadInvites() {
+    // linkOf
+    // Gives an invite's link.
+    function linkOf(invite) {
+        return inviteLink(invite.Token, linkUrl, serverAddress());
+    }
+
+    // loadCounts
+    // Reads the invites, the groups, and the link address, then draws the count cards.
+    function loadCounts() {
         var mine = ++loadSeq;
         return Promise.all([
             shared.request('Invites/List'),
@@ -345,20 +404,147 @@ export default function (view) {
             shared.getConfig().catch(function () { return {}; })
         ]).then(function (answers) {
             if (mine !== loadSeq) return;
-            invites = Array.isArray(answers[0]) ? answers[0] : [];
             groups = Array.isArray(answers[1]) ? answers[1] : [];
             linkUrl = (answers[2] && answers[2].InviteSettings && answers[2].InviteSettings.LinkUrl) || '';
             newUserGroupId = (answers[2] && answers[2].GroupSettings && answers[2].GroupSettings.NewUserGroupId) || '';
-            if (view.querySelector('#inviteCards')) shared.renderCards(view.querySelector('#inviteCards'), stateCards(invites, shared.t));
-            var copied = function (ok) { report(shared.t.tr(ok ? 'InvitesLinkCopied' : 'InvitesErrorCopyLink'), !ok); };
-            var items = inviteItems(invites, shared, function (invite) { return inviteLink(invite.Token, linkUrl, serverAddress()); }, copied);
-            if (list) list.setItems(items);
-            else {
-                list = nectoModule.createRecordList({ items: items, label: shared.t.tr('TabInvites'), emptyText: shared.t.tr('InvitesEmpty'), onOpen: function (item) { openInvite(item.invite); } });
-                view.querySelector('#inviteList').appendChild(list.element);
-            }
+            shared.renderCards('inviteCards', stateCards(Array.isArray(answers[0]) ? answers[0] : [], shared.t));
         }).catch(function () {
             if (mine === loadSeq) report(shared.t.tr('InvitesErrorLoad'), true);
+        });
+    }
+
+    // createTable
+    // Builds the list with its search, its state filter, Add invite, and its bulk actions.
+    function createTable() {
+        var t = shared.t;
+        var bag = Object.create(shared);
+        bag.apiPrefix = '';
+        table = nectoModule.createPaginatedTable(view, bag, {
+            containerId: 'invitesTable',
+            endpoint: 'Invites/All',
+            selection: { enabled: true, idKey: 'Id', onSelectionChange: onSelection },
+            search: { enabled: true, placeholder: t.tr('InvitesSearchPlaceholder') },
+            filters: {
+                label: t.tr('HeaderStatus'),
+                options: stateFilters(t),
+                allValue: 'All',
+                initialValue: 'All',
+                buildParams: function (value) { return { filter: value || null }; }
+            },
+            pagination: { pageSize: PAGE_SIZE },
+            emptyState: { message: t.tr('InvitesEmpty'), filteredMessage: t.tr('InvitesEmptyMatch') },
+            columns: [
+                {
+                    key: 'Label', type: 'custom',
+                    render: function (invite) {
+                        return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + esc(invite.Label || t.tr('InvitesUntitled')) + '</div>'
+                            + (invite.Token ? '<div class="stolon-table-item-sub" data-role="invite-link">' + esc(linkOf(invite)) + '</div>' : '')
+                            + '<div class="stolon-table-item-sub">' + esc(inviteLine(invite, shared)) + '</div></div>';
+                    }
+                },
+                { key: 'State', type: 'custom', className: 'stolon-table-cell-status', render: function (invite) { return stateCell(invite, shared); } }
+            ],
+            actions: { onRowClick: function (invite) { openInvite(invite); }, onReload: function () { loadCounts(); } }
+        });
+
+        var controls = table.getControlsContainer();
+        if (controls) {
+            var add = h('button', { is: 'emby-button', type: 'button', id: 'btnAddInvite', class: 'raised stolon-button stolon-primary' }, [
+                h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
+                h('span', { text: t.tr('InvitesButtonAdd') })
+            ]);
+            add.addEventListener('click', function () { openInvite(null); });
+            controls.appendChild(add);
+        }
+
+        var actions = table.getBulkActionsContainer();
+        if (actions) {
+            BULK_VERBS.forEach(function (b) {
+                actions.appendChild(h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + b[2], 'data-bulk': b[0], disabled: true }, [h('span', { text: t.tr(b[1]) })]));
+            });
+            actions.addEventListener('click', function (e) {
+                var btn = e.target.closest('[data-bulk]');
+                if (btn && !btn.disabled) bulk(btn.getAttribute('data-bulk'));
+            });
+        }
+    }
+
+    // rowAction
+    // Copies an invite's link or opens its QR code, for the buttons at the end of its row.
+    function rowAction(e) {
+        var t = shared.t;
+        var btn = e.target.closest('[data-action]');
+        if (!btn || !table) return;
+        var id = btn.getAttribute('data-id');
+        var invite = table.getItems().filter(function (i) { return String(i.Id) === id; })[0];
+        if (!invite) return;
+        if (btn.getAttribute('data-action') === 'copy-link') {
+            shared.copyToClipboard(linkOf(invite)).then(function (ok) { report(t.tr(ok ? 'InvitesLinkCopied' : 'InvitesErrorCopyLink'), !ok); });
+        } else if (btn.getAttribute('data-action') === 'show-qr') {
+            showQr(invite);
+        }
+    }
+
+    // showQr
+    // Opens an invite's QR code in a sidecar.
+    function showQr(invite) {
+        if (qr) qr.destroy();
+        qr = nectoModule.createQrCode({ value: linkOf(invite), layout: 'inline', showValue: false, label: invite.Label || shared.t.tr('InvitesUntitled'), fileName: 'invite.png' });
+        return qr.open();
+    }
+
+    // onSelection
+    // Turns the bulk actions on while rows are picked.
+    function onSelection(ids) {
+        view.querySelectorAll('[data-bulk]').forEach(function (btn) { btn.disabled = !ids.length; });
+    }
+
+    // destroyTable
+    // Takes the list and any open QR code down when the page hides.
+    function destroyTable() {
+        if (qr) { qr.destroy(); qr = null; }
+        if (table) { table.destroy(); table = null; }
+        var mount = view.querySelector('#invitesTable');
+        if (mount) mount.innerHTML = '';
+    }
+
+    // loadInvites
+    // Reads the counts and the list again from the top, building the list the first time.
+    function loadInvites() {
+        return loadCounts().then(function () {
+            if (!table) { createTable(); return table.load(); }
+            return table.reload();
+        }).catch(function () { report(shared.t.tr('InvitesErrorLoad'), true); });
+    }
+
+    // bulk
+    // Turns on, turns off, or removes every row picked that takes it, asking first before a removal, and says how
+    // many it changed.
+    function bulk(verb) {
+        var t = shared.t;
+        var picked = table ? table.getSelectedItems() : [];
+        if (!picked.length) return Promise.resolve();
+        var fits = picked.filter(function (invite) { return canChange(invite, verb); });
+        var ask = verb === 'remove'
+            ? nectoModule.confirmDialog(t.tr('InvitesConfirmRemoveMany'), { title: t.plural(picked.length, 'InvitesHeaderRemoveOne', 'InvitesHeaderRemoveMany'), confirmText: t.tr('ButtonRemove'), destructive: true })
+            : Promise.resolve(true);
+        return ask.then(function (ok) {
+            if (!ok) return null;
+            report(t.tr('TextWorking'), false);
+            var done = 0;
+            var failedCount = 0;
+            return fits.reduce(function (chain, invite) {
+                return chain.then(function () {
+                    var call = verb === 'remove'
+                        ? shared.request('Invites/' + invite.Id, 'DELETE')
+                        : shared.request('Invites/' + invite.Id + '/Enabled', 'POST', { Enabled: verb === 'on' });
+                    return call.then(function () { done += 1; }, function () { failedCount += 1; });
+                });
+            }, Promise.resolve()).then(function () {
+                var said = bulkResultText(verb, done, failedCount, picked.length - fits.length, t);
+                report(said.text, said.isError);
+                return loadInvites();
+            });
         });
     }
 
@@ -375,7 +561,7 @@ export default function (view) {
     function openInvite(invite) {
         var t = shared.t;
         var isNew = !invite;
-        var editor = createInviteEditor(invite || { MaxUses: 1 }, { shared: shared, groups: groups, newUserGroupId: newUserGroupId, link: isNew ? '' : inviteLink(invite.Token, linkUrl, serverAddress()) });
+        var editor = createInviteEditor(invite || { MaxUses: 1 }, { shared: shared, groups: groups, newUserGroupId: newUserGroupId, link: isNew ? '' : linkOf(invite) });
         var actions = isNew ? [] : [
             { text: t.tr(invite.Enabled ? 'ButtonTurnOff' : 'ButtonTurnOn'), onClick: function (handle) {
                 shared.request('Invites/' + invite.Id + '/Enabled', 'POST', { Enabled: !invite.Enabled }).then(function () {
@@ -427,12 +613,14 @@ export default function (view) {
 
     var made = nectoModule.createNectoPage(view, {
         page: 'necto_invites',
-        bind: function () {
-            var add = view.querySelector('#btnAddInvite');
-            if (add) add.addEventListener('click', function () { openInvite(null); });
-        },
-        load: function () { loadInvites(); }
+        bind: function () { view.querySelector('#invitesTable').addEventListener('click', rowAction); },
+        load: function () {
+            page.addCleanup(destroyTable);
+            return loadInvites();
+        }
     });
     shared = made.shared;
     page = made.page;
+
+    return { reload: function () { return loadInvites(); }, bulk: function (verb) { return bulk(verb); }, showQr: function (invite) { return showQr(invite); } };
 }

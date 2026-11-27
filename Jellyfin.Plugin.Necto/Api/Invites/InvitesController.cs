@@ -80,6 +80,15 @@ public class InvitesController : ControllerBase
     public ActionResult<List<InviteSummary>> List() => Ok(_invites.Summaries());
 
     /// <summary>
+    /// Lists one page of invites for the Invites tool's table, oldest first.
+    /// </summary>
+    /// <param name="query">The page, the search, and a state name in the filter, or All.</param>
+    /// <returns>The page.</returns>
+    [HttpGet("All")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult<PagedResult<InviteSummary>> All([FromQuery] PagedQuery? query) => Ok(InviteService.PageOf(_invites.Summaries(), query));
+
+    /// <summary>
     /// Makes an invite.
     /// </summary>
     /// <param name="request">What it holds.</param>

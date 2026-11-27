@@ -218,7 +218,7 @@ test('Add Radarr opens a server editor whose test loads the server\'s profiles a
     await settle(50);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
     assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'Add Radarr');
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Cancel', 'Done']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Done']);
 
     sidecar.querySelector('[data-field="Url"]').value = 'http://radarr.local:7878';
     sidecar.querySelector('[data-field="ApiKey"]').value = 'abc';

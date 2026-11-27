@@ -1,5 +1,5 @@
 <!-- necto_invites.html -->
-<!-- The Invites tool. It lists every invite link, and each opens a sidecar that edits it. -->
+<!-- The Invites tool. It counts the invites by state and lists them, and each opens a sidecar that edits it. -->
 
 <div id="NectoInvitesPage" data-role="page" class="page type-interior pluginConfigurationPage"
      data-require="emby-input,emby-button,emby-select,emby-checkbox"
@@ -13,16 +13,11 @@
                 <!-- How many invites are in each state. -->
                 <div id="inviteCards" class="stolon-cards stolon-even"></div>
 
+                <div id="invitesStatus" class="stolon-status-text" role="status"></div>
+
                 <!-- Invites -->
-                <!-- Every invite, oldest first, each opening its editor. -->
-                <div id="inviteList"></div>
-                <div class="stolon-card-list-actions">
-                    <button is="emby-button" type="button" id="btnAddInvite" class="raised stolon-button stolon-primary">
-                        <span class="material-icons" aria-hidden="true">add</span>
-                        <span data-str="InvitesButtonAdd">Add invite</span>
-                    </button>
-                    <span id="invitesStatus" class="stolon-status-text" role="status"></span>
-                </div>
+                <!-- Every invite, oldest first, with search, a state filter, Add invite, and bulk actions on the rows picked. -->
+                <div id="invitesTable"></div>
             </div>
         </div>
     </div>
