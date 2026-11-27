@@ -224,7 +224,7 @@ test('the tool checks every disk, says what needs a look, and lists the disks in
     assert.ok(page.requests.some(function (r) { return r.url === 'Storage/Disks'; }));
     var attention = view.querySelector('#storageAttention');
     assert.equal(attention.className.indexOf('stolon-error') >= 0, true);
-    assert.match(attention.textContent, /^media went missing /);
+    assert.match(attention.textContent, /media went missing /);
     var rows = view.querySelectorAll('#storageDiskList .stolon-record-list-row');
     assert.equal(rows.length, 1);
     assert.match(rows[0].textContent, /media/);

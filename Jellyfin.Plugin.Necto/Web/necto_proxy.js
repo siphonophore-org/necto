@@ -481,7 +481,9 @@ export default function (view) {
         proxyStatus = status || {};
         var box = view.querySelector('#proxyNotices');
         box.textContent = '';
-        notices(proxyStatus, t).forEach(function (n) { box.appendChild(el('div', { class: n.cls, text: n.text })); });
+        notices(proxyStatus, t).forEach(function (n) {
+            box.appendChild(nectoModule.createBanner({ kind: n.cls.replace('stolon-', ''), text: n.text, dismissible: false }).element);
+        });
         shared.renderCards('proxyCards', statusCards(proxyStatus, routes, t));
         drawJellyfin();
     }

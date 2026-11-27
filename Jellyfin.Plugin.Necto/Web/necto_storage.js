@@ -809,17 +809,15 @@ export default function (view) {
         var banner = $('storageAttention');
         banner.textContent = '';
         var issues = allIssues(t, shared, used);
-        if (!issues.length) {
-            banner.className = 'stolon-success';
-            banner.textContent = used.length ? t.tr('StorageNoticeAllHealthy') : t.tr('StorageNoticeNoDisks');
-            return;
+        var kind = !issues.length ? 'success' : issues.some(function (i) { return i.serious; }) ? 'error' : 'warn';
+        banner.className = 'stolon-' + kind + (issues.length ? ' necto-storage-attention' : '');
+        var text = !issues.length ? (used.length ? t.tr('StorageNoticeAllHealthy') : t.tr('StorageNoticeNoDisks')) : issues.length === 1 ? issues[0].text : '';
+        var made = nectoModule.createBanner({ kind: kind, text: text, dismissible: false });
+        banner.appendChild(made.element);
+        if (issues.length > 1) {
+            var body = made.element.querySelector('.stolon-banner-text') || made.element;
+            body.appendChild(el('ul', {}, issues.map(function (issue) { return el('li', { text: issue.text }); })));
         }
-        banner.className = (issues.some(function (i) { return i.serious; }) ? 'stolon-error' : 'stolon-warn') + ' necto-storage-attention';
-        if (issues.length === 1) {
-            banner.textContent = issues[0].text;
-            return;
-        }
-        banner.appendChild(el('ul', {}, issues.map(function (issue) { return el('li', { text: issue.text }); })));
     }
 
     // renderSpace
