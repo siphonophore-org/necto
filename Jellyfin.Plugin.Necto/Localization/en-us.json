@@ -2892,8 +2892,6 @@
   "StorageScanGuardAll": "Block every scan",
   "StorageScanGuardOff": "Never block",
   "StorageSectionMissingDisks": "Missing disks",
-  "StorageSpaceDisks": "Across {0} disks",
-  "StorageSpaceOneDisk": "On 1 disk",
   "StorageStateMissing": "Missing",
   "StorageStateNotMounted": "Not mounted",
   "StorageStateUnformatted": "Unformatted",

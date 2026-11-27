@@ -819,9 +819,8 @@ export default function (view) {
         cards.classList.toggle('stolon-hidden', !space);
         cards.textContent = '';
         if (!space) return;
-        var detail = t.plural(space.count, 'StorageSpaceOneDisk', 'StorageSpaceDisks');
         shared.renderCards(cards, [
-            { label: t.tr('LabelSize') + ' · ' + detail, count: shared.formatSize(space.total) },
+            { label: t.tr('LabelSize'), count: shared.formatSize(space.total) },
             { label: t.tr('StorageLabelUsed'), count: shared.formatSize(space.total - space.free) },
             { label: t.tr('StorageLabelFree'), count: shared.formatSize(space.free), color: space.color }
         ]);
