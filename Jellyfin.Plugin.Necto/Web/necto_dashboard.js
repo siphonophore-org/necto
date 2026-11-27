@@ -42,11 +42,11 @@ var CARD_STATES = {
 // a mark on the map only, since a count of one says nothing a column would.
 var MAP_LAYERS = [
     { key: 'visitors', tool: 'proxy', field: 'Visitors', label: 'HeaderVisitors', color: 'blue', icon: 'person' },
-    { key: 'failed', tool: 'proxy', field: 'Failed', label: 'HeaderFailedSignIns', color: 'red', icon: 'no_accounts' },
+    { key: 'failed', tool: 'proxy', field: 'Failed', label: 'LabelFailed', color: 'red', icon: 'no_accounts' },
     { key: 'blocked', tool: 'proxy', field: 'Blocked', label: 'HeaderRefused', color: 'purple', icon: 'block' },
     { key: 'peers', tool: 'wireguard', field: 'Peers', label: 'HeaderPeers', color: 'green', icon: 'devices' },
     { key: 'connections', tool: 'wireguard', field: 'Connections', label: 'HeaderConnections', color: 'orange', icon: 'lan' },
-    { key: 'server', tool: 'any', field: 'Server', label: 'DashboardLayerServer', color: 'yellow', icon: 'dns', column: false }
+    { key: 'server', tool: 'any', field: 'Server', label: 'DashboardLayerServer', color: 'yellow', icon: 'dns', column: false, outline: true }
 ];
 
 // TYPE_TOOLS
@@ -713,7 +713,7 @@ export function mapLayers(t, map) {
         if (layer.tool === 'wireguard') return !!(map.WireGuard === true || (map.WireGuard && map.WireGuard.Enabled));
         return true;
     }).map(function (layer) {
-        return { key: layer.key, label: t.tr(layer.label), color: layer.color, field: layer.field, icon: layer.icon, column: layer.column !== false };
+        return { key: layer.key, label: t.tr(layer.label), color: layer.color, field: layer.field, icon: layer.icon, column: layer.column !== false, outline: !!layer.outline };
     });
 }
 
@@ -934,7 +934,7 @@ export default function (view) {
         mapHost.innerHTML = '';
         tableHost.innerHTML = '';
         map = nectoModule.createWorldMap({
-            layers: layers.map(function (l) { return { key: l.key, label: l.label, color: l.color }; }),
+            layers: layers.map(function (l) { return { key: l.key, label: l.label, color: l.color, outline: !!l.outline }; }),
             label: t.tr('HeaderLocations'),
             onLayersChange: showLayers
         });
