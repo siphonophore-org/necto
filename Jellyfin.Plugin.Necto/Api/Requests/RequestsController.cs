@@ -2161,7 +2161,7 @@ public partial class RequestsController : ControllerBase, IActionFilter
             return null;
         }
 
-        return named is { } other && other != caller.UserId && caller.IsAdministrator ? _requests.GetAccess(other) : caller;
+        return named is { } other && other != caller.UserId && caller.IsServerAdministrator ? _requests.GetAccess(other) : caller;
     }
 
     // The page's language, for the messages it shows: the language query value, then the page's language header,
@@ -2305,6 +2305,8 @@ public partial class RequestsController : ControllerBase, IActionFilter
     {
         UserName = "API key",
         IsAdministrator = true,
+        IsServerAdministrator = true,
+        ManagesIssues = true,
         CanRequest = true,
         Movies = true,
         Series = true,

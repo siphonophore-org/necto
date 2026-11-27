@@ -15,8 +15,8 @@ var ICONS = ['dashboard', 'movie_filter', 'report_problem', 'mail', 'groups', 's
 
 // openApp
 // Builds the Necto page over a fresh view and returns the view.
-async function openApp() {
-    var page = installPage({});
+async function openApp(config) {
+    var page = installPage({ config: config || { Issues: { Enabled: true } } });
     var view = pageView(page.dom, []);
     page.dom.document.documentElement.appendChild(view);
     var shared = await loadScript('necto_shared.js');
@@ -37,7 +37,21 @@ test('nectoTools lists the 14 tools in sidebar order, each with its icon and its
 
 test('the sidebar lists the dashboard first, then every tool', async function () {
     var view = await openApp();
+    await settle();
     assert.deepEqual(sidebar(view).names, NAMES);
+});
+
+test('the sidebar leaves Issues out while Enable issues is off', async function () {
+    var view = await openApp({ Issues: { Enabled: false } });
+    await settle();
+    assert.deepEqual(sidebar(view).names, NAMES.filter(function (n) { return n !== 'Issues'; }));
+});
+
+test('setToolsOff turns Issues off until Enable issues is on', async function () {
+    installPage({});
+    var shared = await loadScript('necto_shared.js');
+    assert.deepEqual(shared.setToolsOff({}), { issues: true });
+    assert.deepEqual(shared.setToolsOff({ Issues: { Enabled: true } }), { issues: false });
 });
 
 test('the sidebar has its fold button', async function () {

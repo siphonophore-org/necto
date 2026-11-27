@@ -121,6 +121,31 @@ export function el(tag, attrs, children) {
     return node;
 }
 
+// The tools turned off in Settings, by key, which leave the sidebar.
+var toolsOff = {};
+
+// setToolsOff
+// Reads which tools are turned off in a config, so the sidebar leaves them out. Issues is off until Enable issues is on.
+//
+// Inputs
+// config [object]: The plugin configuration.
+//
+// Output
+// [object]: The tools turned off, by key.
+export function setToolsOff(config) {
+    toolsOff = { issues: !(config && config.Issues && config.Issues.Enabled) };
+    return toolsOff;
+}
+
+// sidebarTools
+// Lists the tools the sidebar shows, which are the tools not turned off in Settings.
+//
+// Output
+// [object[]]: The tools, as nectoTools lists them.
+export function sidebarTools() {
+    return nectoTools().filter(function (tool) { return !toolsOff[tool.key]; });
+}
+
 // The sections each tool added, by kind and then by tool key.
 var sectionRegistry = { settings: {}, troubleshooting: {} };
 
@@ -199,7 +224,13 @@ export function drawSections(container, kind, shared, page, addFooter) {
 // Output
 // [object]: The tool app's handle.
 export function createNectoApp(view) {
-    var app = createToolApp(view, { storageKey: 'necto', name: 'Necto', tools: nectoTools });
+    var app = createToolApp(view, { storageKey: 'necto', name: 'Necto', tools: sidebarTools });
+    if (typeof ApiClient !== 'undefined' && ApiClient.getPluginConfiguration) {
+        ApiClient.getPluginConfiguration(PLUGIN_ID).then(function (config) {
+            setToolsOff(config);
+            app.refreshTools();
+        }, function () { /* every tool stays */ });
+    }
     loadTranslations(TRANSLATIONS_URL).then(function (t) {
         tabStrings = t;
         app.refreshTools();

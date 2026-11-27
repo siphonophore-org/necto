@@ -22,7 +22,14 @@ export default function (view) {
     // Output
     // [Promise]: Resolves once the save landed.
     function saveSection(shared, handle) {
-        return shared.saveConfigWith(function (config) { handle.apply(config); });
+        return shared.saveConfigWith(function (config) { handle.apply(config); }).then(function (saved) {
+            // A tool turned on or off joins or leaves the sidebar at once.
+            return shared.getConfig().then(function (config) {
+                nectoModule.setToolsOff(config);
+                if (shared.onTabsChanged) shared.onTabsChanged();
+                return saved;
+            }, function () { return saved; });
+        });
     }
 
     // bindPage

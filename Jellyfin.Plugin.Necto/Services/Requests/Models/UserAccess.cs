@@ -43,6 +43,10 @@ public class UserAccess
     /// <summary>Gets or sets a value indicating whether the user manages issues: an administrator, or in a group that may manage them.</summary>
     public bool ManagesIssues { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the user is a server administrator, who alone may act for another user.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsServerAdministrator { get; set; }
+
     /// <summary>Gets or sets a value indicating whether the user may request.</summary>
     public bool CanRequest { get; set; }
 

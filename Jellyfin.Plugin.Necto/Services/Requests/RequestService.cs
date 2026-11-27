@@ -154,6 +154,7 @@ public sealed partial class RequestService : IDisposable
             UserId = user.Id,
             UserName = user.Username,
             IsAdministrator = isAdmin || permissions.ManageRequests,
+            IsServerAdministrator = isAdmin,
             ManagesIssues = isAdmin || permissions.ManageIssues,
             Permissions = permissions,
             CanRequest = permissions.CanRequest,

@@ -51,7 +51,7 @@ Each issue keeps the item's file as it was reported, with its path, size, and th
 
 Select a row to open the issue in a sidecar, with its reporters, its file, and every note in order. It offers **Confirm** a reported issue, **Resolve** or **Decline** an open one, **Reopen** a closed one, **Open in library**, and **Open in Sonarr** or **Open in Radarr**. Each action asks for an optional note, shown to the reporters.
 
-While **Enable issues** is off, the tool says "Issues is off. Turn it on in Settings to take reports."
+While **Enable issues** is off, **Issues** leaves the sidebar, and opened by its address it says "Issues is off. Turn it on in Settings to take reports."
 
 ## Settings
 
