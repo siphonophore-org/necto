@@ -398,7 +398,7 @@ public sealed class SidecarProcess : IAsyncDisposable
     {
         lock (_gate)
         {
-            _error = error;
+            _error = TunnelError.Plain(error);
         }
     }
 
