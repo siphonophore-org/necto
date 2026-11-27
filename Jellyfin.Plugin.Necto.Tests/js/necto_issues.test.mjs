@@ -111,7 +111,7 @@ test('an issue is named as the server names it, with what the reporters say is w
     assert.equal(mod.titleOf({ ItemType: 'Movie', Title: 'Dune', Year: 2021 }, t), 'Dune (2021)');
     assert.equal(mod.titleOf({ ItemType: 'Movie', Title: 'Dune (2021)', Year: 2021 }, t), 'Dune (2021)');
     assert.equal(mod.subline(issue(), t), 'The Long Night · Audio, Subtitles');
-    assert.deepEqual(mod.noteItems(issue().Notes).map(function (n) { return [n.title, n.body]; }), [['viewer', 'Sound drops out.']]);
+    assert.deepEqual(mod.noteItems(issue().Notes).map(function (n) { return [n.title, n.body, n.icon]; }), [['viewer', 'Sound drops out.', 'person']]);
 });
 
 test('an open issue offers Decline, Confirm, and Resolve, and a closed one Reopen', async function () {
@@ -153,7 +153,7 @@ test('an issue opens in a sidecar with its notes, its decisions, and its Sonarr 
     await settle(50);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
     assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'Tidewater Station · S1E2');
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Decline', 'Cancel', 'Open in library', 'Confirm', 'Resolve']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Decline', 'Open in library', 'Confirm', 'Resolve']);
     assert.match(sidecar.textContent, /Sound drops out\./);
     assert.match(sidecar.textContent, /Open in Sonarr/);
 
@@ -196,7 +196,7 @@ test('a closed issue opens with Reopen only', async function () {
     await settle(50);
 
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Cancel', 'Open in library', 'Reopen']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Open in library', 'Reopen']);
     assert.match(sidecar.textContent, /Decided by/);
 });
 

@@ -274,7 +274,8 @@ function when(iso) {
 }
 
 // noteItems
-// Turns an issue's notes into timeline entries in the order they were written, each with its writer and time.
+// Turns an issue's notes into timeline entries in the order they were written, each with its writer and time, and a
+// person in its marker.
 //
 // Inputs
 // notes [object[]]: The notes, as User, Text, and Time.
@@ -283,7 +284,7 @@ function when(iso) {
 // [object[]]: The entries.
 export function noteItems(notes) {
     return (notes || []).map(function (n) {
-        return { title: n.User || '', time: when(n.Time), datetime: n.Time || undefined, body: n.Text || '' };
+        return { title: n.User || '', time: when(n.Time), datetime: n.Time || undefined, body: n.Text || '', icon: 'person' };
     });
 }
 
@@ -560,7 +561,7 @@ export default function (view) {
             notes ? nectoModule.createCollapsibleSection({ title: t.tr('LabelNotes'), icon: 'forum', collapsible: false, content: notes.element }).element : null,
             status
         ]);
-        var buttons = [{ text: t.tr('ButtonCancel'), className: 'stolon-button stolon-secondary', action: function (close) { close(); } }];
+        var buttons = [];
         if (issue.ItemId) buttons.push({ text: t.tr('ButtonOpenInLibrary'), className: 'stolon-button stolon-secondary', action: function (close) { close(); Dashboard.navigate('details?id=' + issue.ItemId); } });
         issueActions(issue).forEach(function (verb) {
             var kind = verb === 'Decline' ? 'stolon-destructive' : verb === 'Confirm' ? 'stolon-secondary' : 'stolon-primary';

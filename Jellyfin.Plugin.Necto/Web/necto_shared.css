@@ -6,11 +6,6 @@
 /* Example: <span class="necto-wireguard-slash">/</span> */
 .necto-wireguard-slash { display: flex; align-items: center; flex: 0 0 auto; line-height: 1; font-size: calc(var(--stolon-field-height) * 0.8); color: var(--stolon-text-muted); }
 
-/* necto-wireguard-meter */
-/* A peer's or connection's usage meter at the end of its row, one width so the bars line up down the list. */
-/* Example: <div class="necto-wireguard-meter"><div class="stolon-usage-meter">...</div></div> */
-.necto-wireguard-meter { width: calc(var(--stolon-size-large) * 6); max-width: 40vw; }
-
 /* necto-scripts editor spacing */
 /* A wide gap under a block of the Scripts editor while the warning after it shows. */
 /* Example: <div id="NectoScriptsPage"><div id="groupList"></div><div id="userWarn"></div></div> */
@@ -20,10 +15,12 @@
 #NectoScriptsPage #conditionList:has(+ #conditionWarnings:not(:empty)) { margin-bottom: var(--stolon-gap-wide); }
 
 /* necto-storage-disk-aside */
-/* The end of a disk row: the state badge over a usage meter, right aligned, a fixed width so meters line up down the list. */
+/* The end of a disk row: a usage meter, then the state badge, a fixed width so meters and badges line up down the list. */
 /* The row's aside fills, so under the text on a phone it takes the row's full width. */
-/* Example: <div class="necto-storage-disk-aside"><span><span class="stolon-badge stolon-green">Available</span></span><div class="stolon-usage-meter"></div></div> */
-.necto-storage-disk-aside { display: flex; flex-direction: column; align-items: stretch; text-align: end; gap: var(--stolon-gap-narrow); width: 14rem; }
+/* Example: <div class="necto-storage-disk-aside"><div class="stolon-usage-meter"></div><span class="necto-storage-disk-badge"><span class="stolon-badge stolon-green">Available</span></span></div> */
+.necto-storage-disk-aside { display: flex; align-items: center; justify-content: flex-end; gap: var(--stolon-gap-wide); width: 22rem; max-width: 100%; }
+.necto-storage-disk-aside > :first-child:not(.necto-storage-disk-badge) { flex: 1 1 auto; }
+.necto-storage-disk-badge { flex: none; }
 
 /* necto-storage-alert-editor */
 /* The full disk and health alerts: the checkboxes, Measurement, and the panels, a field gap apart. */

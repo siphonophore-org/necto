@@ -49,7 +49,7 @@ Nothing is asked of Let's Encrypt until **Settings > Proxy > Accept the Let's En
 
 The **Jellyfin** section sets Jellyfin to trust the proxy, so Jellyfin sees each visitor's real address and its own remote access rules and bitrate limits apply. Internet visitors cannot reach a Jellyfin route until it does. Routes to other services do not wait for it.
 
-**Trust the proxy** asks first. It then starts a test copy of the proxy and checks it reaches this Jellyfin, writes Jellyfin's network settings, and restarts Jellyfin once. Forward only ports 80 and 443 to this server, since anyone who reaches Jellyfin's own ports gets past the proxy. **Undo** asks first, then puts them back as they were, and keeps anything an administrator changed since. Jellyfin keeps its own ports throughout, so a proxy that fails to start never locks anyone out. Uninstalling Necto also puts them back.
+**Trust the proxy** asks first. It then starts a test copy of the proxy and checks it reaches this Jellyfin, writes Jellyfin's network settings, and restarts Jellyfin once. Forward only ports 80 and 443 to this server, since anyone who reaches Jellyfin's own ports gets past the proxy. **Undo trusting the proxy** shows once Jellyfin trusts the proxy. It asks first, then puts them back as they were, and keeps anything an administrator changed since. Jellyfin keeps its own ports throughout, so a proxy that fails to start never locks anyone out. Uninstalling Necto also puts them back.
 
 ## Protection
 
@@ -84,9 +84,9 @@ Every setting but the first two shows while **Enable proxy** is on, each group i
 
 * **Visitors**: **Record visitors**, **Keep history (days)**, and **Location lookup** set the visitor history.
 * **Listener**: **HTTP port** (80), **HTTPS port** (443), **LAN address**, and **HTTP/2**.
-* **Jellyfin side**: **Only through the proxy**, which binds Jellyfin to this machine so every client goes through the proxy, and **Trusted networks**. Turning on **Only through the proxy** asks before it saves, since apps, casting, and DLNA that use the server's own address stop working.
+* **Jellyfin**: **Only through the proxy**, which binds Jellyfin to this machine so every client goes through the proxy, and **Trusted networks**. Turning on **Only through the proxy** asks before it saves, since apps, casting, and DLNA that use the server's own address stop working.
 * **Security headers**: **HSTS**, **HSTS age (days)**, and **Same origin frames only**.
-* **Bans and block list**, **Locations**, **Rate limits**, and **Timeouts** as described above.
+* **Restrictions**, **Locations**, **Rate limits**, and **Timeouts** as described above.
 
 The description under **Country rule** says what the picked rule does and, for **This server's country**, where this server is. It warns while the location database is missing, when country rules either let everyone through or, with **Refuse without the database**, refuse every internet connection. **Countries** hides while the rule is **Off**. The description under **Location lookup** says what each choice costs, and **Country and city** downloads a database of about 130 MB.
 
@@ -100,9 +100,9 @@ The description under **Country rule** says what the picked rule does and, for *
 * **Check from the internet**, **Renew certificates**, and **Update the location database** run their tasks now.
 * **Restart the proxy** stops it and starts it again, such as after a port was freed.
 * **Reset to defaults** puts every listener and protection value back to its default. It lists the settings that change and asks first. The routes, **Trusted networks**, the block list, and the country rule with its countries stay.
-* **Undo trusting the proxy** and **Clear visitor history** ask first.
+* **Undo trusting the proxy** and **Clear visitor history** ask first. The tile of **Undo trusting the proxy** is gray while Jellyfin does not trust the proxy.
 
-To turn the proxy off without the dashboard, create an empty file named `DISABLE` in the proxy's folder, `plugins/configurations/Jellyfin.Plugin.Necto.Proxy` in Jellyfin's data folder, and restart Jellyfin. The section shows the full path.
+To turn the proxy off without the dashboard, create an empty file named `DISABLE` in the proxy's folder, `plugins/configurations/Jellyfin.Plugin.Necto.Proxy` in Jellyfin's data folder, and restart Jellyfin. **Recovery** shows the full path in a code block.
 
 ## Scheduled Tasks
 

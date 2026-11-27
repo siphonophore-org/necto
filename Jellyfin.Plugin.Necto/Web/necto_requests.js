@@ -310,12 +310,12 @@ export function progressLine(r, t, now) {
 // r [object]: The request.
 //
 // Output
-// [string[]]: remove, cancel, available, reject, edit, and approve or retry, as they apply. The title in the library
-// is a link in the details, so the shelf keeps to what changes the request.
+// [string[]]: remove, available, reject, edit, and approve or retry, as they apply. The header's close button closes
+// the sidecar, and the title in the library is a link in the details, so the shelf keeps to what changes the request.
 export function requestActions(r) {
     var canApprove = r.Status === 'Pending' || r.Status === 'Failed';
     var open = canApprove || r.Status === 'Approved' || r.Status === 'PartiallyAvailable';
-    var out = ['remove', 'cancel'];
+    var out = ['remove'];
     if (open) out.push('available', 'reject');
     if (r.Status === 'Pending') out.push('edit');
     if (canApprove) out.push(r.Status === 'Failed' ? 'retry' : 'approve');
@@ -749,13 +749,12 @@ export default function (view) {
         var labels = {
             remove: ['ButtonRemove', 'stolon-destructive'],
             available: ['RequestsButtonMarkAvailable', 'stolon-secondary'], reject: ['RequestsButtonReject', 'stolon-secondary'],
-            cancel: ['ButtonCancel', 'stolon-secondary'], edit: [noteOnly(r) ? 'RequestsButtonEditNote' : 'Edit', 'stolon-secondary'], approve: ['RequestsButtonApprove', 'stolon-primary'], retry: ['Retry', 'stolon-primary']
+            edit: [noteOnly(r) ? 'RequestsButtonEditNote' : 'Edit', 'stolon-secondary'], approve: ['RequestsButtonApprove', 'stolon-primary'], retry: ['Retry', 'stolon-primary']
         };
         var run = {
             remove: function (close) { act(r, 'remove', close, null, status); },
             available: function (close) { act(r, 'available', close, null, status); },
             reject: function (close) { act(r, 'decline', close, null, status); },
-            cancel: function (close) { close(); },
             edit: function (close) { close(); editRequest(r); },
             approve: function (close) { act(r, 'approve', close, picker && picker.value, status); },
             retry: function (close) { act(r, 'approve', close, picker && picker.value, status); }

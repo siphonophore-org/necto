@@ -10,16 +10,16 @@
                 <div class="fieldDescription" data-str="StorageHelpStorage">Lists each disk and share Jellyfin uses, for its libraries or its own folders.</div>
 
                 <!-- Attention -->
-                <!-- What needs a look, one line per problem, or one line saying every disk is healthy. -->
+                <!-- What needs a look that no disk row shows, one line per problem, hidden while there is nothing. -->
                 <div id="storageAttention" role="status"></div>
 
                 <!-- Space -->
-                <!-- The size, used, and free space of every disk the libraries use, added up. -->
+                <!-- How many disks the libraries use, and their used and free space, added up. -->
                 <div id="storageSpaceCards" class="stolon-cards"></div>
 
                 <!-- Disks -->
-                <!-- One row per disk or share, each opened in a sidecar, in a fixed section with Refresh. Its sub-tabs show the
-                     disks Jellyfin uses, or every disk. -->
+                <!-- One row per disk or share, each opened in a sidecar, in a fixed section with Refresh at the end of its
+                     header. Its sub-tabs show the disks Jellyfin uses, or every disk. -->
                 <div id="storageDisks"></div>
             </div>
         </div>

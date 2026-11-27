@@ -127,7 +127,8 @@ export function buildTroubleshooting(content, ctx) {
     }
 
     // drawChart
-    // Draws the days as succeeded and failed bars. A phone shows the last 7 days by weekday, without the numbers over the bars.
+    // Draws the days as succeeded and failed bars. A phone shows the last 7 days by weekday, without the numbers over the
+    // bars.
     function drawChart() {
         if (!chartData) return;
         var phone = window.matchMedia('(max-width: 600px)').matches;
@@ -137,9 +138,13 @@ export function buildTroubleshooting(content, ctx) {
         var failed = (chartData.Failed || []).slice(-keep);
         var empty = succeeded.concat(failed).every(function (n) { return !n; });
         if (chart) chart.destroy();
+        chart = null;
+        // With no run in these days the chart stays hidden, and the table under it says there are no runs.
+        Shared.setVisible(chartHost, !empty);
+        if (empty) return;
         chart = createBarChart({
-            labels: empty ? [] : days.map(function (day) { return dayLabel(day, phone); }),
-            series: empty ? [] : [
+            labels: days.map(function (day) { return dayLabel(day, phone); }),
+            series: [
                 { name: t.tr('ScriptsStatusSucceeded'), color: 'green', values: succeeded },
                 { name: t.tr('LabelFailed'), color: 'red', values: failed }
             ],

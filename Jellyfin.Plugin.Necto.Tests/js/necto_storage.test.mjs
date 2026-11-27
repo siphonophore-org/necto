@@ -64,6 +64,9 @@ test('a disk row tags its type and what is wrong, and an unmounted disk shows it
     assert.equal(storage.typeOf(t, disk({ IsSystem: true })).icon, 'computer');
     var tags = storage.tagsOf(t, disk({ MissingFolders: ['a', 'b'], Hot: true }));
     assert.deepEqual(tags.map(function (tag) { return tag.label; }).slice(1), ['2 folders missing', 'Too hot']);
+    assert.deepEqual(storage.tagsOf(t, disk({ IsSystem: true })), []);
+    var meter = storage.meterOptions(disk({ WarningPercent: 80, ErrorPercent: 95 }));
+    assert.deepEqual([meter.label, meter.used, meter.warning, meter.danger], ['60%', 600 * GB, 80, 95]);
     assert.equal(storage.secondaryOf(t, shared, disk({ State: 'Unformatted', Device: '/dev/sdb', MountPoint: null, TotalBytes: 2000 * GB })), '/dev/sdb · 2000 GB');
     assert.equal(storage.secondaryOf(t, shared, disk({ State: 'Missing', MissingSinceUtc: '2026-11-26T10:00:00Z' })), '/mnt/media · missing 2 hours ago');
 });
@@ -83,6 +86,14 @@ test('the problems put what needs a look now first, and a healthy disk has none'
     assert.equal(issues[0].serious, true);
     assert.equal(issues[1].text, 'a is low on space, 90% used with 100 GB free.');
     assert.deepEqual(storage.issuesOf(t, shared, disk()), []);
+
+    // The notice above the list keeps only what no row shows, such as a folder Jellyfin cannot write to.
+    var page = storage.pageIssues(t, shared, [
+        disk({ Name: 'a', Level: 'Error', FreeBytes: 10 * GB }),
+        disk({ Name: 'b', ReadOnlyFolders: ['/mnt/media/Movies'] })
+    ]);
+    assert.equal(page.length, 1);
+    assert.match(page[0].text, /cannot write to some library folders on b/);
 });
 
 test('the space adds up every disk that was read and takes the color of the fullest', async function () {
@@ -201,7 +212,7 @@ test('the Storage section of Troubleshooting asks before it resets the settings,
     assert.deepEqual(config.Storage.DiskOverrides, []);
 });
 
-test('the notice lists each problem on its own line when more than one disk needs a look', async function () {
+test('the notice lists each problem no row shows on its own line, and hides while there is none', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
     var ids = ['storageAttention', 'storageSpaceCards', 'storageDisks'];
@@ -209,8 +220,8 @@ test('the notice lists each problem on its own line when more than one disk need
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
         'GET Storage/Disks': [
-            disk({ Name: 'media', State: 'Missing', TotalBytes: null, FreeBytes: null, MissingSinceUtc: '2026-11-26T10:00:00Z' }),
-            disk({ MountPoint: '/mnt/backup', Name: 'backup', State: 'Missing', TotalBytes: null, FreeBytes: null, MissingSinceUtc: '2026-11-26T10:00:00Z' })
+            disk({ Name: 'media', ReadOnlyFolders: ['/mnt/media/Movies'] }),
+            disk({ MountPoint: '/mnt/backup', Name: 'backup', ReadOnlyFolders: ['/mnt/backup/Shows'], Level: 'Error', FreeBytes: 10 * GB })
         ]
     });
     var mod = await loadScript('necto_storage.js');
@@ -221,11 +232,12 @@ test('the notice lists each problem on its own line when more than one disk need
     var banner = view.querySelector('#storageAttention .stolon-banner');
     var lines = banner.querySelectorAll('.stolon-banner-list li');
     assert.equal(lines.length, 2);
-    assert.match(lines[0].textContent, /went missing/);
-    assert.match(lines[1].textContent, /went missing/);
+    assert.match(lines[0].textContent, /cannot write/);
+    assert.match(lines[1].textContent, /cannot write/);
+    assert.equal(view.querySelector('#storageAttention').textContent.indexOf('is full'), -1);
 });
 
-test('the tool checks every disk, says what needs a look, and lists the disks in use', async function () {
+test('the tool checks every disk, lists the disks in use with their state, and leaves the notice to what rows do not show', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
     var ids = ['storageAttention', 'storageSpaceCards', 'storageDisks'];
@@ -244,12 +256,14 @@ test('the tool checks every disk, says what needs a look, and lists the disks in
 
     assert.ok(page.requests.some(function (r) { return r.url === 'Storage/Disks'; }));
     var attention = view.querySelector('#storageAttention');
-    assert.ok(attention.querySelector('.stolon-banner').classList.contains('stolon-error'));
-    assert.match(attention.textContent, /media went missing /);
+    assert.equal(attention.querySelector('.stolon-banner'), null);
+    assert.ok(attention.classList.contains('stolon-hidden'));
     var rows = view.querySelectorAll('#storageDisks .stolon-record-list-row');
     assert.equal(rows.length, 1);
     assert.match(rows[0].textContent, /media/);
     assert.match(rows[0].textContent, /Local/);
+    assert.ok(rows[0].querySelector('.necto-storage-disk-badge'));
+    assert.ok(view.querySelector('#storageDisks .stolon-collapsible-header #btnStorageCheck'));
 
     rows[0].click();
     await settle(50);

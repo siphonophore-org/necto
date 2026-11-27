@@ -26,7 +26,7 @@ var t = {
 
 // shared
 // The helpers the pure functions read.
-var shared = { formatDate: function (value) { return 'on ' + new Date(value).toISOString().slice(0, 10); } };
+var shared = { formatRelativeTime: function (value) { return 'on ' + value.toISOString().slice(0, 10); } };
 
 var NOW = new Date('2026-11-26T12:00:00Z');
 
@@ -57,11 +57,29 @@ function parts(card) {
 }
 
 // shown
-// Names the parts of a card's bar that hold anything, as its legend shows them, and checks the legend is on.
+// Names the parts of a card's bar as its legend shows them, and checks the legend is on.
 function shown(card) {
     assert.equal(card.legend, true);
-    return card.segments.filter(function (s) { return s.value > 0; }).map(function (s) { return s.label + ' ' + s.value; }).join(', ');
+    return card.segments.map(function (s) { return s.label + ' ' + s.value; }).join(', ');
 }
+
+test('a card keeps only the parts that hold anything, and lists them only when they add to its number', async function () {
+    installPage({});
+    var dashboard = await loadScript('necto_dashboard.js');
+
+    assert.deepEqual(dashboard.barParts([{ label: 'Pending', value: 1 }, { label: 'Failed', value: 0 }, { label: 'Approved', value: 2 }]),
+        [{ label: 'Pending', value: 1 }, { label: 'Approved', value: 2 }]);
+    assert.deepEqual(dashboard.barParts([{ label: 'Pending', value: 0 }]), []);
+    assert.equal(dashboard.showsLegend([], 'pending'), false);
+    assert.equal(dashboard.showsLegend([{ label: 'Published', value: 2 }], 'published'), false);
+    assert.equal(dashboard.showsLegend([{ label: 'Full', value: 1 }], 'in use'), true);
+    assert.equal(dashboard.showsLegend([{ label: 'Published', value: 2 }, { label: 'Unpublished', value: 1 }], 'published'), true);
+
+    var none = dashboard.issuesCard(t, {});
+    assert.deepEqual([none.segments, none.legend, none.detail], [null, false, 'No issue reports yet']);
+    var one = dashboard.pagesCard(t, { CustomPages: { Pages: [{ Enabled: true }] } });
+    assert.deepEqual([one.value, one.legend, one.detail, parts(one)], [1, false, '', ['Published 1']]);
+});
 
 test('every card states its pill in a Stolon badge word and color, and its line says when its bar is empty', async function () {
     installPage({});
@@ -104,7 +122,7 @@ test('a card whose route could not be read says so and still opens its tool', as
         assert.equal(card.status, 'Error', key);
         assert.equal(card.statusColor, 'red', key);
         assert.equal(card.value, '—', key);
-        assert.deepEqual(card.segments, [], key);
+        assert.deepEqual([card.segments, card.legend], [null, false], key);
         assert.equal(card.tool, key, key);
     });
     assert.equal(dashboard.cardFor('invites', t, shared, {}, {}, null, NOW).status, 'Error');
@@ -119,6 +137,7 @@ test('the Issues card counts the open reports, and the Invites card puts a used 
     assert.equal(issues.value, 3);
     assert.deepEqual([issues.status, issues.statusColor], ['Pending', 'purple']);
     assert.deepEqual(parts(issues), ['Reported 2', 'Confirmed 1', 'Resolved 4', 'Declined 1', 'Rescinded 1']);
+    assert.deepEqual(parts(dashboard.issuesCard(t, { Reported: 1, Resolved: 2 })), ['Reported 1', 'Resolved 2']);
     assert.equal(dashboard.issuesCard(t, { Resolved: 4 }).status, 'Idle');
 
     var invites = dashboard.invitesCard(t, [{ State: 'Active' }, { State: 'Active' }, { State: 'Expired' }, { State: 'GroupExpired' }, { State: 'UsedUp' }]);
@@ -128,12 +147,12 @@ test('the Issues card counts the open reports, and the Invites card puts a used 
     var usedUp = dashboard.invitesCard(t, [{ State: 'UsedUp' }]);
     assert.equal(usedUp.value, 0);
     assert.deepEqual([usedUp.detail, shown(usedUp)], ['', 'Used up 1']);
-    assert.equal(usedUp.segments.filter(function (s) { return s.value; })[0].color, 'gray');
+    assert.equal(usedUp.segments[0].color, 'gray');
     assert.equal(usedUp.status, 'Idle');
     assert.equal(dashboard.invitesCard(t, []).detail, 'No invites yet');
 });
 
-test('the Groups card counts the groups and the users in one beside those only Everyone holds, leaving out administrators', async function () {
+test('the Groups card counts the groups, and the users as members, in no group, and administrators', async function () {
     installPage({});
     var dashboard = await loadScript('necto_dashboard.js');
     var config = { Groups: [{ Id: '5a1f0c7e-0000-4000-8000-000000000001' }, { Id: 'family' }], CustomPages: { Pages: [{ Enabled: true }, { Enabled: false }, {}] } };
@@ -145,8 +164,9 @@ test('the Groups card counts the groups and the users in one beside those only E
 
     var groups = dashboard.groupsCard(t, config, users);
     assert.equal(groups.value, 1);
-    assert.deepEqual([groups.detail, shown(groups)], ['', 'Members 1, No group 1']);
+    assert.deepEqual([groups.detail, shown(groups)], ['', 'Members 1, No group 1, Admins 1']);
     assert.equal(groups.status, 'Active');
+    assert.deepEqual(parts(dashboard.groupsCard(t, config, [{ GroupIds: ['family'] }])), ['Members 1']);
     assert.equal(dashboard.groupsCard(t, config, []).detail, 'No users yet');
     var pages = dashboard.pagesCard(t, config);
     assert.equal(pages.value, 2);
@@ -165,6 +185,7 @@ test('the Proxy card counts its active routes and asks for attention as its firs
     assert.equal(card.value, 1);
     assert.equal(card.status, 'Active');
     assert.deepEqual([card.detail, shown(card)], ['', 'Active 1, Off 1']);
+    assert.equal(card.valueLabel, 'active');
 
     var soon = dashboard.proxyCard(t, shared, { Running: true, Routes: [route('a.example.com', true, days(5))] }, NOW);
     assert.deepEqual([soon.status, soon.statusColor], ['Warning', 'orange']);
@@ -177,10 +198,10 @@ test('the Proxy card counts its active routes and asks for attention as its firs
     var failed = dashboard.proxyCard(t, shared, { Running: false, Error: 'Port 443 is in use.', Routes: [route('a.example.com', true, null, 'Bad key')] }, NOW);
     assert.equal(failed.status, 'Failed');
     assert.equal(failed.detail, 'Port 443 is in use.');
-    assert.deepEqual(parts(failed), ['Active 0', 'Failed 1', 'Off 0']);
+    assert.deepEqual(parts(failed), ['Failed 1']);
 });
 
-test('the DDNS card counts every record, an off record among them, and a part per last result', async function () {
+test('the DDNS card counts the records up to date, with a part per last result and the records that are off', async function () {
     installPage({});
     var dashboard = await loadScript('necto_dashboard.js');
     var answer = {
@@ -195,14 +216,14 @@ test('the DDNS card counts every record, an off record among them, and a part pe
     };
 
     var card = dashboard.ddnsCard(t, answer);
-    assert.equal(card.value, 4);
+    assert.deepEqual([card.value, card.valueLabel], [2, 'up to date']);
     assert.deepEqual(card.segments.map(function (s) { return s.color; }), ['green', 'red', 'gray']);
     assert.equal(card.segments[2].label, 'Off');
     assert.deepEqual([card.detail, shown(card)], ['', 'Up to date 2, Failed 1, Off 1']);
     assert.equal(card.status, 'Failed');
 
     var onlyOff = dashboard.ddnsCard(t, { Records: [{ Record: { Hostname: 'demo.example.com', Enabled: false, LastAction: '' }, Followed: [] }] });
-    assert.equal(onlyOff.value, 1);
+    assert.equal(onlyOff.value, 0);
     assert.deepEqual([onlyOff.detail, shown(onlyOff)], ['', 'Off 1']);
     assert.equal(onlyOff.status, 'Off');
     var empty = dashboard.ddnsCard(t, { Records: [] });
@@ -253,7 +274,8 @@ test('the Scripts, Storage, and Notifications cards show failures first', async 
     assert.equal(dashboard.storageCard(t, [{ Name: 'spare', State: 'Available', InUse: false }]).detail, 'No disks in use');
 
     var sends = dashboard.notificationsCard(t, [{ Ok: true }, { Ok: false }, { Ok: true }]);
-    assert.equal(sends.value, 3);
+    assert.deepEqual([sends.value, sends.valueLabel], [2, 'sent']);
+    assert.equal(dashboard.notificationsCard(t, [{ Ok: true }]).legend, false);
     assert.deepEqual([sends.detail, shown(sends)], ['', 'Sent 2, Failed 1']);
     assert.equal(sends.statusColor, 'orange');
     assert.equal(dashboard.notificationsCard(t, [{ Ok: false }]).status, 'Failed');

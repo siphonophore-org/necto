@@ -526,8 +526,9 @@ export default function (view) {
     }
 
     // drawJellyfin
-    // Draws whether Jellyfin trusts the proxy, as the section's badge, with Trust and Undo as action rows. The section
-    // is built once and only its state changes after, so a refresh never folds it or clears its status line.
+    // Draws whether Jellyfin trusts the proxy, as the section's badge, with Trust as an action row and Undo under it
+    // once Jellyfin trusts it. The section is built once and only its state changes after, so a refresh never folds it
+    // or clears its status line.
     function drawJellyfin() {
         var t = shared.t;
         var phase = phaseText(proxyStatus, t);
@@ -558,7 +559,8 @@ export default function (view) {
         }
         jellyfin.section.setBadge({ label: phase.label, color: phase.color });
         (jellyfin.trust.querySelector('span') || jellyfin.trust).textContent = t.tr(managed ? 'ProxyButtonTrustAgain' : 'ProxyButtonTrustShort');
-        jellyfin.undoRow.setEmpty(!managed);
+        // Undo only means something once Jellyfin trusts the proxy, so its row shows only then.
+        shared.setVisible(jellyfin.undoRow.element, managed);
         if (!jellyfin.busy) jellyfin.undo.disabled = !managed;
     }
 
@@ -825,7 +827,6 @@ export default function (view) {
                 title: t.tr('ProxyTitleNewRoute'),
                 body: body,
                 buttons: [
-                    { text: t.tr('ButtonCancel'), className: 'raised stolon-button stolon-secondary', action: function (close) { choices.destroy(); close(); } },
                     {
                         text: t.tr('Next'), className: 'raised stolon-button stolon-primary', action: function (close) {
                             var key = choices.get() || 'jellyfin';
@@ -835,12 +836,12 @@ export default function (view) {
                             route.Id = '';
                             if (key === 'jellyfin') route.Host = zone;
                             if (key === 'jellyfin-lan') route.Host = zone ? 'home.' + zone : '';
-                            choices.destroy();
                             close();
                             openRoute(route, null);
                         }
                     }
-                ]
+                ],
+                onClose: function () { choices.destroy(); }
             });
         }).catch(function (err) {
             shared.errorText(err, t.tr('ProxyErrorLoad')).then(function (text) { report(text, true); });

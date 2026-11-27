@@ -63,9 +63,8 @@ test('the counts take peers, connections, connected ends, and the ones left out'
 async function openPage(answers, wireguard, onView) {
     var page = installPage({ config: { WireGuard: wireguard || settings() } });
     var dom = page.dom;
-    var ids = ['wireguardStatus', 'wireguardOff', 'wireguardNoSidecar', 'wireguardBody', 'wireguardCards', 'hostError', 'wireguardBothOff', 'addButtons', 'peerSection', 'connectionSection'];
+    var ids = ['wireguardStatus', 'wireguardOff', 'wireguardNoSidecar', 'wireguardBody', 'wireguardCards', 'hostError', 'wireguardBothOff', 'wireguardTable'];
     var children = ids.map(function (id) { return dom.el('div', { id: id }); });
-    children.push(dom.el('button', { id: 'btnAddPeer' }), dom.el('button', { id: 'btnAddConnection' }));
     var view = pageView(dom, children);
     dom.document.documentElement.appendChild(view);
     globalThis.ApiClient.getUsers = function () { return Promise.resolve([{ Id: VIEWER, Name: 'viewer' }]); };
@@ -88,16 +87,13 @@ async function openPage(answers, wireguard, onView) {
     return { page: page, view: view, dom: dom };
 }
 
-test('the tool lists each peer with its owner and state, and a peer the groups leave out says why', async function () {
+test('the tool lists this server and each peer in one table, with Add peer in its toolbar', async function () {
     var opened = await openPage();
-    var rows = opened.view.querySelectorAll('#peerSection .stolon-record-list-row');
+    var rows = opened.view.querySelectorAll('#wireguardTable .stolon-table-row');
 
-    assert.equal(rows.length, 2);
-    assert.match(rows[0].textContent, /Phone/);
-    assert.match(rows[0].textContent, /viewer/);
-    assert.match(rows[0].textContent, /Connected/);
-    assert.match(rows[1].textContent, /Over peer count/);
-    assert.match(rows[1].textContent, /Router/);
+    assert.equal(rows.length, 3);
+    assert.equal(rows[0].querySelectorAll('.stolon-table-cell').length >= 3, true);
+    assert.ok(opened.view.querySelector('.stolon-table-controls #btnAddPeer'));
     assert.equal(opened.view.querySelector('#wireguardBody').classList.contains('stolon-hidden'), false);
 });
 
@@ -129,6 +125,35 @@ test('with Host peers and Connect to hosts both off and nothing listed, the tool
     assert.equal(hosting.view.querySelector('#wireguardCards').classList.contains('stolon-hidden'), false);
 });
 
+test('the table answers its search and type filter from the rows, a page at a time', async function () {
+    installPage({});
+    var mod = await loadScript('necto_wireguard.js');
+    var t = { tr: function (k) { return k; } };
+    var cfg = {
+        Enabled: true, HostEnabled: true, PublicEndpoint: 'vpn.example.com:51820',
+        Peers: [{ Id: 'p1', Name: 'Phone', Address: '10.66.0.2', UserId: 'u1', Enabled: true }],
+        Connections: [{ Id: 'c1', Name: 'Office', Endpoint: 'office.example.com:51820', Enabled: false, Forwards: [{ LocalPort: 8443 }] }]
+    };
+    var names = { user: function () { return 'viewer'; }, used: function () { return '0 B this month'; }, server: 'Living Room' };
+    var rows = mod.tunnelRows(t, cfg, [{ Id: 'p1', Kind: 'Peer', State: 'Connected', RemoteAddress: '198.51.100.7' }], names);
+
+    assert.deepEqual(rows.map(function (r) { return r.Kind; }), ['Host', 'Peer', 'Connection']);
+    assert.equal(rows[0].Name, 'Living Room');
+    assert.equal(rows[1].Line, 'viewer · 10.66.0.2');
+    assert.equal(rows[1].Detail, '0 B this month · 198.51.100.7');
+    assert.equal(rows[1].State.color, 'green');
+    assert.equal(rows[2].Detail, '0 B this month · 127.0.0.1:8443');
+    assert.equal(rows[2].State.off, true);
+    assert.deepEqual(mod.tunnelRows(t, Object.assign({}, cfg, { HostEnabled: false }), [], names).map(function (r) { return r.Kind; }), ['Peer', 'Connection']);
+
+    assert.deepEqual(mod.readQuery('WireGuard/Tunnels?skip=0&take=50&search=office%20one&type=Connection'), { skip: '0', take: '50', search: 'office one', type: 'Connection' });
+    assert.deepEqual(mod.pageOf(rows, { type: 'Peer' }).Items.map(function (r) { return r.Id; }), ['p1']);
+    assert.deepEqual(mod.pageOf(rows, { search: 'OFFICE' }).Items.map(function (r) { return r.Id; }), ['c1']);
+    assert.equal(mod.pageOf(rows, { type: 'All' }).TotalCount, 3);
+    var page = mod.pageOf(rows, { skip: 1, take: 1 });
+    assert.deepEqual([page.Items[0].Id, page.TotalCount], ['p1', 3]);
+});
+
 test('the Connections card counts connected connections, red while one failed and gray while connecting is off', async function () {
     installPage({});
     var mod = await loadScript('necto_wireguard.js');
@@ -144,7 +169,7 @@ test('the Connections card counts connected connections, red while one failed an
 
 test('a peer opens in a sidecar of tiled sections, and a peer with no config leaves out its file', async function () {
     var opened = await openPage({ ['GET WireGuard/Peers/' + PHONE + '/Config']: function () { return Promise.reject(new Error('none')); } });
-    opened.view.querySelector('#peerSection .stolon-record-list-row').click();
+    opened.view.querySelectorAll('#wireguardTable .stolon-table-row')[1].click();
     await settle(50);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
 

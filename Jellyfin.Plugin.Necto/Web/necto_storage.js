@@ -96,7 +96,8 @@ export function typeOf(t, disk) {
 }
 
 // meterOptions
-// Builds a usage meter's options for a disk, turning orange and red at the disk's own alert points.
+// Builds a usage meter's options for a disk: its used share as the label over the bar, and the bar turning orange
+// and red at the disk's own alert points.
 //
 // Inputs
 // disk [object]: One disk from GET Storage/Disks.
@@ -104,14 +105,17 @@ export function typeOf(t, disk) {
 // Output
 // [object]: The options for createUsageMeter.
 export function meterOptions(disk) {
-    var options = { bytes: true, used: disk.TotalBytes - disk.FreeBytes, total: disk.TotalBytes, warning: 101, danger: 101 };
+    var used = disk.TotalBytes - disk.FreeBytes;
+    var options = { bytes: true, used: used, total: disk.TotalBytes, warning: 101, danger: 101 };
+    options.label = (disk.TotalBytes ? Math.round(used * 100 / disk.TotalBytes) : 0) + '%';
     if (disk.WarningPercent !== null && disk.WarningPercent !== undefined) options.warning = disk.WarningPercent;
     if (disk.ErrorPercent !== null && disk.ErrorPercent !== undefined) options.danger = disk.ErrorPercent;
     return options;
 }
 
 // tagsOf
-// Lists a disk's tags: its type, then any missing folders, a hot disk, and a worn SSD.
+// Lists a disk's tags: its type, then any missing folders, a hot disk, and a worn SSD. The system disk is already
+// named System, so it takes no type tag.
 //
 // Inputs
 // t [object]: The strings.
@@ -120,7 +124,7 @@ export function meterOptions(disk) {
 // Output
 // [object[]]: The record list tags.
 export function tagsOf(t, disk) {
-    var tags = [typeOf(t, disk)];
+    var tags = disk.IsSystem ? [] : [typeOf(t, disk)];
     var gone = (disk.MissingFolders || []).length;
     if (gone) tags.push({ label: t.plural(gone, 'StorageFolderMissing', 'StorageFoldersMissing'), icon: 'folder_off', color: 'orange' });
     if (disk.Hot) tags.push({ label: t.tr('StorageAlertHot'), icon: 'thermostat', color: 'red' });
@@ -150,7 +154,8 @@ export function secondaryOf(t, shared, disk) {
 }
 
 // issuesOf
-// Lists what needs a look on a disk the libraries use, each as one sentence.
+// Lists what needs a look on a disk the libraries use, each as one sentence. A problem its row already shows, in its
+// badge, its tags, or its bar, is marked inRow, so the notice above the list leaves it out.
 //
 // Inputs
 // t [object]: The strings.
@@ -158,24 +163,24 @@ export function secondaryOf(t, shared, disk) {
 // disk [object]: A disk in use.
 //
 // Output
-// [object[]]: { text, serious } for each problem, serious being true for what needs a look now.
+// [object[]]: { text, serious, inRow } for each problem, serious being true for what needs a look now.
 export function issuesOf(t, shared, disk) {
     var name = nameOf(t, disk);
     var issues = [];
     if (disk.State === 'Missing') {
         var since = disk.MissingSinceUtc ? shared.formatRelativeTime(new Date(disk.MissingSinceUtc)) : '';
-        issues.push({ text: t.format('StorageIssueMissing', name, since), serious: true });
+        issues.push({ text: t.format('StorageIssueMissing', name, since), serious: true, inRow: true });
     } else if (disk.State === 'Unresponsive') {
-        issues.push({ text: t.format('StorageIssueUnresponsive', name), serious: true });
+        issues.push({ text: t.format('StorageIssueUnresponsive', name), serious: true, inRow: true });
     }
     if (disk.State !== 'Available') return issues;
     var used = disk.TotalBytes ? Math.round((disk.TotalBytes - disk.FreeBytes) * 100 / disk.TotalBytes) : 0;
-    if (disk.Health === 'Failing') issues.push({ text: t.format('StorageIssueFailing', name), serious: true });
-    if (disk.Level === 'Error') issues.push({ text: t.format('StorageIssueFull', name, used, shared.formatSize(disk.FreeBytes)), serious: true });
-    if (disk.Level === 'Warning') issues.push({ text: t.format('StorageIssueLow', name, used, shared.formatSize(disk.FreeBytes)), serious: false });
-    if (disk.Hot) issues.push({ text: t.format('StorageIssueHot', name, disk.TemperatureCelsius), serious: false });
-    if (disk.Worn) issues.push({ text: t.format('StorageIssueWorn', name, disk.WearPercent), serious: false });
-    if ((disk.MissingFolders || []).length) issues.push({ text: t.format('StorageIssueFolders', name), serious: false });
+    if (disk.Health === 'Failing') issues.push({ text: t.format('StorageIssueFailing', name), serious: true, inRow: true });
+    if (disk.Level === 'Error') issues.push({ text: t.format('StorageIssueFull', name, used, shared.formatSize(disk.FreeBytes)), serious: true, inRow: true });
+    if (disk.Level === 'Warning') issues.push({ text: t.format('StorageIssueLow', name, used, shared.formatSize(disk.FreeBytes)), serious: false, inRow: true });
+    if (disk.Hot) issues.push({ text: t.format('StorageIssueHot', name, disk.TemperatureCelsius), serious: false, inRow: true });
+    if (disk.Worn) issues.push({ text: t.format('StorageIssueWorn', name, disk.WearPercent), serious: false, inRow: true });
+    if ((disk.MissingFolders || []).length) issues.push({ text: t.format('StorageIssueFolders', name), serious: false, inRow: true });
     // Jellyfin's own folders it cannot write to stop it working, so they come first and red.
     var readOnly = disk.ReadOnlyFolders || [];
     var own = (disk.Folders || []).filter(function (f) { return f.Server && readOnly.indexOf(f.Path) >= 0; });
@@ -198,6 +203,20 @@ export function allIssues(t, shared, used) {
     var issues = [];
     used.forEach(function (disk) { issues = issues.concat(issuesOf(t, shared, disk)); });
     return issues.sort(function (a, b) { return (b.serious ? 1 : 0) - (a.serious ? 1 : 0); });
+}
+
+// pageIssues
+// Lists what needs a look that no disk row shows, such as a folder Jellyfin cannot write to, the serious ones first.
+//
+// Inputs
+// t [object]: The strings.
+// shared [object]: The Necto helper bag.
+// used [object[]]: The disks in use.
+//
+// Output
+// [object[]]: { text, serious } for each problem.
+export function pageIssues(t, shared, used) {
+    return allIssues(t, shared, used).filter(function (issue) { return !issue.inRow; });
 }
 
 // spaceOf
@@ -346,14 +365,14 @@ export default function (view) {
     }
 
     // asideOf
-    // Builds the end of a disk's row: its state badge, and a usage meter when the disk was read.
+    // Builds the end of a disk's row: a usage meter of its space when the disk was read, then its one state badge.
     function asideOf(disk) {
-        var aside = h('div', { class: 'necto-storage-disk-aside' });
         var state = stateOf(t, disk);
-        var badge = h('span');
+        var badge = h('span', { class: 'necto-storage-disk-badge' });
         badge.innerHTML = shared.badge(state.color, state.label);
-        aside.appendChild(badge);
+        var aside = h('div', { class: 'necto-storage-disk-aside' });
         if (isRead(disk)) aside.appendChild(nectoModule.createUsageMeter(meterOptions(disk)).element);
+        aside.appendChild(badge);
         return aside;
     }
 
@@ -800,7 +819,6 @@ export default function (view) {
             page: page,
             autofocus: false,
             buttons: takesSave ? [
-                { text: t.tr('ButtonCancel'), className: 'raised stolon-button stolon-secondary', action: function (close) { close(); } },
                 { text: t.tr('Save'), className: 'raised stolon-button stolon-primary', action: function (close, dismiss, button) { saveDisk(savers, problem, button); } }
             ] : undefined,
             onClose: function () { sidecar = null; }
@@ -834,20 +852,21 @@ export default function (view) {
     }
 
     // renderAttention
-    // Draws the notice above the list: one line per problem, red when any needs a look now, else orange, or one green
-    // line when every disk the libraries use is healthy.
+    // Draws the notice above the list for what needs a look that no disk row shows: one line per problem, red when any
+    // needs a look now, else orange. With nothing of the kind it shows nothing.
     function renderAttention(used) {
         var banner = $('storageAttention');
         banner.textContent = '';
-        var issues = allIssues(t, shared, used);
-        var kind = !issues.length ? 'success' : issues.some(function (i) { return i.serious; }) ? 'error' : 'warn';
-        var text = !issues.length ? (used.length ? t.tr('StorageNoticeAllHealthy') : t.tr('StorageNoticeNoDisks')) : issues.length === 1 ? issues[0].text : '';
+        var issues = pageIssues(t, shared, used);
+        shared.setVisible(banner, issues.length > 0);
+        if (!issues.length) return;
+        var kind = issues.some(function (i) { return i.serious; }) ? 'error' : 'warn';
         var items = issues.length > 1 ? issues.map(function (issue) { return issue.text; }) : null;
-        banner.appendChild(nectoModule.createBanner({ kind: kind, text: text, items: items, dismissible: false }).element);
+        banner.appendChild(nectoModule.createBanner({ kind: kind, text: issues.length === 1 ? issues[0].text : '', items: items, dismissible: false }).element);
     }
 
     // renderSpace
-    // Draws the size, used, and free space of every disk in use that could be read, added up.
+    // Draws how many disks Jellyfin uses, and the used and free space of those that could be read, added up.
     function renderSpace(used) {
         var cards = $('storageSpaceCards');
         var space = spaceOf(used);
@@ -855,7 +874,7 @@ export default function (view) {
         cards.textContent = '';
         if (!space) return;
         shared.renderCards(cards, [
-            { label: t.tr('LabelSize'), count: shared.formatSize(space.total) },
+            { label: t.tr('StorageHeaderDisks'), count: used.length, color: 'blue' },
             { label: t.tr('StorageLabelUsed'), count: shared.formatSize(space.total - space.free) },
             { label: t.tr('StorageLabelFree'), count: shared.formatSize(space.free), color: space.color }
         ]);
@@ -914,17 +933,17 @@ export default function (view) {
     }
 
     // refreshButton
-    // Builds Refresh, which checks every disk again, with its icon that turns into a spinner while a check runs.
+    // Builds Refresh, the icon at the end of the Disks header that checks every disk again. Its icon turns into a
+    // spinner while a check runs.
     function refreshButton() {
-        return h('button', { is: 'emby-button', type: 'button', id: 'btnStorageCheck', class: 'raised stolon-button stolon-secondary' }, [
-            h('span', { id: 'storageRefreshIcon', class: 'material-icons', 'aria-hidden': 'true', text: 'refresh' }),
-            h('span', { text: t.tr('Refresh') })
+        return h('button', { is: 'emby-button', type: 'button', id: 'btnStorageCheck', class: 'stolon-row-btn', title: t.tr('Refresh'), 'aria-label': t.tr('Refresh') }, [
+            h('span', { id: 'storageRefreshIcon', class: 'material-icons', 'aria-hidden': 'true', text: 'refresh' })
         ]);
     }
 
     // bindPage
-    // Draws the Disks section once: its sub-tabs for the disks Jellyfin uses and every disk, the disk list under them,
-    // and Refresh under the list.
+    // Draws the Disks section once: Refresh at the end of its header, and its sub-tabs for the disks Jellyfin uses and
+    // every disk over the disk list.
     function bindPage(bag, handle) {
         shared = bag;
         page = handle;
@@ -947,12 +966,12 @@ export default function (view) {
         tabs.getPanel('used').appendChild(list.element);
         var status = h('div', { id: 'storageCheckStatus', class: 'stolon-error stolon-hidden', role: 'status' });
         var refresh = refreshButton();
-        var content = h('div', { class: 'stolon-stack' }, [status, tabs.element, h('div', { class: 'stolon-card-list-actions' }, [refresh])]);
-        var disksSection = nectoModule.createCollapsibleSection({ title: t.tr('StorageHeaderDisks'), icon: 'storage', collapsible: false, content: content });
+        var content = h('div', { class: 'stolon-stack' }, [status, tabs.element]);
+        var disksSection = nectoModule.createCollapsibleSection({ title: t.tr('StorageHeaderDisks'), icon: 'storage', collapsible: false, content: content, aside: refresh });
         $('storageDisks').appendChild(disksSection.element);
         refresh.addEventListener('click', check);
         refresh.addEventListener('mouseenter', function () {
-            this.title = checkedAt ? t.format('StorageLastChecked', shared.formatRelativeTime(checkedAt)) : '';
+            this.title = checkedAt ? t.format('StorageLastChecked', shared.formatRelativeTime(checkedAt)) : t.tr('Refresh');
         });
         page.addCleanup(closeDisk);
     }
