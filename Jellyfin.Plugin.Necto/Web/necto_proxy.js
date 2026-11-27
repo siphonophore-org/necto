@@ -1223,7 +1223,7 @@ export default function (view) {
             title: function (b) { return b.Ip; },
             lines: function (b) {
                 return [
-                    [b.Country || t.tr('Unknown'), t.format('ProxyBannedFailures', b.Failures)].join(' · '),
+                    [b.Country || t.tr('Unknown'), t.plural(b.Failures || 0, 'DdnsFailuresOne', 'DdnsFailuresMany')].join(' · '),
                     [b.BannedUtc ? t.format('ProxyBannedOn', shared.formatDate(b.BannedUtc)) : '', b.UntilUtc ? t.format('ProxyBannedUntil', shared.formatDate(b.UntilUtc)) : t.tr('ProxyUntilLifted')].filter(Boolean).join(' · ')
                 ];
             },
@@ -1280,7 +1280,7 @@ export default function (view) {
             title: function (c) { return c.Country; },
             lines: function (c) {
                 return [
-                    [t.plural(c.People || 0, 'ProxyPeopleOne', 'ProxyPeopleMany'), t.format('ProxyCountryFailed', c.Failed || 0), t.format('ProxyCountryRefused', c.Blocked || 0)].join(' · '),
+                    [t.plural(c.People || 0, 'RequestsJoinersCountOne', 'RequestsJoinersCount'), t.format('ScheduledTaskFailedWithName', c.Failed || 0), t.format('ProxyCountryRefused', c.Blocked || 0)].join(' · '),
                     c.LastUtc ? t.format('ProxySeenAt', shared.formatDate(c.LastUtc)) : ''
                 ];
             },

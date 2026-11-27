@@ -30,12 +30,12 @@ async function strings() {
 test('a record row names it once, with its provider, and ends with its state, Off or its last result', async function () {
     var bag = await strings();
     var ddns = await loadScript('necto_ddns.js');
-    var first = { Record: { Id: 'a', Name: '', Hostname: 'home.example.com', Provider: 'Cloudflare', Enabled: true, LastAction: 'Updated', LastCheckedUtc: '2026-11-26T10:00:00Z' }, Followed: [] };
-    var second = { Record: { Id: 'b', Name: 'Office', Hostname: '', Provider: 'DynDns2', Enabled: false, FollowProxyHosts: true }, Followed: [{ Hostname: 'media.example.com', LastAction: 'Failed' }, { Hostname: 'x.example.com', LastAction: 'Updated' }] };
+    var first = { Record: { Id: 'a', Name: '', Hostname: 'home.example.com', Provider: 'Cloudflare', Enabled: true, LastAction: 'Updated', LastCheckedUtc: '2026-11-26T10:00:00Z' }, Followed: [], State: 'UpToDate' };
+    var second = { Record: { Id: 'b', Name: 'Office', Hostname: '', Provider: 'DynDns2', Enabled: false, FollowProxyHosts: true }, Followed: [{ Hostname: 'media.example.com', LastAction: 'Failed' }, { Hostname: 'x.example.com', LastAction: 'Updated' }], State: 'Off' };
 
     assert.equal(ddns.recordName(first.Record, PROVIDERS), 'home.example.com');
     assert.equal(ddns.recordLine(first, PROVIDERS, bag.t), 'Cloudflare');
-    assert.deepEqual(ddns.recordBadge(first, bag.t), { label: 'Updated', color: 'green' });
+    assert.deepEqual(ddns.recordBadge(first, bag.t), { label: 'Up to date', color: 'green' });
     assert.equal(ddns.recordName(second.Record, PROVIDERS), 'Office');
     assert.equal(ddns.recordLine(second, PROVIDERS, bag.t), 'DynDNS v2 · Follows 2 proxy names');
     assert.deepEqual(ddns.recordBadge(second, bag.t), { label: 'Off', color: 'gray' });
@@ -144,18 +144,19 @@ test('countCards counts the records, those up to date and those that need attent
     var ddns = await loadScript('necto_ddns.js');
     var cards = ddns.countCards({
         Records: [
-            { Record: { Enabled: true, LastAction: 'Updated' }, Followed: [] },
-            { Record: { Enabled: true, LastAction: 'Failed' }, Followed: [] },
-            { Record: { Enabled: true, FollowProxyHosts: true }, Followed: [{ LastAction: 'Backing off' }, { LastAction: 'Updated' }] },
-            { Record: { Enabled: false, LastAction: 'Failed' }, Followed: [] }
+            { Record: { Enabled: true, LastAction: 'Updated' }, Followed: [], State: 'UpToDate' },
+            { Record: { Enabled: true, LastAction: 'Failed' }, Followed: [], State: 'Attention' },
+            { Record: { Enabled: true, FollowProxyHosts: true }, Followed: [{ LastAction: 'Backing off' }, { LastAction: 'Updated' }], State: 'Attention' },
+            { Record: { Enabled: false, LastAction: 'Failed' }, Followed: [], State: 'Off' }
         ],
         DetectedIPv4: '203.0.113.10',
         DetectedIPv6: ''
     }, bag.t);
 
     assert.deepEqual(cards.map(function (c) { return [c.label, c.count]; }), [
-        ['Records', 4], ['Up to date', 1], ['Needs attention', 2]
+        ['Up to date', 1], ['Needs attention', 2], ['Not checked yet', 0], ['Off', 1]
     ]);
+    assert.deepEqual(cards.map(function (c) { return c.color; }), ['green', 'orange', 'gray', 'gray']);
     var card = ddns.addressCard({ DetectedIPv4: '203.0.113.10', DetectedIPv6: '' }, bag.t);
     assert.match(card.textContent, /Public IPv4203\.0\.113\.10/);
     assert.match(card.textContent, /Public IPv6Not found/);
@@ -213,7 +214,7 @@ test('the page draws the cards with the public address and a table row per recor
     assert.ok(view.querySelector('#ddnsAddress').textContent.indexOf('203.0.113.10') >= 0);
     var rows = view.querySelectorAll('#ddnsRecords .stolon-table-row');
     assert.equal(rows.length, 2);
-    assert.match(rowHtml(rows[0]), /home\.example\.com[\s\S]*Cloudflare[\s\S]*Updated/);
+    assert.match(rowHtml(rows[0]), /home\.example\.com[\s\S]*Cloudflare[\s\S]*Up to date/);
     assert.match(rowHtml(rows[1]), /Cabin[\s\S]*Off/);
     assert.equal(view.querySelectorAll('#ddnsNotices .stolon-warn').length, 1);
     assert.ok(opened.page.requests.some(function (r) { return /^Ddns\/Records\/All\?/.test(r.url); }));

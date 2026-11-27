@@ -86,23 +86,15 @@ export function resultTag(record, t) {
     return { label: t.tr(action.key), color: colors[action.state] };
 }
 
-// recordState
-// Gives the outcome that stands for a record: its own, or for a record that follows the proxy the host whose result
-// matters most.
-//
-// Inputs
-// entry [object]: One of the Records from Ddns/Records, as { Record, Followed }.
-//
-// Output
-// [object]: The record or followed host whose LastAction stands for it.
-function recordState(entry) {
-    var r = entry.Record;
-    return r.FollowProxyHosts && (entry.Followed || []).length ? worst(entry.Followed) : r;
-}
-
-// STATE_KEYS
-// The string key of each state the table's filter offers, in the words of the count cards.
-var STATE_KEYS = { UpToDate: 'DdnsResultUnchanged', Attention: 'DashboardStateAttention', NotChecked: 'DdnsResultNotChecked', Off: 'Off' };
+// STATES
+// Each state of a record, as Ddns/Records names it, with the key of its word and its color, in the order the count
+// cards and the state filter list them.
+var STATES = {
+    UpToDate: { key: 'DdnsResultUnchanged', color: 'green' },
+    Attention: { key: 'DashboardStateAttention', color: 'orange' },
+    NotChecked: { key: 'DdnsResultNotChecked', color: 'purple' },
+    Off: { key: 'Off', color: 'gray' }
+};
 
 // stateFilters
 // Lists the state filter's choices: Up to date, Needs attention, Not checked yet, and Off.
@@ -113,7 +105,7 @@ var STATE_KEYS = { UpToDate: 'DdnsResultUnchanged', Attention: 'DashboardStateAt
 // Output
 // [object[]]: Each choice's value and label.
 export function stateFilters(t) {
-    return Object.keys(STATE_KEYS).map(function (state) { return { value: state, label: t.tr(STATE_KEYS[state]) }; });
+    return Object.keys(STATES).map(function (state) { return { value: state, label: t.tr(STATES[state].key) }; });
 }
 
 // recordLine
@@ -137,21 +129,23 @@ export function recordLine(entry, providers, t) {
 }
 
 // recordBadge
-// Gives the badge a record's row ends with: Off while it is off, else its last result, or none before its first run.
+// Gives the badge a record's row ends with, in the words of the count cards: Up to date, Needs attention, Not checked
+// yet, or Off.
 //
 // Inputs
-// entry [object]: One row from Ddns/Records/All, as { Record, Followed }.
+// entry [object]: One row from Ddns/Records/All, as { Record, Followed, State }.
 // t [object]: The strings.
 //
 // Output
-// [object|null]: label and color.
+// [object]: label and color.
 export function recordBadge(entry, t) {
-    return entry.Record.Enabled ? resultTag(recordState(entry), t) : { label: t.tr('Off'), color: 'gray' };
+    var state = STATES[entry.State] || STATES.NotChecked;
+    return { label: t.tr(state.key), color: state.color };
 }
 
 // countCards
-// Gives the cards at the top of the tool: how many records there are, how many are up to date, and how many need
-// attention.
+// Gives the cards at the top of the tool: how many records are in each state, in the words and colors of the rows'
+// badges. A state with none is gray.
 //
 // Inputs
 // data [object]: The answer from Ddns/Records.
@@ -160,20 +154,11 @@ export function recordBadge(entry, t) {
 // Output
 // [object[]]: The cards, each { count, label, color }.
 export function countCards(data, t) {
-    var on = ((data && data.Records) || []).filter(function (e) { return e.Record && e.Record.Enabled; });
-    var current = 0;
-    var attention = 0;
-    on.forEach(function (entry) {
-        var action = ACTIONS[recordState(entry).LastAction];
-        if (!action) return;
-        if (action.state === 'success') current++;
-        else attention++;
+    var entries = (data && data.Records) || [];
+    return Object.keys(STATES).map(function (state) {
+        var count = entries.filter(function (e) { return e.State === state; }).length;
+        return { count: count, label: t.tr(STATES[state].key), color: count ? STATES[state].color : 'gray' };
     });
-    return [
-        { count: ((data && data.Records) || []).length, label: t.tr('LabelRecords'), color: 'blue' },
-        { count: current, label: t.tr('DdnsResultUnchanged'), color: current ? 'green' : 'gray' },
-        { count: attention, label: t.tr('DashboardStateAttention'), color: attention ? 'orange' : 'gray' }
-    ];
 }
 
 // addressCard
@@ -196,21 +181,6 @@ export function addressCard(data, t) {
         row('DdnsLabelPublicIpv4', data && data.DetectedIPv4),
         row('DdnsLabelPublicIpv6', data && data.DetectedIPv6)
     ]);
-}
-
-// worst
-// Picks the followed host whose result matters most: a failure, then a pause, then anything else.
-//
-// Inputs
-// followed [object[]]: The followed hosts with their status.
-//
-// Output
-// [object]: The host's status.
-function worst(followed) {
-    var rank = { 'Failed': 0, 'Backing off': 1, 'No address': 2 };
-    return followed.slice().sort(function (a, b) {
-        return (rank[a.LastAction] == null ? 9 : rank[a.LastAction]) - (rank[b.LastAction] == null ? 9 : rank[b.LastAction]);
-    })[0];
 }
 
 // newRecord
@@ -450,7 +420,7 @@ export default function (view) {
         shared.renderCards('ddnsCards', countCards(data, t));
         var address = view.querySelector('#ddnsAddress');
         address.textContent = '';
-        address.appendChild(nectoModule.createCollapsibleSection({ title: t.tr('DdnsHeaderPublicAddress'), icon: 'public', collapsible: false, content: addressCard(data, t) }).element);
+        address.appendChild(nectoModule.createCollapsibleSection({ title: t.tr('WireGuardLabelPublicEndpoint'), icon: 'public', collapsible: false, content: addressCard(data, t) }).element);
     }
 
     // loadRecords

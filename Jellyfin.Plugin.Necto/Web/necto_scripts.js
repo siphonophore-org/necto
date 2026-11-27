@@ -245,7 +245,7 @@ export default function (view) {
     // STATE_BADGES
     // Each state's word and color, in the order the state filter lists them.
     var STATE_BADGES = {
-        Succeeded: { key: 'ScriptsStateSucceeded', color: 'green' },
+        Succeeded: { key: 'ScriptsStatusSucceeded', color: 'green' },
         Failed: { key: 'LabelFailed', color: 'red' },
         NotRun: { key: 'ScriptsStateNotRun', color: 'purple' },
         Disabled: { key: 'Disabled', color: 'gray' }
