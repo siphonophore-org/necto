@@ -16,7 +16,7 @@ Every tool fills its own section.
 
 ## Everyone
 
-**Everyone** always exists and cannot be deleted or renamed. It holds every user who is in no other group, so its permissions and rules apply only to those users. A user in a group never takes **Everyone**.
+**Everyone** always exists and cannot be deleted or renamed. It holds every user who is in no other group, so its permissions and rules apply only to those users. A user in a group never takes **Everyone**. On a fresh install it gives nothing but the updates about a user's own requests and issues, in **Notifications**.
 
 ## Members
 
@@ -101,7 +101,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 | **WireGuard** | **Allow peers**, **Peers per member**, **Data per member (GB)**, **Period**. See [WireGuard](WireGuard.md#permissions) |
 | **Scripts** | **Run every script**, **Scripts that run**. See [Scripts](Scripts.md#groups) |
 | **Custom pages** | **Open every page**, **Pages members may open** |
-| **Notifications** | **Receive every event**, **Events**. See [Notifications](Notifications.md#who-gets-an-event) |
+| **Notifications** | **Receive every event**, **Events**, **Browser notifications**, **Jellyfin messages**. See [Notifications](Notifications.md#who-gets-an-event) |
 
 ## Scheduled Tasks
 
