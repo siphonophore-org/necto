@@ -246,7 +246,7 @@ Every page is built from the same parts in the same order. A page never invents 
     * The empty text sits inside the table frame: "No X yet." with nothing at all, "No X match." while a search or filter finds nothing.
 5. Anything else the tool shows sits below the table as a fixed section led by its tile.
 
-A tool with more than one kind of record or view uses sub-tabs at the top of its content, like Pages (Pages, Images, Stores), built with `createToolTabs` over Stolon's `createSubTabs`. The first tab holds the tool's main list, and each other tab holds its own table, such as Scripts and History, Tunnels and Usage, Groups and Password resets, or Routes, Visitors, and Checks. A list in a tab is a table, built with `createRowsTable` when the page holds the rows itself.
+A tool with more than one kind of record or view uses sub-tabs under its count cards, so the cards stay put on every tab, like Pages (Pages, Images, Stores), built with `createToolTabs` over Stolon's `createSubTabs`. The first tab holds the tool's main list, and each other tab holds its own table, such as Scripts and History, Tunnels and Usage, Groups and Password resets, or Routes, Visitors, and Checks. A list in a tab is a table, built with `createRowsTable` when the page holds the rows itself.
 
 While the tool is off, the page shows its intro and one line, "X is off. Turn it on in Settings to ...", and nothing else.
 
