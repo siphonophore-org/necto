@@ -101,14 +101,14 @@ test('the Scripts tool draws a saved script from its own markup', async function
     assert.deepEqual(Array.prototype.map.call(opened.view.querySelectorAll('.stolon-selector-actions button'), function (b) { return b.id; }),
         ['btnNewScript', 'btnRenameScript', 'btnRemoveScript', 'btnImportScripts', 'btnExportScripts']);
     assert.equal(opened.view.querySelector('#scriptEditor').classList.contains('stolon-hidden'), false);
-    assert.equal(opened.view.querySelector('#scriptAllGroups').checked, false);
+    assert.equal(opened.view.querySelector('#scriptGroupScope input[value="some"]').checked, true);
     assert.equal(opened.view.querySelector('#scriptGroupPicks').classList.contains('stolon-hidden'), false);
     assert.match(opened.view.querySelector('#groupList').textContent, /Everyone/);
     assert.equal(opened.view.querySelector('#groupList .stolon-filtered-check[data-id="g"]').checked, true);
     assert.equal(opened.view.querySelector('#groupWarn').classList.contains('stolon-hidden'), true);
 });
 
-test('a script runs for everyone until Run for everyone is off, then saves the groups picked', async function () {
+test('a script is Permissive until Restrictive is selected, then saves the groups picked', async function () {
     var saved = [];
     var opened = await openMarkupPage('necto_scripts', {
         Scripts: { Scripts: [{ Id: 'cccccccc000000000000000000000001', Name: 'Notify', Enabled: true, Triggers: ['ItemAdded'], ItemKinds: [], Conditions: [], Operations: [{ Type: 'RunCommand', Command: '/bin/true' }], Secrets: [] }] }
@@ -119,12 +119,14 @@ test('a script runs for everyone until Run for everyone is off, then saves the g
     });
     globalThis.ApiClient.updatePluginConfiguration = function (id, config) { saved.push(JSON.parse(JSON.stringify(config))); return Promise.resolve(); };
     var view = opened.view;
-    var all = view.querySelector('#scriptAllGroups');
+    var all = view.querySelector('#scriptGroupScope input[value="all"]');
+    var some = view.querySelector('#scriptGroupScope input[value="some"]');
 
     assert.equal(all.checked, true);
     assert.equal(view.querySelector('#scriptGroupPicks').classList.contains('stolon-hidden'), true);
+    some.checked = true;
     all.checked = false;
-    all.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    some.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
     assert.equal(view.querySelector('#scriptGroupPicks').classList.contains('stolon-hidden'), false);
     assert.equal(view.querySelector('#groupWarn').classList.contains('stolon-hidden'), false);
     var family = view.querySelector('#groupList .stolon-filtered-check[data-id="g"]');

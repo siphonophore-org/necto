@@ -271,7 +271,7 @@ export function sectionSpecs() {
             key: 'invites', title: 'TabInvites', icon: 'mail', grants: ['Invites.MayCreate'], fields: [
                 { path: 'Invites.MayCreate', kind: 'check', label: 'LabelMayCreateInvites', reveals: [
                     { path: 'Invites.MaxInvites', kind: 'number', label: 'LabelMaxInvites', help: 'MaxInvitesHelp', min: 0 },
-                    { path: 'Invites.AnyGroup', kind: 'scope', label: 'LabelInviteGroups', allText: 'GroupsInvitesPermissiveHelp', someText: 'GroupsInvitesSelectiveHelp', picks: [
+                    { path: 'Invites.AnyGroup', kind: 'scope', label: 'LabelInviteGroups', allText: 'GroupsInvitesPermissiveHelp', someText: 'GroupsInvitesRestrictiveHelp', picks: [
                         { path: 'Invites.TargetGroupIds', kind: 'groups', label: 'LabelInviteGroups' }
                     ] }
                 ] }
@@ -288,7 +288,7 @@ export function sectionSpecs() {
         },
         {
             key: 'pages', title: 'TabPages', icon: 'web', grants: ['CustomPages.AllPages', 'CustomPages.PageIds'], fields: [
-                { path: 'CustomPages.AllPages', kind: 'scope', label: 'PagesLabelGroupPages', allText: 'GroupsPagesPermissiveHelp', someText: 'GroupsPagesSelectiveHelp', picks: [
+                { path: 'CustomPages.AllPages', kind: 'scope', label: 'PagesLabelGroupPages', allText: 'GroupsPagesPermissiveHelp', someText: 'GroupsPagesRestrictiveHelp', picks: [
                     { path: 'CustomPages.PageIds', kind: 'pages', label: 'PagesLabelGroupPages' }
                 ] }
             ]
@@ -641,7 +641,7 @@ export function createGroupEditor(group, ctx) {
                 value: (value == null ? !!spec.fallback : !!value) ? 'all' : 'some',
                 choices: [
                     { value: 'all', name: t.tr('GroupsScopePermissive'), text: t.tr(spec.allText) },
-                    { value: 'some', name: t.tr('GroupsScopeSelective'), text: t.tr(spec.someText) }
+                    { value: 'some', name: t.tr('GroupsScopeRestrictive'), text: t.tr(spec.someText) }
                 ]
             });
             scope.element.setAttribute('data-field', spec.path);
@@ -1076,7 +1076,7 @@ var OWN_UPDATES = ['requests.approved', 'requests.declined', 'requests.available
 
 // newGroup
 // Starts a new group. Its members hear what happens to their own requests and issue reports, as Everyone's do on a
-// fresh install, and it gives nothing else until it is set.
+// fresh install. Pages and Invite groups start Permissive, and it gives nothing else until it is set.
 //
 // Output
 // [object]: The group the editor opens with.
@@ -1084,6 +1084,10 @@ export function newGroup() {
     return {
         Name: '',
         MemberIds: [],
-        Permissions: { Notifications: { ByMethod: true, BrowserEventKeys: OWN_UPDATES.slice(), MessageEventKeys: OWN_UPDATES.slice() } }
+        Permissions: {
+            CustomPages: { AllPages: true, PageIds: [] },
+            Invites: { AnyGroup: true, TargetGroupIds: [] },
+            Notifications: { ByMethod: true, BrowserEventKeys: OWN_UPDATES.slice(), MessageEventKeys: OWN_UPDATES.slice() }
+        }
     };
 }

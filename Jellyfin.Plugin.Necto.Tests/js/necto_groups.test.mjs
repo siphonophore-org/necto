@@ -475,7 +475,7 @@ test('overlappingClients names a client more than one session rule covers', asyn
     assert.equal(mod.sameId(EVERYONE.toUpperCase().replace(/-/g, ''), EVERYONE), true);
 });
 
-test('a new group starts with the updates about members own requests and issues, and nothing else', async function () {
+test('a new group starts with the updates about members own requests and issues, Permissive pages and invite groups, and nothing else', async function () {
     installPage({ config: allToolsOn() });
     var mod = await loadScript('necto_groups.js');
     var group = mod.newGroup();
@@ -484,4 +484,7 @@ test('a new group starts with the updates about members own requests and issues,
     assert.deepEqual(group.MemberIds, []);
     assert.deepEqual(group.Permissions.Notifications.BrowserEventKeys, ['requests.approved', 'requests.declined', 'requests.available', 'issues.updated']);
     assert.deepEqual(group.Permissions.Notifications.MessageEventKeys, group.Permissions.Notifications.BrowserEventKeys);
+    assert.equal(group.Permissions.CustomPages.AllPages, true);
+    assert.equal(group.Permissions.Invites.AnyGroup, true);
+    assert.equal(group.Permissions.Invites.MayCreate, undefined);
 });

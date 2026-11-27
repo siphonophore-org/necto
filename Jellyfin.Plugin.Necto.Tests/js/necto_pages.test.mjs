@@ -324,7 +324,7 @@ test('the Pages tool holds no settings, and a page saves only after the server c
     assert.match(sidecar.querySelector('[data-role="status"]').textContent, /Two pages use the slug rules\./);
 });
 
-test('the group editor offers the pages from the Pages route under Selective, hidden under Permissive', async function () {
+test('the group editor offers the pages from the Pages route under Restrictive, hidden under Permissive', async function () {
     var page = installPage({ config: allToolsOn() });
     routeApi(page, { 'GET Pages': [{ Id: 'p1', Title: 'Rules', Slug: 'rules' }] });
     var groups = await loadScript('necto_groups.js');

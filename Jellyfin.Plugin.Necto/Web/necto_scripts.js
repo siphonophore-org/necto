@@ -94,6 +94,7 @@ export default function (view) {
     // The groups, from the Groups tool, to name the ones that run each script.
     var nectoGroups = [];
     var matchChoice = null;
+    var scopeChoice = null;
     var operationList = null;
     var conditionRepeater = null;
     var conditionsQuiet = false;
@@ -362,7 +363,7 @@ export default function (view) {
             : { label: t.plural(kinds, 'ScriptsBadgeKindsOne', 'ScriptsBadgeKindsMany'), color: 'blue' });
         folds.steps.setSubtitle(counted((script.Operations || []).length, 'ScriptsSummaryNoSteps', 'ScriptsSummaryStepsOne', 'ScriptsSummaryStepsMany'));
 
-        folds.users.setSubtitle(script.AllGroups !== false ? t.tr('GroupEveryone')
+        folds.users.setSubtitle(script.AllGroups !== false ? t.tr('GroupsScopePermissive')
             : counted((script.GroupIds || []).length, 'ScriptsSummaryNoGroups', 'ScriptsSummaryGroupsOne', 'ScriptsSummaryGroupsMany'));
         folds.users.setBadge(shown('userWarn') ? { label: ignoredLabel(script), color: 'orange' } : null);
         renderGroups(script);
@@ -468,13 +469,13 @@ export default function (view) {
     }
 
     // renderGroups
-    // Shows whether the open script runs for everyone, and the groups it picks while it does not.
+    // Shows whether the open script is Permissive or Restrictive, and the groups it picks while Restrictive.
     //
     // Inputs
     // script [object]: The open script.
     function renderGroups(script) {
         var all = script.AllGroups !== false;
-        el('scriptAllGroups').checked = all;
+        if (scopeChoice) scopeChoice.set(all ? 'all' : 'some');
         var picked = (script.GroupIds || []).map(compactId);
         if (groupPicker && groupPicker.getValue().map(compactId).join() !== picked.join()) {
             var quiet = suppressWidgetEvents;
@@ -1731,11 +1732,14 @@ export default function (view) {
             }
         });
         el('groupList').appendChild(groupPicker.element);
-        el('scriptAllGroups').addEventListener('change', function () {
-            current().AllGroups = el('scriptAllGroups').checked;
-            renderWarnings();
-            renderSummaries();
-            edited();
+        scopeChoice = createChoiceGroup(el('scriptGroupScope'), {
+            onChange: function (value) {
+                if (suppressWidgetEvents) return;
+                current().AllGroups = value === 'all';
+                renderWarnings();
+                renderSummaries();
+                edited();
+            }
         });
 
 

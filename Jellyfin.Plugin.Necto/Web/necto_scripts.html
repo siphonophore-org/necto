@@ -156,11 +156,17 @@
                         <div class="stolon-section" data-fold="users" data-fold-icon="groups" data-fold-state="closed">
                             <div class="stolon-section-title" data-str="TabGroups">Groups</div>
                             <div class="stolon-section-content">
-                                <div class="fieldDescription" data-str="ScriptsHelpGroups">Runs for every user, or only for the members of the groups picked. Administrators run every script.</div>
-                                <div class="checkboxContainer">
-                                    <label>
-                                        <input type="checkbox" is="emby-checkbox" id="scriptAllGroups" />
-                                        <span data-str="ScriptsLabelAllGroups">Run for everyone</span>
+                                <div class="fieldDescription" data-str="ScriptsHelpGroups">Sets which users the script runs for. Administrators run every script.</div>
+                                <div class="stolon-choice-group" id="scriptGroupScope" role="radiogroup" aria-label="Runs for" data-str-label="ScriptsLabelGroupScope">
+                                    <label class="stolon-choice">
+                                        <input type="radio" name="scriptGroupScope" value="all" />
+                                        <span class="stolon-choice-name" data-str="GroupsScopePermissive">Permissive</span>
+                                        <span class="stolon-choice-text" data-str="ScriptsHelpScopePermissive">Runs for every user, in a group or not.</span>
+                                    </label>
+                                    <label class="stolon-choice">
+                                        <input type="radio" name="scriptGroupScope" value="some" />
+                                        <span class="stolon-choice-name" data-str="GroupsScopeRestrictive">Restrictive</span>
+                                        <span class="stolon-choice-text" data-str="ScriptsHelpScopeRestrictive">Runs only for the members of the groups picked below.</span>
                                     </label>
                                 </div>
                                 <div id="scriptGroupPicks" class="stolon-indent">

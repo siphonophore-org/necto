@@ -146,7 +146,7 @@ Turning WireGuard on asks to download `wireguard-go`, which is the only way Wire
 
 Everything the Scripts plugin does, with its history in **Troubleshooting** and its settings in **Settings**.
 
-* A script runs for every user unless its editor turns off **Run for everyone** and picks groups, as the Scripts plugin's empty users list ran a script for everyone. Groups hold no script picks. A stored script takes the groups that ran it, or runs for everyone when no group or every group did. **Review**
+* A script runs for every user while its editor is **Permissive**, and only for the groups picked while it is **Restrictive**, as the Scripts plugin's empty users list ran a script for everyone. Groups hold no script picks. A stored script takes the groups that ran it, or runs for everyone when no group or every group did. **Review**
 * A failed sign in for a name with no account takes **Everyone**. **Review**
 * Administrators run every script, since groups hold no administrators. The script editor says so, and an **Is administrator** condition leaves them out, where the Scripts plugin's users list could leave out an administrator. **Review**
 * `scripts.failed` goes to Notifications at most once a minute for each script, so a burst of failures sends one alert. **Review**
@@ -155,7 +155,7 @@ Everything the Scripts plugin does, with its history in **Troubleshooting** and 
 
 Everything Custom Pages does. A page keeps its tier, **Anyone**, **Signed in**, or **Administrators**, and its list of named users is gone, since groups give pages.
 
-* A **Signed in** page opens for administrators and for members of a group that gives it, with **Permissive** for every page or **Selective** by name. **Everyone** gives no page on a fresh install, so a page opens for nobody but administrators until a group gives it. **Review**
+* A **Signed in** page opens for administrators and for members of a group that gives it, with **Permissive** for every page or **Restrictive** by name. **Everyone** gives no page on a fresh install, so a page opens for nobody but administrators until a group gives it. **Review**
 * An API key opens **Administrators** pages, as the elevation policy lets it, but no **Signed in** page, since it is in no group. **Review**
 * Stores keep their **Read** and **Write** tiers, **Scope**, and **Writers edit own records** on the store. They name classes of caller, not users, and a store has no group section yet. **Review**
 * The pages keep their own addresses under `/pages`, since served pages and their helpers call them. The administrator routes are under `/Pages` with two segments or more, and the slugs `asset`, `store`, `stores`, and `configuration` are kept for them. **Review**

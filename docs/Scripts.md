@@ -175,7 +175,7 @@ While the panel shows, the **Triggers** heading carries a badge, green **All kin
 
 ## Groups
 
-The **Groups** section of the editor sets which users a script runs for. **Run for everyone** is on for a new script, so it runs for every user, in a group or not. Turn it off to pick the groups it runs for, where **Everyone** stands for the users in no group. With it off and no group picked, the script runs for administrators only, and the section says so. Administrators run every script, since groups hold no administrators. To leave them out, add an **Is administrator** condition.
+The **Groups** section of the editor sets which users a script runs for. A new script is **Permissive**, so it runs for every user, in a group or not. **Restrictive** runs it only for the groups picked under it, where **Everyone** stands for the users in no group. With **Restrictive** and no group picked, the script runs for administrators only, and the section says so. A stored script that some groups ran is **Restrictive** with those groups, and every other stored script is **Permissive**. Administrators run every script, since groups hold no administrators. To leave them out, add an **Is administrator** condition.
 
 On playback, the script runs when it runs for any of the session's users. A failed sign in for a name with no account counts as **Everyone**.
 
