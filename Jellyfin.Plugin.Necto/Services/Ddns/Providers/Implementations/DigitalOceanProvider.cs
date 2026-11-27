@@ -23,9 +23,10 @@ namespace Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
 /// DigitalOcean DNS API v2. Port of ddclient's <c>nic_digitalocean_update</c>: authenticates with a
 /// Bearer personal access token, looks up the existing A/AAAA record by name, and PATCHes its data when
 /// the IP has changed. Set password to the DigitalOcean API token and zone to the apex domain
-/// (e.g. <c>example.com</c>). Hostname is the record name.
+/// (e.g. <c>example.com</c>). Hostname is the record name. It also publishes and removes the TXT records of a
+/// DNS-01 challenge in the zone.
 /// </summary>
-public sealed class DigitalOceanProvider : DNSProviderBase
+public sealed class DigitalOceanProvider : DNSProviderBase, IAcmeDnsProvider
 {
     private const string DefaultServer = "api.digitalocean.com";
 
@@ -89,6 +90,85 @@ public sealed class DigitalOceanProvider : DNSProviderBase
             ip,
             (type, address, ct) => UpdateOneAsync(server, headers, record, host, type, address, ct),
             cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<(bool Ok, string Message)> SetTxtAsync(DNSRecord record, string name, string value, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        if (string.IsNullOrWhiteSpace(record.Password) || string.IsNullOrWhiteSpace(record.Zone))
+        {
+            return (false, "DigitalOcean needs an API token and a zone to publish the TXT record.");
+        }
+
+        var body = JsonSerializer.Serialize(new Dictionary<string, object> { ["type"] = "TXT", ["name"] = RelativeName(name, record.Zone), ["data"] = value, ["ttl"] = 60 });
+        var create = await SendAsync(HttpMethod.Post, RecordsUrl(record), cancellationToken, Auth(record), body).ConfigureAwait(false);
+        return create.Ok
+            ? (true, "published")
+            : (false, "DigitalOcean did not create the TXT record (HTTP " + create.Status.ToString(CultureInfo.InvariantCulture) + "). The API token needs write access.");
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> RemoveTxtAsync(DNSRecord record, string name, string value, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        var list = await SendAsync(HttpMethod.Get, RecordsUrl(record) + "?type=TXT&name=" + Uri.EscapeDataString(name), cancellationToken, Auth(record)).ConfigureAwait(false);
+        if (!list.Ok)
+        {
+            return false;
+        }
+
+        // Only the record with this value is removed, so another client's TXT record of the same name stays.
+        var removed = true;
+        foreach (var id in TxtIds(list.Body, value))
+        {
+            var delete = await SendAsync(HttpMethod.Delete, RecordsUrl(record) + "/" + id, cancellationToken, Auth(record)).ConfigureAwait(false);
+            removed &= delete.Ok || delete.Status == 404;
+        }
+
+        return removed;
+    }
+
+    // The zone's records address.
+    private string RecordsUrl(DNSRecord record)
+        => ServerBase(record, DefaultServer) + "/v2/domains/" + Uri.EscapeDataString(record.Zone.Trim().TrimEnd('.')) + "/records";
+
+    private static List<KeyValuePair<string, string>> Auth(DNSRecord record)
+        => new() { new("Authorization", "Bearer " + record.Password) };
+
+    // DigitalOcean names a record by its part in front of the zone.
+    private static string RelativeName(string name, string zone)
+    {
+        var domain = "." + zone.Trim().TrimEnd('.');
+        return name.EndsWith(domain, StringComparison.OrdinalIgnoreCase) ? name[..^domain.Length] : name;
+    }
+
+    private static List<string> TxtIds(string body, string value)
+    {
+        var ids = new List<string>();
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (!doc.RootElement.TryGetProperty("domain_records", out var records) || records.ValueKind != JsonValueKind.Array)
+            {
+                return ids;
+            }
+
+            foreach (var item in records.EnumerateArray())
+            {
+                if (item.TryGetProperty("data", out var data) && string.Equals(data.GetString()?.Trim('"'), value, StringComparison.Ordinal)
+                    && item.TryGetProperty("id", out var id))
+                {
+                    ids.Add(id.ValueKind == JsonValueKind.Number ? id.GetRawText() : id.GetString() ?? string.Empty);
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Nothing to remove.
+        }
+
+        return ids.FindAll(id => id.Length > 0);
     }
 
     private async Task<(bool Ok, string Message)> UpdateOneAsync(

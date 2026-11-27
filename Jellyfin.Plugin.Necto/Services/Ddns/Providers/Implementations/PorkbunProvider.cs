@@ -23,10 +23,11 @@ namespace Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
 /// Porkbun (port of ddclient's <c>nic_porkbun_update</c>). For each enabled record type it looks up the
 /// existing A/AAAA record via <c>retrieveByNameType</c>, then PATCHes its content via <c>editByNameType</c>,
 /// preserving the record's existing TTL and notes. Set <see cref="DNSRecord.Login"/> to the Porkbun
-/// <c>apikey</c> and <see cref="DNSRecord.Password"/> to the <c>secretapikey</c>. Optionally set
+/// <c>apikey</c> and <see cref="DNSRecord.Password"/> to the <c>secretapikey</c>. It also publishes and removes the TXT
+/// records of a DNS-01 challenge, which needs the root domain. Optionally set
 /// <see cref="DNSRecord.Zone"/> to the root domain. Otherwise the hostname is split on the first dot.
 /// </summary>
-public sealed class PorkbunProvider : DNSProviderBase
+public sealed class PorkbunProvider : DNSProviderBase, IAcmeDnsProvider
 {
     private const string DefaultServer = "api.porkbun.com";
 
@@ -124,6 +125,84 @@ public sealed class PorkbunProvider : DNSProviderBase
             ip,
             (type, address, ct) => UpdateTypeAsync(server, domain, subDomain, type, address, record, ct),
             cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<(bool Ok, string Message)> SetTxtAsync(DNSRecord record, string name, string value, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        if (string.IsNullOrWhiteSpace(record.Login) || string.IsNullOrWhiteSpace(record.Password) || string.IsNullOrWhiteSpace(record.Zone))
+        {
+            return (false, "Porkbun needs an API key, a secret API key, and a root domain to publish the TXT record.");
+        }
+
+        var zone = record.Zone.Trim().TrimEnd('.');
+        var body = "{\"secretapikey\":" + JsonSerializer.Serialize(record.Password)
+            + ",\"apikey\":" + JsonSerializer.Serialize(record.Login)
+            + ",\"name\":" + JsonSerializer.Serialize(RelativeName(name, zone))
+            + ",\"type\":\"TXT\",\"content\":" + JsonSerializer.Serialize(value) + ",\"ttl\":\"600\"}";
+        var create = await SendAsync(HttpMethod.Post, ServerBase(record, DefaultServer) + "/api/json/v3/dns/create/" + Uri.EscapeDataString(zone), cancellationToken, JsonHeaders, body).ConfigureAwait(false);
+        return create.Ok && create.Body.Contains("SUCCESS", StringComparison.OrdinalIgnoreCase)
+            ? (true, "published")
+            : (false, "Porkbun did not create the TXT record (HTTP " + create.Status + "). Turn on API access for the domain.");
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> RemoveTxtAsync(DNSRecord record, string name, string value, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        var zone = record.Zone.Trim().TrimEnd('.');
+        var server = ServerBase(record, DefaultServer) + "/api/json/v3/dns/";
+        var list = await SendAsync(HttpMethod.Post, server + "retrieveByNameType/" + Uri.EscapeDataString(zone) + "/TXT/" + Uri.EscapeDataString(RelativeName(name, zone)), cancellationToken, JsonHeaders, BuildAuthBody(record)).ConfigureAwait(false);
+        if (!list.Ok)
+        {
+            return false;
+        }
+
+        // Only the record with this value is removed, so another client's TXT record of the same name stays.
+        var removed = true;
+        foreach (var id in TxtIds(list.Body, value))
+        {
+            var delete = await SendAsync(HttpMethod.Post, server + "delete/" + Uri.EscapeDataString(zone) + "/" + Uri.EscapeDataString(id), cancellationToken, JsonHeaders, BuildAuthBody(record)).ConfigureAwait(false);
+            removed &= delete.Ok;
+        }
+
+        return removed;
+    }
+
+    // Porkbun names a record by its part in front of the root domain.
+    private static string RelativeName(string name, string zone)
+    {
+        var domain = "." + zone;
+        return name.EndsWith(domain, StringComparison.OrdinalIgnoreCase) ? name[..^domain.Length] : name;
+    }
+
+    private static List<string> TxtIds(string body, string value)
+    {
+        var ids = new List<string>();
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (!doc.RootElement.TryGetProperty("records", out var records) || records.ValueKind != JsonValueKind.Array)
+            {
+                return ids;
+            }
+
+            foreach (var item in records.EnumerateArray())
+            {
+                if (item.TryGetProperty("content", out var content) && string.Equals(content.GetString()?.Trim('"'), value, StringComparison.Ordinal)
+                    && item.TryGetProperty("id", out var id))
+                {
+                    ids.Add(id.ValueKind == JsonValueKind.Number ? id.GetRawText() : id.GetString() ?? string.Empty);
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Nothing to remove.
+        }
+
+        return ids.FindAll(id => id.Length > 0);
     }
 
     private static string BuildAuthBody(DNSRecord record)
