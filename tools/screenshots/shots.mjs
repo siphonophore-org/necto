@@ -121,8 +121,8 @@ shots['Script Steps'] = {
   }
 };
 for (const s of SECTIONS) {
-  shots[`settings/${title(s)}`] = { path: tool('settings'), vp: { width: 800, height: 1200 }, act: async (p) => alone(await section(p, s), `settings/${title(s)}.png`) };
-  shots[`troubleshooting/${title(s)}`] = { path: tool('troubleshooting'), vp: { width: 800, height: 1200 }, act: async (p) => alone(await section(p, s), `troubleshooting/${title(s)}.png`) };
+  shots[`settings/${title(s)}`] = { path: tool('settings'), vp: { width: 800, height: 1200 }, act: async (p) => alone(await section(p, s === 'WireGuard' ? 'VPN' : s), `settings/${title(s)}.png`) };
+  shots[`troubleshooting/${title(s)}`] = { path: tool('troubleshooting'), vp: { width: 800, height: 1200 }, act: async (p) => alone(await section(p, s === 'WireGuard' ? 'VPN' : s), `troubleshooting/${title(s)}.png`) };
 }
 // The Pages tool's Images and Stores tabs.
 for (const tab of ['Images', 'Stores']) {

@@ -66,7 +66,7 @@ export function linksInsecure(linkUrl, protocol) {
 }
 
 // buildSettings
-// Fills the Invites section of Settings: the address links start with, the signup rate limit, and the wrong PINs
+// Fills the Invites section of Settings: the address links start with, the sign-up rate limit, and the wrong PINs
 // that lock an invite.
 //
 // Inputs

@@ -75,9 +75,10 @@ def sign_in(api_class, base, state, name):
 
 
 def enable_tools(api):
-    """Issues, the proxy and WireGuard are off until turned on."""
+    """Every tool with a switch is off until turned on. The proxy turns on with its routes, and DDNS with its records."""
     cfg = config(api)
-    cfg['Issues']['Enabled'] = True
+    for key in ('Requests', 'Issues', 'InviteSettings', 'Scripts', 'CustomPages', 'Storage'):
+        cfg.setdefault(key, {})['Enabled'] = True
     cfg['WireGuard']['Enabled'] = True
     cfg['WireGuard']['HostEnabled'] = True
     cfg['WireGuard']['PublicEndpoint'] = 'vpn.example.com'
@@ -151,6 +152,10 @@ def ddns(api):
             {'Name': 'Backup', 'Provider': 'DuckDns', 'Hostname': 'livingroom-example.duckdns.org', 'Password': 'demo-token-not-real', 'UpdateIPv4': True, 'UpdateEveryMinutes': 10080, 'Enabled': False},
         ):
             api.post('/Ddns/Records', record)
+    settings = api.get('/Ddns/Settings')
+    settings['Enabled'] = True
+    settings['Records'] = []
+    api.post('/Ddns/Settings', settings, ok=None)
     return [r['Record']['Id'] for r in api.get('/Ddns/Records')['Records']]
 
 

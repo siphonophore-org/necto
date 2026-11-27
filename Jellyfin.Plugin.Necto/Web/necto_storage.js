@@ -318,7 +318,7 @@ export default function (view) {
     // [object]: { element, button, fail(text) }.
     function actionRow(label, destructive) {
         var problem = h('div', { class: 'stolon-error stolon-hidden necto-storage-actions-why', role: 'status' });
-        var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + (destructive ? 'destructive' : 'primary') }, [h('span', { text: label })]);
+        var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + (destructive ? 'stolon-destructive' : 'stolon-primary') }, [h('span', { text: label })]);
         var row = h('div', { class: 'necto-storage-actions' }, [problem, button]);
         return {
             element: row,
