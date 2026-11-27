@@ -3,7 +3,7 @@
 // with their links, makes new ones within what the member's groups allow, and holds the page's browser notification
 // switch.
 
-import { startWebClientShell, loadTranslations, createTranslations, createQrCode, confirmDialog, createWebPushToggle, h, webSettingsCheckbox, copyToClipboard } from './configurationpage?name=necto_shared.js';
+import { startWebClientShell, loadTranslations, createTranslations, createQrCode, webConfirm, createWebPushToggle, webEmptyState, h, copyToClipboard } from './configurationpage?name=necto_shared.js';
 import { STATE_KEYS, stateName } from './configurationpage?name=necto_invites.js';
 
 // inviteLink
@@ -74,8 +74,8 @@ function iconButton(icon, title, action, onClick) {
 }
 
 // bindPushRow
-// Draws the browser notification switch as a web client settings checkbox, kept in step with Stolon's web push toggle,
-// which does the work out of sight. The section stays hidden while the server offers no web push.
+// Draws the browser notification switch as a checkbox row of the web client's settings pages. The section stays
+// hidden while the server offers no web push.
 //
 // Inputs
 // doc [Document]: The page.
@@ -86,13 +86,12 @@ function iconButton(icon, title, action, onClick) {
 // [object]: The toggle's handle.
 export function bindPushRow(doc, session, t) {
     var section = doc.getElementById('pushSection');
-    var row = doc.getElementById('pushRow');
-    row.innerHTML = webSettingsCheckbox('chkBrowserNotifications', t.tr('RequestsLabelNotifyInThisBrowser'), 'browserNotificationsState');
-    var box = doc.getElementById('chkBrowserNotifications');
-    var line = doc.getElementById('browserNotificationsState');
     // The one service worker Notifications serves, at the server's root, so a browser keeps one subscription for
     // every user page.
     var toggle = createWebPushToggle({
+        look: 'settings',
+        id: 'chkBrowserNotifications',
+        label: t.tr('RequestsLabelNotifyInThisBrowser'),
         keyUrl: 'Notifications/Push/Key',
         subscribeUrl: 'Notifications/Push/Subscribe',
         unsubscribeUrl: 'Notifications/Push/Unsubscribe',
@@ -101,25 +100,40 @@ export function bindPushRow(doc, session, t) {
         failedText: t.tr('NotificationsErrorPush'),
         onChange: function () { sync(); }
     });
-    var sync = function () {
-        var state = toggle.getState();
-        section.hidden = state === null;
-        box.checked = state === 'on';
-        box.disabled = toggle.button.hidden || toggle.button.disabled;
-        line.textContent = Array.prototype.filter.call(toggle.status.childNodes, function (n) {
-            return !(n.classList && n.classList.contains('material-icons'));
-        }).map(function (n) { return n.textContent; }).join('').trim();
-    };
-    if (typeof MutationObserver !== 'undefined') {
-        new MutationObserver(sync).observe(toggle.element, { subtree: true, childList: true, characterData: true, attributes: true });
-    }
-    box.addEventListener('change', function () {
-        box.checked = toggle.getState() === 'on';
-        toggle.button.click();
-        sync();
-    });
-    toggle.refresh().then(sync);
+    var sync = function () { section.hidden = toggle.getState() === null; };
+    doc.getElementById('pushRow').appendChild(toggle.element);
+    toggle.refresh().then(sync, sync);
     return toggle;
+}
+
+// SIGNED_OUT_FRAME
+// The classes of the web client shell's signed out frame, the web client login page's, as Stolon's frame writes them.
+var SIGNED_OUT_FRAME = { body: ['stolon-shell-signed-out'], column: ['standalonePage', 'padded-left', 'padded-right', 'padded-bottom-page'], form: ['readOnlyContent', 'margin-auto-x'] };
+
+// followSignInFrame
+// Shows the shell's sign in screen in the web client login page's frame, its header with the logo alone and its form's
+// column, and the signed in shell again once the viewer is in. Stolon draws a User page's sign in in the signed in frame.
+//
+// Inputs
+// doc [Document]: The page, already started with startWebClientShell.
+//
+// Output
+// [function]: Syncs the frame with the page now, which the observer calls on every change of the gate.
+export function followSignInFrame(doc) {
+    var gate = doc.querySelector('.stolon-shell-gate');
+    var column = doc.querySelector('.stolon-shell-column');
+    var form = doc.querySelector('.stolon-shell-form');
+    var sync = function () {
+        var signingIn = !!gate && !gate.hidden && !!gate.querySelector('.stolon-sign-in');
+        SIGNED_OUT_FRAME.body.forEach(function (c) { doc.body.classList.toggle(c, signingIn); });
+        SIGNED_OUT_FRAME.column.forEach(function (c) { if (column) column.classList.toggle(c, signingIn); });
+        SIGNED_OUT_FRAME.form.forEach(function (c) { if (form) form.classList.toggle(c, signingIn); });
+    };
+    if (gate && typeof MutationObserver !== 'undefined') {
+        new MutationObserver(sync).observe(gate, { childList: true, attributes: true, attributeFilter: ['hidden'] });
+    }
+    sync();
+    return sync;
 }
 
 // start
@@ -133,7 +147,9 @@ export function bindPushRow(doc, session, t) {
 export async function start(doc) {
     var t = await loadTranslations('Necto/Translations').catch(function () { return createTranslations({}); });
     t.apply(doc.body);
-    var session = await startWebClientShell({ translations: 'Necto/Translations' });
+    var started = startWebClientShell({ translations: 'Necto/Translations' });
+    followSignInFrame(doc);
+    var session = await started;
     if (!session) return;
     var byId = function (id) { return doc.getElementById(id); };
     var toast = function (text) { session.toast.show(text); };
@@ -153,19 +169,20 @@ export async function start(doc) {
             draw();
         }).catch(function () {
             byId('memberList').hidden = true;
-            byId('memberEmpty').textContent = t.tr('InvitesErrorLoad');
+            byId('memberEmpty').innerHTML = webEmptyState(t.tr('InvitesErrorLoad'), '');
             byId('memberEmpty').hidden = false;
         });
     };
 
     // draw
-    // Draws each invite as a row with its name, its state, group, and uses, and its Copy link, QR, and Delete buttons.
+    // Draws each invite as a row with its name, its state, group, and uses, and its Copy link, QR, and Remove buttons.
     var draw = function () {
         handles.splice(0).forEach(function (handle) { handle.destroy(); });
         var list = byId('memberList');
         list.textContent = '';
+        var invites = mine.Invites || [];
         if (!mine.MayCreate) {
-            byId('memberLead').textContent = t.tr('InvitesMemberNotAllowed');
+            byId('memberLead').textContent = t.tr(invites.length ? 'InvitesMemberNotAllowed' : 'InvitesErrorNotAllowed');
         }
 
         byId('newInviteForm').hidden = !mine.MayCreate;
@@ -173,13 +190,16 @@ export async function start(doc) {
         select.textContent = '';
         (mine.Groups || []).forEach(function (g) { select.appendChild(h('option', { value: g.Id, text: g.Name })); });
 
-        byId('memberEmpty').hidden = (mine.Invites || []).length > 0;
-        list.hidden = !byId('memberEmpty').hidden;
+        // With no invites the lead already says the groups allow none, so the empty state shows only for a member who may make one.
+        byId('memberEmpty').innerHTML = webEmptyState(t.tr('InvitesMemberEmpty'), '');
+        byId('memberEmpty').hidden = invites.length > 0 || !mine.MayCreate;
+        list.hidden = invites.length === 0;
 
-        (mine.Invites || []).forEach(function (invite) {
+        invites.forEach(function (invite) {
             var name = invite.Label || t.tr('InvitesUntitled');
             var link = inviteLink(invite.Token, mine.LinkUrl, doc.baseURI);
-            var qr = createQrCode({ value: link, layout: 'inline', label: name, fileName: 'invite.png' });
+            // The code alone, opened from the row's own QR button, which matches the row's other web client buttons.
+            var qr = createQrCode({ value: link, layout: 'inline', showValue: false, label: name, fileName: 'invite.png' });
             handles.push(qr);
             list.appendChild(h('div', { class: 'listItem listItem-border', 'data-invite': invite.Id }, [
                 h('span', { class: 'material-icons listItemIcon listItemIcon-transparent', 'aria-hidden': 'true', text: 'mail' }),
@@ -191,8 +211,8 @@ export async function start(doc) {
                     copyToClipboard(link).then(function (ok) { toast(t.tr(ok ? 'InvitesLinkCopied' : 'InvitesErrorCopy')); });
                 }),
                 iconButton('qr_code_2', t.tr('InvitesButtonShowQr'), 'qr', function () { qr.open(); }),
-                iconButton('delete', t.tr('Delete'), 'delete', function () {
-                    confirmDialog(t.tr('InvitesConfirmDelete'), { title: t.format('DeleteName', name), confirmText: t.tr('Delete'), destructive: true }).then(function (ok) {
+                iconButton('delete', t.tr('ButtonRemove'), 'remove', function () {
+                    webConfirm(t.tr('InvitesConfirmDelete'), { title: t.format('TitleRemoveName', name), confirmText: t.tr('ButtonRemove'), cancelText: t.tr('ButtonCancel'), destructive: true }).then(function (ok) {
                         if (!ok) return;
                         session.request('Invites/Mine/' + invite.Id, { method: 'DELETE' }).then(function (r) {
                             toast(t.tr(r.ok ? 'InvitesDeleted' : 'InvitesErrorDelete'));

@@ -236,3 +236,33 @@ test('the counts, the expired group warning, and the http warning follow the inv
     assert.equal(sections.linksInsecure('', 'http:'), true);
     assert.equal(sections.linksInsecure('https://media.example.com', 'http:'), false);
 });
+
+test('the member page shows its sign in in the web client login page frame, and the signed in shell after', async function () {
+    var page = installPage({});
+    var member = await loadScript('necto_invites_member.js');
+    var doc = page.dom.document;
+    var column = doc.createElement('div');
+    column.className = 'stolon-shell-column';
+    var form = doc.createElement('div');
+    form.className = 'stolon-shell-form';
+    var gate = doc.createElement('div');
+    gate.className = 'stolon-shell-gate';
+    form.appendChild(gate);
+    column.appendChild(form);
+    doc.body.appendChild(column);
+    var signIn = doc.createElement('section');
+    signIn.className = 'stolon-screen stolon-sign-in';
+    gate.appendChild(signIn);
+
+    var sync = member.followSignInFrame(doc);
+    assert.ok(doc.body.classList.contains('stolon-shell-signed-out'));
+    assert.ok(column.classList.contains('standalonePage') && column.classList.contains('padded-bottom-page'));
+    assert.ok(form.classList.contains('readOnlyContent') && form.classList.contains('margin-auto-x'));
+
+    gate.removeChild(signIn);
+    gate.hidden = true;
+    sync();
+    assert.ok(!doc.body.classList.contains('stolon-shell-signed-out'));
+    assert.ok(!column.classList.contains('standalonePage'));
+    assert.ok(!form.classList.contains('readOnlyContent'));
+});
