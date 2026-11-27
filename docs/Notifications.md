@@ -125,7 +125,7 @@ Necto makes its VAPID key pair the first time a page needs it, and keeps the pri
 A request's or an issue's notification shows its poster, and a newer one about the same request or issue replaces the older one on a device. Other events replace the last one of the same kind.
 
 !!! info "HTTPS"
-    Browsers allow notifications only on a page served over HTTPS, or on localhost. On an iPhone or iPad the page must be added to the home screen first.
+    Browsers allow notifications only on a page served over HTTPS, or on localhost. So every browser notifications option, **Browser notifications** and its test in **Settings > Notifications**, the switch on the members' invites page, and **Notifications** in the request page's user menu, shows only on such a page. On an iPhone or iPad the page must be added to the home screen first.
 
 ## Events
 

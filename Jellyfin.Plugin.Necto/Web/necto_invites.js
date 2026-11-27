@@ -120,7 +120,7 @@ export function stateFilters(t) {
 }
 
 // stateCell
-// Draws the end of an invite's row: its state badge, then Copy link and Show QR code for its link.
+// Draws the end of an invite's row: its state badge, then Copy link and Show QR code for its link, evenly spaced.
 //
 // Inputs
 // invite [object]: The invite.
@@ -136,8 +136,8 @@ export function stateCell(invite, shared) {
             + '<span class="material-icons" aria-hidden="true">' + icon + '</span></button>';
     };
     var html = '<span data-role="invite-state">' + shared.badge(STATE_COLORS[state], t.tr(STATE_KEYS[state])) + '</span>';
-    if (!invite.Token) return html;
-    return html + button('copy-link', 'content_copy', t.tr('InvitesButtonCopyLink')) + button('show-qr', 'qr_code_2', t.tr('InvitesButtonShowQr'));
+    if (invite.Token) html += button('copy-link', 'content_copy', t.tr('InvitesButtonCopyLink')) + button('show-qr', 'qr_code_2', t.tr('InvitesButtonShowQr'));
+    return '<div class="necto-row-aside">' + html + '</div>';
 }
 
 // BULK_VERBS

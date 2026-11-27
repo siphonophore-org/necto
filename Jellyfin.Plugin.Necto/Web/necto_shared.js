@@ -100,6 +100,15 @@ export function rowBadge(state) {
     return badge;
 }
 
+// isSecurePage
+// Tells whether the page is open over HTTPS or on this machine, the only places a browser offers notifications.
+//
+// Output
+// [boolean]: false only when the browser says the page is not a secure context.
+export function isSecurePage() {
+    return typeof globalThis.isSecureContext !== 'boolean' || globalThis.isSecureContext;
+}
+
 // toolName
 // Names a Settings or Troubleshooting section that belongs to no tool, in the viewer's language once the strings load.
 export { tabName as toolName };

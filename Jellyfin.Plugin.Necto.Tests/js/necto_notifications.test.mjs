@@ -190,3 +190,16 @@ test('a custom body lists every placeholder the server fills', async function ()
     assert.deepEqual(mod.bodyPlaceholders({ tr: function (k) { return k; } }).map(function (p) { return p[0]; }),
         ['title', 'body', 'event', 'eventName', 'level', 'link', 'time', 'color', 'serverURL', 'userId']);
 });
+
+test('the Settings section hides browser notifications and their test on a page that is not HTTPS', async function () {
+    globalThis.isSecureContext = false;
+    try {
+        var opened = await openTool('settings', { 'GET Notifications/Channels': channels() });
+        var section = opened.section;
+
+        assert.equal(section.querySelector('[data-field="BrowserNotifications"]').closest('.stolon-hidden') !== null, true);
+        assert.deepEqual(texts(section.querySelector('[data-role="user-tests"]'), 'button'), ['Test Jellyfin messages']);
+    } finally {
+        delete globalThis.isSecureContext;
+    }
+});

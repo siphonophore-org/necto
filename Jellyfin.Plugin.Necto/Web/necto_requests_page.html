@@ -1216,8 +1216,9 @@
             function item(icon, text, href) { return S.webMenuItem(S.webIcon(USER_MENU_ICONS[icon]), text, href ? prefix + '/web/#/' + href : null, icon); }
             var tr = WC.tr;
             // Browser notifications sit with the viewer's own settings, as a button the page answers itself.
+            // A browser offers notifications only over HTTPS, so the item shows only there.
             var html = item('profile', tr('Profile', 'Profile'), 'userprofile?userId=' + encodeURIComponent(access.UserId)) + item('settings', tr('Settings', 'Settings'), 'mypreferencesmenu')
-                + item('notifications', str('TabNotifications'));
+                + (window.isSecureContext === false ? '' : item('notifications', str('TabNotifications')));
             if (access.IsAdministrator) html += S.webMenuDivider() + item('dashboard', tr('TabDashboard', 'Dashboard'), 'dashboard') + item('metadata', tr('MetadataManager', 'Metadata Manager'), 'metadata');
             html += S.webMenuDivider() + item('quickconnect', tr('QuickConnect', 'Quick Connect'), 'quickconnect') + item('signout', tr('ButtonSignOut', 'Sign Out'));
             el('userMenuList').innerHTML = html;

@@ -194,8 +194,11 @@ function buildSettings(content, ctx) {
         return button;
     }));
 
+    // A browser offers notifications only over HTTPS, so the option shows only there.
+    var secure = nectoModule.isSecurePage();
+    browsers.element.classList.toggle('stolon-hidden', !secure);
     var userTests = h('div', { class: 'stolon-button-row', 'data-role': 'user-tests' }, [
-        testButton(shared, t.tr('NotificationsButtonTestBrowsers'), function () { return builtIn.Browsers; }, function () { return t.tr('LabelBrowserNotifications'); }, report),
+        secure ? testButton(shared, t.tr('NotificationsButtonTestBrowsers'), function () { return builtIn.Browsers; }, function () { return t.tr('LabelBrowserNotifications'); }, report) : null,
         testButton(shared, t.tr('NotificationsButtonTestApps'), function () { return builtIn.Apps; }, function () { return t.tr('NotificationsChannelApps'); }, report)
     ]);
 
