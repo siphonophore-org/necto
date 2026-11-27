@@ -46,7 +46,7 @@ var MAP_LAYERS = [
     { key: 'blocked', tool: 'proxy', field: 'Blocked', label: 'HeaderRefused', color: 'purple', icon: 'block' },
     { key: 'peers', tool: 'wireguard', field: 'Peers', label: 'HeaderPeers', color: 'green', icon: 'devices' },
     { key: 'connections', tool: 'wireguard', field: 'Connections', label: 'HeaderConnections', color: 'orange', icon: 'lan' },
-    { key: 'server', tool: 'any', field: 'Server', label: 'DashboardLayerServer', color: 'yellow', icon: 'dns', column: false }
+    { key: 'server', tool: 'any', field: 'Server', label: 'DashboardLayerServer', color: 'yellow', icon: 'dns', column: false, outline: true }
 ];
 
 // TYPE_TOOLS
@@ -934,7 +934,7 @@ export default function (view) {
         mapHost.innerHTML = '';
         tableHost.innerHTML = '';
         map = nectoModule.createWorldMap({
-            layers: layers.map(function (l) { return { key: l.key, label: l.label, color: l.color }; }),
+            layers: layers.map(function (l) { return { key: l.key, label: l.label, color: l.color, outline: !!l.outline }; }),
             label: t.tr('HeaderLocations'),
             onLayersChange: showLayers
         });

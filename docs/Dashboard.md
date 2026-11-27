@@ -47,7 +47,7 @@ Each card leads with one number and the word for what it counts, such as "1 pend
 | **Refused** | Connections the proxy refused | Proxy |
 | **Peers** | WireGuard peers, by the address they connect from | WireGuard |
 | **Connections** | WireGuard connections, by the host they connect to | WireGuard |
-| **This server** | This server's own country | Either |
+| **This server** | This server's own country, outlined rather than filled | Either |
 
 A tool that is off takes its layers with it. A layer button turns its layer on or off, and the table shows a column for each layer that is on but **This server**, which only marks the map. On a narrow screen each column heading shows as an icon. The country column takes twice a count column's width. The table shows a dash in each column until the map is read and while the location database loads, and "No locations yet." when no country has anything to show. Select a country on the map to select its row, or a row to mark its country.
 
