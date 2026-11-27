@@ -31,6 +31,8 @@ A test of **Browser notifications**, **Jellyfin messages**, or **Administrators*
 
 **Settings > Notifications** holds the settings. It saves through its own route, so no stored address, header, or password reaches the page.
 
+The SMTP password, the VAPID private key, and each channel's address, headers, and email addresses live encrypted in their own file, `Jellyfin.Plugin.Necto.Notifications.Secrets.json`, beside the configuration and readable by Jellyfin's account alone. The plugin configuration Jellyfin hands out holds none of them, and saving another page never changes them.
+
 ### User Channels
 
 * **Browser notifications** shows events in the browsers users turned notifications on in.
@@ -72,7 +74,7 @@ Each channel opens in a sidecar. **Add Discord**, **Add webhook**, and **Add ema
 | `{level}` | `Info`, `Warning`, or `Error` |
 | `{link}` | The page the event opens, made absolute with **Server address** |
 | `{time}` | When it was sent, in UTC |
-| `{color}` | The Discord color of its level |
+| `{color}` | The Discord color, as a number. See [Discord Colors](#discord-colors) |
 | `{serverURL}` | **Server address** |
 | `{userId}` | The user the event is about |
 
@@ -93,9 +95,24 @@ An event's own values, such as `{inviteId}`, are placeholders too, and a webhook
 
 An email channel offers **Requester or reporter** only, since an email carries the event's words alone. A switch left on with nothing to carry sends `null` in a webhook and no field in Discord.
 
+### Discord Colors
+
+Each request and issue event has its own embed color. Every other event takes its level's, blue for `Info`, orange for `Warning`, and red for `Error`.
+
+| Event | Color |
+| :--- | :--- |
+| New request | Amber, `#FFC107` |
+| Request approved | Blue, `#00A4DC` |
+| Request available | Green, `#4CAF50` |
+| Aging request | Orange, `#FF9800` |
+| Expiring request | Deep orange, `#FF5722` |
+| Request rejected and Request not sent | Red, `#F44336` |
+| Issue reported | Orange, `#FF9800` |
+| Issue resolved | Green, `#4CAF50` |
+
 ## Browser Notifications
 
-Necto makes its VAPID key pair the first time a page needs it, and keeps the private key encrypted. In a browser, every user page registers one service worker, `Notifications/Push/Worker.js`, at the server's root, so a browser keeps one subscription for all of them. The request page installed as an app keeps its own worker, since a phone ties notifications to the installed app. A user page shows **Turn on notifications** while the browser can take them, and **Turn off notifications** once it has.
+Necto makes its VAPID key pair the first time a page needs it, and keeps the private key encrypted in the Notifications secrets file. In a browser, every user page registers one service worker, `Notifications/Push/Worker.js`, at the server's root, so a browser keeps one subscription for all of them. The request page installed as an app keeps its own worker, since a phone ties notifications to the installed app. A user page shows **Turn on notifications** while the browser can take them, and **Turn off notifications** once it has.
 
 A request's or an issue's notification shows its poster, and a newer one about the same request or issue replaces the older one on a device. Other events replace the last one of the same kind.
 
