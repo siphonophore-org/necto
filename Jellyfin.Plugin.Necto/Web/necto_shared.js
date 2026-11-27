@@ -662,7 +662,8 @@ export function createToolTable(view, shared, o) {
 // runBulk
 // Runs a bulk action on the rows picked that take it, one after another, asking first before a removal, and says
 // how many it changed. The result strings are named after a prefix, such as InvitesBulk for InvitesBulkEnabledOne,
-// InvitesBulkFailedOne, and InvitesBulkSkippedEnableOne, each with a Many form.
+// InvitesBulkFailedOne, and InvitesBulkSkippedEnableOne, each with a Many form. A row another verb skips is counted
+// by InvitesBulkSkippedOne.
 //
 // Inputs
 // shared [object]: The Necto helper bag.
@@ -703,7 +704,7 @@ export function runBulk(shared, o) {
             if (failed) text.push(t.plural(failed, p + 'FailedOne', p + 'FailedMany'));
             var skipped = rows.length - picked.length;
             if (skipped) {
-                var kind = o.verb === 'enable' ? 'Enable' : 'Disable';
+                var kind = o.verb === 'enable' ? 'Enable' : o.verb === 'disable' ? 'Disable' : '';
                 text.push(t.plural(skipped, p + 'Skipped' + kind + 'One', p + 'Skipped' + kind + 'Many'));
             }
             if (o.report) o.report(text.join(' '), failed > 0);

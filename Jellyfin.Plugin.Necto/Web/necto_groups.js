@@ -914,7 +914,8 @@ export default function (view) {
 
     var shared = null;
     var page = null;
-    var list = null;
+    var table = null;
+    var rows = [];
     var groups = [];
     var users = [];
     var devices = [];
@@ -935,7 +936,7 @@ export default function (view) {
     function loadGroups() {
         var mine = ++loadSeq;
         // The cards show a dash until the groups and users are read.
-        if (!list) shared.renderCards('groupCards', groupCards({ groups: '–', members: '–', loose: '–', expiring: '–' }, shared.t));
+        if (!table) shared.renderCards('groupCards', groupCards({ groups: '–', members: '–', loose: '–', expiring: '–' }, shared.t));
         return Promise.all([
             shared.request('Groups'),
             shared.request('Groups/Users'),
@@ -954,15 +955,51 @@ export default function (view) {
             config = answers[5];
             sessions = Array.isArray(answers[6]) ? answers[6] : [];
             shared.renderCards('groupCards', groupCards(groupCounts(groups, users, new Date()), shared.t));
-            var items = groupItems(groups, users, shared);
-            if (list) list.setItems(items);
-            else {
-                list = nectoModule.createRecordList({ items: items, label: shared.t.tr('TabGroups'), onOpen: function (item) { openGroup(item.group); } });
-                view.querySelector('#groupList').appendChild(list.element);
-            }
+            rows = groupItems(groups, users, shared);
+            if (!table) { createTable(); return table.load(); }
+            return table.refresh();
         }).catch(function () {
             if (mine === loadSeq) report(shared.t.tr('ErrorLoadGroups'), true);
         });
+    }
+
+    // createTable
+    // Builds the groups' table, Everyone first, with its search, Add group, and Remove for the groups picked.
+    function createTable() {
+        var t = shared.t;
+        table = nectoModule.createToolTable(view, shared, {
+            containerId: 'groupList',
+            rows: function () { return rows; },
+            idKey: 'id',
+            search: t.tr('GroupsSearch'),
+            empty: { message: t.tr('GroupsEmpty'), filteredMessage: t.tr('GroupsEmptyMatch') },
+            title: function (item) { return item.title; },
+            lines: function (item) { return [item.secondary, item.tags.map(function (tag) { return tag.label; }).join(' · ')]; },
+            add: [{ id: 'btnAddGroup', icon: 'add', text: t.tr('ButtonAddGroup'), onClick: function () { openGroup(null); } }],
+            bulk: [{ verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
+            onBulk: bulk,
+            onRowClick: function (item) { openGroup(item.group); },
+            onReload: function () { loadGroups(); }
+        });
+        page.addCleanup(function () { if (table) { table.destroy(); table = null; } });
+    }
+
+    // bulk
+    // Removes the groups picked, asking first. Everyone stays, and so do the members and their accounts.
+    //
+    // Output
+    // [Promise]: Resolves once the groups are read again.
+    function bulk(verb, picked) {
+        var t = shared.t;
+        return nectoModule.runBulk(shared, {
+            verb: 'remove',
+            rows: picked,
+            prefix: 'GroupsBulk',
+            fits: function (item) { return !isEveryone(item.group); },
+            confirm: { text: t.tr('ConfirmRemoveGroup'), title: t.plural(picked.length, 'GroupsHeaderRemoveOne', 'GroupsHeaderRemoveMany') },
+            call: function (item) { return shared.request('Groups/' + item.group.Id, 'DELETE'); },
+            report: report
+        }).then(function (done) { if (done !== null) return loadGroups(); });
     }
 
     // confirmDeleteOnExpiry
@@ -1063,9 +1100,6 @@ export default function (view) {
 
     var made = nectoModule.createNectoPage(view, {
         page: 'necto_groups',
-        bind: function () {
-            view.querySelector('#btnAddGroup').addEventListener('click', function () { openGroup(null); });
-        },
         load: function () { loadGroups(); }
     });
     shared = made.shared;

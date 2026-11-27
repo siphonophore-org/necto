@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton, clickDialogButton, dialogText, allToolsOn } from './support.mjs';
+import { installPage, loadScript, pageView, settle, routeApi, rowHtml, pickRows, texts, clickButton, clickDialogButton, dialogText, allToolsOn } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
@@ -37,7 +37,7 @@ function users() {
 async function openPage(answers) {
     var page = installPage({ config: allToolsOn() });
     var dom = page.dom;
-    var view = pageView(dom, [dom.el('div', { id: 'groupList' }), dom.el('button', { id: 'btnAddGroup' }), dom.el('span', { id: 'groupsStatus' })]);
+    var view = pageView(dom, [dom.el('div', { id: 'groupsStatus' }), dom.el('div', { id: 'groupList' })]);
     dom.document.documentElement.appendChild(view);
     routeApi(page, Object.assign({ 'GET Groups': groups(), 'GET Groups/Users': users(), 'GET Devices': { Items: [{ AppName: 'Infuse' }] } }, answers || {}));
     var mod = await loadScript('necto_groups.js');
@@ -50,7 +50,7 @@ async function openPage(answers) {
 // openRow
 // Opens the group at a row of the list, and returns its sidecar.
 async function openRow(opened, index) {
-    opened.view.querySelectorAll('.stolon-record-list-row')[index].click();
+    opened.view.querySelectorAll('#groupList .stolon-table-row')[index].click();
     await settle(50);
     return opened.dom.document.querySelector('.stolon-sidecar');
 }
@@ -76,13 +76,30 @@ test('groupItems puts Everyone first with the users in no group, and each group 
     assert.deepEqual(items[1].tags.map(function (t) { return t.label; }), ['Password requirements', 'Inactivity']);
 });
 
-test('the page lists Everyone and every group from the Groups route', async function () {
+test('the page lists Everyone and every group from the Groups route in a table with search, Add group, and Remove', async function () {
     var opened = await openPage();
-    var list = opened.view.querySelector('.stolon-record-list');
-    assert.ok(list);
-    assert.match(list.textContent, /Everyone/);
-    assert.match(list.textContent, /Family/);
-    assert.equal(opened.view.querySelectorAll('.stolon-record-list-row').length, 2);
+    var rows = opened.view.querySelectorAll('#groupList .stolon-table-row');
+    assert.equal(rows.length, 2);
+    assert.match(rowHtml(rows[0]), /Everyone/);
+    assert.match(rowHtml(rows[1]), /Family[\s\S]*1 member[\s\S]*Password requirements · Inactivity/);
+    var controls = opened.view.querySelector('#groupList .stolon-table-controls');
+    assert.equal(controls.querySelector('input').getAttribute('placeholder'), 'Search groups');
+    assert.ok(controls.querySelector('#btnAddGroup'));
+    assert.deepEqual(texts(opened.view.querySelector('#groupList .stolon-table-bulk-actions'), '[data-bulk]'), ['Remove']);
+});
+
+test('bulk Remove asks first, removes the groups picked, and keeps Everyone', async function () {
+    var opened = await openPage();
+    pickRows(opened.view.querySelector('#groupList'), [0, 1]);
+    opened.view.querySelector('#groupList [data-bulk="remove"]').click();
+    await settle(50);
+    assert.equal(dialogText(opened.dom).title, 'Remove 2 groups');
+    clickDialogButton(opened.dom, 'Remove');
+    await settle(50);
+
+    var deletes = opened.page.requests.filter(function (r) { return r.type === 'DELETE'; });
+    assert.equal(deletes.length, 1);
+    assert.match(opened.view.querySelector('#groupsStatus').textContent, /Removed 1 group\. Skipped Everyone, which always stays\./);
 });
 
 test('a group opens in a sidecar named for it, with its sections, and Remove and Save on the shelf', async function () {
@@ -327,7 +344,7 @@ test('groupCounts counts the groups, the users in one, the users only Everyone h
 test('the page shows the group count cards over the list', async function () {
     var page = installPage({ config: allToolsOn() });
     var dom = page.dom;
-    var view = pageView(dom, [dom.el('div', { id: 'groupCards' }), dom.el('div', { id: 'groupList' }), dom.el('button', { id: 'btnAddGroup' }), dom.el('span', { id: 'groupsStatus' })]);
+    var view = pageView(dom, [dom.el('div', { id: 'groupCards' }), dom.el('div', { id: 'groupsStatus' }), dom.el('div', { id: 'groupList' })]);
     dom.document.documentElement.appendChild(view);
     routeApi(page, { 'GET Groups': groups(), 'GET Groups/Users': users(), 'GET Devices': { Items: [] } });
     var mod = await loadScript('necto_groups.js');
