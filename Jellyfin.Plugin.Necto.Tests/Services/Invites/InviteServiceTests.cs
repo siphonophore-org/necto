@@ -5,6 +5,7 @@ using Jellyfin.Plugin.Necto.Configuration.Groups;
 using Jellyfin.Plugin.Necto.Configuration.Invites;
 using Jellyfin.Plugin.Necto.Services.Invites;
 using Jellyfin.Plugin.Necto.Tests.Fakes;
+using Siphonophore.Stolon;
 using Xunit;
 
 namespace Jellyfin.Plugin.Necto.Tests.Services.Invites;
@@ -329,5 +330,38 @@ public sealed class InviteServiceTests : IDisposable
         Assert.False(_h.Service.Delete(theirs!.Id, member));
         Assert.True(_h.Service.Delete(theirs.Id));
         Assert.Empty(_h.Config.Configuration.Invites);
+    }
+
+    /// <summary>
+    /// The Invites tool's table pages the invites, keeps those in the state its filter names, and searches each name,
+    /// group, and maker.
+    /// True: the table's state filter and search find the right invites, a page at a time.
+    /// False: a filter or search could show invites in another state, or miss one by its group.
+    /// </summary>
+    [Fact]
+    public void PageOf_FiltersByStateSearchesAndPages()
+    {
+        var all = new[]
+        {
+            new InviteSummary { Label = "Family", GroupName = "Family", State = InviteState.Active },
+            new InviteSummary { Label = "Cousins", GroupName = "Family", State = InviteState.UsedUp },
+            new InviteSummary { Label = "Book club", GroupName = "Everyone", State = InviteState.Active, CreatedByName = "viewer" },
+            new InviteSummary { Label = "Old", GroupName = "Friends", State = InviteState.Expired }
+        };
+
+        Assert.Equal(4, InviteService.PageOf(all, null).TotalCount);
+        Assert.Equal(4, InviteService.PageOf(all, new() { Filter = "All" }).TotalCount);
+        Assert.Equal(new[] { "Family", "Book club" }, InviteService.PageOf(all, new() { Filter = "Active" }).Items.Select(i => i.Label));
+        Assert.Equal(new[] { "Cousins" }, InviteService.PageOf(all, new() { Filter = "usedup" }).Items.Select(i => i.Label));
+        Assert.Empty(InviteService.PageOf(all, new() { Filter = "1" }).Items);
+        Assert.Empty(InviteService.PageOf(all, new() { Filter = "Nope" }).Items);
+        Assert.Equal(new[] { "Family", "Cousins" }, InviteService.PageOf(all, new() { Search = "fam" }).Items.Select(i => i.Label));
+        Assert.Equal(new[] { "Book club" }, InviteService.PageOf(all, new() { Search = "VIEWER" }).Items.Select(i => i.Label));
+        Assert.Equal(new[] { "Cousins" }, InviteService.PageOf(all, new() { Filter = "UsedUp", Search = "family" }).Items.Select(i => i.Label));
+
+        var page = InviteService.PageOf(all, new() { Skip = 2, Take = 1 });
+        Assert.Equal("Book club", Assert.Single(page.Items).Label);
+        Assert.Equal(4, page.TotalCount);
+        Assert.True(page.HasMore);
     }
 }

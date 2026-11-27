@@ -191,7 +191,7 @@ export async function start(doc) {
         (mine.Groups || []).forEach(function (g) { select.appendChild(h('option', { value: g.Id, text: g.Name })); });
 
         // With no invites the lead already says the groups allow none, so the empty state shows only for a member who may make one.
-        byId('memberEmpty').innerHTML = webEmptyState(t.tr('InvitesMemberEmpty'), '');
+        byId('memberEmpty').innerHTML = webEmptyState(t.tr('InvitesEmpty'), '');
         byId('memberEmpty').hidden = invites.length > 0 || !mine.MayCreate;
         list.hidden = invites.length === 0;
 

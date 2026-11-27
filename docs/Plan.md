@@ -201,7 +201,7 @@ One service every tool sends events to, and one set of channels.
 
 * Invites keep User Management's links, PINs, limits, expiry, and sign-up page, at `/invites/{token}`. See [Invites](Invites.md).
 * A member whose groups allow invites makes their own at `/invites`, the user page the Plan names, so **Allow invites**, **Open invites**, and the invite groups take effect. **Review**
-* The Invites tool lists invites at `GET /Invites/List`, since `/invites` is the member page and routes do not tell case apart. **Review**
+* The Invites tool lists invites at `GET /Invites/List` and pages them at `GET /Invites/All`, since `/invites` is the member page and routes do not tell case apart. **Review**
 * An invite's group of **Group for new users** follows **Settings > Groups** when the link is used, as User Management's default group did. **Review**
 * A sign-up holds the account disabled until its password is set, leaves it out of the group for new users, and counts its first password as a creation, not a member's own change.
 
