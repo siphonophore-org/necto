@@ -209,7 +209,8 @@ def proxy(api):
             continue
         route = template['Route']
         # A self-signed certificate, so no certificate authority is asked about example.com.
-        route['Host'] = 'media.example.com' if template['Key'] == 'jellyfin' else 'home.example.com'
+        route['Host'] = 'media.example.com'
+        route['LocalHost'] = 'home.example.com'
         route['Certificate'] = dict(route.get('Certificate') or {}, Mode='SelfSigned')
         api.post('/Proxy/Routes', route)
     settings = api.get('/Proxy/Settings')
