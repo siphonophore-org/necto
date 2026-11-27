@@ -53,4 +53,37 @@ public class WebClientCheckTests
             page.Contains(name, StringComparison.Ordinal) || Enumerable.Range(6, Math.Max(0, name.Length - 6)).Any(n => page.Contains(name[..n] + "'", StringComparison.Ordinal)),
             name + " is not built by the request page: no start of it is in it"));
     }
+
+    /// <summary>
+    /// The classes checked against the web client leave out the ones the page's own stylesheet styles, and keep the rest.
+    /// True: the startup check warns only about classes the web client should supply.
+    /// False: the page's own classes would be logged as missing from the web client on every start.
+    /// </summary>
+    [Fact]
+    public void CheckedClasses_LeaveOutThePagesOwnStyles()
+    {
+        var markup = "<style>.rq-home { color: red; } .appDrawer > .appDrawerItem:hover { }</style><div class=\"rq-home cardBox appDrawer\"><span class=\"appDrawerItem\"></span></div>";
+
+        var classes = WebClientCheck.CheckedClasses(markup);
+
+        Assert.Contains("cardBox", classes);
+        Assert.DoesNotContain("rq-home", classes);
+        Assert.DoesNotContain("appDrawer", classes);
+        Assert.DoesNotContain("appDrawerItem", classes);
+        Assert.Contains(WebClientCheck.Built[0], classes);
+    }
+
+    /// <summary>
+    /// The real request page's own classes are all styled by its own stylesheet, so none of them is checked.
+    /// True: rq- classes never reach the web client check.
+    /// False: the check would report them as missing.
+    /// </summary>
+    [Fact]
+    public void CheckedClasses_RequestPage_LeaveOutItsOwnClasses()
+    {
+        var classes = WebClientCheck.CheckedClasses(WebClientCheck.PageMarkup());
+
+        Assert.DoesNotContain(classes, c => c.StartsWith("rq-", StringComparison.Ordinal));
+        Assert.DoesNotContain("appDrawer", classes);
+    }
 }
