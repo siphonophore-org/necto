@@ -38,12 +38,14 @@ async function openPage(config, answers, storage) {
         dom.el('div', { id: 'issuesOff', class: 'stolon-hidden' }),
         dom.el('div', { id: 'issueStats' }),
         dom.el('div', { id: 'issuesStatus' }),
-        dom.el('div', { id: 'issuesTable' })
+        dom.el('div', { id: 'issuesTable' }),
+        dom.el('div', { id: 'issuesEmpty', class: 'stolon-hidden' })
     ]);
     dom.document.documentElement.appendChild(view);
     var routes = Object.assign({
         'GET Issues/Stats': { Reported: 2, Confirmed: 1, Resolved: 4, Declined: 1, Rescinded: 0 },
-        'GET Issues/All': { Items: [issue()], TotalCount: 1 }
+        'GET Issues/All': { Items: [issue()], TotalCount: 1 },
+        'GET Issues/Reporters': { Items: [{ UserId: 'u1', UserName: 'viewer', Count: 3 }, { UserId: 'u2', UserName: 'guest', Count: 1 }], TotalRecordCount: 2 }
     }, answers || {});
     globalThis.ApiClient.fetch = function (options) {
         page.requests.push(options);
@@ -56,7 +58,7 @@ async function openPage(config, answers, storage) {
     var mod = await loadScript('necto_issues.js');
     var handle = mod.default(view);
     view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
-    await settle();
+    await settle(50);
     return { page: page, view: view, dom: dom, handle: handle };
 }
 
@@ -66,15 +68,17 @@ function sent(opened) {
     return opened.page.requests.filter(function (r) { return r.type === 'POST'; });
 }
 
-test('statCards counts Open as the reported and confirmed issues, then each state in its color, Reported in yellow as on the user page', async function () {
+test('statCards counts each state in its color, Rescinded included', async function () {
     var t = await strings();
     var mod = await loadScript('necto_issues.js');
 
-    var cards = mod.statCards({ Reported: 2, Confirmed: 1, Resolved: 4, Declined: 1 }, t);
+    var cards = mod.statCards({ Reported: 2, Confirmed: 1, Resolved: 4, Declined: 1, Rescinded: 3 }, t);
 
-    assert.deepEqual(cards.map(function (c) { return c.label; }), ['Open', 'Reported', 'Confirmed', 'Resolved', 'Declined']);
-    assert.deepEqual(cards.map(function (c) { return c.count; }), [3, 2, 1, 4, 1]);
-    assert.deepEqual(cards.map(function (c) { return c.color; }), ['', 'yellow', 'red', 'green', 'gray']);
+    assert.deepEqual(cards.map(function (c) { return c.label; }), ['Reported', 'Confirmed', 'Resolved', 'Declined', 'Rescinded']);
+    assert.deepEqual(cards.map(function (c) { return c.count; }), [2, 1, 4, 1, 3]);
+    assert.deepEqual(cards.map(function (c) { return c.color; }), ['orange', 'red', 'green', 'gray', 'gray']);
+    assert.equal(mod.totalOf({ Reported: 2, Confirmed: 1, Resolved: 4, Declined: 1, Rescinded: 3 }), 11);
+    assert.equal(mod.totalOf(null), 0);
 });
 
 test('the state filter offers Open and every state, and the type filter every type', async function () {
@@ -87,16 +91,16 @@ test('the state filter offers Open and every state, and the type filter every ty
     assert.equal(mod.typeName('Unknown', t), 'Unknown');
 });
 
-test('the filters are kept for the next visit and fall back to Open and every type', async function () {
+test('the filters are kept for the next visit and fall back to Open, every type, and everyone', async function () {
     var mod = await loadScript('necto_issues.js');
     var store = {};
     var storage = { getItem: function (k) { return store[k] || null; }, setItem: function (k, v) { store[k] = v; } };
 
-    assert.deepEqual(mod.readFilters(storage), { state: 'Open', type: '' });
-    mod.keepFilters(storage, { state: 'All', type: 'Audio' });
-    assert.deepEqual(mod.readFilters(storage), { state: 'All', type: 'Audio' });
+    assert.deepEqual(mod.readFilters(storage), { state: 'Open', type: '', reporter: '' });
+    mod.keepFilters(storage, { state: 'All', type: 'Audio', reporter: 'u1' });
+    assert.deepEqual(mod.readFilters(storage), { state: 'All', type: 'Audio', reporter: 'u1' });
     store[mod.FILTERS_KEY] = 'oops';
-    assert.deepEqual(mod.readFilters(storage), { state: 'Open', type: '' });
+    assert.deepEqual(mod.readFilters(storage), { state: 'Open', type: '', reporter: '' });
 });
 
 test('an issue is named as the server names it, with what the reporters say is wrong', async function () {
@@ -130,13 +134,16 @@ test('while issues are off the page says so and reads no issues', async function
 });
 
 test('while issues are on the page draws the counts and reads the list on the kept filters', async function () {
-    var opened = await openPage({ Issues: { Enabled: true } }, {}, { 'necto-issues-filters': JSON.stringify({ state: 'Confirmed', type: 'Audio' }) });
+    var opened = await openPage({ Issues: { Enabled: true } }, {}, { 'necto-issues-filters': JSON.stringify({ state: 'Confirmed', type: 'Audio', reporter: 'u1' }) });
 
     assert.equal(opened.view.querySelector('#issuesOff').classList.contains('stolon-hidden'), true);
-    assert.deepEqual(texts(opened.view.querySelector('#issueStats'), '.stolon-card-count'), ['3', '2', '1', '4', '1']);
+    assert.equal(opened.view.querySelector('#issuesEmpty').classList.contains('stolon-hidden'), true);
+    assert.deepEqual(texts(opened.view.querySelector('#issueStats'), '.stolon-card-count'), ['2', '1', '4', '1', '0']);
     var list = opened.page.requests.find(function (r) { return String(r.url).indexOf('Issues/All?') === 0; });
     assert.match(list.url, /filter=Confirmed/);
     assert.match(list.url, /type=Audio/);
+    assert.match(list.url, /user=u1/);
+    assert.deepEqual(texts(opened.view.querySelectorAll('#issuesTable select')[2], 'option').slice(-2), ['viewer (3)', 'guest (1)']);
 });
 
 test('an issue opens in a sidecar with its notes, its decisions, and its Sonarr link', async function () {
@@ -146,7 +153,7 @@ test('an issue opens in a sidecar with its notes, its decisions, and its Sonarr 
     await settle(50);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
     assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'Tidewater Station · S1E2');
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Decline', 'Open in library', 'Confirm', 'Resolve']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Decline', 'Cancel', 'Open in library', 'Confirm', 'Resolve']);
     assert.match(sidecar.textContent, /Sound drops out\./);
     assert.match(sidecar.textContent, /Open in Sonarr/);
 
@@ -189,6 +196,42 @@ test('a closed issue opens with Reopen only', async function () {
     await settle(50);
 
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Open in library', 'Reopen']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Cancel', 'Open in library', 'Reopen']);
     assert.match(sidecar.textContent, /Decided by/);
+});
+
+test('with no issues at all the page says No issues yet in place of the list', async function () {
+    var opened = await openPage({ Issues: { Enabled: true } }, { 'GET Issues/Stats': { Reported: 0, Confirmed: 0, Resolved: 0, Declined: 0, Rescinded: 0 } });
+
+    var empty = opened.view.querySelector('#issuesEmpty');
+    assert.equal(empty.classList.contains('stolon-hidden'), false);
+    assert.match(empty.innerHTML, /No issues yet\./);
+    assert.equal(opened.view.querySelector('#issuesTable').classList.contains('stolon-hidden'), true);
+});
+
+test('the bulk bar resolves every row picked that takes it with one note, and skips the rest', async function () {
+    var closed = issue({ Id: 'i2', State: 'Resolved' });
+    var opened = await openPage({ Issues: { Enabled: true } }, { 'GET Issues/All': { Items: [issue(), closed], TotalCount: 2 }, 'POST Issues/i1/Resolve': issue({ State: 'Resolved' }) });
+
+    var bar = opened.view.querySelector('#issuesTable');
+    assert.deepEqual(texts(bar, '[data-bulk]'), ['Resolve', 'Confirm', 'Decline']);
+    assert.ok(Array.prototype.every.call(bar.querySelectorAll('[data-bulk]'), function (b) { return !b.className.match(/stolon-small/); }));
+    var rows = bar.querySelectorAll('.stolon-table-row input[type="checkbox"]');
+    rows[0].checked = true;
+    rows[0].dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    rows[1].checked = true;
+    rows[1].dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    await settle(50);
+    opened.handle.bulk('Resolve');
+    await settle(50);
+    var sidecars = opened.dom.document.querySelectorAll('.stolon-sidecar');
+    var prompt = sidecars[sidecars.length - 1];
+    assert.equal(prompt.querySelector('.stolon-sidecar-title').textContent, 'Resolve 2 issues');
+    prompt.querySelector('textarea').value = 'Fixed.';
+    clickButton(prompt.querySelector('.stolon-sidecar-shelf'), 'Resolve');
+    await settle(80);
+
+    assert.deepEqual(sent(opened).map(function (r) { return r.url; }), ['Issues/i1/Resolve']);
+    assert.deepEqual(JSON.parse(sent(opened)[0].data), { Note: 'Fixed.' });
+    assert.equal(statusText(opened.view.querySelector('#issuesStatus')), 'Updated 1 issue. Skipped 1 issue in another state.');
 });

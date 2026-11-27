@@ -69,7 +69,7 @@ export function statOrder(t) {
 }
 
 // statCards
-// Turns the Stats answer into the count cards, Open untinted as the total of the open statuses.
+// Turns the Stats answer into the count cards, one per status in its color.
 //
 // Inputs
 // stats [object]: The Requests/Stats answer, with ByStatus.
@@ -79,9 +79,8 @@ export function statOrder(t) {
 // [object[]]: The cards, each a label, a count, and a color.
 export function statCards(stats, t) {
     var by = (stats && stats.ByStatus) || {};
-    return statOrder(t).map(function (s) {
-        var count = s.of ? s.of.reduce(function (n, k) { return n + (by[k] || 0); }, 0) : (by[s.key] || 0);
-        return { label: s.label, count: count, color: s.color };
+    return Object.keys(REQUEST_STATES).map(function (key) {
+        return { label: statusLabel(key, t), count: by[key] || 0, color: REQUEST_STATES[key].color };
     });
 }
 
@@ -272,6 +271,20 @@ export function subline(r, t) {
     return parts.join(' · ');
 }
 
+// requesterLine
+// Writes who asked for a request and when, with how many others joined it.
+//
+// Inputs
+// r [object]: The request.
+// t [object]: The strings.
+//
+// Output
+// [string]: The line.
+export function requesterLine(r, t) {
+    var joined = (r.Joined || []).length;
+    return [r.UserName, when(r.CreatedUtc), joined ? t.format('RequestsJoinedCount', joined) : ''].filter(Boolean).join(' · ');
+}
+
 // progressLine
 // Writes a download's progress and the time it has left, while Radarr or Sonarr is getting it.
 //
@@ -297,11 +310,11 @@ export function progressLine(r, t, now) {
 // r [object]: The request.
 //
 // Output
-// [string[]]: remove, library, available, reject, edit, and approve or retry, as they apply.
+// [string[]]: remove, cancel, library, available, reject, edit, and approve or retry, as they apply.
 export function requestActions(r) {
     var canApprove = r.Status === 'Pending' || r.Status === 'Failed';
     var open = canApprove || r.Status === 'Approved' || r.Status === 'PartiallyAvailable';
-    var out = ['remove'];
+    var out = ['remove', 'cancel'];
     if (r.LibraryItemId) out.push('library');
     if (open) out.push('available', 'reject');
     if (r.Status === 'Pending') out.push('edit');
@@ -423,8 +436,16 @@ export default function (view) {
         return shared.request('Requests/Stats').then(function (stats) {
             stats = stats || {};
             shared.renderCards('requestStats', statCards(stats, shared.t));
+            showEmpty(!stats.Total);
             return stats;
         }).catch(function () { return null; });
+    }
+
+    // showEmpty
+    // Shows No requests yet in place of the list while there are none at all.
+    function showEmpty(none) {
+        view.querySelector('#requestsEmpty').classList.toggle('stolon-hidden', !none);
+        view.querySelector('#requestsTable').classList.toggle('stolon-hidden', none);
     }
 
     // loadRequesters
@@ -501,16 +522,9 @@ export default function (view) {
                         var r = item.Request || {};
                         return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + esc(r.Title) + '</div>'
                             + '<div class="stolon-table-item-sub">' + esc(subline(r, t)) + '</div>'
+                            + '<div class="stolon-table-item-sub">' + esc(requesterLine(r, t)) + '</div>'
                             + (r.RequesterNote ? '<div class="stolon-table-item-sub">“' + esc(r.RequesterNote) + '”</div>' : '')
                             + '</div>';
-                    }
-                },
-                {
-                    key: 'UserName', type: 'custom', render: function (item) {
-                        var r = item.Request || {};
-                        var joined = (r.Joined || []).length;
-                        return '<div class="stolon-table-item-info"><div>' + esc(r.UserName) + '</div><div class="stolon-table-item-sub">' + esc(when(r.CreatedUtc)) + '</div>'
-                            + (joined ? '<div class="stolon-table-item-sub">' + esc(t.format('RequestsJoinedCount', joined)) + '</div>' : '') + '</div>';
                     }
                 },
                 { key: 'Status', type: 'custom', className: 'stolon-table-cell-status', render: function (item) { return statusCell(item.Request || {}, shared); } }
@@ -524,7 +538,7 @@ export default function (view) {
         var actions = table.getBulkActionsContainer();
         if (actions) {
             [['approve', 'RequestsButtonApprove', 'stolon-primary'], ['decline', 'RequestsButtonReject', 'stolon-secondary'], ['remove', 'ButtonRemove', 'stolon-destructive']].forEach(function (b) {
-                actions.appendChild(h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-small ' + b[2], 'data-bulk': b[0], disabled: true }, [h('span', { text: t.tr(b[1]) })]));
+                actions.appendChild(h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + b[2], 'data-bulk': b[0], disabled: true }, [h('span', { text: t.tr(b[1]) })]));
             });
             actions.addEventListener('click', function (e) {
                 var btn = e.target.closest('[data-bulk]');
@@ -685,6 +699,12 @@ export default function (view) {
         return picker;
     }
 
+    // noteOnly
+    // Tells whether a request's editor holds its note alone, a movie with no profile to pick.
+    function noteOnly(r) {
+        return r.Type !== 'Series' && profiles.filter(function (p) { return p.Type === r.Type; }).length < 2;
+    }
+
     // showRequest
     // Opens a request in a sidecar: its poster, title, and status, its details, its overview, and its actions.
     // Radarr's or Sonarr's page for it is linked once found.
@@ -699,7 +719,6 @@ export default function (view) {
             image: r.PosterUrl ? artwork(r.PosterUrl) : null,
             title: r.Title,
             subtitle: subline(r, t),
-            status: { label: statusLabel(r.Status, t), color: statusColor(r.Status) },
             detail: [
                 r.Status === 'PartiallyAvailable' && r.AvailableSeasons ? t.format('RequestsHasSeasons', describeSeasons(r.AvailableSeasons, t)) : '',
                 progressLine(r, t),
@@ -720,13 +739,14 @@ export default function (view) {
         var labels = {
             remove: ['ButtonRemove', 'stolon-destructive'], library: ['ButtonOpenInLibrary', 'stolon-secondary'],
             available: ['RequestsButtonMarkAvailable', 'stolon-secondary'], reject: ['RequestsButtonReject', 'stolon-secondary'],
-            edit: ['Edit', 'stolon-secondary'], approve: ['RequestsButtonApprove', 'stolon-primary'], retry: ['Retry', 'stolon-primary']
+            cancel: ['ButtonCancel', 'stolon-secondary'], edit: [noteOnly(r) ? 'RequestsButtonEditNote' : 'Edit', 'stolon-secondary'], approve: ['RequestsButtonApprove', 'stolon-primary'], retry: ['Retry', 'stolon-primary']
         };
         var run = {
             remove: function (close) { act(r, 'remove', close, null, status); },
             library: function (close) { close(); Dashboard.navigate('details?id=' + r.LibraryItemId); },
             available: function (close) { act(r, 'available', close, null, status); },
             reject: function (close) { act(r, 'decline', close, null, status); },
+            cancel: function (close) { close(); },
             edit: function (close) { close(); editRequest(r); },
             approve: function (close) { act(r, 'approve', close, picker && picker.value, status); },
             retry: function (close) { act(r, 'approve', close, picker && picker.value, status); }
@@ -834,6 +854,7 @@ export default function (view) {
             actions: [{ text: shared.t.tr('RequestsButtonShowLatest'), onClick: function () { reload(); } }]
         });
         view.querySelector('#requestsChanged').appendChild(banner.element);
+        view.querySelector('#requestsEmpty').innerHTML = shared.emptySection(shared.t.tr('RequestsEmpty'));
     }
 
     // loadPage

@@ -2,7 +2,7 @@
 <!-- The Issues tool. It counts the issues by state and lists them, and each opens a sidecar with its decisions. -->
 
 <div id="NectoIssuesPage" data-role="page" class="page type-interior pluginConfigurationPage"
-     data-require="emby-input,emby-button,emby-select"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox"
      data-controller="__plugin/necto_issues.js">
     <div data-role="content">
         <div class="content-primary">
@@ -15,13 +15,17 @@
 
                 <!-- Counts -->
                 <!-- How many issues are in each state. -->
-                <div id="issueStats" class="stolon-cards"></div>
+                <div id="issueStats" class="stolon-cards stolon-even"></div>
 
                 <div id="issuesStatus" class="stolon-status-text" role="status"></div>
 
                 <!-- Issues -->
-                <!-- Every issue, with search and state and type filters. -->
+                <!-- Every issue, with search and state, type, and reporter filters, and bulk decisions on the rows picked. -->
                 <div id="issuesTable"></div>
+
+                <!-- Empty -->
+                <!-- Shows in place of the list while no one has reported an issue. -->
+                <div id="issuesEmpty" class="stolon-hidden"></div>
             </div>
         </div>
     </div>

@@ -1,6 +1,6 @@
 // necto_invites.js
-// The Invites tool. It lists every invite link with its state, and opens each in an editor sidecar with its link and
-// QR code, its group, limits, PIN, message, and links, with Turn on or Turn off, Duplicate, and Delete.
+// The Invites tool. It lists every invite link with its state, Copy, and its QR code, and opens each in an editor
+// sidecar with its link, its group, limits, PIN, message, and links, with Turn on or Turn off, Duplicate, and Delete.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
@@ -61,31 +61,65 @@ export function usesText(invite, t) {
     return invite.MaxUses > 0 ? t.format('InvitesUsesOf', invite.UsedCount, invite.MaxUses) : t.format('InvitesUses', invite.UsedCount);
 }
 
+// inviteAside
+// Builds the end of an invite's row: its state badge, then Copy and Show QR code for its link.
+//
+// Inputs
+// invite [object]: The invite.
+// shared [object]: The Necto helper bag.
+// link [string]: The invite's link, or empty for a row without one.
+// onCopied [function]: Hears whether the link was copied. [optional]
+//
+// Output
+// [HTMLElement]: The aside.
+export function inviteAside(invite, shared, link, onCopied) {
+    var t = shared.t;
+    var state = stateName(invite.State);
+    var badge = h('span', { 'data-role': 'invite-state' });
+    badge.innerHTML = shared.badge(STATE_COLORS[state], t.tr(STATE_KEYS[state]));
+    var box = h('div', { class: 'necto-invite-aside', 'data-role': 'invite-aside' }, [badge]);
+    if (!link) return box;
+    var iconButton = function (icon, label, action) {
+        return h('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn', title: label, 'aria-label': label, 'data-action': action }, [
+            h('span', { class: 'material-icons', 'aria-hidden': 'true', text: icon })
+        ]);
+    };
+    var copy = iconButton('content_copy', t.tr('InvitesButtonCopyLink'), 'copy-link');
+    var show = iconButton('qr_code_2', t.tr('InvitesButtonShowQr'), 'show-qr');
+    copy.addEventListener('click', function () {
+        shared.copyToClipboard(link).then(function (ok) { if (onCopied) onCopied(ok); });
+    });
+    show.addEventListener('click', function () {
+        var qr = nectoModule.createQrCode({ value: link, layout: 'inline', label: invite.Label || t.tr('InvitesUntitled'), fileName: 'invite.png' });
+        qr.open();
+    });
+    box.appendChild(copy);
+    box.appendChild(show);
+    return box;
+}
+
 // inviteItems
-// Turns the invites into rows, each with its group, uses, expiry, state, and PIN, and its link in a copy field with a
-// QR button.
+// Turns the invites into rows, each with its group, uses, expiry, PIN, and maker, and at its end its state badge with
+// Copy and Show QR code for its link.
 //
 // Inputs
 // invites [object[]]: The invites from Invites/List.
 // shared [object]: The Necto helper bag.
 // linkOf [function]: Gives an invite's link, or is left out for rows without one.
+// onCopied [function]: Hears whether a link was copied. [optional]
 //
 // Output
 // [object[]]: The rows, each carrying its invite.
-export function inviteItems(invites, shared, linkOf) {
+export function inviteItems(invites, shared, linkOf, onCopied) {
     var t = shared.t;
     return (invites || []).map(function (invite) {
-        var state = stateName(invite.State);
         var parts = [invite.GroupName, usesText(invite, t)];
         parts.push(invite.ExpiresAt ? t.format('ExpiresOnDate', shared.formatDate(invite.ExpiresAt)) : t.tr('InvitesNeverExpires'));
-        var tags = [{ label: t.tr(STATE_KEYS[state]), color: STATE_COLORS[state] }];
+        var tags = [];
         if (invite.HasPin) tags.push({ label: t.tr('InvitesLabelPin'), icon: 'pin' });
         if (invite.CreatedByName) tags.push({ label: invite.CreatedByName, icon: 'person' });
-        var title = invite.Label || t.tr('InvitesUntitled');
-        var aside = linkOf && invite.Token
-            ? nectoModule.createQrCode({ value: linkOf(invite), layout: 'inline', label: title, fileName: 'invite.png' })
-            : null;
-        return { id: invite.Id, title: title, secondary: parts.join(' · '), tags: tags, aside: aside, invite: invite };
+        var link = linkOf && invite.Token ? linkOf(invite) : '';
+        return { id: invite.Id, title: invite.Label || t.tr('InvitesUntitled'), secondary: parts.join(' · '), tags: tags, aside: inviteAside(invite, shared, link, onCopied), invite: invite };
     });
 }
 
@@ -175,8 +209,20 @@ export function createInviteEditor(invite, ctx) {
     var t = shared.t;
     var handles = [];
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var root = h('div', { 'data-role': 'invite-editor' }, [status]);
+    var root = h('div', { class: 'stolon-stack', 'data-role': 'invite-editor' }, [status]);
     var nextId = function (name) { fieldSeq += 1; return 'necto-invite-' + name + '-' + fieldSeq; };
+    var target = root;
+
+    // step
+    // Adds one step of the editor, led by its icon tile, and sends the fields after it into the step.
+    var step = function (title, icon) {
+        var content = h('div', { class: 'stolon-stack' });
+        var section = nectoModule.createCollapsibleSection({ title: title, icon: icon, collapsible: false, content: content });
+        handles.push(section);
+        root.appendChild(section.element);
+        target = content;
+        return content;
+    };
 
     // input
     // Adds a labelled input with its description.
@@ -186,7 +232,7 @@ export function createInviteEditor(invite, ctx) {
             ? h('textarea', { is: 'emby-textarea', class: 'emby-textarea', id: id, rows: '3', 'data-field': data })
             : h('input', { is: 'emby-input', type: type, id: id, 'data-field': data, min: type === 'number' ? '0' : null, placeholder: placeholder || null });
         node.value = value == null ? '' : String(value);
-        root.appendChild(h('div', { class: 'inputContainer' }, [
+        target.appendChild(h('div', { class: 'inputContainer' }, [
             h('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: label }),
             node,
             help ? h('div', { class: 'fieldDescription', text: help }) : null
@@ -195,12 +241,11 @@ export function createInviteEditor(invite, ctx) {
     };
 
     if (ctx.link) {
-        root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderLink') }));
         var qr = nectoModule.createQrCode({ value: ctx.link, layout: 'inline', fileName: 'invite.png' });
         handles.push(qr);
-        root.appendChild(h('div', { 'data-role': 'link' }, [qr.element]));
-        root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderSettings') }));
+        step(t.tr('InvitesHeaderLink'), 'link').appendChild(h('div', { 'data-role': 'link' }, [qr.element]));
     }
+    step(t.tr('InvitesHeaderSettings'), 'mail');
 
     var label = input(t.tr('LabelName'), 'text', invite.Label, 'Label', t.tr('InvitesNameAdminHelp'));
     var message = input(t.tr('InvitesLabelMessage'), 'textarea', invite.Message, 'Message', t.tr('InvitesMessageHelp'));
@@ -210,12 +255,12 @@ export function createInviteEditor(invite, ctx) {
     groupChoices(ctx.groups, t).forEach(function (o) { group.appendChild(h('option', { value: o.value, text: o.label })); });
     group.value = invite.GroupId || '';
     var expiredWarn = h('div', { class: 'stolon-warn', 'data-role': 'group-expired', text: t.tr('InvitesGroupExpiredWarning') });
-    root.appendChild(h('div', { class: 'selectContainer' }, [
+    target.appendChild(h('div', { class: 'selectContainer' }, [
         h('label', { class: 'selectLabel', for: groupId, text: t.tr('LabelGroup') }),
         group,
         h('div', { class: 'fieldDescription', text: t.tr('InvitesGroupHelp') })
     ]));
-    root.appendChild(expiredWarn);
+    target.appendChild(expiredWarn);
     // checkGroup
     // Shows the warning while the picked group, or the group for new users, has expired.
     var checkGroup = function () {
@@ -227,18 +272,18 @@ export function createInviteEditor(invite, ctx) {
     checkGroup();
 
     var uses = input(t.tr('InvitesLabelMaxUses'), 'number', invite.MaxUses == null ? 1 : invite.MaxUses, 'MaxUses', t.tr('HelpZeroNoLimit'));
-    var expiry = input(t.tr('LabelExpiryDate'), 'date', invite.ExpiresAt ? String(invite.ExpiresAt).slice(0, 10) : '', 'ExpiresAt', t.tr('InvitesExpiryAdminHelp'));
-    var pin = input(t.tr('InvitesLabelPin'), 'text', '', 'Pin', t.tr('InvitesPinHelp'), '123456');
+    var expiry = input(t.tr('LabelExpiryDate'), 'date', invite.ExpiresAt ? String(invite.ExpiresAt).slice(0, 10) : '', 'ExpiresAt', t.tr('InvitesExpiryHelp'));
+    var pinField = nectoModule.createSecretField({
+        label: t.tr('InvitesLabelPin'), help: t.tr('InvitesPinHelp'), id: nextId('Pin'), field: 'Pin',
+        stored: !!invite.HasPin, clearText: t.tr('InvitesButtonRemovePin'), allowExpose: true
+    });
+    handles.push(pinField);
+    var pin = pinField.input;
     pin.setAttribute('inputmode', 'numeric');
     pin.setAttribute('maxlength', '6');
-    if (invite.HasPin) {
-        var clearPin = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'clear-pin' }, [h('span', { text: t.tr('InvitesButtonRemovePin') })]);
-        pin.parentNode.appendChild(clearPin);
-        nectoModule.bindSecretField(pin, true, { clearButton: clearPin });
-    }
+    target.appendChild(pinField.element);
 
-    root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderResources') }));
-    root.appendChild(h('div', { class: 'fieldDescription', text: t.tr('InvitesResourcesHelp') }));
+    step(t.tr('InvitesHeaderResources'), 'menu_book').appendChild(h('div', { class: 'fieldDescription', text: t.tr('InvitesResourcesHelp') }));
     var resources = nectoModule.createRepeater({
         fields: [
             { key: 'title', label: t.tr('InvitesLabelResourceTitle'), type: 'text', placeholder: t.tr('InvitesResourceTitlePlaceholder') },
@@ -249,12 +294,12 @@ export function createInviteEditor(invite, ctx) {
         emptyText: t.tr('InvitesEmptyResources')
     });
     handles.push(resources);
-    root.appendChild(resources.element);
+    target.appendChild(resources.element);
 
     return {
         element: root,
         getValue: function () {
-            var raw = invite.HasPin ? nectoModule.readSecretField(pin) : pin.value;
+            var raw = pinField.getValue();
             var kept = raw === nectoModule.SECRET_KEPT;
             return inviteRequest({ label: label.value, message: message.value, group: group.value, expiry: expiry.value, uses: uses.value, pin: kept ? '' : raw, pinKept: kept, resources: resources.getValue() });
         },
@@ -308,7 +353,8 @@ export default function (view) {
             linkUrl = (answers[2] && answers[2].InviteSettings && answers[2].InviteSettings.LinkUrl) || '';
             newUserGroupId = (answers[2] && answers[2].GroupSettings && answers[2].GroupSettings.NewUserGroupId) || '';
             if (view.querySelector('#inviteCards')) shared.renderCards(view.querySelector('#inviteCards'), stateCards(invites, shared.t));
-            var items = inviteItems(invites, shared, function (invite) { return inviteLink(invite.Token, linkUrl, serverAddress()); });
+            var copied = function (ok) { report(shared.t.tr(ok ? 'InvitesLinkCopied' : 'InvitesErrorCopyLink'), !ok); };
+            var items = inviteItems(invites, shared, function (invite) { return inviteLink(invite.Token, linkUrl, serverAddress()); }, copied);
             if (list) list.setItems(items);
             else {
                 list = nectoModule.createRecordList({ items: items, label: shared.t.tr('TabInvites'), emptyText: shared.t.tr('InvitesEmpty'), onOpen: function (item) { openInvite(item.invite); } });
