@@ -76,6 +76,7 @@ public class PluginConfiguration : BasePluginConfiguration
             Services.Notifications.RequestEvents.Available,
             Services.Notifications.IssueEvents.Updated
         };
+        everyone.Permissions.Notifications.ByMethod = true;
         everyone.Permissions.Notifications.BrowserEventKeys = new List<string>(updates);
         everyone.Permissions.Notifications.MessageEventKeys = new List<string>(updates);
         return everyone;

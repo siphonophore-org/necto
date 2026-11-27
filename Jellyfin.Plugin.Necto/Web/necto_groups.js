@@ -436,7 +436,7 @@ export function deliveryLists(notifications, events) {
     var n = notifications || {};
     var forUsers = (events || []).filter(function (e) { return e.ForUsers; }).map(function (e) { return e.Key; });
     var stored = n.AllEvents ? forUsers : (n.EventKeys || []);
-    var read = function (list, on) { return Array.isArray(list) ? list.slice() : (on === false ? [] : stored.slice()); };
+    var read = function (list, on) { return n.ByMethod === true ? (list || []).slice() : (on === false ? [] : stored.slice()); };
     return { browser: read(n.BrowserEventKeys, n.BrowserNotifications), message: read(n.MessageEventKeys, n.JellyfinMessages) };
 }
 
@@ -716,6 +716,7 @@ export function createGroupEditor(group, ctx) {
             };
             setPath(out.Permissions, 'Notifications.BrowserEventKeys', pick(start.browser, 'browser'));
             setPath(out.Permissions, 'Notifications.MessageEventKeys', pick(start.message, 'message'));
+            setPath(out.Permissions, 'Notifications.ByMethod', true);
             setPath(out.Permissions, 'Notifications.AllEvents', false);
             setPath(out.Permissions, 'Notifications.EventKeys', []);
         });
@@ -1073,6 +1074,6 @@ export function newGroup() {
     return {
         Name: '',
         MemberIds: [],
-        Permissions: { Notifications: { BrowserEventKeys: OWN_UPDATES.slice(), MessageEventKeys: OWN_UPDATES.slice() } }
+        Permissions: { Notifications: { ByMethod: true, BrowserEventKeys: OWN_UPDATES.slice(), MessageEventKeys: OWN_UPDATES.slice() } }
     };
 }

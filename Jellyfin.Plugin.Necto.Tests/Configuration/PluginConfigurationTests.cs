@@ -52,6 +52,7 @@ public class PluginConfigurationTests
         var updates = new[] { "requests.approved", "requests.declined", "requests.available", "issues.updated" };
         Assert.Equal(updates, notifications.BrowserEventKeys);
         Assert.Equal(updates, notifications.MessageEventKeys);
-        Assert.Null(new Group().Permissions.Notifications.BrowserEventKeys);
+        Assert.True(notifications.ByMethod);
+        Assert.Null(new Group().Permissions.Notifications.ByMethod);
     }
 }

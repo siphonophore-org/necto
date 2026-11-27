@@ -174,6 +174,7 @@ test('the Notifications tile follows the methods turned on, and turning them all
     assert.deepEqual(saved.BrowserEventKeys, []);
     assert.deepEqual(saved.MessageEventKeys, []);
     assert.deepEqual(saved.EventKeys, []);
+    assert.equal(saved.ByMethod, true);
 });
 
 test('the Jellyfin tiles are gray until a row is set by the group, then green with the count in the header', async function () {
@@ -244,7 +245,7 @@ test('deliveryLists reads a stored group by the methods it had, and lists as the
 
     assert.deepEqual(mod.deliveryLists({ AllEvents: true, BrowserNotifications: false }, events), { browser: [], message: ['a', 'b'] });
     assert.deepEqual(mod.deliveryLists({ EventKeys: ['a'] }, events), { browser: ['a'], message: ['a'] });
-    assert.deepEqual(mod.deliveryLists({ BrowserEventKeys: ['b'], MessageEventKeys: [] }, events), { browser: ['b'], message: [] });
+    assert.deepEqual(mod.deliveryLists({ ByMethod: true, BrowserEventKeys: ['b'], MessageEventKeys: [] }, events), { browser: ['b'], message: [] });
 });
 
 test('Save puts the edited group to its own route with the fields the editor shows', async function () {

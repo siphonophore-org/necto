@@ -19,7 +19,7 @@ public static class NotificationDelivery
     public static IReadOnlyList<string> Browser(NotificationPermissions permissions)
     {
         ArgumentNullException.ThrowIfNull(permissions);
-        return permissions.BrowserEventKeys ?? (permissions.BrowserNotifications ? Stored(permissions) : new List<string>());
+        return permissions.ByMethod == true ? permissions.BrowserEventKeys ?? new List<string>() : (permissions.BrowserNotifications ? Stored(permissions) : new List<string>());
     }
 
     /// <summary>
@@ -30,7 +30,7 @@ public static class NotificationDelivery
     public static IReadOnlyList<string> Messages(NotificationPermissions permissions)
     {
         ArgumentNullException.ThrowIfNull(permissions);
-        return permissions.MessageEventKeys ?? (permissions.JellyfinMessages ? Stored(permissions) : new List<string>());
+        return permissions.ByMethod == true ? permissions.MessageEventKeys ?? new List<string>() : (permissions.JellyfinMessages ? Stored(permissions) : new List<string>());
     }
 
     /// <summary>
@@ -42,6 +42,7 @@ public static class NotificationDelivery
         ArgumentNullException.ThrowIfNull(permissions);
         permissions.BrowserEventKeys = Clean(Browser(permissions));
         permissions.MessageEventKeys = Clean(Messages(permissions));
+        permissions.ByMethod = true;
         permissions.AllEvents = false;
         permissions.EventKeys = new List<string>();
         permissions.BrowserNotifications = true;

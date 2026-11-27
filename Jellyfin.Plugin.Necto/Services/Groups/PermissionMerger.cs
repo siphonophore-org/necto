@@ -67,6 +67,7 @@ public static class PermissionMerger
             },
             Notifications = new NotificationPermissions
             {
+                ByMethod = true,
                 BrowserEventKeys = Union(p.SelectMany(x => Notifications.NotificationDelivery.Browser(x.Notifications))),
                 MessageEventKeys = Union(p.SelectMany(x => Notifications.NotificationDelivery.Messages(x.Notifications)))
             }
@@ -91,7 +92,7 @@ public static class PermissionMerger
         WireGuard = new WireGuardPermissions { MayHavePeers = true, MaxPeers = 0 },
         Scripts = new ScriptPermissions { AllScripts = true },
         CustomPages = new CustomPagePermissions { AllPages = true },
-        Notifications = new NotificationPermissions { AllEvents = true, BrowserEventKeys = new List<string>(), MessageEventKeys = new List<string>() }
+        Notifications = new NotificationPermissions { AllEvents = true, ByMethod = true, BrowserEventKeys = new List<string>(), MessageEventKeys = new List<string>() }
     };
 
     /// <summary>

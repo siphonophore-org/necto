@@ -9,15 +9,15 @@ namespace Jellyfin.Plugin.Necto.Configuration.Groups;
 public class NotificationPermissions
 {
     /// <summary>
-    /// Gets or sets the events members get in the browsers they turned notifications on in. Null marks a stored group
-    /// whose events are still in <see cref="EventKeys"/>, which normalizing moves here.
+    /// Gets or sets a value indicating whether the group's events are in the lists by method. Null marks a stored group
+    /// whose events are still in <see cref="EventKeys"/>, which normalizing moves into the lists.
     /// </summary>
+    public bool? ByMethod { get; set; }
+
+    /// <summary>Gets or sets the events members get in the browsers they turned notifications on in.</summary>
     public List<string>? BrowserEventKeys { get; set; }
 
-    /// <summary>
-    /// Gets or sets the events members get as messages on their Jellyfin apps. Null marks a stored group, as
-    /// <see cref="BrowserEventKeys"/> does.
-    /// </summary>
+    /// <summary>Gets or sets the events members get as messages on their Jellyfin apps.</summary>
     public List<string>? MessageEventKeys { get; set; }
 
     /// <summary>Gets or sets a value indicating whether a stored group gave every event, read only to move it.</summary>

@@ -92,7 +92,7 @@ public class PermissionMergerTests
     {
         var target = Guid.NewGuid();
         var a = TestGroups.Make("A", p => { p.CustomPages.PageIds.Add("news"); p.Invites.MayCreate = true; p.Invites.TargetGroupIds.Add(target); }, User);
-        var b = TestGroups.Make("B", p => { p.CustomPages.PageIds.Add("news"); p.CustomPages.PageIds.Add("rules"); p.Notifications.BrowserEventKeys = new() { "requests.created" }; }, User);
+        var b = TestGroups.Make("B", p => { p.CustomPages.PageIds.Add("news"); p.CustomPages.PageIds.Add("rules"); p.Notifications.ByMethod = true; p.Notifications.BrowserEventKeys = new() { "requests.created" }; }, User);
 
         var merged = PermissionMerger.Merge(User, new[] { a, b });
 

@@ -94,6 +94,7 @@ public class NotificationRouterTests
     public void Plan_UserEvent_FollowsTheMethodPicked()
     {
         var config = Config();
+        config.Groups[0].Permissions.Notifications.ByMethod = true;
         config.Groups[0].Permissions.Notifications.BrowserEventKeys = new();
         config.Groups[0].Permissions.Notifications.MessageEventKeys = new() { InvitesEvents.Used };
 
@@ -249,5 +250,38 @@ public class NotificationRouterTests
         var sends = NotificationRouter.Plan(config, Used(null) with { ExceptUserIds = new[] { Admin } }, Users());
 
         Assert.DoesNotContain(sends, s => s.Target == NotificationTarget.Administrators);
+    }
+
+    /// <summary>
+    /// A stored configuration whose Everyone picked events with both methods loads with those events on both methods.
+    /// True: an upgrade keeps the updates users got about their own requests and issues.
+    /// False: an upgrade would silence every user in no group.
+    /// </summary>
+    [Fact]
+    public void StoredEveryone_KeepsItsEventsOnBothMethods()
+    {
+        const string Xml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <PluginConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <Everyone>
+                <Id>5a1f0c7e-0000-4000-8000-000000000001</Id>
+                <Name>Everyone</Name>
+                <Permissions>
+                  <Notifications>
+                    <AllEvents>false</AllEvents>
+                    <EventKeys><string>requests.approved</string><string>proxy.banned</string></EventKeys>
+                    <BrowserNotifications>true</BrowserNotifications>
+                    <JellyfinMessages>false</JellyfinMessages>
+                  </Notifications>
+                </Permissions>
+              </Everyone>
+            </PluginConfiguration>
+            """;
+        var config = (PluginConfiguration)new System.Xml.Serialization.XmlSerializer(typeof(PluginConfiguration)).Deserialize(new System.IO.StringReader(Xml.Trim()))!;
+
+        Jellyfin.Plugin.Necto.Services.Groups.GroupNormalizer.Normalize(config);
+
+        Assert.Equal(new[] { "requests.approved" }, config.Everyone.Permissions.Notifications.BrowserEventKeys);
+        Assert.Empty(config.Everyone.Permissions.Notifications.MessageEventKeys!);
     }
 }
