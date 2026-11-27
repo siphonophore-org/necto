@@ -28,10 +28,10 @@ namespace Jellyfin.Plugin.Necto.Api.CustomPages;
 public class PagesController : ControllerBase
 {
     // Reads a configuration the page posts, Pascal cased, with tiers as names or numbers.
-    private static readonly JsonSerializerOptions ConfigurationJson = new()
+    // Jellyfin's own options, which read its ids written without dashes, as the page sends them back.
+    private static readonly JsonSerializerOptions ConfigurationJson = new(Jellyfin.Extensions.Json.JsonDefaults.Options)
     {
-        PropertyNameCaseInsensitive = true,
-        Converters = { new JsonStringEnumConverter() }
+        PropertyNameCaseInsensitive = true
     };
 
     // Answers in camel case whatever the server's own API options are, as the store routes do.

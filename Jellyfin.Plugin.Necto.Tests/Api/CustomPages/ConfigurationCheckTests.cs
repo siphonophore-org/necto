@@ -86,6 +86,22 @@ public class ConfigurationCheckTests
         Assert.False(json.GetProperty("ok").GetBoolean());
     }
 
+    /// <summary>
+    /// The whole configuration the dashboard reads back holds Jellyfin's ids written without dashes, and the check
+    /// reads them.
+    /// True: a page saves on a server with groups and invites.
+    /// False: every save says the settings could not be read.
+    /// </summary>
+    [Fact]
+    public async Task IdsWithoutDashes_AreRead()
+    {
+        var json = await Check("{\"Everyone\":{\"Id\":\"5a1f0c7e000040008000000000000001\",\"Name\":\"Everyone\",\"MemberIds\":[]},"
+            + "\"Groups\":[{\"Id\":\"0b9a23b3307c475298d761a7538d8141\",\"Name\":\"Family\",\"MemberIds\":[\"6f1f0c7e000040008000000000000002\"]}],"
+            + "\"CustomPages\":{\"Pages\":[" + Page("tx", "rpc", "a new password") + "]}}");
+
+        Assert.True(json.GetProperty("ok").GetBoolean(), json.ToString());
+    }
+
     [Fact]
     public void Check_RequiresElevation()
     {
