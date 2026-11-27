@@ -111,7 +111,7 @@ test('the Issues card counts the open reports, and the Invites card puts a used 
     var issues = dashboard.issuesCard(t, { Reported: 2, Confirmed: 1, Resolved: 4, Declined: 1, Rescinded: 1 });
     assert.equal(issues.value, 3);
     assert.deepEqual([issues.status, issues.statusColor], ['Pending', 'purple']);
-    assert.deepEqual(parts(issues), ['Reported 2', 'Confirmed 1', 'Resolved 4', 'Declined 1']);
+    assert.deepEqual(parts(issues), ['Reported 2', 'Confirmed 1', 'Resolved 4', 'Declined 1', 'Rescinded 1']);
     assert.equal(dashboard.issuesCard(t, { Resolved: 4 }).status, 'Idle');
 
     var invites = dashboard.invitesCard(t, [{ State: 'Active' }, { State: 'Active' }, { State: 'Expired' }, { State: 'GroupExpired' }, { State: 'UsedUp' }]);
