@@ -109,6 +109,13 @@ public sealed class DNSUpdateService : IDisposable
             return outcome;
         }
 
+        // While DDNS is off, no record is checked or pushed.
+        if (!plugin.ReadConfiguration(c => Jellyfin.Plugin.Necto.Configuration.ToolSwitches.IsOn(c, Jellyfin.Plugin.Necto.Configuration.ToolSwitches.Ddns)))
+        {
+            outcome.Warnings.Add(ServerText.Get(TranslationKeys.DdnsWarningOff));
+            return outcome;
+        }
+
         if (!await _runLock.WaitAsync(0, cancellationToken).ConfigureAwait(false))
         {
             outcome.Warnings.Add(ServerText.Get(TranslationKeys.DdnsWarningUpdateRunning));

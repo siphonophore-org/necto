@@ -67,7 +67,7 @@ internal sealed class OrchestratorHarness : IDisposable
 
         var paths = Stubs.Paths(_dir);
         var (xml, xmlStub) = InterfaceStub.Create<IXmlSerializer>();
-        xmlStub.Answer("DeserializeFromFile", _ => new PluginConfiguration());
+        xmlStub.Answer("DeserializeFromFile", _ => TestPlugin.WithToolsOn(new PluginConfiguration()));
         Plugin = new Plugin(paths, xml);
         Plugin.MutateConfiguration(c =>
         {

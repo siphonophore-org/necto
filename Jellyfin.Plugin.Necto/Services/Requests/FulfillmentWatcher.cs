@@ -87,7 +87,7 @@ public sealed class FulfillmentWatcher : IHostedService, IDisposable
 
     private void OnItemChanged(object? sender, ItemChangeEventArgs e)
     {
-        if (e?.Item is null || LibraryMatcher.Requestable(e.Item) is not { } item || _stopping.IsCancellationRequested)
+        if (e?.Item is null || !RequestService.Enabled || LibraryMatcher.Requestable(e.Item) is not { } item || _stopping.IsCancellationRequested)
         {
             return;
         }
@@ -109,7 +109,7 @@ public sealed class FulfillmentWatcher : IHostedService, IDisposable
             Season season => season.SeriesId,
             _ => Guid.Empty
         };
-        if (id != Guid.Empty && !_stopping.IsCancellationRequested)
+        if (id != Guid.Empty && !_stopping.IsCancellationRequested && RequestService.Enabled)
         {
             _removed.TryAdd(id, DateTime.UtcNow);
         }

@@ -16,7 +16,7 @@ public class PluginTests
 {
     private static readonly string[] Tools =
     {
-        "dashboard", "requests", "issues", "invites", "groups", "proxy", "ddns",
+        "dashboard", "groups", "requests", "issues", "invites", "proxy", "ddns",
         "wireguard", "scripts", "pages", "storage", "notifications", "settings", "troubleshooting"
     };
 

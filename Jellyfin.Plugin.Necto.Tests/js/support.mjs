@@ -133,6 +133,19 @@ export function loadScript(name) {
 
 export var paths = { configDir: configDir, baseRoot: baseRoot };
 
+// allToolsOn
+// Gives a plugin config with every tool that has a switch turned on, for a page whose tools should all show.
+//
+// Output
+// [object]: The config.
+export function allToolsOn() {
+    return {
+        Requests: { Enabled: true }, Issues: { Enabled: true }, InviteSettings: { Enabled: true }, Proxy: { Enabled: true },
+        Ddns: { Enabled: true }, WireGuard: { Enabled: true }, Scripts: { Enabled: true }, CustomPages: { Enabled: true },
+        Storage: { Enabled: true }
+    };
+}
+
 // flush
 // Waits for the promise chains a call started to settle.
 export async function flush() {

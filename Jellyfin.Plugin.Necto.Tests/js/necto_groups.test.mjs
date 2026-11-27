@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton, clickDialogButton, dialogText } from './support.mjs';
+import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton, clickDialogButton, dialogText, allToolsOn } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
@@ -35,7 +35,7 @@ function users() {
 // openPage
 // Shows the Groups tool over a view with its list, its Add group button, and its status line.
 async function openPage(answers) {
-    var page = installPage({});
+    var page = installPage({ config: allToolsOn() });
     var dom = page.dom;
     var view = pageView(dom, [dom.el('div', { id: 'groupList' }), dom.el('button', { id: 'btnAddGroup' }), dom.el('span', { id: 'groupsStatus' })]);
     dom.document.documentElement.appendChild(view);
@@ -62,9 +62,9 @@ function sent(opened) {
 }
 
 test('groupItems puts Everyone first with the users in no group, and each group with its members and rules', async function () {
-    installPage({});
+    installPage({ config: allToolsOn() });
     var shared = await loadScript('necto_shared.js');
-    var bag = shared.createNectoShared(installPage({}).dom.el('div', {}));
+    var bag = shared.createNectoShared(installPage({ config: allToolsOn() }).dom.el('div', {}));
     await bag.translations;
     var mod = await loadScript('necto_groups.js');
 
@@ -167,7 +167,7 @@ test('an expiry turned on with no date is refused before anything is sent', asyn
 });
 
 test('userCounts counts administrators, active, inactive, disabled, and soon expiring users', async function () {
-    installPage({});
+    installPage({ config: allToolsOn() });
     var mod = await loadScript('necto_groups.js');
     var now = new Date(2026, 10, 26, 12, 0, 0);
 
@@ -184,7 +184,7 @@ test('userCounts counts administrators, active, inactive, disabled, and soon exp
 });
 
 test('the page shows the user count cards over the list', async function () {
-    var page = installPage({});
+    var page = installPage({ config: allToolsOn() });
     var dom = page.dom;
     var view = pageView(dom, [dom.el('div', { id: 'groupUserCards' }), dom.el('div', { id: 'groupList' }), dom.el('button', { id: 'btnAddGroup' }), dom.el('span', { id: 'groupsStatus' })]);
     dom.document.documentElement.appendChild(view);
@@ -202,7 +202,7 @@ test('the page shows the user count cards over the list', async function () {
 });
 
 test('deletesOnExpiry holds only for a group with an expiry date and Delete as its method', async function () {
-    installPage({});
+    installPage({ config: allToolsOn() });
     var mod = await loadScript('necto_groups.js');
     function group(expiry) { return { Permissions: { Accounts: { Expiry: expiry } } }; }
 
@@ -322,7 +322,7 @@ test('Save sends the Requests and Issues permissions the editor shows, the profi
 });
 
 test('overlappingClients names a client more than one session rule covers', async function () {
-    installPage({});
+    installPage({ config: allToolsOn() });
     var mod = await loadScript('necto_groups.js');
     var clients = mod.knownClients([{ AppName: 'Infuse' }, { AppName: 'infuse' }], [{ Clients: ['Jellyfin Web'] }]);
 
@@ -334,7 +334,7 @@ test('overlappingClients names a client more than one session rule covers', asyn
 });
 
 test('a new group starts with the updates about members own requests and issues, and nothing else', async function () {
-    installPage({});
+    installPage({ config: allToolsOn() });
     var mod = await loadScript('necto_groups.js');
     var group = mod.newGroup();
 

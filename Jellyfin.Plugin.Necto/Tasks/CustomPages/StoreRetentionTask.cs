@@ -50,7 +50,6 @@ public sealed class StoreRetentionTask : PluginScheduledTask
     public override Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(progress);
-
         // A cancelled run stops between stores and surfaces as OperationCanceledException.
         var removed = _stores.SweepAll(cancellationToken);
         if (removed > 0)

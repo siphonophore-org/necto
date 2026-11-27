@@ -405,7 +405,7 @@ export function notificationsCard(t, log) {
 
 // toolsOn
 // Lists the tools that get a card: every tool in the sidebar but the dashboard, Settings, and Troubleshooting, without
-// Issues, Proxy, or WireGuard while it is off.
+// each tool that is turned off.
 //
 // Inputs
 // config [object]: The plugin configuration.
@@ -413,13 +413,10 @@ export function notificationsCard(t, log) {
 // Output
 // [string[]]: The tool keys, in sidebar order.
 export function toolsOn(config) {
-    var off = {
-        dashboard: true, settings: true, troubleshooting: true,
-        issues: !(config && config.Issues && config.Issues.Enabled),
-        proxy: !(config && config.Proxy && config.Proxy.Enabled),
-        wireguard: !(config && config.WireGuard && config.WireGuard.Enabled)
-    };
-    return nectoModule.nectoTools().map(function (tool) { return tool.key; }).filter(function (key) { return !off[key]; });
+    var never = { dashboard: true, settings: true, troubleshooting: true };
+    return nectoModule.nectoTools().map(function (tool) { return tool.key; }).filter(function (key) {
+        return !never[key] && nectoModule.toolIsOn(config, key);
+    });
 }
 
 // showsMap

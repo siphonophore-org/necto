@@ -150,6 +150,9 @@ public sealed class StorageService : IDisposable
         }
     }
 
+    /// <summary>Gets a value indicating whether Storage is on, so its checks and alerts run.</summary>
+    public bool Enabled => _settings.Current.Enabled;
+
     /// <inheritdoc />
     public void Dispose() => _gate.Dispose();
 

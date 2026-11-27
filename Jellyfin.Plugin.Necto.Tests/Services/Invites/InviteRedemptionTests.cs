@@ -28,6 +28,28 @@ public sealed class InviteRedemptionTests : IDisposable
     }
 
     /// <summary>
+    /// While Invites is off, an invite link says the invite is unavailable and makes no account.
+    /// True: turning Invites off stops every signup.
+    /// False: an old link would still make accounts while Invites is off.
+    /// </summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Redeem_InvitesOff_SaysTheInviteIsUnavailable()
+    {
+        var invite = Make(new InviteRequest { Label = "Family" });
+        _h.Config.Configuration.InviteSettings.Enabled = false;
+
+        var result = await _h.RedeemAsync(invite.Token);
+
+        Assert.False(result.Success);
+        Assert.Equal("This invite is no longer available.", result.Message);
+        Assert.Empty(_h.Users.Users.Values);
+        Assert.False(_h.Service.IsRedeemableNow(invite));
+        _h.Config.Configuration.InviteSettings.Enabled = true;
+        Assert.True(_h.Service.IsRedeemableNow(invite));
+    }
+
+    /// <summary>
     /// A signup makes the account, sets its password, counts a use, and writes the activity entry and the event.
     /// True: the invitee can sign in, and administrators see who joined.
     /// False: an invite would make no account, or make one nobody hears about.

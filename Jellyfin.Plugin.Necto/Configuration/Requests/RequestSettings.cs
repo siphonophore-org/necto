@@ -8,6 +8,9 @@ namespace Jellyfin.Plugin.Necto.Configuration.Requests;
 /// </summary>
 public class RequestSettings
 {
+    /// <summary>Gets or sets a value indicating whether Requests is on: the request page, its routes, its tasks, and its menu link.</summary>
+    public bool Enabled { get; set; }
+
     /// <summary>Gets or sets how many days a movie quota counts requests back over.</summary>
     public int MovieQuotaDays { get; set; } = 7;
 
@@ -64,9 +67,16 @@ public class RequestSettings
 
     /// <summary>
     /// Gets or sets a value indicating whether the Requests link has been added to the web client's menu, or found
-    /// there already. It's added once, so one the administrator removes stays removed.
+    /// there already, since Requests was turned on. It is added once, so one removed by hand stays removed until
+    /// Requests is turned off and on.
     /// </summary>
     public bool MenuLinkAdded { get; set; }
+
+    /// <summary>Gets or sets the name the Requests link is added with, as set in Menu links. Empty is Requests.</summary>
+    public string MenuLinkName { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the Material icon the Requests link is added with, as set in Menu links. Empty is search.</summary>
+    public string MenuLinkIcon { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the Radarr and Sonarr servers approved requests are sent to, each with its profiles.</summary>
     public List<ArrServer> ArrServers { get; set; } = new();

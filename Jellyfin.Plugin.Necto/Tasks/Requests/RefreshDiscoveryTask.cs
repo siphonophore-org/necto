@@ -47,6 +47,12 @@ public class RefreshDiscoveryTask : PluginScheduledTask
     public override async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(progress);
+        if (!RequestService.Enabled)
+        {
+            progress.Report(100);
+            return;
+        }
+
         // TMDb not answering in full leaves the copy before in place; the task says it failed, so it shows.
         if (await _search.RefreshStoredAsync(cancellationToken).ConfigureAwait(false) == 0)
         {

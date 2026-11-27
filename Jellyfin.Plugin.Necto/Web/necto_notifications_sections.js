@@ -553,25 +553,6 @@ export function browserItems(browsers, shared) {
     });
 }
 
-// resetRow
-// Builds one row of a reset group: a label and a description, and a button at its end.
-//
-// Inputs
-// label [string]: What the row does.
-// help [string]: One sentence on what follows.
-// button [string]: The button's label.
-// action [string]: The value of the button's data-action.
-// destructive [boolean]: Whether the button loses data.
-//
-// Output
-// [HTMLElement]: The row.
-function resetRow(label, help, button, action, destructive) {
-    return el('div', { class: 'stolon-reset-row' }, [
-        el('div', { class: 'stolon-reset-info' }, [el('div', { text: label }), el('div', { class: 'fieldDescription', text: help })]),
-        el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + (destructive ? 'stolon-destructive' : 'stolon-secondary') + ' stolon-small', 'data-action': action }, [el('span', { text: button })])
-    ]);
-}
-
 // buildTroubleshooting
 // Fills the Notifications section of Troubleshooting: a test to the administrator, the send log, the browsers with
 // notifications on, the held messages, and new push keys.
@@ -596,7 +577,7 @@ function buildTroubleshooting(content, ctx) {
         status,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderTests') }),
         el('div', { class: 'stolon-reset-group' }, [
-            resetRow(t.tr('NotificationsTestMe'), t.tr('NotificationsTestMeHelp'), t.tr('ButtonTest'), 'test-me', false)
+            nectoModule.resetRow({ icon: 'send', label: t.tr('NotificationsTestMe'), help: t.tr('NotificationsTestMeHelp'), button: t.tr('ButtonTest'), action: 'test-me' })
         ]),
         el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderLog') }),
         el('div', { class: 'fieldDescription', text: t.tr('NotificationsLogHelp') }),
@@ -609,8 +590,8 @@ function buildTroubleshooting(content, ctx) {
         browserBox,
         heldLine,
         el('div', { class: 'stolon-reset-group' }, [
-            resetRow(t.tr('NotificationsClearHeld'), t.tr('NotificationsClearHeldHelp'), t.tr('ButtonClear'), 'clear-held', true),
-            resetRow(t.tr('NotificationsResetKeys'), t.tr('NotificationsResetKeysHelp'), t.tr('NotificationsButtonResetKeys'), 'reset-keys', true)
+            nectoModule.resetRow({ icon: 'delete_sweep', label: t.tr('NotificationsClearHeld'), help: t.tr('NotificationsClearHeldHelp'), button: t.tr('ButtonClear'), action: 'clear-held', destructive: true }),
+            nectoModule.resetRow({ icon: 'key', label: t.tr('NotificationsResetKeys'), help: t.tr('NotificationsResetKeysHelp'), button: t.tr('NotificationsButtonResetKeys'), action: 'reset-keys', destructive: true })
         ])
     ].forEach(function (node) { content.appendChild(node); });
 

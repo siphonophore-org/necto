@@ -63,7 +63,7 @@ public class StoreRetentionTaskTests
         var root = Path.Combine(Path.GetTempPath(), "necto-retention-" + Guid.NewGuid().ToString("N"));
         var (paths, stub) = InterfaceStub.Create<IApplicationPaths>();
         stub.Answer("get_DataPath", _ => root);
-        var settings = new CustomPagesSettings();
+        var settings = new CustomPagesSettings { Enabled = true };
         settings.Stores.Add(new PageStore { Name = "queue", RetentionDays = 1 });
         var service = new StoreService(paths, NullLogger<StoreService>.Instance, () => settings);
         var task = new StoreRetentionTask(service, NullLogger<StoreRetentionTask>.Instance, FakeServerConfig.Create());

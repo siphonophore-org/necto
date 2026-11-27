@@ -93,24 +93,6 @@ function buildSettings(content, ctx) {
     };
 }
 
-// resetRow
-// Builds one row of a reset group: a label and a description, and a button at its end.
-//
-// Inputs
-// label [string]: What the row does.
-// help [string]: One sentence on what follows.
-// button [string]: The button's label.
-// action [string]: The value of the button's data-action.
-//
-// Output
-// [HTMLElement]: The row.
-function resetRow(label, help, button, action) {
-    return el('div', { class: 'stolon-reset-row' }, [
-        el('div', { class: 'stolon-reset-info' }, [el('div', { text: label }), el('div', { class: 'fieldDescription', text: help })]),
-        el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': action }, [el('span', { text: button })])
-    ]);
-}
-
 // resetState
 // Says whether a password reset is active, expiring in the next five minutes, or expired.
 //
@@ -196,10 +178,10 @@ function buildTroubleshooting(content, ctx) {
     var pollers = [];
     var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var resets = el('div', { 'data-role': 'resets' });
-    var apply = resetRow(t.tr('TaskApplyPasswordRules'), t.tr('HelpApplyPasswordRules'), t.tr('ButtonApplyRules'), 'apply-rules');
-    var templates = resetRow(t.tr('GroupsTaskApplyTemplates'), t.tr('GroupsTaskApplyTemplatesDescription'), t.tr('GroupsButtonApplyTemplates'), 'apply-templates');
-    var expired = resetRow(t.tr('TaskProcessExpired'), t.tr('HelpProcessExpiredTask'), t.tr('ButtonRunTask'), 'run-account-rules');
-    var sessions = resetRow(t.tr('TaskCleanSessions'), t.tr('HelpCleanSessionsTask'), t.tr('ButtonRunTask'), 'run-session-cleanup');
+    var apply = nectoModule.resetRow({ icon: 'password', label: t.tr('TaskApplyPasswordRules'), help: t.tr('HelpApplyPasswordRules'), button: t.tr('ButtonApplyRules'), action: 'apply-rules' });
+    var templates = nectoModule.resetRow({ icon: 'library_add_check', label: t.tr('GroupsTaskApplyTemplates'), help: t.tr('GroupsTaskApplyTemplatesDescription'), button: t.tr('GroupsButtonApplyTemplates'), action: 'apply-templates' });
+    var expired = nectoModule.resetRow({ icon: 'event_busy', label: t.tr('TaskProcessExpired'), help: t.tr('HelpProcessExpiredTask'), button: t.tr('ButtonRunTask'), action: 'run-account-rules' });
+    var sessions = nectoModule.resetRow({ icon: 'devices', label: t.tr('TaskCleanSessions'), help: t.tr('HelpCleanSessionsTask'), button: t.tr('ButtonRunTask'), action: 'run-session-cleanup' });
 
     [
         status,

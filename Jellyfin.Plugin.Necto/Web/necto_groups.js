@@ -705,8 +705,8 @@ export function createGroupEditor(group, ctx) {
     var templatesDrawn = nectoTemplates.drawTemplateSections(section, draft, ctx, readers, handles);
     ready = Promise.all([ready, templatesDrawn]);
 
-    // One section per tool.
-    sectionSpecs().forEach(function (spec) {
+    // One section per tool, without the tools that are off. Their permissions stay as they were.
+    sectionSpecs().filter(function (spec) { return !nectoModule.isToolOff(spec.key); }).forEach(function (spec) {
         var content = el('div', {}, [
             el('div', { class: 'fieldDescription', text: t.tr('HelpPermissionMerge') })
         ]);

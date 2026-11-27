@@ -44,8 +44,10 @@ public static class RequestSettingsNormalizer
         incoming.RetentionDays = Math.Clamp(incoming.RetentionDays, 0, 3650);
         incoming.LimitDays = Math.Clamp(incoming.LimitDays, 1, 365);
 
-        // Set by Necto once the menu link is in or out. A page saving its copy never changes it.
+        // Set by Necto once the menu link is in or out, and by Menu links. A page saving its copy never changes them.
         incoming.MenuLinkAdded = stored.MenuLinkAdded;
+        incoming.MenuLinkName = stored.MenuLinkName;
+        incoming.MenuLinkIcon = stored.MenuLinkIcon;
         return incoming;
     }
 
@@ -158,7 +160,10 @@ public static class RequestSettingsNormalizer
             .Where(t => t is not null && Enum.IsDefined(t.Type) && (t.Tmdb ?? t.Tvdb ?? t.Imdb) is not null)
             .Take(5000)
             .ToList();
-        incoming.MenuLinkAdded |= stored.MenuLinkAdded;
+        // Menu links sets the link's name and icon through its own route.
+        incoming.MenuLinkAdded = stored.MenuLinkAdded;
+        incoming.MenuLinkName = stored.MenuLinkName;
+        incoming.MenuLinkIcon = stored.MenuLinkIcon;
         return incoming;
     }
 

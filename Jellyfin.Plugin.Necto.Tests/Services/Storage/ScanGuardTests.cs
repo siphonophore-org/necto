@@ -48,6 +48,21 @@ public class ScanGuardTests
         => Assert.Empty(ScanGuardPolicy.Blockers(ScanGuardMode.Off, new[] { Unsafe("/mnt/c") }));
 
     [Fact]
+    public async Task StorageOff_NeverBlocksAScan()
+    {
+        using var harness = new Harness();
+        harness.Mounts.Mounted = false;
+        await harness.Storage.CheckAsync(default);
+        harness.Settings.Value.Enabled = false;
+
+        var worker = Worker(ScanGuard.LibraryScanKey);
+
+        Assert.Empty(harness.Guard.Guard(worker));
+        Assert.Equal(0, Count(harness.TaskCalls, "Cancel", worker));
+        Assert.False(harness.Storage.Enabled);
+    }
+
+    [Fact]
     public async Task TheGuardCancelsALibraryScanAndRecordsIt()
     {
         using var harness = new Harness();

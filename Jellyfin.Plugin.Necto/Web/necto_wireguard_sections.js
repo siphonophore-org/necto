@@ -132,10 +132,9 @@ export function buildSettings(content, ctx) {
         enabled.element,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderSidecar') }),
         sidecarLine,
-        el('div', { class: 'stolon-reset-group' }, [el('div', { class: 'stolon-reset-row' }, [
-            el('div', { class: 'stolon-reset-info' }, [el('div', { text: t.tr('WireGuardTitleReplace') }), el('div', { class: 'fieldDescription', text: t.tr('WireGuardSidecarHelp') })]),
-            replace
-        ])]),
+        el('div', { class: 'stolon-reset-group' }, [
+            nectoModule.resetRow({ icon: 'swap_horiz', label: t.tr('WireGuardTitleReplace'), help: t.tr('WireGuardSidecarHelp'), button: replace })
+        ]),
         el('h3', { class: 'stolon-subsection-title', text: t.tr('LabelServerHost') }),
         host.element, endpoint.element, port.element, subnet.element,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderSecurity') }),
@@ -332,10 +331,9 @@ export function buildTroubleshooting(content, ctx) {
         status,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderTunnels') }),
         tunnelList.element,
-        el('div', { class: 'stolon-reset-group' }, [el('div', { class: 'stolon-reset-row' }, [
-            el('div', { class: 'stolon-reset-info' }, [el('div', { text: t.tr('WireGuardRestartTitle') }), el('div', { class: 'fieldDescription', text: t.tr('WireGuardRestartHelp') })]),
-            restart
-        ])]),
+        el('div', { class: 'stolon-reset-group' }, [
+            nectoModule.resetRow({ icon: 'restart_alt', label: t.tr('WireGuardRestartTitle'), help: t.tr('WireGuardRestartHelp'), button: restart })
+        ]),
         el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderPeersByUser') }),
         el('div', { class: 'fieldDescription', text: t.tr('WireGuardPeersByUserHelp') }),
         userList.element

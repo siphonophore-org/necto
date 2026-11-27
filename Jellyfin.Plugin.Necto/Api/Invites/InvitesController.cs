@@ -186,7 +186,8 @@ public class InvitesController : ControllerBase
     [AllowAnonymous]
     [Produces("text/html")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public ContentResult MemberInvites() => MemberPage.Serve(this);
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public ActionResult MemberInvites() => ToolSwitches.IsOn(ToolSwitches.Invites) ? MemberPage.Serve(this) : NotFound();
 
     /// <summary>
     /// Serves the signup page an invite link opens. Its script reads the invite and makes the account.

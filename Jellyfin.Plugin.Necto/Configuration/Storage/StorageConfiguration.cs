@@ -8,6 +8,9 @@ namespace Jellyfin.Plugin.Necto.Configuration.Storage;
 /// </summary>
 public class StorageConfiguration
 {
+    /// <summary>Gets or sets a value indicating whether Storage is on. While it is off, no disk is checked and no alert is sent.</summary>
+    public bool Enabled { get; set; }
+
     /// <summary>Gets or sets the point at which a disk counts as low on space.</summary>
     public SpaceStop WarningStop { get; set; } = new() { Value = 90 };
 

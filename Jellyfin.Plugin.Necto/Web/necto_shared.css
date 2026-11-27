@@ -117,6 +117,22 @@
 .stolon-record-list-aside > .stolon-qr-code.stolon-inline { min-width: 0; width: 100%; }
 .stolon-record-list-aside > .stolon-qr-code.stolon-inline .stolon-copy-field-text { min-width: 0; overflow-wrap: anywhere; }
 
+/* necto-menu-link */
+/* A row of the Menu links list: the link's icon in a tile, its name and address, and its Edit button. */
+/* Example: <div class="necto-menu-link"><span class="stolon-collapsible-tile"></span><div class="necto-menu-link-text"></div><button class="stolon-row-btn"></button></div> */
+.necto-menu-link { display: flex; align-items: center; gap: var(--stolon-gap-narrow); min-width: 0; }
+.necto-menu-link-text { flex: 1 1 auto; min-width: 0; }
+.necto-menu-link-name { display: flex; align-items: center; gap: var(--stolon-gap-narrow); flex-wrap: wrap; }
+.necto-menu-link-url { font-family: var(--stolon-mono); overflow-wrap: anywhere; }
+
+/* necto-icon-picker */
+/* The Icon field of a menu link: the picked icon beside a text field, over a grid of common icons the text narrows. */
+/* Example: <div class="necto-icon-picker"><div class="necto-icon-field"><span class="material-icons"></span><input></div><div class="necto-icon-grid"></div></div> */
+.necto-icon-field { display: flex; align-items: center; gap: var(--stolon-gap-narrow); }
+.necto-icon-field > input { flex: 1 1 auto; min-width: 0; }
+.necto-icon-grid { display: flex; flex-wrap: wrap; gap: var(--stolon-gap-narrow); margin-top: var(--stolon-gap-narrow); max-height: 12rem; overflow-y: auto; }
+.necto-icon-choice[aria-selected="true"] { outline: 2px solid var(--stolon-accent); }
+
 /* necto-stack */
 /* A column of a tool's blocks, such as an intro, a notice, cards, and a list, kept apart by the standard gap. */
 /* Example: <div class="necto-stack"><div class="fieldDescription"></div><div class="stolon-cards"></div></div> */

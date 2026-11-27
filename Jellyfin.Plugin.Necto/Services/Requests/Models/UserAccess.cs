@@ -74,6 +74,9 @@ public class UserAccess
     /// <summary>Gets or sets a value indicating whether shows can be requested.</summary>
     public bool Series { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether Requests is on, so the menu and the request page show.</summary>
+    public bool RequestsEnabled { get; set; }
+
     /// <summary>Gets or sets a value indicating whether issues are on, so the menu and the issue page show.</summary>
     public bool IssuesEnabled { get; set; }
 

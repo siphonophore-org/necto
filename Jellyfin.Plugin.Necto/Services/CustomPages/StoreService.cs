@@ -408,6 +408,12 @@ public sealed class StoreService : IStoreService
     /// <exception cref="OperationCanceledException">When the sweep is cancelled.</exception>
     public int SweepAll(CancellationToken cancellationToken = default)
     {
+        // While Pages is off, no record is removed.
+        if (_configuration() is { Enabled: false })
+        {
+            return 0;
+        }
+
         var removed = 0;
         foreach (var store in _configuration()?.Stores ?? new List<PageStore>())
         {

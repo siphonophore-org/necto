@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton } from './support.mjs';
+import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton, allToolsOn } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
@@ -88,10 +88,11 @@ test('the Scripts section of Troubleshooting reads the run history and its chart
 });
 
 test('the group editor lists the scripts a group runs, hidden while it runs every script', async function () {
-    var page = installPage({});
+    var page = installPage({ config: allToolsOn() });
     var dom = page.dom;
     routeApi(page, { 'GET Scripts/Names': [{ Id: SCRIPT.replace(/-/g, ''), Name: 'Notify' }] });
     var shared = await loadScript('necto_shared.js');
+    shared.setToolsOff(allToolsOn());
     var groupsModule = await loadScript('necto_groups.js');
     var bag = shared.createNectoShared(pageView(dom, []));
     await bag.translations;

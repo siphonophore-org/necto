@@ -50,6 +50,12 @@ public class SyncProgressTask : PluginScheduledTask
     /// <inheritdoc />
     public override Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
+        if (!RequestService.Enabled)
+        {
+            progress?.Report(100);
+            return Task.CompletedTask;
+        }
+
         // Reminders first: they need only the database, so Radarr or Sonarr being unreachable doesn't hold them up.
         _requests.Remind(DateTime.UtcNow);
         _requests.AutoDecline(DateTime.UtcNow);

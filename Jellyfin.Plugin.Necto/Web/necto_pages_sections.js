@@ -62,7 +62,9 @@ function buildSettings(content, ctx) {
     var retention = el('input', { is: 'emby-input', type: 'number', id: retentionId, min: '0', max: String(RETENTION_CEILING), 'data-field': 'NewStoreRetentionDays' });
     var notify = el('input', { type: 'checkbox', is: 'emby-checkbox', id: fieldId('notify'), 'data-field': 'NewStoreNotifyOnWrite' });
 
+    var enabled = nectoModule.enabledSwitch(t.tr('LabelEnabled'), t.tr('PagesHelpEnabled'));
     content.appendChild(el('div', { class: 'fieldDescription', text: t.tr('PagesSettingsIntro') }));
+    content.appendChild(enabled.element);
     content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('PagesHeaderNewStores') }));
     content.appendChild(el('div', { class: 'inputContainer' }, [
         el('label', { class: 'inputLabel inputLabelUnfocused', for: limitId, text: t.tr('PagesLabelRecordLimit') }),
@@ -82,36 +84,19 @@ function buildSettings(content, ctx) {
     return {
         load: function (config) {
             var s = config.CustomPages || {};
+            enabled.input.checked = !!s.Enabled;
             limit.value = String(s.NewStoreMaxRecords > 0 ? s.NewStoreMaxRecords : 1000);
             retention.value = String(s.NewStoreRetentionDays > 0 ? s.NewStoreRetentionDays : 0);
             notify.checked = !!s.NewStoreNotifyOnWrite;
         },
         apply: function (config) {
             config.CustomPages = config.CustomPages || {};
+            config.CustomPages.Enabled = !!enabled.input.checked;
             config.CustomPages.NewStoreMaxRecords = clampInt(limit.value, 1, RECORD_CEILING, 1000);
             config.CustomPages.NewStoreRetentionDays = clampInt(retention.value, 0, RETENTION_CEILING, 0);
             config.CustomPages.NewStoreNotifyOnWrite = !!notify.checked;
         }
     };
-}
-
-// resetRow
-// Builds one row of a reset group: a label and a description, and a button at its end.
-//
-// Inputs
-// label [string]: What the row does.
-// help [string]: One sentence on what follows.
-// button [string]: The button's label.
-// action [string]: The value of the button's data-action.
-// destructive [boolean]: Whether the button loses data.
-//
-// Output
-// [HTMLElement]: The row.
-function resetRow(label, help, button, action, destructive) {
-    return el('div', { class: 'stolon-reset-row' }, [
-        el('div', { class: 'stolon-reset-info' }, [el('div', { text: label }), el('div', { class: 'fieldDescription', text: help })]),
-        el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + (destructive ? 'stolon-destructive' : 'stolon-secondary') + ' stolon-small', 'data-action': action }, [el('span', { text: button })])
-    ]);
 }
 
 // clearMessage
@@ -144,8 +129,8 @@ function buildTroubleshooting(content, ctx) {
     var pollers = [];
     var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var stores = el('div', { class: 'stolon-reset-group', 'data-role': 'stores' });
-    var retention = resetRow(t.tr('PagesTaskRetentionName'), t.tr('PagesTaskRetentionDescription'), t.tr('ButtonRunTask'), 'run-retention', false);
-    var check = resetRow(t.tr('PagesLabelCheckSettings'), t.tr('PagesCheckSettingsHelp'), t.tr('PagesButtonCheck'), 'check-settings', false);
+    var retention = nectoModule.resetRow({ icon: 'auto_delete', label: t.tr('PagesTaskRetentionName'), help: t.tr('PagesTaskRetentionDescription'), button: t.tr('ButtonRunTask'), action: 'run-retention' });
+    var check = nectoModule.resetRow({ icon: 'fact_check', label: t.tr('PagesLabelCheckSettings'), help: t.tr('PagesCheckSettingsHelp'), button: t.tr('PagesButtonCheck'), action: 'check-settings' });
 
     [
         status,
@@ -208,7 +193,7 @@ function buildTroubleshooting(content, ctx) {
                 var help = typeof row.count === 'number'
                     ? t.format('PagesUsageRecords', row.count, row.limit || row.store.MaxRecords || 1000)
                     : t.tr('PagesStoreDisabledHelp');
-                var node = resetRow(row.store.Name, help, t.tr('ButtonClear'), 'clear-store', true);
+                var node = nectoModule.resetRow({ icon: 'delete_sweep', label: row.store.Name, help: help, button: t.tr('ButtonClear'), action: 'clear-store', destructive: true, empty: row.count === 0 });
                 node.setAttribute('data-store', row.store.Name);
                 var btn = node.querySelector('button');
                 btn.disabled = typeof row.count !== 'number';

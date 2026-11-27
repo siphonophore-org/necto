@@ -13,7 +13,7 @@ public sealed class FakeConfigurationStore : IConfigurationStore
 
     public FakeConfigurationStore(PluginConfiguration? config = null)
     {
-        Configuration = config ?? new PluginConfiguration();
+        Configuration = TestPlugin.WithToolsOn(config ?? new PluginConfiguration());
     }
 
     public PluginConfiguration Configuration { get; }

@@ -474,8 +474,10 @@ function buildSettings(content, ctx) {
     ]);
     var remount = checkboxOf('Remount', t.tr('StorageLabelRemount'), t.tr('StorageHelpRemount'));
     var mute = checkboxOf('MuteMonitoring', t.tr('StorageLabelMuteMonitoring'), t.tr('StorageHelpMuteMonitoring'));
+    var enabled = nectoModule.enabledSwitch(t.tr('LabelEnabled'), t.tr('StorageHelpEnabled'));
 
     [
+        enabled.element,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('Alerts') }),
         alerts.element,
         health.element,
@@ -495,6 +497,7 @@ function buildSettings(content, ctx) {
     return {
         load: function (config) {
             var s = storageOf(config);
+            enabled.input.checked = !!(config && config.Storage && config.Storage.Enabled);
             alerts.setValue({ WarningStop: s.WarningStop, ErrorStop: s.ErrorStop });
             health.setValue(s.HealthAlerts);
             scanGuard.set(s.ScanGuard);
@@ -506,6 +509,7 @@ function buildSettings(content, ctx) {
             if (problem) throw new Error(problem);
             var value = alerts.getValue();
             config.Storage = config.Storage || {};
+            config.Storage.Enabled = !!enabled.input.checked;
             config.Storage.WarningStop = value.WarningStop;
             config.Storage.ErrorStop = value.ErrorStop;
             config.Storage.HealthAlerts = health.getValue();
@@ -519,25 +523,6 @@ function buildSettings(content, ctx) {
             scanGuard.destroy();
         }
     };
-}
-
-// resetRow
-// Builds one row of a reset group: a label and a description, and a button at its end.
-//
-// Inputs
-// label [string]: What the row does.
-// help [string]: One sentence on what follows.
-// button [string]: The button's label.
-// action [string]: The value of the button's data-action.
-// destructive [boolean]: Whether the button loses data. [optional]
-//
-// Output
-// [HTMLElement]: The row.
-function resetRow(label, help, button, action, destructive) {
-    return el('div', { class: 'stolon-reset-row' }, [
-        el('div', { class: 'stolon-reset-info' }, [el('div', { text: label }), el('div', { class: 'fieldDescription', text: help })]),
-        el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + (destructive ? 'stolon-destructive' : 'stolon-secondary') + ' stolon-small', 'data-action': action }, [el('span', { text: button })])
-    ]);
 }
 
 // buildTroubleshooting
@@ -559,9 +544,9 @@ function buildTroubleshooting(content, ctx) {
     [
         status,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
-        el('div', { class: 'stolon-reset-group' }, [resetRow(t.tr('StorageTaskCheckStorage'), t.tr('StorageTaskCheckStorageDescription'), t.tr('ButtonRunTask'), 'run-check')]),
+        el('div', { class: 'stolon-reset-group' }, [nectoModule.resetRow({ icon: 'health_and_safety', label: t.tr('StorageTaskCheckStorage'), help: t.tr('StorageTaskCheckStorageDescription'), button: t.tr('ButtonRunTask'), action: 'run-check' })]),
         el('h3', { class: 'stolon-subsection-title', text: t.tr('Settings') }),
-        el('div', { class: 'stolon-reset-group' }, [resetRow(t.tr('StorageTaskResetSettings'), t.tr('StorageHelpResetSettings'), t.tr('Reset'), 'reset-settings', true)])
+        el('div', { class: 'stolon-reset-group' }, [nectoModule.resetRow({ icon: 'settings_backup_restore', label: t.tr('StorageTaskResetSettings'), help: t.tr('StorageHelpResetSettings'), button: t.tr('Reset'), action: 'reset-settings', destructive: true })])
     ].forEach(function (node) { content.appendChild(node); });
 
     // report

@@ -170,6 +170,11 @@ public class ScriptsController : ControllerBase
     public async Task<ActionResult<ScriptRun>> Test([FromBody] TestRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (ScriptConfig.IsOff())
+        {
+            return BadRequest(StolonTranslations.Get(TranslationKeys.ScriptsErrorOff, StolonTranslations.RequestLanguage(Request)));
+        }
+
         if (request.Script is null || !Enum.IsDefined(request.Trigger))
         {
             return BadRequest(StolonTranslations.Get(TranslationKeys.ScriptsErrorScriptAndTriggerRequired, StolonTranslations.RequestLanguage(Request)));
@@ -207,6 +212,11 @@ public class ScriptsController : ControllerBase
     public ActionResult RunNow([FromRoute] Guid id)
     {
         var language = StolonTranslations.RequestLanguage(Request);
+        if (ScriptConfig.IsOff())
+        {
+            return BadRequest(StolonTranslations.Get(TranslationKeys.ScriptsErrorOff, language));
+        }
+
         var script = ScriptConfig.Current()?.Scripts.FirstOrDefault(s => s.Id == id);
         if (script is null)
         {
@@ -235,7 +245,7 @@ public class ScriptsController : ControllerBase
     public async Task<ActionResult<object>> Webhook([FromRoute] string token, CancellationToken cancellationToken)
     {
         var script = FindByWebhookToken(token);
-        if (script is null)
+        if (script is null || ScriptConfig.IsOff())
         {
             return NotFound();
         }

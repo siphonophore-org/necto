@@ -90,8 +90,10 @@ function buildSettings(content, ctx) {
         httpsWarn.classList.toggle('stolon-hidden', !linksInsecure(link.value, globalThis.location && globalThis.location.protocol));
     };
     link.addEventListener('input', checkHttps);
+    var enabled = nectoModule.enabledSwitch(t.tr('LabelEnabled'), t.tr('InvitesHelpEnabled'));
 
     [
+        enabled.element,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLinks') }),
         el('div', { class: 'inputContainer' }, [
             el('label', { class: 'inputLabel inputLabelUnfocused', for: linkId, text: t.tr('InvitesLabelLinkUrl') }),
@@ -107,6 +109,7 @@ function buildSettings(content, ctx) {
     return {
         load: function (config) {
             var s = config.InviteSettings || {};
+            enabled.input.checked = !!s.Enabled;
             link.value = s.LinkUrl || '';
             count.input.value = String(s.RateLimitCount == null ? 10 : s.RateLimitCount);
             windowField.input.value = String(s.RateLimitWindowMinutes == null ? 60 : s.RateLimitWindowMinutes);
@@ -115,6 +118,7 @@ function buildSettings(content, ctx) {
         },
         apply: function (config) {
             config.InviteSettings = config.InviteSettings || {};
+            config.InviteSettings.Enabled = !!enabled.input.checked;
             config.InviteSettings.LinkUrl = link.value.trim().replace(/\/+$/, '');
             config.InviteSettings.RateLimitCount = readCount(count.input, 10, 0);
             config.InviteSettings.RateLimitWindowMinutes = readCount(windowField.input, 60, 0);
@@ -142,10 +146,7 @@ function buildTroubleshooting(content, ctx) {
         status,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
         el('div', { class: 'stolon-reset-group' }, [
-            el('div', { class: 'stolon-reset-row' }, [
-                el('div', { class: 'stolon-reset-info' }, [el('div', { text: t.tr('InvitesTaskExpire') }), el('div', { class: 'fieldDescription', text: t.tr('InvitesTaskExpireDescription') })]),
-                run
-            ])
+            nectoModule.resetRow({ icon: 'timer_off', label: t.tr('InvitesTaskExpire'), help: t.tr('InvitesTaskExpireDescription'), button: run })
         ])
     ].forEach(function (node) { content.appendChild(node); });
 

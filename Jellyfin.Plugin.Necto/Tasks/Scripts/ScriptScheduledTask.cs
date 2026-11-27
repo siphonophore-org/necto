@@ -119,7 +119,7 @@ public abstract class ScriptScheduledTask : IScheduledTask, IConfigurableSchedul
     {
         ArgumentNullException.ThrowIfNull(progress);
         var script = Scheduled();
-        if (script is null || !script.Enabled || _runner is null || _builder is null)
+        if (script is null || !script.Enabled || ScriptConfig.IsOff() || _runner is null || _builder is null)
         {
             // Run by hand while disabled, or a task whose script is gone: there is nothing to do.
             progress.Report(100);

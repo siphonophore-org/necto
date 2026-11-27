@@ -17,6 +17,7 @@ using MediaBrowser.Controller.Library;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using Siphonophore.Stolon;
 
@@ -29,7 +30,7 @@ namespace Jellyfin.Plugin.Necto.Api.Invites;
 [Authorize]
 [Route("Invites/Mine")]
 [Produces(MediaTypeNames.Application.Json)]
-public class MemberInvitesController : ControllerBase
+public class MemberInvitesController : ControllerBase, IActionFilter
 {
     private readonly InviteService _invites;
     private readonly IConfigurationStore _store;
@@ -46,6 +47,24 @@ public class MemberInvitesController : ControllerBase
         _invites = invites ?? throw new ArgumentNullException(nameof(invites));
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+    }
+
+    /// <summary>Answers not found for every route while Invites is off.</summary>
+    /// <param name="context">The action about to run.</param>
+    [NonAction]
+    public void OnActionExecuting(ActionExecutingContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        if (!ToolSwitches.IsOn(ToolSwitches.Invites))
+        {
+            context.Result = NotFound();
+        }
+    }
+
+    /// <inheritdoc />
+    [NonAction]
+    public void OnActionExecuted(ActionExecutedContext context)
+    {
     }
 
     /// <summary>

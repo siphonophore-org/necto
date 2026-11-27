@@ -5,6 +5,9 @@ namespace Jellyfin.Plugin.Necto.Configuration.Invites;
 /// </summary>
 public class InviteSettings
 {
+    /// <summary>Gets or sets a value indicating whether Invites is on. While it is off, no invite can be used.</summary>
+    public bool Enabled { get; set; }
+
     /// <summary>Gets or sets the public address invite links start with. Blank uses the address the page is open at.</summary>
     public string LinkUrl { get; set; } = string.Empty;
 

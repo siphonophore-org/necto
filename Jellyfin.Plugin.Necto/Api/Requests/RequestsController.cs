@@ -997,6 +997,7 @@ public partial class RequestsController : ControllerBase, IActionFilter
     /// <returns>How many were requested, skipped and refused, with the first refusal's reason.</returns>
     [HttpPost("/Requests/Collections/{id:int}/Request")]
     [Authorize]
+    [MakesRequest]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1454,6 +1455,7 @@ public partial class RequestsController : ControllerBase, IActionFilter
     /// <returns>The new request, or an error to show.</returns>
     [HttpPost("/Requests")]
     [Authorize]
+    [MakesRequest]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -1488,6 +1490,7 @@ public partial class RequestsController : ControllerBase, IActionFilter
     /// <returns>The changed request; a refusal; or not found when they may not change it or it no longer waits.</returns>
     [HttpPost("/Requests/{requestId:guid}")]
     [Authorize]
+    [MakesRequest]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -1518,6 +1521,7 @@ public partial class RequestsController : ControllerBase, IActionFilter
     /// <returns>The request; a refusal; or not found when there's no such open request.</returns>
     [HttpPost("/Requests/{requestId:guid}/Join")]
     [Authorize]
+    [MakesRequest]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -2096,7 +2100,8 @@ public partial class RequestsController : ControllerBase, IActionFilter
 
     /// <summary>Keeps every answer, and any token in the page's address, out of referrers, caches and search indexes.
     /// The page's scripts, stylesheets, fonts, translations and logo then set their own caching. Anything under /issues/
-    /// answers 404 while issues are off.</summary>
+    /// answers 404 while issues are off, and the request page and everything under /requests/ while Requests is off. A
+    /// route that makes a request answers 404 while Requests is off.</summary>
     /// <param name="context">The action about to run.</param>
     [NonAction]
     public void OnActionExecuting(ActionExecutingContext context)
@@ -2111,8 +2116,26 @@ public partial class RequestsController : ControllerBase, IActionFilter
             return;
         }
 
-        // A route for managers takes administrators and members of a group that may manage, never anyone else.
+        // The request page and its assets, routed under requests/ (the JSON routes are /Requests/..., which the issue
+        // page and Settings still use), and every route that makes a request, are not there while Requests is off.
         var metadata = context.ActionDescriptor.EndpointMetadata;
+        if (!RequestService.Enabled)
+        {
+            if (context.ActionDescriptor.AttributeRouteInfo?.Template?.StartsWith("requests", StringComparison.Ordinal) == true
+                && !IsIssuesPath)
+            {
+                context.Result = NotFound();
+                return;
+            }
+
+            if (metadata.OfType<MakesRequestAttribute>().Any())
+            {
+                context.Result = NotFound(new { Error = StolonTranslations.Get(TranslationKeys.RequestsErrorOff, Language) });
+                return;
+            }
+        }
+
+        // A route for managers takes administrators and members of a group that may manage, never anyone else.
         var forRequests = metadata.OfType<ManagesRequestsAttribute>().Any();
         var forIssues = metadata.OfType<ManagesIssuesAttribute>().Any();
         if (forRequests || forIssues)

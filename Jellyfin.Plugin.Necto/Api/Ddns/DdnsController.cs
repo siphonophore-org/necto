@@ -230,13 +230,15 @@ public class DdnsController : ControllerBase
         plugin.MutateConfiguration(c =>
         {
             var d = c.Ddns;
-            changed = d.IPv4DetectionUrl != incoming.IPv4DetectionUrl
+            changed = d.Enabled != incoming.Enabled
+                || d.IPv4DetectionUrl != incoming.IPv4DetectionUrl
                 || d.IPv6DetectionUrl != incoming.IPv6DetectionUrl
                 || d.ForceUpdateHours != incoming.ForceUpdateHours
                 || d.SkipInternalAddresses != incoming.SkipInternalAddresses
                 || d.BackoffAfterFailures != incoming.BackoffAfterFailures
                 || d.BackoffHours != incoming.BackoffHours
                 || d.RequestTimeoutSeconds != incoming.RequestTimeoutSeconds;
+            d.Enabled = incoming.Enabled;
             d.IPv4DetectionUrl = incoming.IPv4DetectionUrl;
             d.IPv6DetectionUrl = incoming.IPv6DetectionUrl;
             d.ForceUpdateHours = incoming.ForceUpdateHours;
@@ -417,6 +419,7 @@ public class DdnsController : ControllerBase
 
     private static DdnsSettings SettingsOnly(DdnsSettings settings) => new()
     {
+        Enabled = settings.Enabled,
         IPv4DetectionUrl = settings.IPv4DetectionUrl,
         IPv6DetectionUrl = settings.IPv6DetectionUrl,
         ForceUpdateHours = settings.ForceUpdateHours,

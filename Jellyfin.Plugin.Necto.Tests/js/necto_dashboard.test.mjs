@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, loadScript, pageView, settle, routeApi, texts, strings } from './support.mjs';
+import { installPage, loadScript, pageView, settle, routeApi, texts, strings, allToolsOn } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
@@ -37,9 +37,11 @@ test('a card is drawn for each tool that is on, in sidebar order, and the map sh
     installPage({});
     var dashboard = await loadScript('necto_dashboard.js');
 
-    assert.deepEqual(dashboard.toolsOn({}), ['requests', 'invites', 'groups', 'ddns', 'scripts', 'pages', 'storage', 'notifications']);
+    assert.deepEqual(dashboard.toolsOn({}), ['groups', 'notifications']);
     assert.deepEqual(dashboard.toolsOn({ Issues: { Enabled: true }, Proxy: { Enabled: true }, WireGuard: { Enabled: true } }),
-        ['requests', 'issues', 'invites', 'groups', 'proxy', 'ddns', 'wireguard', 'scripts', 'pages', 'storage', 'notifications']);
+        ['groups', 'issues', 'proxy', 'wireguard', 'notifications']);
+    assert.deepEqual(dashboard.toolsOn(allToolsOn()),
+        ['groups', 'requests', 'issues', 'invites', 'proxy', 'ddns', 'wireguard', 'scripts', 'pages', 'storage', 'notifications']);
     assert.equal(dashboard.showsMap({}), false);
     assert.equal(dashboard.showsMap({ Proxy: { Enabled: true } }), true);
     assert.equal(dashboard.showsMap({ WireGuard: { Enabled: true } }), true);
@@ -278,12 +280,13 @@ async function openDashboard(config, answers) {
 }
 
 test('the page draws a card per tool that is on and hides the map and share card while the proxy and WireGuard are off', async function () {
-    var opened = await openDashboard({ Groups: [] }, {
+    var config = Object.assign(allToolsOn(), { Groups: [], Issues: { Enabled: false }, Proxy: { Enabled: false }, WireGuard: { Enabled: false } });
+    var opened = await openDashboard(config, {
         'GET Dashboard/Activity': [{ Date: days(0), Name: 'Group created', Type: 'Necto.GroupCreated', Severity: 'Information' }]
     });
 
     var titles = texts(opened.view, '#dashboardCards .stolon-status-card-title');
-    assert.deepEqual(titles, ['Requests', 'Invites', 'Groups', 'DDNS', 'Scripts', 'Pages', 'Storage', 'Notifications']);
+    assert.deepEqual(titles, ['Groups', 'Requests', 'Invites', 'DDNS', 'Scripts', 'Pages', 'Storage', 'Notifications']);
     assert.ok(opened.view.querySelector('#dashboardMap').classList.contains('stolon-hidden'));
     assert.ok(opened.view.querySelector('#dashboardShare').classList.contains('stolon-hidden'));
     var urls = opened.page.requests.map(function (r) { return r.url; });

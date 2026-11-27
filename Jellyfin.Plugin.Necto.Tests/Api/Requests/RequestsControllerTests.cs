@@ -573,6 +573,45 @@ public sealed class RequestsControllerTests : IDisposable
     }
 
     /// <summary>
+    /// While Requests is off, the request page and its assets answer 404, a route that makes a request answers 404
+    /// with the reason, and the issue page and the routes it uses still answer.
+    /// True: a server with Requests off takes no requests, and Issues works on its own.
+    /// False: requests could still be made while Requests is off, or the issue page would go with them.
+    /// </summary>
+    /// <param name="template">The route's template.</param>
+    /// <param name="makesRequest">Whether the route makes a request.</param>
+    /// <param name="on">Whether Requests is on.</param>
+    /// <param name="gone">Whether the route answers 404.</param>
+    [Theory]
+    [InlineData("requests", false, false, true)]
+    [InlineData("requests/page.js", false, false, true)]
+    [InlineData("Requests", true, false, true)]
+    [InlineData("Requests/Me", false, false, false)]
+    [InlineData("issues", false, false, false)]
+    [InlineData("requests", false, true, false)]
+    [InlineData("Requests", true, true, false)]
+    public void OnActionExecuting_RequestsOff_HidesThePageAndRefusesRequests(string template, bool makesRequest, bool on, bool gone)
+    {
+        H.Plugin.MutateConfiguration(c => { c.Requests.Enabled = on; c.Issues.Enabled = true; return false; });
+        var controller = Controller("/" + template);
+        var descriptor = new ControllerActionDescriptor
+        {
+            AttributeRouteInfo = new Microsoft.AspNetCore.Mvc.Routing.AttributeRouteInfo { Template = template },
+            EndpointMetadata = makesRequest ? new List<object> { new MakesRequestAttribute() } : new List<object>()
+        };
+        var context = new ActionExecutingContext(
+            new ActionContext(controller.HttpContext, new RouteData(), descriptor),
+            new List<IFilterMetadata>(),
+            new Dictionary<string, object?>(),
+            controller);
+
+        controller.OnActionExecuting(context);
+
+        Assert.Equal(gone, context.Result is NotFoundResult or NotFoundObjectResult);
+        H.Plugin.MutateConfiguration(c => { c.Requests.Enabled = true; return false; });
+    }
+
+    /// <summary>
     /// The page's own stylesheet is served on its own in its place, before the server's custom CSS, and only the
     /// largest style block in the head is taken out.
     /// True: the page's styles are cached as a file, and the server's custom CSS still wins.

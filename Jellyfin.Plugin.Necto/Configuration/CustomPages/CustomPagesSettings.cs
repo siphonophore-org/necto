@@ -7,6 +7,9 @@ namespace Jellyfin.Plugin.Necto.Configuration.CustomPages;
 /// </summary>
 public class CustomPagesSettings
 {
+    /// <summary>Gets or sets a value indicating whether Pages is on. While it is off, the /pages addresses answer not found.</summary>
+    public bool Enabled { get; set; }
+
     /// <summary>Gets or sets the pages.</summary>
     public List<CustomPage> Pages { get; set; } = new();
 

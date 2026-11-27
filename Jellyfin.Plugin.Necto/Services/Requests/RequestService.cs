@@ -131,6 +131,9 @@ public sealed partial class RequestService : IDisposable
 
     // ------------------------------------------------------------------ access
 
+    /// <summary>Gets a value indicating whether Requests is on.</summary>
+    public static bool Enabled => Jellyfin.Plugin.Necto.Configuration.ToolSwitches.IsOn(Jellyfin.Plugin.Necto.Configuration.ToolSwitches.Requests);
+
     /// <summary>
     /// Works out what a user may do, or returns null for an unknown or disabled account.
     /// </summary>
@@ -157,7 +160,8 @@ public sealed partial class RequestService : IDisposable
             IsServerAdministrator = isAdmin,
             ManagesIssues = isAdmin || permissions.ManageIssues,
             Permissions = permissions,
-            CanRequest = permissions.CanRequest,
+            RequestsEnabled = config.Enabled,
+            CanRequest = config.Enabled && permissions.CanRequest,
             AutoApproveMovies = permissions.AutoApproveMovies,
             AutoApproveShows = permissions.AutoApproveShows,
             SeeAllRequests = permissions.SeeAllRequests,

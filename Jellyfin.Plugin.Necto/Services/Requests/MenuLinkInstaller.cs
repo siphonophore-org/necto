@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
@@ -10,33 +9,25 @@ using Siphonophore.Stolon;
 using MediaBrowser.Controller;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Jellyfin.Plugin.Necto.Configuration.Requests;
-using Jellyfin.Plugin.Necto.Configuration.Issues;
-using Jellyfin.Plugin.Necto.Services.Requests.Models;
-using Jellyfin.Plugin.Necto.Services.Issues;
-using Jellyfin.Plugin.Necto.Services.Issues.Models;
+using Jellyfin.Plugin.Necto.Configuration;
+using Jellyfin.Plugin.Necto.Services.MenuLinks;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Jellyfin.Plugin.Necto.Services.Requests;
 
 /// <summary>
-/// Adds a Requests link to the web client's menu (menuLinks in its config.json) the first time the plugin starts,
-/// unless a link to the request page is already there. It runs once: a link removed afterwards stays removed. An
-/// Issues link is added the same way each time issues are turned on, and taken out when they are turned off.
+/// Keeps the Requests and Issues links in the web client's menu (menuLinks in its config.json) in step with their
+/// switches. Each link is added once when its tool is on, with the name and icon set in Menu links, unless a link to
+/// its page is there already, so one removed by hand stays removed. Each is taken out when its tool is turned off.
 /// </summary>
 [PluginService(ServiceLifetime.Singleton, ServiceType = typeof(IHostedService))]
-public sealed class MenuLinkInstaller : IHostedService, IDisposable
+public sealed class MenuLinkInstaller : IHostedService
 {
     /// <summary>Where the link goes, from the web client at /web/: the request page beside it.</summary>
     internal const string LinkUrl = "../requests/";
 
     /// <summary>Where the Issues link goes, from the web client at /web/: the issue page beside it.</summary>
     internal const string IssuesLinkUrl = "../issues/";
-
-    // One change to the Issues link at a time, as settings saved quickly one after another each start one.
-    private readonly SemaphoreSlim _issuesLink = new(1, 1);
-
-    private static readonly JsonSerializerOptions _indented = new() { WriteIndented = true };
 
     private readonly IServerApplicationPaths _paths;
     private readonly ILogger<MenuLinkInstaller> _logger;
@@ -53,16 +44,15 @@ public sealed class MenuLinkInstaller : IHostedService, IDisposable
     }
 
     /// <inheritdoc />
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public Task StartAsync(CancellationToken cancellationToken)
     {
-        if (RequestConfig.Instance is not { } plugin || Plugin.Instance is not { } loaded)
+        if (Plugin.Instance is not { } loaded)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         loaded.ConfigurationChanged += OnConfigurationChanged;
-        await AddRequestsLinkAsync(plugin, cancellationToken).ConfigureAwait(false);
-        await SyncIssuesLinkAsync(cancellationToken).ConfigureAwait(false);
+        return SyncAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -76,201 +66,120 @@ public sealed class MenuLinkInstaller : IHostedService, IDisposable
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc />
-    public void Dispose() => _issuesLink.Dispose();
-
-    // Settings saved: the Issues link follows the Issues setting, off the saving thread, which holds the settings' lock.
+    // Settings saved: the links follow the switches, off the saving thread, which holds the settings' lock.
     private void OnConfigurationChanged(object? sender, MediaBrowser.Model.Plugins.BasePluginConfiguration e)
-        => _ = Task.Run(() => SyncIssuesLinkAsync(CancellationToken.None));
-
-    // The Requests link, added once.
-    private async Task AddRequestsLinkAsync(RequestConfig plugin, CancellationToken cancellationToken)
-    {
-        if (plugin.ReadConfiguration(c => c.MenuLinkAdded))
-        {
-            return;
-        }
-
-        var path = string.IsNullOrEmpty(_paths.WebPath) ? null : Path.Combine(_paths.WebPath, "config.json");
-        try
-        {
-            // Nothing was added either way, so it is tried again next start rather than marked done.
-            if (path is null || !File.Exists(path))
-            {
-                _logger.LogInformation("The web client's config.json was not found, so no Requests menu link was added");
-                return;
-            }
-
-            if (JsonNode.Parse(await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false)) is not JsonObject web)
-            {
-                _logger.LogWarning("The web client's config.json at {Path} is not a JSON object, so no Requests menu link was added", path);
-                return;
-            }
-
-            if (AddLink(web))
-            {
-                await WriteAsync(path, web.ToJsonString(_indented), cancellationToken).ConfigureAwait(false);
-                _logger.LogInformation("Added a Requests link to the web client's menu in {Path}", path);
-            }
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // Anything at all, such as a config.json with a key twice, which browsers accept but this doesn't:
-            // a menu link is never worth stopping the server for.
-            // Left to try again next start; the administrator can add the link by hand meanwhile.
-            _logger.LogWarning(ex, "Could not add a Requests link to the web client's menu in {Path}; add {Url} to its menuLinks to show one", path, LinkUrl);
-            return;
-        }
-
-        plugin.MutateConfiguration(c =>
-        {
-            c.MenuLinkAdded = true;
-            return true;
-        });
-    }
+        => _ = Task.Run(() => SyncAsync(CancellationToken.None));
 
     /// <summary>
-    /// Puts the Issues link in the web client's menu when issues are on and the plugin has not added it since they were
-    /// turned on, and takes it out when they are off. Anything that fails is tried again at the next start or save.
+    /// Puts the Requests and Issues links in the web client's menu when each tool is on and the plugin has not added it
+    /// since it was turned on, and takes each out when its tool is off. Anything that fails is tried again at the next
+    /// start or save.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task.</returns>
-    internal async Task SyncIssuesLinkAsync(CancellationToken cancellationToken)
+    internal async Task SyncAsync(CancellationToken cancellationToken)
     {
-        if (RequestConfig.Instance is not { } plugin)
+        if (Plugin.Instance is not { } plugin)
         {
             return;
         }
 
-        await _issuesLink.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await MenuLinksFile.Lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var (on, added) = plugin.ReadIssues(c => (c.Enabled, c.MenuLinkAdded));
-            if (on == added)
+            var state = plugin.ReadConfiguration(c => new
+            {
+                RequestsOn = ToolSwitches.IsOn(c, ToolSwitches.Requests),
+                RequestsAdded = c.Requests?.MenuLinkAdded == true,
+                RequestsName = c.Requests?.MenuLinkName,
+                RequestsIcon = c.Requests?.MenuLinkIcon,
+                IssuesOn = ToolSwitches.IsOn(c, ToolSwitches.Issues),
+                IssuesAdded = c.Issues?.MenuLinkAdded == true,
+                IssuesName = c.Issues?.MenuLinkName,
+                IssuesIcon = c.Issues?.MenuLinkIcon
+            });
+            if (state.RequestsOn == state.RequestsAdded && state.IssuesOn == state.IssuesAdded)
             {
                 return;
             }
 
-            var path = string.IsNullOrEmpty(_paths.WebPath) ? null : Path.Combine(_paths.WebPath, "config.json");
-            if (path is null || !File.Exists(path)
-                || JsonNode.Parse(await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false)) is not JsonObject web)
+            var path = MenuLinksFile.PathOf(_paths);
+            if (path is null || !File.Exists(path) || await MenuLinksFile.ReadAsync(path, cancellationToken).ConfigureAwait(false) is not { } web)
             {
-                _logger.LogInformation("The web client's config.json was not found or read, so the Issues menu link was not changed");
+                _logger.LogInformation("The web client's config.json was not found or read, so the Requests and Issues menu links were not changed");
                 return;
             }
 
-            if (on ? AddIssuesLink(web) : RemoveIssuesLink(web))
+            var changed = false;
+            if (state.RequestsOn != state.RequestsAdded)
             {
-                await WriteAsync(path, web.ToJsonString(_indented), cancellationToken).ConfigureAwait(false);
-                if (on)
-                {
-                    _logger.LogInformation("Added an Issues link to the web client's menu in {Path}", path);
-                }
-                else
-                {
-                    _logger.LogInformation("Took the Issues link out of the web client's menu in {Path}", path);
-                }
+                changed |= state.RequestsOn ? AddLink(web, state.RequestsName, state.RequestsIcon) : RemoveLink(web);
             }
 
-            plugin.MutateAll(c =>
+            if (state.IssuesOn != state.IssuesAdded)
             {
+                changed |= state.IssuesOn ? AddIssuesLink(web, state.IssuesName, state.IssuesIcon) : RemoveIssuesLink(web);
+            }
+
+            if (changed)
+            {
+                await MenuLinksFile.WriteAsync(path, web, cancellationToken).ConfigureAwait(false);
+                _logger.LogInformation("Changed the Requests and Issues links in the web client's menu in {Path}", path);
+            }
+
+            plugin.MutateConfiguration(c =>
+            {
+                c.Requests ??= new();
                 c.Issues ??= new();
-                c.Issues.MenuLinkAdded = on;
+                c.Requests.MenuLinkAdded = state.RequestsOn;
+                c.Issues.MenuLinkAdded = state.IssuesOn;
                 return true;
             });
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            // A menu link is never worth more than a warning; it's tried again at the next start or save.
-            _logger.LogWarning(ex, "Could not change the Issues link in the web client's menu; add or remove {Url} in its menuLinks by hand", IssuesLinkUrl);
+            // Anything at all, such as a config.json with a key twice, which browsers accept but this does not. A
+            // menu link is never worth more than a warning, and it is tried again at the next start or save.
+            _logger.LogWarning(ex, "Could not change the Requests and Issues links in the web client's menu; add or remove {Requests} and {Issues} in its menuLinks by hand", LinkUrl, IssuesLinkUrl);
         }
         finally
         {
-            _issuesLink.Release();
+            MenuLinksFile.Lock.Release();
         }
     }
 
     /// <summary>Adds the Issues link to a web client config's menuLinks, unless one already goes to the issue page.</summary>
     /// <param name="web">The web client's config.json.</param>
+    /// <param name="name">The name set in Menu links, or empty for Issues.</param>
+    /// <param name="icon">The icon set in Menu links, or empty for bug_report.</param>
     /// <returns>Whether it was added.</returns>
-    internal static bool AddIssuesLink(JsonObject web)
-    {
-        ArgumentNullException.ThrowIfNull(web);
-        if (web["menuLinks"] is not JsonArray links)
-        {
-            links = new JsonArray();
-            web["menuLinks"] = links;
-        }
-
-        if (links.OfType<JsonObject>().Any(l => GoesTo(UrlOf(l), "issues")))
-        {
-            return false;
-        }
-
-        links.Add(new JsonObject { ["name"] = "Issues", ["icon"] = "bug_report", ["url"] = IssuesLinkUrl });
-        return true;
-    }
+    internal static bool AddIssuesLink(JsonObject web, string? name = null, string? icon = null)
+        => Add(web, "issues", string.IsNullOrWhiteSpace(name) ? "Issues" : name, string.IsNullOrWhiteSpace(icon) ? "bug_report" : icon, IssuesLinkUrl);
 
     /// <summary>Takes every link to the issue page out of a web client config's menuLinks.</summary>
     /// <param name="web">The web client's config.json.</param>
     /// <returns>Whether any was taken out.</returns>
-    internal static bool RemoveIssuesLink(JsonObject web)
-    {
-        ArgumentNullException.ThrowIfNull(web);
-        if (web["menuLinks"] is not JsonArray links)
-        {
-            return false;
-        }
+    internal static bool RemoveIssuesLink(JsonObject web) => Remove(web, "issues");
 
-        var gone = links.OfType<JsonObject>().Where(l => GoesTo(UrlOf(l), "issues")).ToList();
-        foreach (var link in gone)
-        {
-            links.Remove(link);
-        }
+    /// <summary>Takes every link to the request page out of a web client config's menuLinks.</summary>
+    /// <param name="web">The web client's config.json.</param>
+    /// <returns>Whether any was taken out.</returns>
+    internal static bool RemoveLink(JsonObject web) => Remove(web, "requests");
 
-        return gone.Count > 0;
-    }
-
-    private static string? UrlOf(JsonObject link) => link["url"]?.GetValueKind() == JsonValueKind.String ? link["url"]!.GetValue<string>() : null;
-
-    // Written beside it and swapped in, so the web client never reads half a file. Where its folder can't be written,
-    // as in Docker images where config.json is mounted on its own, the file itself is written instead.
-    internal static async Task WriteAsync(string path, string json, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var bytes = Encoding.UTF8.GetBytes(json);
-            await AtomicFile.WriteAsync(path, (file, ct) => file.WriteAsync(bytes, ct).AsTask(), cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
-        {
-            // A file mounted on its own can be written but not replaced.
-            await File.WriteAllTextAsync(path, json, cancellationToken).ConfigureAwait(false);
-        }
-    }
+    // Written beside it and swapped in, so the web client never reads half a file. Where its folder cannot be written,
+    // the file itself is written instead.
+    internal static Task WriteAsync(string path, string json, CancellationToken cancellationToken)
+        => MenuLinksFile.WriteTextAsync(path, json, cancellationToken);
 
     /// <summary>
     /// Adds the Requests link to a web client config's menuLinks, unless one already goes to the request page.
     /// </summary>
     /// <param name="web">The web client's config.json.</param>
+    /// <param name="name">The name set in Menu links, or empty for Requests.</param>
+    /// <param name="icon">The icon set in Menu links, or empty for search.</param>
     /// <returns>Whether it was added.</returns>
-    internal static bool AddLink(JsonObject web)
-    {
-        ArgumentNullException.ThrowIfNull(web);
-        if (web["menuLinks"] is not JsonArray links)
-        {
-            links = new JsonArray();
-            web["menuLinks"] = links;
-        }
-
-        if (links.OfType<JsonObject>().Any(l => GoesToRequests(UrlOf(l))))
-        {
-            return false;
-        }
-
-        links.Add(new JsonObject { ["name"] = "Requests", ["icon"] = "search", ["url"] = LinkUrl });
-        return true;
-    }
+    internal static bool AddLink(JsonObject web, string? name = null, string? icon = null)
+        => Add(web, "requests", string.IsNullOrWhiteSpace(name) ? "Requests" : name, string.IsNullOrWhiteSpace(icon) ? "search" : icon, LinkUrl);
 
     // A link to this server's request page, however it's written: requests, ../requests/, /requests, or under a base
     // path such as /jellyfin/requests. An address with a host is left out, since it can't be told apart from another
@@ -290,4 +199,41 @@ public sealed class MenuLinkInstaller : IHostedService, IDisposable
         path = path.TrimEnd('/');
         return path.Equals(page, StringComparison.OrdinalIgnoreCase) || path.EndsWith("/" + page, StringComparison.OrdinalIgnoreCase);
     }
+
+    private static bool Add(JsonObject web, string page, string name, string icon, string url)
+    {
+        ArgumentNullException.ThrowIfNull(web);
+        if (web["menuLinks"] is not JsonArray links)
+        {
+            links = new JsonArray();
+            web["menuLinks"] = links;
+        }
+
+        if (links.OfType<JsonObject>().Any(l => GoesTo(UrlOf(l), page)))
+        {
+            return false;
+        }
+
+        links.Add(new JsonObject { ["name"] = name.Trim(), ["icon"] = icon.Trim(), ["url"] = url });
+        return true;
+    }
+
+    private static bool Remove(JsonObject web, string page)
+    {
+        ArgumentNullException.ThrowIfNull(web);
+        if (web["menuLinks"] is not JsonArray links)
+        {
+            return false;
+        }
+
+        var gone = links.OfType<JsonObject>().Where(l => GoesTo(UrlOf(l), page)).ToList();
+        foreach (var link in gone)
+        {
+            links.Remove(link);
+        }
+
+        return gone.Count > 0;
+    }
+
+    private static string? UrlOf(JsonObject link) => link["url"]?.GetValueKind() == JsonValueKind.String ? link["url"]!.GetValue<string>() : null;
 }

@@ -68,7 +68,7 @@ public class ScriptDispatcher
     public static IEnumerable<ScriptDefinition> ScriptsFor(ScriptTrigger trigger)
     {
         var config = ScriptConfig.Current();
-        if (config is null)
+        if (config is null || !config.Enabled)
         {
             return Enumerable.Empty<ScriptDefinition>();
         }

@@ -460,18 +460,18 @@ function buildTroubleshooting(content, ctx) {
         state.element,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderChecks') }),
         el('div', { class: 'stolon-reset-group' }, [
-            fields.resetRow(t.tr('ProxyTestOutside'), t.tr('ProxyTestOutsideHelp'), t.tr('ProxyButtonTest'), 'reach'),
-            fields.resetRow(t.tr('ProxyTaskExternal'), t.tr('ProxyTaskExternalHelp'), t.tr('ButtonRunTask'), 'task-external'),
-            fields.resetRow(t.tr('ProxyTaskCertificates'), t.tr('ProxyTaskCertificatesHelp'), t.tr('ButtonRunTask'), 'task-certificates'),
-            fields.resetRow(t.tr('ProxyTaskLocations'), t.tr('ProxyTaskLocationsHelp'), t.tr('ButtonRunTask'), 'task-locations')
+            nectoModule.resetRow({ icon: 'travel_explore', label: t.tr('ProxyTestOutside'), help: t.tr('ProxyTestOutsideHelp'), button: t.tr('ProxyButtonTest'), action: 'reach' }),
+            nectoModule.resetRow({ icon: 'public', label: t.tr('ProxyTaskExternal'), help: t.tr('ProxyTaskExternalHelp'), button: t.tr('ButtonRunTask'), action: 'task-external' }),
+            nectoModule.resetRow({ icon: 'verified_user', label: t.tr('ProxyTaskCertificates'), help: t.tr('ProxyTaskCertificatesHelp'), button: t.tr('ButtonRunTask'), action: 'task-certificates' }),
+            nectoModule.resetRow({ icon: 'map', label: t.tr('ProxyTaskLocations'), help: t.tr('ProxyTaskLocationsHelp'), button: t.tr('ButtonRunTask'), action: 'task-locations' })
         ]),
         reach.element,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
         el('div', { class: 'stolon-reset-group' }, [
-            fields.resetRow(t.tr('ProxyRestart'), t.tr('ProxyRestartHelp'), t.tr('Restart'), 'restart'),
-            fields.resetRow(t.tr('ProxyUndoTrust'), t.tr('ProxyUndoTrustHelp'), t.tr('ButtonUndo'), 'undo', true),
-            fields.resetRow(t.tr('ProxyResetDefaults'), t.tr('ProxyResetDefaultsHelp'), t.tr('Reset'), 'reset', true),
-            fields.resetRow(t.tr('ProxyClearHistory'), t.tr('ProxyClearHistoryHelp'), t.tr('ButtonClear'), 'clear', true)
+            nectoModule.resetRow({ icon: 'restart_alt', label: t.tr('ProxyRestart'), help: t.tr('ProxyRestartHelp'), button: t.tr('Restart'), action: 'restart' }),
+            nectoModule.resetRow({ icon: 'undo', label: t.tr('ProxyUndoTrust'), help: t.tr('ProxyUndoTrustHelp'), button: t.tr('ButtonUndo'), action: 'undo', destructive: true }),
+            nectoModule.resetRow({ icon: 'settings_backup_restore', label: t.tr('ProxyResetDefaults'), help: t.tr('ProxyResetDefaultsHelp'), button: t.tr('Reset'), action: 'reset', destructive: true }),
+            nectoModule.resetRow({ icon: 'delete_sweep', label: t.tr('ProxyClearHistory'), help: t.tr('ProxyClearHistoryHelp'), button: t.tr('ButtonClear'), action: 'clear', destructive: true })
         ]),
         el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderRecovery') }),
         recovery

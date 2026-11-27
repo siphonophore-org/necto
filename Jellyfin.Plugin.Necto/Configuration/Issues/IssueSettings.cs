@@ -16,4 +16,10 @@ public class IssueSettings
 
     /// <summary>Gets or sets a value indicating whether the Issues link is in the web client's menu, which Necto sets itself.</summary>
     public bool MenuLinkAdded { get; set; }
+
+    /// <summary>Gets or sets the name the Issues link is added with, as set in Menu links. Empty is Issues.</summary>
+    public string MenuLinkName { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the Material icon the Issues link is added with, as set in Menu links. Empty is bug_report.</summary>
+    public string MenuLinkIcon { get; set; } = string.Empty;
 }

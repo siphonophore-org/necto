@@ -23,10 +23,10 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
     public static IReadOnlyList<string> ToolKeys { get; } = new[]
     {
         "dashboard",
+        "groups",
         "requests",
         "issues",
         "invites",
-        "groups",
         "proxy",
         "ddns",
         "wireguard",
@@ -159,7 +159,7 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
             "necto_notifications_sections.js", "necto_invites_sections.js", "necto_groups_templates.js",
             "necto_invite_signup.js", "necto_invites_member.js", "necto_push.js",
             "necto_netfields.js", "necto_ddns_sections.js", "necto_proxy_sections.js",
-            "necto_requests_sections.js"
+            "necto_requests_sections.js", "necto_menulinks_sections.js"
         })
         {
             yield return new PluginPageInfo { Name = name, EmbeddedResourcePath = $"{ns}.Web.{name}" };

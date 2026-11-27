@@ -44,6 +44,8 @@ export function buildSettings(content, ctx) {
     var concurrent = createSliderField({ min: 1, max: 32, label: t.tr('ScriptsLabelRunsAtOnce') });
     var timeout = createDurationField({ units: ['m', 's'], min: 1, max: 3600, required: true });
     var history = createSliderField({ min: 0, max: 5000, label: t.tr('ScriptsLabelHistorySize') });
+    var enabled = nectoModule.enabledSwitch(t.tr('LabelEnabled'), t.tr('ScriptsHelpEnabled'));
+    content.appendChild(enabled.element);
     content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('ScriptsLabelRuns') }));
     content.appendChild(field(t.tr('ScriptsLabelRunsAtOnce'), t.tr('ScriptsHelpRunsAtOnce'), concurrent));
     content.appendChild(field(t.tr('ScriptsLabelDefaultTimeout'), t.tr('ScriptsHelpDefaultTimeout'), timeout));
@@ -53,12 +55,14 @@ export function buildSettings(content, ctx) {
     return {
         load: function (config) {
             var s = config.Scripts || {};
+            enabled.input.checked = !!s.Enabled;
             concurrent.setValue(s.MaxConcurrentRuns || 4);
             timeout.setValue(s.DefaultTimeoutSeconds || 60);
             history.setValue(s.HistorySize == null ? 200 : s.HistorySize);
         },
         apply: function (config) {
             config.Scripts = config.Scripts || {};
+            config.Scripts.Enabled = !!enabled.input.checked;
             config.Scripts.MaxConcurrentRuns = concurrent.getValue();
             config.Scripts.DefaultTimeoutSeconds = timeout.getValue();
             config.Scripts.HistorySize = history.getValue();

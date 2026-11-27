@@ -45,7 +45,11 @@ public class SweepRequestsTask : PluginScheduledTask
     /// <inheritdoc />
     public override async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
-        await _requests.SweepAsync(progress, cancellationToken).ConfigureAwait(false);
+        if (RequestService.Enabled)
+        {
+            await _requests.SweepAsync(progress, cancellationToken).ConfigureAwait(false);
+        }
+
         progress?.Report(100);
     }
 

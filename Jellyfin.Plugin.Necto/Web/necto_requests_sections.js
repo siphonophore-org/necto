@@ -362,24 +362,6 @@ export function pageUrl(path) {
     return String(origin || '').replace(/\/+$/, '') + '/' + path + '/';
 }
 
-// resetRow
-// Builds one row of a reset group: a label and a description, and a button at its end.
-//
-// Inputs
-// label [string]: What the row does.
-// help [string]: One sentence on what follows.
-// button [string]: The button's label.
-// action [string]: The value of the button's data-action.
-//
-// Output
-// [HTMLElement]: The row.
-function resetRow(label, help, button, action) {
-    return el('div', { class: 'stolon-reset-row' }, [
-        el('div', { class: 'stolon-reset-info' }, [el('div', { text: label }), el('div', { class: 'fieldDescription', text: help })]),
-        el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': action }, [el('span', { text: button })])
-    ]);
-}
-
 // buildRequestSettings
 // Fills the Requests section of Settings: rules, quota windows, the blocklist, Radarr and Sonarr, discovery, and imports.
 //
@@ -493,8 +475,12 @@ function buildRequestSettings(content, ctx) {
         return suggestions;
     }
 
-    // Intro
-    content.appendChild(linkSentence(t.tr('RequestsSettingsUsersRequestAt'), pageUrl('requests'), 'fieldDescription'));
+    // The switch, first, with where users request.
+    inputs.Enabled = checkbox(fieldId('requests-enabled'), 'Requests.Enabled');
+    content.appendChild(el('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
+        el('label', {}, [inputs.Enabled, el('span', { text: t.tr('LabelEnabled') })]),
+        linkSentence(t.tr('RequestsHelpEnabled'), pageUrl('requests'), 'fieldDescription checkboxFieldDescription')
+    ]));
 
     // Rules
     sub('RequestsHeaderRules');
@@ -1103,6 +1089,7 @@ function buildRequestSettings(content, ctx) {
         load: function (config) {
             var r = (config && config.Requests) || {};
             var list = function (v) { return (v || []).map(String); };
+            inputs.Enabled.checked = !!r.Enabled;
             chips.AutoApproveRatings.setValue(list(r.AutoApproveRatings));
             chips.BlockedGenres.setValue(list(r.BlockedGenres));
             chips.BlockedRatings.setValue(list(r.BlockedRatings));
@@ -1139,6 +1126,7 @@ function buildRequestSettings(content, ctx) {
         apply: function (config) {
             config.Requests = config.Requests || {};
             var r = config.Requests;
+            r.Enabled = !!inputs.Enabled.checked;
             var problem = arrServersError(servers, r.ArrServers, t);
             if (problem) throw new Error(problem);
             var named = function (path) {
@@ -1234,7 +1222,7 @@ function buildIssueSettings(content, ctx) {
 // Inputs
 // content [HTMLElement]: The section's content.
 // ctx [object]: shared is the Necto helper bag.
-// tasks [object[]]: Each task's key, label key, and help key.
+// tasks [object[]]: Each task's key, icon, label key, and help key.
 // extra [function]: Adds rows of its own to the group and wires them, given the group and report. [optional]
 //
 // Output
@@ -1256,7 +1244,7 @@ function buildTaskSection(content, ctx, tasks, extra) {
     }
 
     tasks.forEach(function (task) {
-        var row = resetRow(t.tr(task.label), t.tr(task.help), t.tr('ButtonRunTask'), 'run-' + task.key);
+        var row = nectoModule.resetRow({ icon: task.icon, label: t.tr(task.label), help: t.tr(task.help), button: t.tr('ButtonRunTask'), action: 'run-' + task.key });
         group.appendChild(row);
         var btn = row.querySelector('button');
         btn.addEventListener('click', function () {
@@ -1290,12 +1278,12 @@ function buildRequestTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     return buildTaskSection(content, ctx, [
-        { key: SWEEP_TASK, label: 'RequestsTaskSweepName', help: 'RequestsTaskSweepDescription' },
-        { key: SYNC_TASK, label: 'RequestsTaskSyncName', help: 'RequestsTaskSyncDescription' },
-        { key: DISCOVERY_TASK, label: 'RequestsTaskDiscoveryName', help: 'RequestsTaskDiscoveryDescription' },
-        { key: CLEANUP_TASK, label: 'RequestsTaskCleanupName', help: 'RequestsTaskCleanupDescription' }
+        { key: SWEEP_TASK, icon: 'manage_search', label: 'RequestsTaskSweepName', help: 'RequestsTaskSweepDescription' },
+        { key: SYNC_TASK, icon: 'sync', label: 'RequestsTaskSyncName', help: 'RequestsTaskSyncDescription' },
+        { key: DISCOVERY_TASK, icon: 'explore', label: 'RequestsTaskDiscoveryName', help: 'RequestsTaskDiscoveryDescription' },
+        { key: CLEANUP_TASK, icon: 'cleaning_services', label: 'RequestsTaskCleanupName', help: 'RequestsTaskCleanupDescription' }
     ], function (group, report) {
-        var row = resetRow(t.tr('RequestsLabelRefreshStatuses'), t.tr('RequestsHelpRefreshStatuses'), t.tr('RequestsButtonRefreshNow'), 'refresh-statuses');
+        var row = nectoModule.resetRow({ icon: 'refresh', label: t.tr('RequestsLabelRefreshStatuses'), help: t.tr('RequestsHelpRefreshStatuses'), button: t.tr('RequestsButtonRefreshNow'), action: 'refresh-statuses' });
         group.appendChild(row);
         var btn = row.querySelector('button');
         btn.addEventListener('click', function () {
@@ -1320,7 +1308,7 @@ function buildRequestTroubleshooting(content, ctx) {
 // Output
 // [object]: A handle with load and destroy.
 function buildIssueTroubleshooting(content, ctx) {
-    return buildTaskSection(content, ctx, [{ key: CLEANUP_TASK, label: 'RequestsTaskCleanupName', help: 'IssuesHelpCleanupTask' }]);
+    return buildTaskSection(content, ctx, [{ key: CLEANUP_TASK, icon: 'cleaning_services', label: 'RequestsTaskCleanupName', help: 'IssuesHelpCleanupTask' }]);
 }
 
 nectoModule.registerSection('settings', 'requests', { build: buildRequestSettings });

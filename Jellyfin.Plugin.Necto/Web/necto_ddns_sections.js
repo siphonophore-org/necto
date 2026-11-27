@@ -61,6 +61,7 @@ export function failureOptions(current, t) {
 // [object]: The settings to post to Ddns/Settings.
 export function readSettings(f) {
     return {
+        Enabled: !!(f.enabled && f.enabled.input.checked),
         IPv4DetectionUrl: fields.readLines(f.ipv4.input).join('\n'),
         IPv6DetectionUrl: fields.readLines(f.ipv6.input).join('\n'),
         SkipInternalAddresses: !!f.skip.input.checked,
@@ -86,6 +87,7 @@ function buildSettings(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var f = {
+        enabled: nectoModule.enabledSwitch(t.tr('LabelEnabled'), t.tr('DdnsHelpEnabled')),
         ipv4: fields.textareaField({ label: t.tr('DdnsLabelIpv4Urls'), help: t.tr('DdnsIpv4UrlsHelp'), field: 'IPv4DetectionUrl', placeholder: 'https://api.ipify.org' }),
         ipv6: fields.textareaField({ label: t.tr('DdnsLabelIpv6Urls'), help: t.tr('DdnsIpv6UrlsHelp'), field: 'IPv6DetectionUrl', placeholder: 'https://api6.ipify.org' }),
         skip: fields.checkField({ label: t.tr('DdnsLabelSkipInternal'), help: t.tr('DdnsSkipInternalHelp'), field: 'SkipInternalAddresses' }),
@@ -96,6 +98,7 @@ function buildSettings(content, ctx) {
     };
     var status = el('div', { class: 'stolon-status-text', role: 'status' });
     content.appendChild(status);
+    content.appendChild(f.enabled.element);
     content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderPublicIp') }));
     [f.ipv4, f.ipv6, f.skip].forEach(function (x) { content.appendChild(x.element); });
     content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderUpdates') }));
@@ -105,6 +108,7 @@ function buildSettings(content, ctx) {
         fields: f,
         load: function () {
             return shared.request('Ddns/Settings').then(function (s) {
+                f.enabled.input.checked = !!s.Enabled;
                 f.ipv4.input.value = String(s.IPv4DetectionUrl || '');
                 f.ipv6.input.value = String(s.IPv6DetectionUrl || '');
                 f.skip.input.checked = s.SkipInternalAddresses !== false;
@@ -145,10 +149,10 @@ function buildTroubleshooting(content, ctx) {
     addresses.appendChild(addressList.element);
     var record = fields.selectField({ label: t.tr('DdnsLabelRecord'), field: 'ResetRecord', help: t.tr('DdnsResetRecordHelp') });
     var rows = el('div', { class: 'stolon-reset-group' }, [
-        fields.resetRow(t.tr('DdnsTaskUpdate'), t.tr('DdnsTaskUpdateHelp'), t.tr('ButtonRunTask'), 'run-update'),
-        fields.resetRow(t.tr('DdnsButtonCheckAll'), t.tr('DdnsCheckAllHelp'), t.tr('DdnsButtonUpdateNow'), 'update-now')
+        nectoModule.resetRow({ icon: 'schedule', label: t.tr('DdnsTaskUpdate'), help: t.tr('DdnsTaskUpdateHelp'), button: t.tr('ButtonRunTask'), action: 'run-update' }),
+        nectoModule.resetRow({ icon: 'sync', label: t.tr('DdnsButtonCheckAll'), help: t.tr('DdnsCheckAllHelp'), button: t.tr('DdnsButtonUpdateNow'), action: 'update-now' })
     ]);
-    var resetRow = fields.resetRow(t.tr('DdnsResetRecord'), t.tr('DdnsResetRecordRowHelp'), t.tr('DdnsButtonReset'), 'reset-record');
+    var resetRow = nectoModule.resetRow({ icon: 'restart_alt', label: t.tr('DdnsResetRecord'), help: t.tr('DdnsResetRecordRowHelp'), button: t.tr('DdnsButtonReset'), action: 'reset-record' });
     [
         status,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderPublicIp') }),

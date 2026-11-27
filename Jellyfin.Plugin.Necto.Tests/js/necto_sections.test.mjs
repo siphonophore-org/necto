@@ -4,14 +4,14 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton, clickDialogButton, dialogText, statusText } from './support.mjs';
+import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton, clickDialogButton, dialogText, statusText, allToolsOn } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
 globalThis.setInterval = function () { return 1; };
 globalThis.clearInterval = function () {};
 
-var TOOLS = ['Requests', 'Issues', 'Invites', 'Groups', 'Proxy', 'DDNS', 'VPN', 'Scripts', 'Pages', 'Storage', 'Notifications'];
+var TOOLS = ['Groups', 'Requests', 'Issues', 'Invites', 'Proxy', 'DDNS', 'VPN', 'Scripts', 'Pages', 'Storage', 'Notifications'];
 var FAMILY = '11111111-2222-3333-4444-555555555555';
 
 // openTool
@@ -176,4 +176,18 @@ test('a tool with an on switch has a green tile while on, a gray one while off, 
     wireguard.box.checked = true;
     wireguard.box.dispatchEvent(new globalThis.Event('change'));
     assert.ok(wireguard.tile.classList.contains('stolon-green'));
+});
+
+test('each tool with a switch has Enabled as its first checkbox, and its tile is green while on and gray while off', async function () {
+    var config = allToolsOn();
+    config.Storage.Enabled = false;
+    var opened = await openTool('settings', { config: config, answers: { 'GET Ddns/Settings': { Enabled: true } } });
+    ['requests', 'issues', 'invites', 'proxy', 'ddns', 'wireguard', 'scripts', 'pages', 'storage'].forEach(function (key) {
+        var section = opened.section(key);
+        var box = section.querySelector('input[type="checkbox"]');
+        assert.match(box.closest('label').textContent, /^Enable/, key);
+        var tile = section.querySelector('.stolon-collapsible-tile');
+        assert.ok(tile.classList.contains(key === 'storage' ? 'stolon-gray' : 'stolon-green'), key);
+    });
+    assert.ok(!opened.section('groups').querySelector('.stolon-collapsible-tile').classList.contains('stolon-gray'));
 });

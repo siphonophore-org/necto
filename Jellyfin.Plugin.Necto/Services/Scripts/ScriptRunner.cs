@@ -350,6 +350,12 @@ public class ScriptRunner : BackgroundService
     {
         ArgumentNullException.ThrowIfNull(job);
 
+        // A run queued before Scripts was turned off is dropped.
+        if (ScriptConfig.IsOff())
+        {
+            return null;
+        }
+
         // Picking the items or users can take a while, so it never holds up the caller's own thread.
         await Task.Yield();
         var failures = new List<(ScriptRun Run, EventContext Context)>();

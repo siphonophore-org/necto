@@ -147,25 +147,6 @@ export function selectField(opts) {
     return { element: element, input: input, help: help, setOptions: setOptions };
 }
 
-// resetRow
-// Builds one row of a reset group: what it does, one sentence on what follows, and its button.
-//
-// Inputs
-// label [string]: What the row does.
-// help [string]: What follows from it.
-// button [string]: The button's label.
-// action [string]: The button's data-action.
-// destructive [boolean]: Whether the button loses data. [optional]
-//
-// Output
-// [HTMLElement]: The row.
-export function resetRow(label, help, button, action, destructive) {
-    return el('div', { class: 'stolon-reset-row' }, [
-        el('div', { class: 'stolon-reset-info' }, [el('div', { text: label }), el('div', { class: 'fieldDescription', text: help })]),
-        el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + (destructive ? 'stolon-destructive' : 'stolon-secondary') + ' stolon-small', 'data-action': action }, [el('span', { text: button })])
-    ]);
-}
-
 // readNumber
 // Reads a whole number from a field, or null when it is blank or not a number.
 //

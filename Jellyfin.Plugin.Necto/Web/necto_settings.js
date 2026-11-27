@@ -12,6 +12,7 @@ import './configurationpage?name=necto_invites_sections.js';
 import './configurationpage?name=necto_ddns_sections.js';
 import './configurationpage?name=necto_proxy_sections.js';
 import './configurationpage?name=necto_requests_sections.js';
+import './configurationpage?name=necto_menulinks_sections.js';
 
 export default function (view) {
     'use strict';
@@ -83,9 +84,6 @@ export default function (view) {
     nectoModule.createNectoPage(view, { page: 'necto_settings', bind: bindPage, load: loadPage });
 }
 
-// The tools with an on switch, by key, with the settings section that holds it.
-var SWITCHES = { issues: 'Issues', proxy: 'Proxy', wireguard: 'WireGuard' };
-
 // paintSwitchTiles
 // Colors the tile of each tool with an on switch: green while the tool is on, gray while it is off. The tile follows
 // the section's first checkbox, which is its switch, as it changes. Tools with no switch keep the accent.
@@ -95,7 +93,7 @@ var SWITCHES = { issues: 'Issues', proxy: 'Proxy', wireguard: 'WireGuard' };
 // config [object]: The plugin configuration.
 export function paintSwitchTiles(entries, config) {
     (entries || []).forEach(function (entry) {
-        var name = SWITCHES[entry.key];
+        var name = nectoModule.TOOL_SWITCHES[entry.key];
         var root = entry.collapsible && entry.collapsible.element;
         var tile = name && root ? root.querySelector('.stolon-collapsible-tile') : null;
         if (!tile) return;
@@ -103,7 +101,7 @@ export function paintSwitchTiles(entries, config) {
             tile.classList.toggle('stolon-green', on);
             tile.classList.toggle('stolon-gray', !on);
         };
-        paint(!!(config && config[name] && config[name].Enabled));
+        paint(nectoModule.toolIsOn(config, entry.key));
         var box = root.querySelector('input[type="checkbox"]');
         if (box && !box.dataset.tileBound) {
             box.dataset.tileBound = '1';

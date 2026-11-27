@@ -7,6 +7,9 @@ namespace Jellyfin.Plugin.Necto.Configuration.Scripts;
 /// </summary>
 public class ScriptSettings
 {
+    /// <summary>Gets or sets a value indicating whether Scripts is on. While it is off, no script runs.</summary>
+    public bool Enabled { get; set; }
+
     /// <summary>Gets or sets the configured scripts.</summary>
     public List<ScriptDefinition> Scripts { get; set; } = new();
 

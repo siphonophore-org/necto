@@ -447,6 +447,12 @@ public sealed class InviteService : IDisposable
     /// <returns>How many were turned off.</returns>
     public int ExpireInvites()
     {
+        // While Invites is off, no invite changes.
+        if (!_store.Read(c => ToolSwitches.IsOn(c, ToolSwitches.Invites)))
+        {
+            return 0;
+        }
+
         var names = new List<string>();
         _store.Mutate(c =>
         {
@@ -503,7 +509,7 @@ public sealed class InviteService : IDisposable
         ArgumentNullException.ThrowIfNull(invite);
         return _store.Read(c =>
         {
-            if (StateOf(c, invite, _status.Find(invite.Id), Now) != InviteState.Active)
+            if (!ToolSwitches.IsOn(c, ToolSwitches.Invites) || StateOf(c, invite, _status.Find(invite.Id), Now) != InviteState.Active)
             {
                 return false;
             }
@@ -546,7 +552,7 @@ public sealed class InviteService : IDisposable
             return InviteRedeemResult.Fail(StolonTranslations.Get(TranslationKeys.InvitesErrorLinkInvalid, language));
         }
 
-        if (!invite.Enabled)
+        if (!invite.Enabled || !_store.Read(c => ToolSwitches.IsOn(c, ToolSwitches.Invites)))
         {
             return InviteRedeemResult.Fail(StolonTranslations.Get(TranslationKeys.InvitesErrorUnavailable, language));
         }

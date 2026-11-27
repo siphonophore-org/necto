@@ -51,12 +51,25 @@ public class CleanupRequestsTask : PluginScheduledTask
     /// <inheritdoc />
     public override Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
-        _requests.Cleanup();
+        // Each tool's part runs only while that tool is on.
+        if (RequestService.Enabled)
+        {
+            _requests.Cleanup();
+        }
+
         progress?.Report(40);
-        _issues.Clean();
-        _issues.CheckFiles();
+        if (IssueService.Enabled)
+        {
+            _issues.Clean();
+            _issues.CheckFiles();
+        }
+
         progress?.Report(70);
-        _artwork.Trim();
+        if (RequestService.Enabled)
+        {
+            _artwork.Trim();
+        }
+
         progress?.Report(100);
         return Task.CompletedTask;
     }

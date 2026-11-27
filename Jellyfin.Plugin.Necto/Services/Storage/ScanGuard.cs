@@ -69,8 +69,9 @@ public sealed class ScanGuard : IHostedService
     public IReadOnlyList<DiskInfo> Guard(IScheduledTaskWorker worker)
     {
         ArgumentNullException.ThrowIfNull(worker);
-        var mode = _settings.Current.ScanGuard;
-        if (mode == ScanGuardMode.Off || worker.ScheduledTask.Key != LibraryScanKey)
+        var current = _settings.Current;
+        var mode = current.ScanGuard;
+        if (!current.Enabled || mode == ScanGuardMode.Off || worker.ScheduledTask.Key != LibraryScanKey)
         {
             return Array.Empty<DiskInfo>();
         }

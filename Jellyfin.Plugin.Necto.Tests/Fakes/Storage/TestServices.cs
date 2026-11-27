@@ -126,7 +126,7 @@ internal static class TestServices
     public sealed class Settings : StorageSettings
     {
         /// <summary>Gets the settings the test set.</summary>
-        public StorageConfiguration Value { get; } = new();
+        public StorageConfiguration Value { get; } = new() { Enabled = true };
 
         /// <inheritdoc />
         public override StorageConfiguration Current => Value;

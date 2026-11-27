@@ -80,18 +80,22 @@ function tabName(key, english) {
     return tabStrings ? tabStrings.tr(key, english) : english;
 }
 
+// toolName
+// Names a Settings or Troubleshooting section that belongs to no tool, in the viewer's language once the strings load.
+export { tabName as toolName };
+
 // nectoTools
-// Lists Necto's tools in the order the sidebar shows them, the dashboard first.
+// Lists Necto's tools in the order the sidebar shows them, the dashboard and Groups first.
 //
 // Output
 // [object[]]: Each tool's key, name, icon, and the registered page it shows.
 export function nectoTools() {
     return [
         { key: 'dashboard', name: tabName('TabDashboard', 'Dashboard'), icon: 'dashboard', page: 'necto_dashboard' },
+        { key: 'groups', name: tabName('TabGroups', 'Groups'), icon: 'groups', page: 'necto_groups' },
         { key: 'requests', name: tabName('TabRequests', 'Requests'), icon: 'movie_filter', page: 'necto_requests' },
         { key: 'issues', name: tabName('TabIssues', 'Issues'), icon: 'report_problem', page: 'necto_issues' },
         { key: 'invites', name: tabName('TabInvites', 'Invites'), icon: 'mail', page: 'necto_invites' },
-        { key: 'groups', name: tabName('TabGroups', 'Groups'), icon: 'groups', page: 'necto_groups' },
         { key: 'proxy', name: tabName('TabProxy', 'Proxy'), icon: 'security', page: 'necto_proxy' },
         { key: 'ddns', name: tabName('TabDdns', 'DDNS'), icon: 'dns', page: 'necto_ddns' },
         { key: 'wireguard', name: tabName('TabWireGuard', 'VPN'), icon: 'vpn_lock', page: 'necto_wireguard' },
@@ -132,12 +136,42 @@ export function el(tag, attrs, children) {
     return node;
 }
 
+// TOOL_SWITCHES
+// The tools that turn on and off, by key, each with the config section that holds its Enabled switch, in sidebar
+// order. It matches ToolSwitches.All in the plugin, and a test checks the two agree. Every other tool is always on.
+export var TOOL_SWITCHES = {
+    requests: 'Requests',
+    issues: 'Issues',
+    invites: 'InviteSettings',
+    proxy: 'Proxy',
+    ddns: 'Ddns',
+    wireguard: 'WireGuard',
+    scripts: 'Scripts',
+    pages: 'CustomPages',
+    storage: 'Storage'
+};
+
+// toolIsOn
+// Reads whether a tool is on in a config. A tool with no switch is always on.
+//
+// Inputs
+// config [object]: The plugin configuration.
+// key [string]: The tool's key.
+//
+// Output
+// [boolean]: true while the tool is on.
+export function toolIsOn(config, key) {
+    var section = TOOL_SWITCHES[key];
+    if (!section) return true;
+    return !!(config && config[section] && config[section].Enabled);
+}
+
 // The tools turned off in Settings, by key, which leave the sidebar.
 var toolsOff = {};
 
 // setToolsOff
-// Reads which tools are turned off in a config, so the sidebar leaves them out. Each tool with an on switch, Issues,
-// Proxy, and WireGuard, is off until its switch is on.
+// Reads which tools are turned off in a config, so the sidebar leaves them out. Each tool in TOOL_SWITCHES is off
+// until its switch is on.
 //
 // Inputs
 // config [object]: The plugin configuration.
@@ -145,9 +179,63 @@ var toolsOff = {};
 // Output
 // [object]: The tools turned off, by key.
 export function setToolsOff(config) {
-    var on = function (section) { return !!(config && config[section] && config[section].Enabled); };
-    toolsOff = { issues: !on('Issues'), proxy: !on('Proxy'), wireguard: !on('WireGuard') };
+    toolsOff = {};
+    Object.keys(TOOL_SWITCHES).forEach(function (key) { toolsOff[key] = !toolIsOn(config, key); });
     return toolsOff;
+}
+
+// isToolOff
+// Says whether a tool was off in the config setToolsOff last read.
+//
+// Inputs
+// key [string]: The tool's key.
+//
+// Output
+// [boolean]: true while the tool is off.
+export function isToolOff(key) {
+    return !!toolsOff[key];
+}
+
+// enabledSwitch
+// Builds a tool's Enabled switch, the first checkbox of its Settings section, whose tile follows it.
+//
+// Inputs
+// label [string]: The checkbox's label.
+// help [string|HTMLElement]: The sentence under it, or a description already built.
+//
+// Output
+// [object]: element is the field, and input the checkbox.
+export function enabledSwitch(label, help) {
+    var input = el('input', { type: 'checkbox', is: 'emby-checkbox', 'data-field': 'Enabled' });
+    var element = el('div', { class: 'checkboxContainer checkboxContainer-withDescription', 'data-role': 'enabled' }, [
+        el('label', {}, [input, el('span', { text: label })]),
+        typeof help === 'string' ? el('div', { class: 'fieldDescription checkboxFieldDescription', text: help }) : help
+    ]);
+    return { element: element, input: input };
+}
+
+// resetRow
+// Builds one row of a reset group: its icon tile, what it does, one sentence on what follows, and its button. The
+// tile is red for a row that loses data, and gray while there is nothing to reset.
+//
+// Inputs
+// opts [object]: icon is the Material icon that names the action. label is what the row does, and help what follows
+//   from it. button is the button's label, or a button already built. action is the button's data-action.
+//   destructive marks a row that loses data, and empty one with nothing to reset, whose tile is gray. [optional]
+//
+// Output
+// [HTMLElement]: The row.
+export function resetRow(opts) {
+    var button = opts.button && typeof opts.button === 'object'
+        ? opts.button
+        : el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + (opts.destructive ? 'stolon-destructive' : 'stolon-secondary') + ' stolon-small', 'data-action': opts.action }, [el('span', { text: opts.button })]);
+    return el('div', { class: 'stolon-reset-row' }, [
+        el('span', { class: 'stolon-collapsible-tile' + (opts.empty ? ' stolon-gray' : opts.destructive ? ' stolon-red' : ''), 'aria-hidden': 'true' }, [
+            el('span', { class: 'material-icons', text: opts.icon })
+        ]),
+        el('div', { class: 'stolon-reset-info' }, [el('div', { text: opts.label }), el('div', { class: 'fieldDescription', text: opts.help })]),
+        button
+    ]);
 }
 
 // sidebarTools
@@ -179,7 +267,8 @@ export function registerSection(kind, key, section) {
 
 // nectoSections
 // Lists the tools Settings or Troubleshooting draws a section for, in sidebar order, each with the section it
-// added. A tool that added none is left out, as are the dashboard, Settings, and Troubleshooting.
+// added. A tool that added none is left out, as are the dashboard, Settings, and Troubleshooting. A section that
+// belongs to no tool, such as Menu links, names its own name and icon and follows the tools.
 //
 // Inputs
 // kind [string]: settings or troubleshooting.
@@ -194,7 +283,12 @@ export function nectoSections(kind) {
         return !!registered[tool.key];
     }).map(function (tool) {
         return { key: tool.key, name: tool.name, icon: tool.icon, section: registered[tool.key] };
-    });
+    }).concat(Object.keys(registered).filter(function (key) {
+        return !nectoTools().some(function (tool) { return tool.key === key; }) && registered[key].icon;
+    }).map(function (key) {
+        var section = registered[key];
+        return { key: key, name: typeof section.name === 'function' ? section.name() : section.name, icon: section.icon, section: section };
+    }));
 }
 
 // drawSections

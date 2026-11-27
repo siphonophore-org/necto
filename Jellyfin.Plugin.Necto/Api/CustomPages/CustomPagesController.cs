@@ -21,6 +21,7 @@ using MediaBrowser.Controller.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Api.CustomPages;
@@ -31,7 +32,7 @@ namespace Jellyfin.Plugin.Necto.Api.CustomPages;
 /// </summary>
 [ApiController]
 [Route("pages")]
-public class CustomPagesController : ControllerBase
+public class CustomPagesController : ControllerBase, IActionFilter
 {
     private const string AdminPolicy = "RequiresElevation";
 
@@ -104,6 +105,24 @@ public class CustomPagesController : ControllerBase
         _paths = paths;
         _permissions = permissions ?? throw new ArgumentNullException(nameof(permissions));
         _secrets = secrets ?? throw new ArgumentNullException(nameof(secrets));
+    }
+
+    /// <summary>Answers not found for every /pages address while Pages is off.</summary>
+    /// <param name="context">The action about to run.</param>
+    [NonAction]
+    public void OnActionExecuting(ActionExecutingContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        if (!ToolSwitches.IsOn(ToolSwitches.Pages))
+        {
+            context.Result = NotFound();
+        }
+    }
+
+    /// <inheritdoc />
+    [NonAction]
+    public void OnActionExecuted(ActionExecutedContext context)
+    {
     }
 
     /// <summary>

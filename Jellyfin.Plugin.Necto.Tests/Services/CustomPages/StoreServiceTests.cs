@@ -25,7 +25,7 @@ public class StoreServiceTests : IDisposable
     private static readonly Guid Bob = Guid.Parse("22222222-2222-2222-2222-222222222222");
 
     private readonly string _dataPath;
-    private readonly CustomPagesSettings _config = new();
+    private readonly CustomPagesSettings _config = new() { Enabled = true };
 
     public StoreServiceTests()
     {
@@ -492,6 +492,21 @@ public class StoreServiceTests : IDisposable
         _clock.Advance(TimeSpan.FromDays(2));
 
         Assert.Equal(StoreWriteResult.Ok, service.Create(store, Data("c"), null, Alice).Result);
+    }
+
+    [Fact]
+    public void SweepAll_PagesOff_RemovesNothing()
+    {
+        var service = Create();
+        var expire = Define("expire");
+        expire.RetentionDays = 1;
+        service.Create(expire, Data("b"), null, Alice);
+        _clock.Advance(TimeSpan.FromDays(2));
+        _config.Enabled = false;
+
+        Assert.Equal(0, service.SweepAll());
+        _config.Enabled = true;
+        Assert.Equal(1, service.SweepAll());
     }
 
     [Fact]

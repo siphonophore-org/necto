@@ -174,4 +174,38 @@ public class MenuLinkInstallerTests
     [InlineData("../requests/", false)]
     public void GoesTo_IssuePage_OnlyThisServers(string url, bool counts)
         => Assert.Equal(counts, MenuLinkInstaller.GoesTo(url, "issues"));
+
+    /// <summary>
+    /// The Requests and Issues links are added with the name and icon set in Menu links, or their defaults.
+    /// True: a link renamed in Menu links comes back renamed after its tool is turned off and on.
+    /// False: turning a tool off and on would undo the administrator's name and icon.
+    /// </summary>
+    [Fact]
+    public void AddLink_UsesTheNameAndIconSetInMenuLinks()
+    {
+        var web = JsonNode.Parse("{}")!.AsObject();
+
+        Assert.True(MenuLinkInstaller.AddLink(web, "Ask for it", "movie"));
+        Assert.True(MenuLinkInstaller.AddIssuesLink(web, " ", null));
+
+        var links = web["menuLinks"]!.AsArray();
+        Assert.Equal(new[] { "Ask for it", "Issues" }, links.Select(l => l!["name"]!.GetValue<string>()));
+        Assert.Equal(new[] { "movie", "bug_report" }, links.Select(l => l!["icon"]!.GetValue<string>()));
+    }
+
+    /// <summary>
+    /// Turning Requests off takes every link to the request page out, and leaves links elsewhere.
+    /// True: the menu has no Requests link while Requests is off.
+    /// False: the menu would link to a page that answers not found.
+    /// </summary>
+    [Fact]
+    public void RemoveLink_TakesOutOnlyTheRequestPage()
+    {
+        var web = JsonNode.Parse("{\"menuLinks\": [{\"name\": \"Requests\", \"url\": \"../requests/\"}, {\"name\": \"Seerr\", \"url\": \"https://seerr.example.com/requests\"}, {\"name\": \"Again\", \"url\": \"/requests\"}]}")!.AsObject();
+
+        Assert.True(MenuLinkInstaller.RemoveLink(web));
+        Assert.False(MenuLinkInstaller.RemoveLink(web));
+
+        Assert.Equal("Seerr", Assert.Single(web["menuLinks"]!.AsArray())!["name"]!.GetValue<string>());
+    }
 }

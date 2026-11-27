@@ -112,7 +112,7 @@ public sealed class DiscoveryWarmer : IHostedService, IDisposable
 
             // A copy missing (a fresh install, a cleared cache), more than a day old, or in another language is stored
             // afresh now, rather than waiting for the daily task: TMDb's rows, and Radarr's and Sonarr's libraries.
-            if (!_tmdb.StoreIsCurrent || !_arr.LibrariesAreCurrent)
+            if (RequestService.Enabled && (!_tmdb.StoreIsCurrent || !_arr.LibrariesAreCurrent))
             {
                 try
                 {
@@ -136,7 +136,7 @@ public sealed class DiscoveryWarmer : IHostedService, IDisposable
             {
                 // Taken before looking whether the page is in use, so a use in between still wakes the wait below.
                 var woken = _search.Woken;
-                if (_search.InUse)
+                if (_search.InUse && RequestService.Enabled)
                 {
                     try
                     {

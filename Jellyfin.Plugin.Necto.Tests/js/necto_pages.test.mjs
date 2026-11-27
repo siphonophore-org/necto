@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton, clickDialogButton, dialogText, strings } from './support.mjs';
+import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton, clickDialogButton, dialogText, strings, allToolsOn } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
@@ -306,8 +306,9 @@ test('the Pages tool holds no settings, and a page saves only after the server c
 });
 
 test('the group editor offers the pages from the Pages route, hidden while Open every page is on', async function () {
-    var page = installPage({});
+    var page = installPage({ config: allToolsOn() });
     routeApi(page, { 'GET Pages': [{ Id: 'p1', Title: 'Rules', Slug: 'rules' }] });
+    (await loadScript('necto_shared.js')).setToolsOff(allToolsOn());
     var groups = await loadScript('necto_groups.js');
     var shared = { t: t, request: function (route) { return globalThis.ApiClient.fetch({ url: route, type: 'GET' }); }, setStatus: function () {}, createUserMultiSelector: function () { return { element: page.dom.el('div', {}), ready: Promise.resolve(), getValue: function () { return []; } }; } };
     var editor = groups.createGroupEditor({ Id: 'g1', Name: 'Family', MemberIds: [], Permissions: { CustomPages: { AllPages: false, PageIds: ['p1'] } } }, { shared: shared, users: [], groups: [], devices: [] });

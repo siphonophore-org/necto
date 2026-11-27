@@ -9,6 +9,9 @@ namespace Jellyfin.Plugin.Necto.Configuration.Ddns;
 /// </summary>
 public class DdnsSettings
 {
+    /// <summary>Gets or sets a value indicating whether DDNS is on. While it is off, no record is updated.</summary>
+    public bool Enabled { get; set; }
+
     /// <summary>The default IPv4 detection endpoints, seeded into the settings so each is visible and editable.</summary>
     public static readonly string[] DefaultIPv4Endpoints =
     {

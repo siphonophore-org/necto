@@ -48,7 +48,12 @@ public sealed class CheckStorageTask : PluginScheduledTask
     public override async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(progress);
-        await _storage.CheckAsync(cancellationToken).ConfigureAwait(false);
+        // While Storage is off, no disk is checked, mounted again, or alerted on.
+        if (_storage.Enabled)
+        {
+            await _storage.CheckAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         progress.Report(100);
     }
 
