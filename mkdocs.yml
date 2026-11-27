@@ -43,6 +43,8 @@ markdown_extensions:
 nav:
   - Overview: index.md
   - Tools:
+      - Requests: Requests.md
+      - Issues: Issues.md
       - Groups: Groups.md
   - Development:
       - Plan: Plan.md
