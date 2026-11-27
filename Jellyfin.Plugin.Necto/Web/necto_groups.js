@@ -72,6 +72,22 @@ export function deletesOnExpiry(group) {
     return !!(expiry && expiry.ExpiresOn) && enumName(expiry.Action, EXPIRY_ACTIONS) === 'Delete';
 }
 
+// grantablePages
+// Lists the pages a group can give, the Signed in ones, as Anyone and Administrators pages ignore groups. A page
+// the group already gives stays, so a page moved to another tier keeps its grant.
+//
+// Inputs
+// pages [object[]]: The pages from the Pages route.
+// picked [string[]]: The ids the group gives now.
+//
+// Output
+// [object[]]: The pages to offer.
+export function grantablePages(pages, picked) {
+    return (pages || []).filter(function (p) {
+        return p.Visibility === 'User' || p.Visibility === 1 || (picked || []).some(function (id) { return sameId(id, p.Id); });
+    });
+}
+
 // getPath
 // Reads a value from an object by a dotted path, such as Accounts.Password.MinLength.
 //
@@ -548,7 +564,7 @@ export function createGroupEditor(group, ctx) {
             readers.push(function (out) { setPath(out.Permissions, spec.path, events.getValue()); });
         } else if (spec.kind === 'pages') {
             var pages = nectoModule.createCheckboxList({
-                fetchItems: function () { return shared.request('Pages').catch(function () { return []; }); },
+                fetchItems: function () { return shared.request('Pages').then(function (all) { return grantablePages(all, value); }).catch(function () { return []; }); },
                 idKey: 'Id',
                 value: value || [],
                 searchKeys: ['Title', 'Slug'],

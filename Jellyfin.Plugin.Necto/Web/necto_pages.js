@@ -833,7 +833,7 @@ export default function (view) {
         tierOptions(select, t);
         select.value = normalizeVisibility(a.Visibility);
         select.addEventListener('change', function () { setAssetVisibility(a.Name, select.value); });
-        var remove = el('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn', title: t.tr('Delete'), 'aria-label': t.tr('Delete'), 'data-action': 'delete-asset' }, [
+        var remove = el('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn stolon-destructive', title: t.tr('Delete'), 'aria-label': t.tr('Delete'), 'data-action': 'delete-asset' }, [
             el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'delete' })
         ]);
         remove.addEventListener('click', function () { deleteAsset(a.Name); });
