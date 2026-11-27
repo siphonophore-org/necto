@@ -167,7 +167,6 @@ confirmDialog('The proxy stops answering for it. The upstream service stays.', {
 
 | Where | Pattern | Example |
 | :--- | :--- | :--- |
-| Record picker | `No <things> yet. Select New to add one.` | No profiles yet. Select New to add one. |
 | List in a form | `No <things> yet. Add one below.` | No routes yet. Add one below. |
 | Live list | `No <things> right now.` | No peers are connected right now. |
 | Filtered list | `No <things> match.` | No requests match. |
@@ -240,8 +239,8 @@ Every page is built from the same parts in the same order. A page never invents 
 2. A banner only for a problem nothing below shows.
 3. Count cards, `stolon-cards stolon-even`, one per state, worded and colored exactly as the badges.
 4. One table, built by the shared table helper, holding the tool's records:
-    * The toolbar: search first, then the filter selects, then the tool's Add action at its end.
-    * The bulk bar: select all, the count, the actions, and Refresh at its end.
+    * The toolbar: search first, then the filter selects, then the tool's Add action at its end. Each filter's first choice, which means no filter, reads **All**, never Every type, Everyone, or Any.
+    * The bulk bar: select all, the count, the actions, and Refresh at its end. A table with no bulk action picks no rows, and Refresh ends its toolbar instead.
     * Each row: an icon or thumbnail, the name, and one secondary line. The status column holds one state badge and at most two icon buttons.
     * A row opens its record in a sidecar.
     * The empty text sits inside the table frame: "No X yet." with nothing at all, "No X match." while a search or filter finds nothing.
@@ -421,14 +420,14 @@ grep -o "export function create[A-Za-z]*" ~/.nuget/packages/siphonophore.stolon/
 | Records in priority order | `createSortableCardList` |
 | A plain list of records | `stolon-card-list` with `stolon-card-item-*` |
 | Edit one record in a sidecar | `openEditorSidecar` |
-| A large searchable list | `createPaginatedTable` |
+| A tool's records | `createToolTable` in `necto_shared.js`, with `runBulk` for its bulk actions |
 | Edit table rows in place | `stolon-bulk-edit-bar` and `stolon-edit-row` |
 | Uploaded files | `stolon-asset-list` |
 | A thumbnail in a table row | A column `image(item)` loader with `imageShape`, one shape for each column |
 | A mark on a table row, such as picked | The table's `rowClass(item, index)` |
 
 * A record picker's actions read **New**, **Rename**, **Remove**, then **Import** and **Export**, in that order.
-* Use `createPaginatedTable` for any list that can grow past one screen. Rows open with `actions.onRowClick`.
+* Every list of records on a tool page is one `createToolTable`, never a record list, a record picker, or a table built by hand. Rows open with `onRowClick`.
 
 ### Status
 
