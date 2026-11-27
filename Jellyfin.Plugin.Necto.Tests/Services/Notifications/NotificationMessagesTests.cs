@@ -72,6 +72,34 @@ public class NotificationMessagesTests
     }
 
     /// <summary>
+    /// Each request and issue event has its own embed color, the one each update always had, whatever its level, and
+    /// every other event takes its level's.
+    /// True: a new request reads amber, an available one green, and a declined one red in Discord.
+    /// False: every request update would share one color and be harder to tell apart at a glance.
+    /// </summary>
+    [Theory]
+    [InlineData("requests.created", 0xFFC107)]
+    [InlineData("requests.approved", 0x00A4DC)]
+    [InlineData("requests.available", 0x4CAF50)]
+    [InlineData("requests.aging", 0xFF9800)]
+    [InlineData("requests.expiring", 0xFF5722)]
+    [InlineData("requests.declined", 0xF44336)]
+    [InlineData("requests.failed", 0xF44336)]
+    [InlineData("issues.created", 0xFF9800)]
+    [InlineData("issues.updated", 0x4CAF50)]
+    [InlineData("invites.used", NotificationMessages.InfoColor)]
+    public void Color_EachRequestAndIssueEvent_HasItsOwn(string key, int color)
+    {
+        var e = new NectoEvent(key, "Title", string.Empty) { Level = NectoEventLevel.Info };
+
+        var message = NotificationMessages.Build(e, null, "Event", Now);
+
+        Assert.Equal(color, NotificationMessages.Color(e));
+        Assert.Equal(color, message.Color);
+        Assert.Equal(color.ToString(System.Globalization.CultureInfo.InvariantCulture), message.Values["color"]);
+    }
+
+    /// <summary>
     /// An email's subject is the title on one line, and its body ends with the link.
     /// True: an email reads well in any client and opens the event's page.
     /// False: a title with a line break could inject headers, or the link would be missing.

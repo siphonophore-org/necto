@@ -28,6 +28,7 @@ public class ArrServer
     public string Url { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the API key, encrypted at rest.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>

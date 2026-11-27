@@ -30,6 +30,7 @@ public sealed class NotificationsControllerTests : IDisposable
     private readonly FakeConfigurationStore _config = new();
     private readonly SecretProtector _secrets = TestSecrets.Create();
     private NotificationPushStore? _push;
+    private NotificationSecretStore? _kept;
 
     public void Dispose() => _folder.Dispose();
 
@@ -39,11 +40,12 @@ public sealed class NotificationsControllerTests : IDisposable
         stub.Answer("get_Sessions", _ => new List<SessionInfo>());
         var (http, _) = InterfaceStub.Create<IHttpClientFactory>();
         var held = new NotificationHeldStore(_folder.File("held.json"), null, TimeProvider.System);
-        _push ??= new NotificationPushStore(_config, _secrets, _folder.File("push.json"), NullLogger.Instance);
+        _kept ??= new NotificationSecretStore(_folder.File("secrets.json"), _secrets, null);
+        _push ??= new NotificationPushStore(_config, _secrets, _kept, _folder.File("push.json"), NullLogger.Instance);
         var stolon = new StolonNotifier(http, sessions, NullLogger<StolonNotifier>.Instance, _secrets, held, _push);
         var log = new NotificationLog();
-        var notifier = new Notifier(stolon, _config, _users.Manager, new FakeEmail(), new FakeActivity().Logger, _secrets, log, FakeServerConfig.Create(), NullLogger<Notifier>.Instance, _push);
-        var controller = new NotificationsController(notifier, stolon, new NotificationSettingsService(_config, _secrets), log, _config, _users.Manager, _push, held);
+        var notifier = new Notifier(stolon, _config, _users.Manager, new FakeEmail(), new FakeActivity().Logger, _secrets, _kept, log, FakeServerConfig.Create(), NullLogger<Notifier>.Instance, _push);
+        var controller = new NotificationsController(notifier, stolon, new NotificationSettingsService(_config, _secrets, _kept), _kept, log, _config, _users.Manager, _push, held);
         var context = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(Caller.UserIdClaim, user.ToString()) }, "test"))

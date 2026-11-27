@@ -20,14 +20,17 @@ public sealed class NotificationStoresTests : IDisposable
 
     public void Dispose() => _folder.Dispose();
 
-    private NotificationPushStore Push() => new(_config, _secrets, _folder.File("push.json"), NullLogger.Instance);
+    private NotificationSecretStore Kept() => new(_folder.File("secrets.json"), _secrets, null);
+
+    private NotificationPushStore Push() => new(_config, _secrets, Kept(), _folder.File("push.json"), NullLogger.Instance);
 
     private static WebPushSubscription Browser(Guid user, string endpoint) => new(user, endpoint, "p", "a", "Safari", DateTime.UtcNow);
 
     /// <summary>
-    /// The key pair is made the first time it is needed, kept with the private key encrypted, and read back the same.
+    /// The key pair is made the first time it is needed, kept with the private key encrypted in the secrets file, and
+    /// read back the same.
     /// True: browsers stay subscribed across restarts.
-    /// False: a new key every start would break every subscription, or the private key would sit in plain text.
+    /// False: a new key every start would break every subscription, or the private key would sit in the configuration.
     /// </summary>
     [Fact]
     public void GetKeys_MakesThePairOnce_AndKeepsItEncrypted()
@@ -38,7 +41,8 @@ public sealed class NotificationStoresTests : IDisposable
         Assert.NotNull(first);
         Assert.Equal(first!.PublicKey, second!.PublicKey);
         Assert.Equal(first.PublicKey, _config.Configuration.Notifications.PushPublicKey);
-        Assert.True(SecretProtector.IsProtected(_config.Configuration.Notifications.PushPrivateKey));
+        Assert.Empty(_config.Configuration.Notifications.PushPrivateKey);
+        Assert.True(SecretProtector.IsProtected(Kept().Load().PushPrivateKey));
     }
 
     /// <summary>

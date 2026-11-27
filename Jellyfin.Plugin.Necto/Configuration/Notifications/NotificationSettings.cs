@@ -22,7 +22,8 @@ public class NotificationSettings
     /// <summary>Gets or sets the VAPID public key browser notifications are signed with.</summary>
     public string PushPublicKey { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the VAPID private key, encrypted at rest.</summary>
+    /// <summary>Gets or sets the VAPID private key. It lives in the Notifications secrets file and never reaches a page.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string PushPrivateKey { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the SMTP server email channels send through.</summary>

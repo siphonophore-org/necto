@@ -5,7 +5,8 @@ namespace Jellyfin.Plugin.Necto.Configuration.Notifications;
 
 /// <summary>
 /// One administrators' channel and the events it gets. Stolon's <see cref="NotifyDestination"/> holds the address,
-/// headers, custom body, and Discord name, and this adds the channel's kind, its events, and its email addresses.
+/// headers, custom body, and Discord name, and this adds the channel's kind, its events, and its email addresses. The
+/// address, headers, and email addresses live in the Notifications secrets file, never the configuration.
 /// </summary>
 public class NotificationChannel : NotifyDestination
 {

@@ -77,7 +77,8 @@ public sealed class RequestHarness : IDisposable
         var matcher = new LibraryMatcher(_library, InterfaceStub.Of<IUserDataManager>(), Users.Manager);
         Arr = new ArrClient(NullLogger<ArrClient>.Instance, null, http);
         var tmdb = new TmdbDiscovery(http, InterfaceStub.Of<IPluginManager>(), InterfaceStub.Of<IServerConfigurationManager>(), NullLogger<TmdbDiscovery>.Instance);
-        Notifier = new RequestNotifier(Events, NullLogger<RequestNotifier>.Instance, FakeServerConfig.Create());
+        Held = new Jellyfin.Plugin.Necto.Services.Notifications.NotificationHeldStore(Path.Join(_folder, "held.json"), null, TimeProvider.System);
+        Notifier = new RequestNotifier(Events, NullLogger<RequestNotifier>.Instance, FakeServerConfig.Create(), held: Held);
         Requests = new RequestService(
             Db,
             matcher,
@@ -95,6 +96,9 @@ public sealed class RequestHarness : IDisposable
             : null));
         Issues = new IssueService(Db, _library, played, Arr, Notifier, Activity.Logger, NullLogger<IssueService>.Instance, Clock);
     }
+
+    /// <summary>Gets the Jellyfin messages held for users with no app online.</summary>
+    public Jellyfin.Plugin.Necto.Services.Notifications.NotificationHeldStore Held { get; }
 
     /// <summary>Gets every activity log entry the services wrote, in order.</summary>
     public FakeActivity Activity { get; } = new();

@@ -21,5 +21,6 @@ public class ProxyCertificateSettings
     public string KeyPath { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the PKCS#12 password, or the PEM key password. Stored encrypted.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string Password { get; set; } = string.Empty;
 }

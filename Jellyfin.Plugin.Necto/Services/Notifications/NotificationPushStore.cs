@@ -12,7 +12,8 @@ namespace Jellyfin.Plugin.Necto.Services.Notifications;
 
 /// <summary>
 /// Gives Stolon the VAPID keys browser notifications are signed with, making a pair the first time one is needed, and
-/// keeps the browsers each user turned notifications on in, in a file beside the configuration.
+/// keeps the browsers each user turned notifications on in, in a file beside the configuration. The private key lives
+/// in the <see cref="NotificationSecretStore"/>.
 /// </summary>
 [PluginService(ServiceLifetime.Singleton, ServiceType = typeof(IWebPushStore))]
 public sealed class NotificationPushStore : IWebPushStore
@@ -22,6 +23,7 @@ public sealed class NotificationPushStore : IWebPushStore
 
     private readonly IConfigurationStore _store;
     private readonly SecretProtector _secrets;
+    private readonly NotificationSecretStore _kept;
     private readonly JsonFileStore<List<WebPushSubscription>> _file;
     private readonly object _lock = new();
     private (string Public, string Private, string Contact, string Server, WebPushKeys? Keys)? _keys;
@@ -29,35 +31,40 @@ public sealed class NotificationPushStore : IWebPushStore
     /// <summary>
     /// Initializes a new instance of the <see cref="NotificationPushStore"/> class.
     /// </summary>
-    /// <param name="store">Reads and saves the keys in the configuration.</param>
+    /// <param name="store">Reads and saves the public key in the configuration.</param>
     /// <param name="secrets">Encrypts the private key.</param>
+    /// <param name="kept">Keeps the private key.</param>
     /// <param name="paths">Gives the folder the subscriptions are kept in.</param>
     /// <param name="logger">Writes the server log.</param>
-    public NotificationPushStore(IConfigurationStore store, SecretProtector secrets, IApplicationPaths paths, ILogger<NotificationPushStore> logger)
-        : this(store, secrets, Path.Join((paths ?? throw new ArgumentNullException(nameof(paths))).PluginConfigurationsPath, FileName), logger)
+    public NotificationPushStore(IConfigurationStore store, SecretProtector secrets, NotificationSecretStore kept, IApplicationPaths paths, ILogger<NotificationPushStore> logger)
+        : this(store, secrets, kept, Path.Join((paths ?? throw new ArgumentNullException(nameof(paths))).PluginConfigurationsPath, FileName), logger)
     {
     }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NotificationPushStore"/> class with its file at a path.
     /// </summary>
-    /// <param name="store">Reads and saves the keys in the configuration.</param>
+    /// <param name="store">Reads and saves the public key in the configuration.</param>
     /// <param name="secrets">Encrypts the private key.</param>
+    /// <param name="kept">Keeps the private key.</param>
     /// <param name="path">The file the subscriptions are kept in.</param>
     /// <param name="logger">Writes the server log.</param>
-    internal NotificationPushStore(IConfigurationStore store, SecretProtector secrets, string path, ILogger? logger)
+    internal NotificationPushStore(IConfigurationStore store, SecretProtector secrets, NotificationSecretStore kept, string path, ILogger? logger)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(secrets);
+        ArgumentNullException.ThrowIfNull(kept);
         _store = store;
         _secrets = secrets;
+        _kept = kept;
         _file = new JsonFileStore<List<WebPushSubscription>>(path, logger);
     }
 
     /// <inheritdoc />
     public WebPushKeys? GetKeys()
     {
-        var (publicKey, privateKey, contact, server) = _store.Read(c => (c.Notifications?.PushPublicKey ?? string.Empty, c.Notifications?.PushPrivateKey ?? string.Empty, c.Notifications?.PushContact ?? string.Empty, c.Notifications?.ServerUrl ?? string.Empty));
+        var (publicKey, contact, server) = _store.Read(c => (c.Notifications?.PushPublicKey ?? string.Empty, c.Notifications?.PushContact ?? string.Empty, c.Notifications?.ServerUrl ?? string.Empty));
+        var privateKey = _kept.Load().PushPrivateKey;
 
         // Reading the keys checks that they pair, so they are read once until a setting they depend on changes.
         lock (_lock)
@@ -136,11 +143,11 @@ public sealed class NotificationPushStore : IWebPushStore
     {
         var made = WebPushKeys.Generate();
         var protectedKey = made.ProtectPrivateKey(_secrets);
+        _kept.SetPushPrivateKey(protectedKey);
         _store.Mutate(c =>
         {
             c.Notifications ??= new Jellyfin.Plugin.Necto.Configuration.Notifications.NotificationSettings();
             c.Notifications.PushPublicKey = made.PublicKey;
-            c.Notifications.PushPrivateKey = protectedKey;
             return true;
         });
         var (contact, server) = _store.Read(c => (c.Notifications.PushContact ?? string.Empty, c.Notifications.ServerUrl ?? string.Empty));

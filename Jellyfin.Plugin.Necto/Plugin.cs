@@ -66,6 +66,7 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
     protected override void OnConfigurationSaving(PluginConfiguration incoming, PluginConfiguration stored)
     {
         ArgumentNullException.ThrowIfNull(incoming);
+        Services.Invites.InviteNormalizer.KeepPins(incoming.Invites, stored?.Invites);
         GroupNormalizer.Normalize(incoming);
         incoming.WireGuard = WireGuardValidator.Saving(incoming.WireGuard, stored?.WireGuard ?? new());
         incoming.Scripts = ScriptSettingsSaving.Saving(incoming.Scripts, stored?.Scripts ?? new(), ApplicationPaths);

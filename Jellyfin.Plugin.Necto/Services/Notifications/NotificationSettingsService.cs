@@ -10,24 +10,28 @@ using Siphonophore.Stolon;
 namespace Jellyfin.Plugin.Necto.Services.Notifications;
 
 /// <summary>
-/// Reads and saves the Notifications settings for the Settings section. A copy sent to a page never carries a stored
-/// address, header, password, or private key, and a save keeps each one the page sent back as kept.
+/// Reads and saves the Notifications settings for the Settings section. The secrets live in the
+/// <see cref="NotificationSecretStore"/>, never the configuration. A copy sent to a page carries each stored address,
+/// header, and password only as kept, and a save keeps each one the page sent back as kept.
 /// </summary>
 [PluginService(ServiceLifetime.Singleton)]
 public sealed class NotificationSettingsService
 {
     private readonly IConfigurationStore _store;
     private readonly SecretProtector _secrets;
+    private readonly NotificationSecretStore _kept;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NotificationSettingsService"/> class.
     /// </summary>
     /// <param name="store">Reads and saves the configuration.</param>
     /// <param name="secrets">Encrypts the addresses, headers, and password.</param>
-    public NotificationSettingsService(IConfigurationStore store, SecretProtector secrets)
+    /// <param name="kept">Keeps the secrets out of the configuration.</param>
+    public NotificationSettingsService(IConfigurationStore store, SecretProtector secrets, NotificationSecretStore kept)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _secrets = secrets ?? throw new ArgumentNullException(nameof(secrets));
+        _kept = kept ?? throw new ArgumentNullException(nameof(kept));
     }
 
     /// <summary>
@@ -36,8 +40,8 @@ public sealed class NotificationSettingsService
     /// <returns>A copy for a page.</returns>
     public NotificationSettings Read()
     {
-        var copy = _store.Read(c => ConfigurationCopy.Of(NotificationNormalizer.Normalize(ConfigurationCopy.Of(c.Notifications ?? new NotificationSettings()))));
-        return Hide(copy);
+        var copy = _store.Read(c => NotificationNormalizer.Normalize(ConfigurationCopy.Of(c.Notifications ?? new NotificationSettings())));
+        return Hide(_kept.Fill(copy));
     }
 
     /// <summary>
@@ -59,7 +63,8 @@ public sealed class NotificationSettingsService
     }
 
     /// <summary>
-    /// Checks and saves the settings a page sent. The VAPID keys are never taken from a page.
+    /// Checks and saves the settings a page sent, the secrets to the <see cref="NotificationSecretStore"/>. The VAPID
+    /// keys are never taken from a page.
     /// </summary>
     /// <param name="incoming">The settings as the page sent them.</param>
     /// <param name="language">The language of a refusal, or <c>null</c> for US English.</param>
@@ -76,7 +81,7 @@ public sealed class NotificationSettingsService
 
         _store.Mutate(config =>
         {
-            var stored = config.Notifications ?? new NotificationSettings();
+            var stored = _kept.Fill(ConfigurationCopy.Of(config.Notifications ?? new NotificationSettings()));
             foreach (var channel in settings.Channels)
             {
                 var old = stored.Channels?.FirstOrDefault(c => c is not null && string.Equals(c.Id, channel.Id, StringComparison.Ordinal));
@@ -88,7 +93,7 @@ public sealed class NotificationSettingsService
                 SecretProtector.IsProtected(settings.Smtp.Password) ? string.Empty : settings.Smtp.Password,
                 sameServer ? stored.Smtp?.Password : null);
             settings.PushPublicKey = stored.PushPublicKey ?? string.Empty;
-            settings.PushPrivateKey = stored.PushPrivateKey ?? string.Empty;
+            _kept.Keep(settings);
             config.Notifications = settings;
             return true;
         });

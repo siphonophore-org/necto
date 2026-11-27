@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Text.Json;
 using Jellyfin.Plugin.Necto.Configuration.Ddns;
 using Jellyfin.Plugin.Necto.Configuration.Proxy;
 using Jellyfin.Plugin.Necto.Services.Ddns;
@@ -29,7 +28,7 @@ public static class ProxyRuntimeFactory
     public static ProxySettings Clone(ProxySettings? settings)
         => settings is null
             ? new ProxySettings()
-            : JsonSerializer.Deserialize<ProxySettings>(JsonSerializer.Serialize(settings)) ?? new ProxySettings();
+            : Jellyfin.Plugin.Necto.Configuration.ConfigurationCopy.Of(settings);
 
     /// <summary>The id of the one Jellyfin route a probe runs with.</summary>
     public const string ProbeRouteId = "probe";

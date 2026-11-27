@@ -21,9 +21,11 @@ public class TunnelPeer
     public string PublicKey { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the peer's private key, encrypted at rest. Empty when the peer brought its own key pair.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string PrivateKey { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the peer's preshared key, encrypted at rest.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string PresharedKey { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the peer's tunnel address, such as 10.66.0.2. Empty takes the next free one on save.</summary>

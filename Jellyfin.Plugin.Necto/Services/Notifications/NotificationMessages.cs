@@ -34,6 +34,29 @@ public static class NotificationMessages
     };
 
     /// <summary>
+    /// Gets the color of an event's Discord embed. Each request and issue event has its own, and every other event takes
+    /// its level's.
+    /// </summary>
+    /// <param name="nectoEvent">The event.</param>
+    /// <returns>The color, as 0xRRGGBB.</returns>
+    public static int Color(NectoEvent nectoEvent)
+    {
+        ArgumentNullException.ThrowIfNull(nectoEvent);
+        return nectoEvent.Key switch
+        {
+            RequestEvents.Created => 0xFFC107,
+            RequestEvents.Approved => InfoColor,
+            RequestEvents.Available => 0x4CAF50,
+            RequestEvents.Aging => WarningColor,
+            RequestEvents.Expiring => 0xFF5722,
+            RequestEvents.Declined or RequestEvents.Failed => ErrorColor,
+            IssueEvents.Created => WarningColor,
+            IssueEvents.Updated => 0x4CAF50,
+            _ => Color(nectoEvent.Level)
+        };
+    }
+
+    /// <summary>
     /// Makes an event's address absolute with the server's public address, so a service outside the server can open it.
     /// </summary>
     /// <param name="url">The event's address, relative to the server or absolute.</param>
@@ -83,7 +106,7 @@ public static class NotificationMessages
             ThumbnailUrl = nectoEvent.ImageUrl,
             OneDevice = nectoEvent.OneDevice,
             Hold = nectoEvent.Hold,
-            Color = Color(nectoEvent.Level),
+            Color = Color(nectoEvent),
             Timestamp = now,
             Language = language,
             Tag = string.IsNullOrWhiteSpace(nectoEvent.Tag) ? "necto-" + nectoEvent.Key : nectoEvent.Tag
@@ -96,7 +119,7 @@ public static class NotificationMessages
         message.Values["level"] = nectoEvent.Level.ToString();
         message.Values["link"] = link ?? string.Empty;
         message.Values["time"] = now.UtcDateTime.ToString("o", CultureInfo.InvariantCulture);
-        message.Values["color"] = Color(nectoEvent.Level).ToString(CultureInfo.InvariantCulture);
+        message.Values["color"] = Color(nectoEvent).ToString(CultureInfo.InvariantCulture);
         message.Values["serverURL"] = settings?.ServerUrl ?? string.Empty;
         message.Values["userId"] = nectoEvent.UserId is { } user ? user.ToString("N", CultureInfo.InvariantCulture) : string.Empty;
         foreach (var key in new[] { "event", "level", "link", "time", "color", "serverURL", "userId" })

@@ -574,7 +574,7 @@ public class ProxyController : ControllerBase
     /// <returns>The changed parts.</returns>
     internal static List<string> ChangedSections(ProxySettings before, ProxySettings after)
     {
-        static string Json<T>(T value) => System.Text.Json.JsonSerializer.Serialize(value);
+        static string Json<T>(T value) => System.Text.Json.JsonSerializer.Serialize(value, Jellyfin.Plugin.Necto.Configuration.ConfigurationCopy.Json);
         var changed = new List<string>();
         if (before.Enabled != after.Enabled)
         {
@@ -710,7 +710,7 @@ public class ProxyController : ControllerBase
     }
 
     private static ProxyRoute Clone(ProxyRoute route)
-        => System.Text.Json.JsonSerializer.Deserialize<ProxyRoute>(System.Text.Json.JsonSerializer.Serialize(route)) ?? new ProxyRoute();
+        => Jellyfin.Plugin.Necto.Configuration.ConfigurationCopy.Of(route);
 
     private static ProxyRoute Redact(ProxyRoute route)
     {

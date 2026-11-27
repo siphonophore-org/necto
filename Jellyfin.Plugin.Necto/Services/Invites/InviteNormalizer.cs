@@ -64,6 +64,21 @@ public static class InviteNormalizer
     }
 
     /// <summary>
+    /// Puts each stored PIN back on the invites of a whole configuration save. A page reads every PIN as the kept
+    /// marker, and a PIN changes only through the Invites routes.
+    /// </summary>
+    /// <param name="incoming">The invites about to be saved, changed in place.</param>
+    /// <param name="stored">The invites in effect.</param>
+    public static void KeepPins(IEnumerable<Invite>? incoming, IEnumerable<Invite>? stored)
+    {
+        var pins = (stored ?? Enumerable.Empty<Invite>()).Where(i => i is not null).GroupBy(i => i.Id).ToDictionary(g => g.Key, g => g.First().PinHash ?? string.Empty);
+        foreach (var invite in (incoming ?? Enumerable.Empty<Invite>()).Where(i => i is not null))
+        {
+            invite.PinHash = pins.TryGetValue(invite.Id, out var pin) ? pin : string.Empty;
+        }
+    }
+
+    /// <summary>
     /// Finds the group a new account would join today: the invite's group, Everyone when the invite names Everyone, or
     /// the group set for new users when the invite names none or its group was deleted. Everyone stands in when neither
     /// is set.
