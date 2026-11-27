@@ -1,0 +1,77 @@
+using System.Linq;
+using System.Net;
+using Siphonophore.Stolon;
+using Microsoft.Extensions.DependencyInjection;
+using Xunit;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Services.Ddns;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Network;
+using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+using Jellyfin.Plugin.Necto.Tests.Fakes;
+
+namespace Jellyfin.Plugin.Necto.Tests.Services.Ddns.Providers;
+
+/// <summary>
+/// Guards the provider registry. Every provider must expose a unique <see cref="DNSProviderKind"/>.
+/// A duplicate would make the runtime's <c>ToDictionary(p =&gt; p.Kind)</c> throw at startup. This also
+/// proves every discovered provider actually constructs through DI.
+/// </summary>
+public class ProviderRegistryTests
+{
+    [Fact]
+    public void AllProviders_ConstructAndHaveDistinctKind()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<System.Net.Http.IHttpClientFactory>(StubHttp.Always(HttpStatusCode.OK, string.Empty));
+
+        // Same discovery the runtime registrator uses.
+        var providerTypes = typeof(IDNSProvider).Assembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(IDNSProvider).IsAssignableFrom(t))
+            .ToList();
+        foreach (var type in providerTypes)
+        {
+            services.AddSingleton(typeof(IDNSProvider), type);
+        }
+
+        using var provider = services.BuildServiceProvider();
+        var kinds = provider.GetServices<IDNSProvider>().Select(p => p.Kind).ToList();
+
+        Assert.NotEmpty(kinds);
+        Assert.Equal(providerTypes.Count, kinds.Count);                 // all constructed
+        Assert.Equal(kinds.Count, kinds.Distinct().Count());           // all unique
+    }
+
+    [Fact]
+    public void EveryProvider_ExposesCompleteMetadata()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<System.Net.Http.IHttpClientFactory>(StubHttp.Always(HttpStatusCode.OK, string.Empty));
+
+        foreach (var type in typeof(IDNSProvider).Assembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(IDNSProvider).IsAssignableFrom(t)))
+        {
+            services.AddSingleton(typeof(IDNSProvider), type);
+        }
+
+        using var provider = services.BuildServiceProvider();
+
+        // The dashboard is driven entirely from this metadata, so every provider must label itself, give a
+        // hint, and expose at least one credential field.
+        foreach (var instance in provider.GetServices<IDNSProvider>())
+        {
+            Assert.False(string.IsNullOrWhiteSpace(instance.Label), instance.Kind + " has no Label");
+            Assert.True(StolonTranslations.For("en-us").ContainsKey(instance.Hint), instance.Kind + " has no Hint");
+            var f = instance.Fields;
+            Assert.NotNull(f);
+            var hasField = f.Hostname is not null || f.Login is not null || f.Password is not null || f.Zone is not null;
+            Assert.True(hasField, instance.Kind + " exposes no input fields");
+        }
+    }
+}

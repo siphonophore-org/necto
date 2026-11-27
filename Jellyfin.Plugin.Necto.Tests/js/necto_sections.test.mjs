@@ -57,7 +57,7 @@ test('Settings draws a collapsible section per tool, Groups filled and every oth
     assert.equal(groups.querySelector('[data-field="NewUserGroupId"]').value, FAMILY);
     assert.deepEqual(texts(groups.querySelector('[data-field="NewUserGroupId"]'), 'option'), ['Everyone', 'Family']);
     assert.equal(groups.querySelector('[data-field="ShowResetCodes"]').checked, true);
-    ['requests', 'proxy', 'ddns'].forEach(function (key) {
+    ['requests'].forEach(function (key) {
         assert.match(opened.section(key).querySelector('[data-role="section-content"]').innerHTML, /This tool is coming\./, key);
         assert.equal(opened.section(key).querySelector('button.stolon-button'), null, key);
     });
@@ -86,7 +86,7 @@ test('Troubleshooting draws a section per tool, Groups with its repairs and ever
     assert.deepEqual(texts(groups, '.stolon-subsection-title'), ['Password requirements', 'Templates', 'Scheduled checks', 'Password resets']);
     assert.deepEqual(texts(groups, '[data-action]'), ['Apply rules', 'Apply templates', 'Run now', 'Run now']);
     assert.match(groups.textContent, /Reset codes are off\. Turn on Show reset codes in Settings to list them\./);
-    assert.match(opened.section('proxy').querySelector('[data-role="section-content"]').innerHTML, /This tool is coming\./);
+    assert.match(opened.section('requests').querySelector('[data-role="section-content"]').innerHTML, /This tool is coming\./);
 });
 
 test('Apply rules posts to the password rules route and reports how many users moved', async function () {

@@ -10,6 +10,8 @@ import './configurationpage?name=necto_storage_sections.js';
 import './configurationpage?name=necto_pages_sections.js';
 import './configurationpage?name=necto_notifications_sections.js';
 import './configurationpage?name=necto_invites_sections.js';
+import './configurationpage?name=necto_ddns_sections.js';
+import './configurationpage?name=necto_proxy_sections.js';
 
 export default function (view) {
     'use strict';
@@ -18,8 +20,8 @@ export default function (view) {
     var bars = [];
 
     // saveSection
-    // Saves one section's fields into a fresh copy of the config, or through the section's own save when it keeps
-    // secrets the config must not carry to the page.
+    // Saves one section's fields, through the section's own save when it has one, such as a tool whose settings
+    // save through its own route, and otherwise into a fresh copy of the config.
     //
     // Inputs
     // shared [object]: The Necto helper bag.

@@ -133,7 +133,7 @@ export function buildSettings(content, ctx) {
             el('div', { class: 'stolon-reset-info' }, [el('div', { text: t.tr('WireGuardTitleReplace') }), el('div', { class: 'fieldDescription', text: t.tr('WireGuardSidecarHelp') })]),
             replace
         ])]),
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardTabHost') }),
+        el('h3', { class: 'stolon-subsection-title', text: t.tr('LabelServerHost') }),
         host.element, endpoint.element, port.element, subnet.element,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderSecurity') }),
         keyRow, psk.element, forward.element,
@@ -283,7 +283,7 @@ export function tunnelItems(tunnels, t) {
         var connected = (tunnel.Peers || []).filter(function (p) { return p.Connected; }).length;
         return {
             id: tunnel.Key,
-            title: tunnel.Key === 'host' ? t.tr('WireGuardTabHost') : tunnel.Name,
+            title: tunnel.Key === 'host' ? t.tr('LabelServerHost') : tunnel.Name,
             secondary: tunnel.Error || t.format('WireGuardTunnelConnected', connected),
             tags: [{ label: tunnelStateLabel(t, tunnel.State), color: color }]
         };

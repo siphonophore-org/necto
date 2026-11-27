@@ -1,0 +1,95 @@
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging.Abstractions;
+using Xunit;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Configuration.Proxy;
+using Jellyfin.Plugin.Necto.Services.Ddns;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
+using Jellyfin.Plugin.Necto.Services.Notifications;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+using Jellyfin.Plugin.Necto.Tests.Fakes;
+
+namespace Jellyfin.Plugin.Necto.Tests.Services.Ddns.Providers;
+
+/// <summary>
+/// Request-shaping tests for Porkbun. Porkbun returns HTTP 200 with a JSON <c>status</c> field, so a
+/// failed edit (<c>"status":"ERROR"</c>) must be reported as failure, not success.
+/// </summary>
+public class PorkbunProviderTests
+{
+    private const string RetrieveOk =
+        "{\"status\":\"SUCCESS\",\"records\":[{\"id\":\"1\",\"content\":\"0.0.0.0\",\"ttl\":\"600\"}]}";
+
+    private static PorkbunProvider Provider(string editResponse)
+    {
+        var factory = StubHttp.Factory(req =>
+        {
+            var url = req.RequestUri!.ToString();
+            return url.Contains("retrieveByNameType", StringComparison.Ordinal)
+                ? (HttpStatusCode.OK, RetrieveOk)
+                : (HttpStatusCode.OK, editResponse);
+        });
+        return new PorkbunProvider(factory, NullLogger<PorkbunProvider>.Instance);
+    }
+
+    private static DNSRecord Record() => new()
+    {
+        Hostname = "home.example.com",
+        Login = "apikey",
+        Password = "secretapikey",
+        UpdateIPv4 = true
+    };
+
+    [Fact]
+    public async Task Edit_ReturnsErrorStatusWith200_IsReportedAsFailure()
+    {
+        var provider = Provider("{\"status\":\"ERROR\",\"message\":\"nope\"}");
+
+        var result = await provider.UpdateAsync(Record(), new DetectedIP { IPv4 = "1.2.3.4" }, CancellationToken.None);
+
+        Assert.False(result.Success);
+    }
+
+    [Fact]
+    public async Task Edit_ReturnsSuccessStatus_IsReportedAsSuccess()
+    {
+        var provider = Provider("{\"status\":\"SUCCESS\"}");
+
+        var result = await provider.UpdateAsync(Record(), new DetectedIP { IPv4 = "1.2.3.4" }, CancellationToken.None);
+
+        Assert.True(result.Success);
+    }
+
+    [Fact]
+    public async Task BlankZoneTwoLabelHostname_IsTreatedAsApexNotSubdomainOfTld()
+    {
+        string? retrieveUrl = null;
+        var factory = StubHttp.Factory(req =>
+        {
+            var url = req.RequestUri!.ToString();
+            if (url.Contains("retrieveByNameType", StringComparison.Ordinal))
+            {
+                retrieveUrl = url;
+                return (HttpStatusCode.OK, RetrieveOk);
+            }
+
+            return (HttpStatusCode.OK, "{\"status\":\"SUCCESS\"}");
+        });
+        var provider = new PorkbunProvider(factory, NullLogger<PorkbunProvider>.Instance);
+        var record = Record();
+        record.Hostname = "example.com";
+
+        var result = await provider.UpdateAsync(record, new DetectedIP { IPv4 = "1.2.3.4" }, CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Contains("/retrieveByNameType/example.com/A/", retrieveUrl, StringComparison.Ordinal);
+    }
+}

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Necto.Services.Notifications;
@@ -6,17 +7,34 @@ using Jellyfin.Plugin.Necto.Services.Notifications;
 namespace Jellyfin.Plugin.Necto.Tests.Fakes;
 
 /// <summary>
-/// Keeps every event a tool sends, in place of Notifications.
+/// A notifier that keeps every event a tool sends, so a test can check which went out.
 /// </summary>
 public sealed class FakeNotifier : INotifier
 {
-    public List<NectoEvent> Events { get; } = new();
+    /// <summary>Gets every event sent, in order.</summary>
+    public List<NectoEvent> Sent { get; } = new();
 
+    /// <summary>Gets every event sent, in order. The same list as <see cref="Sent"/>.</summary>
+    public List<NectoEvent> Events => Sent;
+
+    /// <summary>Gets the keys of every event sent, in order.</summary>
+    public IReadOnlyList<string> Keys
+    {
+        get
+        {
+            lock (Sent)
+            {
+                return Sent.Select(e => e.Key).ToList();
+            }
+        }
+    }
+
+    /// <inheritdoc />
     public Task SendAsync(NectoEvent nectoEvent, CancellationToken cancellationToken = default)
     {
-        lock (Events)
+        lock (Sent)
         {
-            Events.Add(nectoEvent);
+            Sent.Add(nectoEvent);
         }
 
         return Task.CompletedTask;

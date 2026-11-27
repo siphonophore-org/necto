@@ -1,12 +1,33 @@
 <!-- necto_ddns.html -->
-<!-- The DDNS tool. It shows an empty state that says the tool is coming. -->
+<!-- The DDNS tool. It shows the public address the last run found and lists the records, each opening an editor sidecar. -->
 
-<div id="NectoDDNSPage" data-role="page" class="page type-interior pluginConfigurationPage"
+<div id="NectoDdnsPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox"
      data-controller="__plugin/necto_ddns.js">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+                <div class="fieldDescription" data-str="DdnsHelpPage">Keeps each DNS name pointed at this server's public address.</div>
+                <div id="ddnsNotices"></div>
+
+                <!-- Public address -->
+                <!-- The addresses the last run found, shared by every record. -->
+                <div id="ddnsAddress"></div>
+
+                <!-- Records -->
+                <!-- Every record, each opening its editor. -->
+                <div id="ddnsRecords"></div>
+                <div class="stolon-card-list-actions">
+                    <button is="emby-button" type="button" id="btnAddRecord" class="raised stolon-button stolon-primary">
+                        <span class="material-icons" aria-hidden="true">add</span>
+                        <span data-str="DdnsButtonAddRecord">Add record</span>
+                    </button>
+                    <button is="emby-button" type="button" id="btnUpdateNow" class="raised stolon-button stolon-secondary">
+                        <span class="material-icons" aria-hidden="true">refresh</span>
+                        <span data-str="DdnsButtonUpdateNow">Update now</span>
+                    </button>
+                    <span id="ddnsStatus" class="stolon-status-text" role="status"></span>
+                </div>
             </div>
         </div>
     </div>

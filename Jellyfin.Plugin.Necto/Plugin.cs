@@ -70,6 +70,20 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
         incoming.Scripts = ScriptSettingsSaving.Saving(incoming.Scripts, stored?.Scripts ?? new(), ApplicationPaths);
         Services.Storage.AlertOrder.Normalize(incoming.Storage ??= new Configuration.Storage.StorageConfiguration());
         Services.CustomPages.CustomPagesSaving.Apply(incoming, stored, ApplicationPaths);
+
+        // DDNS and Proxy change only through their own routes, which encrypt credentials and check every change.
+        incoming.Ddns = stored?.Ddns ?? new();
+        incoming.Proxy = stored?.Proxy ?? new();
+    }
+
+    /// <summary>
+    /// Puts Jellyfin's own network settings back if the proxy had Jellyfin trust it, so removing the plugin cannot
+    /// leave Jellyfin listening on this machine only.
+    /// </summary>
+    public override void OnUninstalling()
+    {
+        Services.Proxy.ProxyUninstall.Restore(ApplicationPaths);
+        base.OnUninstalling();
     }
 
     /// <inheritdoc />
@@ -128,33 +142,19 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
             EmbeddedResourcePath = $"{ns}.Web.necto_groups_sections.js"
         };
 
-        // The WireGuard and Scripts sections of Settings and Troubleshooting, and the modules their tool pages share.
-        foreach (var name in new[] { "necto_wireguard_sections.js", "necto_wireguard_common.js", "necto_scripts_sections.js", "necto_scripts_common.js", "necto_scripts_templates.js" })
+        // Each tool's Settings and Troubleshooting sections, the modules its tool page shares, and the scripts of the
+        // user pages.
+        foreach (var name in new[]
+        {
+            "necto_wireguard_sections.js", "necto_wireguard_common.js",
+            "necto_scripts_sections.js", "necto_scripts_common.js", "necto_scripts_templates.js",
+            "necto_storage_sections.js", "necto_pages_sections.js",
+            "necto_notifications_sections.js", "necto_invites_sections.js", "necto_groups_templates.js",
+            "necto_invite_signup.js", "necto_invites_member.js", "necto_push.js",
+            "necto_netfields.js", "necto_ddns_sections.js", "necto_proxy_sections.js"
+        })
         {
             yield return new PluginPageInfo { Name = name, EmbeddedResourcePath = $"{ns}.Web.{name}" };
-        }
-        // The Storage sections of Settings and Troubleshooting.
-        yield return new PluginPageInfo
-        {
-            Name = "necto_storage_sections.js",
-            EmbeddedResourcePath = $"{ns}.Web.necto_storage_sections.js"
-        };
-
-        // The Custom pages sections of Settings and Troubleshooting.
-        yield return new PluginPageInfo
-        {
-            Name = "necto_pages_sections.js",
-            EmbeddedResourcePath = $"{ns}.Web.necto_pages_sections.js"
-        };
-        // The modules of Notifications, Invites, and the group templates: their sections, the group editor's template
-        // sections, and the scripts of the user pages and the browser notification switch they share.
-        foreach (var module in new[] { "necto_notifications_sections", "necto_invites_sections", "necto_groups_templates", "necto_invite_signup", "necto_invites_member", "necto_push" })
-        {
-            yield return new PluginPageInfo
-            {
-                Name = module + ".js",
-                EmbeddedResourcePath = $"{ns}.Web.{module}.js"
-            };
         }
 
         foreach (var page in GetSharedPages("necto"))

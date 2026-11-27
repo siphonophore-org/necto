@@ -92,7 +92,7 @@ export function typeOf(t, disk) {
     if (disk.IsSystem) return { label: t.tr('LabelSystem'), icon: 'computer', color: 'gray' };
     if (disk.Kind === 'Share') return { label: t.tr('StorageType.Network'), icon: 'lan', color: 'purple' };
     if (disk.Kind === 'External') return { label: t.tr('External'), icon: 'usb', color: 'blue' };
-    return { label: t.tr('StorageKindLocal'), icon: 'storage', color: 'gray' };
+    return { label: t.tr('ProxyPlaceLocal'), icon: 'storage', color: 'gray' };
 }
 
 // meterOptions
@@ -422,7 +422,7 @@ export default function (view) {
         var rows = disk.Folders.map(function (folder) {
             var missing = gone || disk.MissingFolders.indexOf(folder.Path) >= 0;
             var readOnly = (disk.ReadOnlyFolders || []).indexOf(folder.Path) >= 0;
-            var badge = missing ? shared.badge('orange', t.tr('StorageFolderNotFound'))
+            var badge = missing ? shared.badge('orange', t.tr('DdnsNotDetected'))
                 : readOnly ? shared.badge('orange', t.tr('StorageFolderReadOnly'))
                 : shared.badge('green', t.tr('StorageFolderFound'));
             // One of Jellyfin's own folders is named as the dashboard names it, such as Cache.
@@ -725,7 +725,7 @@ export default function (view) {
             var celsius = t.format('StorageValueCelsius', disk.TemperatureCelsius);
             facts.push({ label: t.tr('StorageLabelTemperature'), value: disk.Hot ? { badge: { label: celsius, color: 'red' } } : celsius });
         }
-        if (disk.PowerOnHours) facts.push({ label: t.tr('StorageLabelPowerOnTime'), value: t.format('StorageDurationHours', disk.PowerOnHours.toLocaleString()) });
+        if (disk.PowerOnHours) facts.push({ label: t.tr('StorageLabelPowerOnTime'), value: t.format('DdnsHoursMany', disk.PowerOnHours.toLocaleString()) });
         if (disk.WearPercent !== null && disk.WearPercent !== undefined) {
             // Green while most of the rated writes are left, orange past half, red past the Worn out alert.
             var wearColor = disk.Worn ? 'red' : disk.WearPercent >= 50 ? 'orange' : 'green';

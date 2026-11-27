@@ -13,6 +13,11 @@ owner: "siphonophore"
 artifacts:
 - "Jellyfin.Plugin.Necto.dll"
 - "Tmds.DBus.Protocol.dll"
+- "Yarp.ReverseProxy.dll"
+- "System.IO.Hashing.dll"
+- "MaxMind.Db.dll"
+- "Certes.dll"
+- "BouncyCastle.Cryptography.dll"
 changelog:
   added:
   - "The first release of Necto"
@@ -26,6 +31,8 @@ changelog:
   - "Notifications, with browser notifications, Jellyfin messages, Discord, webhooks, email, and the activity log, a test for each channel, and a send log"
   - "Invites from User Management, with PINs, limits, expiry, QR codes, and the signup page at /invites, and a page where members make their own invites as their groups allow"
   - "Group templates from User Management, which write Access and features and Preferences onto members, taking the first group's in group order"
+  - "DDNS, with several records, each with its own provider, credentials, name and update interval, and records that follow the proxy's host names"
+  - "Proxy, a reverse proxy to any service, with routes from the Jellyfin, Jellyfin LAN and Blank templates, a certificate per route by HTTP or DNS challenge or upload, and bans, rate limits, locations and trusted networks"
   developer:
   - "Routes under /Groups list, create, save, and delete groups, list users with their groups, and give a user's permissions"
   - "Routes under /WireGuard give the tunnels' state and usage, the tunnel ends for the Dashboard map, change peers and connections, and download wireguard-go"
@@ -38,3 +45,5 @@ changelog:
   - "Routes under /Invites serve the Invites tool and members' invites, and /invites serves the member page and the signup page"
   - "PUT /Groups/Order reorders the groups and POST /Groups/Templates/Apply writes the templates"
   - "Each tool lists its events in a static <Tool>Events class that Notifications finds by reflection"
+  - "Routes under /Ddns and /Proxy, and /Proxy/Visitors for the Dashboard map"
+  - "Events ddns.failed, ddns.paused, ddns.recovered, ddns.detection_failed, proxy.banned, proxy.certificate_expiring, proxy.certificate_failed, proxy.certificate_issued, proxy.start_failed, proxy.unreachable and proxy.visitors_hidden, listed in DdnsEvents and ProxyEvents"

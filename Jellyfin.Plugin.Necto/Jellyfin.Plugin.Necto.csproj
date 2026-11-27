@@ -30,6 +30,19 @@
     </PackageReference>
     <PackageReference Include="Siphonophore.Stolon" Version="12.4.8" />
     <PackageReference Include="Tmds.DBus.Protocol" Version="0.95.2" />
+    <!-- Proxy: the reverse proxy, Let's Encrypt, and the location database. -->
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
+    <PackageReference Include="Certes" Version="4.1.0" />
+    <PackageReference Include="MaxMind.Db" Version="5.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The proxy runs its own Kestrel host. ASP.NET Core comes from the shared framework Jellyfin loads. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Jellyfin.Plugin.Necto.Tests" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,6 +54,11 @@
   <!-- Jellyfin strings the pages use. Stolon builds them in with Localization/*.json, in every language Jellyfin has. -->
   <ItemGroup>
     <JellyfinString Include="Delete" />
+    <JellyfinString Include="HeaderApiKey" />
+    <JellyfinString Include="LabelPassword" />
+    <JellyfinString Include="LabelServerHost" />
+    <JellyfinString Include="LabelUser" />
+    <JellyfinString Include="LabelUsername" />
     <JellyfinString Include="DeleteName" />
     <JellyfinString Include="LabelName" />
     <JellyfinString Include="Save" />
@@ -74,11 +92,9 @@
     <JellyfinString Include="Disabled" />
     <JellyfinString Include="HeaderPageNotFound" />
     <JellyfinString Include="Images" />
-    <JellyfinString Include="LabelPassword" />
     <JellyfinString Include="LabelPath" />
     <JellyfinString Include="LabelSource" />
     <JellyfinString Include="LabelTitle" />
-    <JellyfinString Include="LabelUsername" />
     <JellyfinString Include="Other" />
 
     <!-- The group templates use Jellyfin's own words for its settings. -->
@@ -100,12 +116,9 @@
     <JellyfinString Include="LabelHomeScreenSectionValue" />
     <JellyfinString Include="LabelMaxParentalRating" />
     <JellyfinString Include="LabelPlayDefaultAudioTrack" />
-    <JellyfinString Include="Off" />
     <JellyfinString Include="LabelFailed" />
     <JellyfinString Include="ButtonRemove" />
-    <JellyfinString Include="Refresh" />
     <JellyfinString Include="Preview" />
-    <JellyfinString Include="LabelPassword" />
     <JellyfinString Include="LabelPreferredSubtitleLanguage" />
     <JellyfinString Include="LabelRemoteClientBitrateLimit" />
     <JellyfinString Include="LabelSubtitlePlaybackMode" />
@@ -117,7 +130,6 @@
     <JellyfinString Include="LabelUserMaxActiveSessions" />
     <JellyfinString Include="LiveTV" />
     <JellyfinString Include="Movies" />
-    <JellyfinString Include="None" />
     <JellyfinString Include="OptionAllowAudioPlaybackTranscoding" />
     <JellyfinString Include="OptionAllowBrowsingLiveTv" />
     <JellyfinString Include="OptionAllowContentDownload" />
@@ -162,7 +174,6 @@
     <JellyfinString Include="TabParentalControl" Case="sentence" />
     <!-- The plugin's own key keeps English Jellyfin also says, with another meaning. -->
     <JellyfinTextMatch Include="TitleNewGroup" />
-    <JellyfinTextMatch Include="WireGuardTabHost" />
   </ItemGroup>
 
   <!-- Jellyfin strings the WireGuard and Scripts tools use. -->
@@ -171,11 +182,9 @@
     <JellyfinString Include="AddToCollection" />
     <JellyfinString Include="Audio" />
     <JellyfinString Include="ButtonClose" />
-    <JellyfinString Include="ButtonRemove" />
     <JellyfinString Include="CommunityRating" />
     <JellyfinString Include="Connect" />
     <JellyfinString Include="Create" />
-    <JellyfinString Include="Disabled" />
     <JellyfinString Include="Download" />
     <JellyfinString Include="Edit" />
     <JellyfinString Include="Episode" />
@@ -192,23 +201,14 @@
     <JellyfinString Include="LabelCollection" />
     <JellyfinString Include="LabelContentType" />
     <JellyfinString Include="LabelDuration" />
-    <JellyfinString Include="LabelFailed" />
-    <JellyfinString Include="LabelFolder" />
     <JellyfinString Include="LabelMessageTitle" />
     <JellyfinString Include="LabelPlayMethod" />
     <JellyfinString Include="LabelPlaylist" />
-    <JellyfinString Include="LabelSource" />
-    <JellyfinString Include="LabelStatus" />
     <JellyfinString Include="Restart" />
-    <JellyfinString Include="LabelSystem" />
     <JellyfinString Include="LabelTag" />
-    <JellyfinString Include="LabelTitle" />
-    <JellyfinString Include="LabelTranscodes" />
-    <JellyfinString Include="LabelUser" />
     <JellyfinString Include="LabelValue" />
     <JellyfinString Include="LabelVideoCodec" />
     <JellyfinString Include="LabelYear" />
-    <JellyfinString Include="LiveTV" />
     <JellyfinString Include="MarkPlayed" />
     <JellyfinString Include="MarkUnplayed" />
     <JellyfinString Include="Monday" />
@@ -220,7 +220,6 @@
     <JellyfinString Include="NotificationOptionPluginInstalled" />
     <JellyfinString Include="NotificationOptionPluginUninstalled" />
     <JellyfinString Include="NotificationOptionUserLockedOut" />
-    <JellyfinString Include="Off" />
     <JellyfinString Include="ParentalRating" />
     <JellyfinString Include="Person" />
     <JellyfinString Include="Photo" />
@@ -239,7 +238,6 @@
     <JellyfinString Include="TabServer" />
     <JellyfinString Include="TasksLibraryCategory" />
     <JellyfinString Include="Thursday" />
-    <JellyfinString Include="TitlePlayback" />
     <JellyfinString Include="Trailer" />
     <JellyfinString Include="Tuesday" />
     <JellyfinString Include="ValueSeconds" />
@@ -247,6 +245,19 @@
     <JellyfinString Include="Wednesday" />
     <JellyfinTextMatch Include="StorageHeaderFormat" />
     <JellyfinTextMatch Include="StorageLabelSpace" />
+    <JellyfinString Include="Unknown" />
+    <JellyfinString Include="Auto" />
+    <JellyfinString Include="ButtonCancel" />
+    <JellyfinString Include="GuideProviderLogin" />
+    <JellyfinString Include="LabelCertificatePassword" />
+    <JellyfinString Include="Next" />
+    <JellyfinString Include="No" />
+    <JellyfinString Include="People" />
+    <JellyfinString Include="Upload" />
+    <JellyfinString Include="Yes" />
+    <!-- The plugin's own key keeps English Jellyfin also says, with another meaning. -->
+    <!-- A DNS record, not a TV recording. -->
+    <JellyfinTextMatch Include="DdnsHeaderRecord" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,97 @@
+using System;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Siphonophore.Stolon;
+using Microsoft.Extensions.Logging;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Services.Ddns;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Network;
+using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
+using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+
+namespace Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+
+/// <summary>
+/// DDNS.fm (port of ddclient's <c>nic_ddnsfm_update</c>). Hostname is the domain and Password holds the
+/// update key. IPv4 and IPv6 are pushed in separate requests.
+/// </summary>
+public sealed class DdnsFmProvider : DNSProviderBase
+{
+    private const string DefaultServer = "https://api.ddns.fm";
+
+    /// <summary>Initializes a new instance of the <see cref="DdnsFmProvider"/> class.</summary>
+    /// <param name="httpClientFactory">The HTTP client factory.</param>
+    /// <param name="logger">The logger.</param>
+    public DdnsFmProvider(IHttpClientFactory httpClientFactory, ILogger<DdnsFmProvider> logger)
+        : base(httpClientFactory, logger)
+    {
+    }
+
+    /// <inheritdoc />
+    public override DNSProviderKind Kind => DNSProviderKind.DdnsFm;
+
+    /// <inheritdoc />
+    public override string Label => "DDNS.fm";
+
+    /// <inheritdoc />
+    public override string Hint => TranslationKeys.DdnsProviderHintDdnsFm;
+
+    /// <inheritdoc />
+    public override ProviderFields Fields => new()
+    {
+        Hostname = TranslationKeys.ProxyLabelDomain,
+        Password = TranslationKeys.DdnsLabelKey,
+        Server = true,
+    };
+
+    /// <inheritdoc />
+    public override async Task<DNSUpdateResult> UpdateAsync(DNSRecord record, DetectedIP ip, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        ArgumentNullException.ThrowIfNull(ip);
+
+        if (string.IsNullOrWhiteSpace(record.Hostname) || string.IsNullOrWhiteSpace(record.Password))
+        {
+            return DNSUpdateResult.Fail("DDNS.fm requires a domain (hostname) and a key (password).");
+        }
+
+        var server = ServerBase(record, DefaultServer);
+        return await ApplyPerFamilyAsync(
+            record,
+            ip,
+            (type, address, ct) => PushAsync(server, record, address, ct),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<(bool Ok, string Message)> PushAsync(string server, DNSRecord record, string value, CancellationToken cancellationToken)
+    {
+        var url = server + "/update?key=" + Uri.EscapeDataString(record.Password)
+            + "&domain=" + Uri.EscapeDataString(record.Hostname)
+            + "&myip=" + Uri.EscapeDataString(value);
+        var result = await SendAsync(HttpMethod.Get, url, cancellationToken).ConfigureAwait(false);
+        if (!result.Ok)
+        {
+            return (false, "HTTP " + result.Status);
+        }
+
+        // The service answers with dyndns-style status tokens, so an HTTP 200 carrying an error body
+        // (bad key, unknown domain) must not be recorded as a successful push.
+        var status = FirstToken(result.Body);
+        if (string.Equals(status, "good", StringComparison.OrdinalIgnoreCase))
+        {
+            return (true, "set to " + value);
+        }
+
+        if (string.Equals(status, "nochg", StringComparison.OrdinalIgnoreCase))
+        {
+            return (true, "unchanged: already set to " + value);
+        }
+
+        return (false, "server said: " + FirstLine(result.Body));
+    }
+}

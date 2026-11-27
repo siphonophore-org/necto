@@ -1,0 +1,97 @@
+using System;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Configuration.Proxy;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Network;
+using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+
+namespace Jellyfin.Plugin.Necto.Services.Ddns;
+
+/// <summary>
+/// Runtime status for one record. Kept in a separate store rather than the saved configuration, so the
+/// config holds only authored data and is not rewritten on every update run.
+/// </summary>
+public sealed class RecordStatus
+{
+    /// <summary>Gets or sets the last IPv4 address pushed for this record.</summary>
+    public string LastIPv4 { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the last IPv6 address pushed for this record.</summary>
+    public string LastIPv6 { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the message from the most recent update attempt.</summary>
+    public string LastStatus { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the outcome label of the most recent run.</summary>
+    public string LastAction { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a value indicating whether the most recent attempt succeeded.</summary>
+    public bool LastSuccess { get; set; }
+
+    /// <summary>Gets or sets the UTC timestamp of the most recent update attempt.</summary>
+    public DateTime? LastCheckedUtc { get; set; }
+
+    /// <summary>Gets or sets the UTC timestamp of the most recent successful push.</summary>
+    public DateTime? LastUpdateUtc { get; set; }
+
+    /// <summary>Gets or sets the number of consecutive failed update attempts.</summary>
+    public int ConsecutiveFailures { get; set; }
+
+    /// <summary>Gets or sets the UTC time until which this record is paused by the backoff policy.</summary>
+    public DateTime? BackoffUntilUtc { get; set; }
+
+    /// <summary>Gets or sets the number of consecutive temporary failures (timeouts, server errors, rate limits).</summary>
+    public int TransientFailures { get; set; }
+
+    /// <summary>Gets or sets the IPv4 address the most recent failed attempt tried to push.</summary>
+    public string FailedIPv4 { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the IPv6 address the most recent failed attempt tried to push.</summary>
+    public string FailedIPv6 { get; set; } = string.Empty;
+
+    /// <summary>Copies this status onto a record's runtime fields.</summary>
+    /// <param name="record">The record to populate.</param>
+    public void ApplyTo(DNSRecord record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        record.LastIPv4 = LastIPv4;
+        record.LastIPv6 = LastIPv6;
+        record.LastStatus = LastStatus;
+        record.LastAction = LastAction;
+        record.LastSuccess = LastSuccess;
+        record.LastCheckedUtc = LastCheckedUtc;
+        record.LastUpdateUtc = LastUpdateUtc;
+        record.ConsecutiveFailures = ConsecutiveFailures;
+        record.BackoffUntilUtc = BackoffUntilUtc;
+        record.TransientFailures = TransientFailures;
+        record.FailedIPv4 = FailedIPv4 ?? string.Empty;
+        record.FailedIPv6 = FailedIPv6 ?? string.Empty;
+    }
+
+    /// <summary>Reads a record's current runtime fields into a status object.</summary>
+    /// <param name="record">The record to read.</param>
+    /// <returns>The status snapshot.</returns>
+    public static RecordStatus FromRecord(DNSRecord record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        return new RecordStatus
+        {
+            LastIPv4 = record.LastIPv4,
+            LastIPv6 = record.LastIPv6,
+            LastStatus = record.LastStatus,
+            LastAction = record.LastAction,
+            LastSuccess = record.LastSuccess,
+            LastCheckedUtc = record.LastCheckedUtc,
+            LastUpdateUtc = record.LastUpdateUtc,
+            ConsecutiveFailures = record.ConsecutiveFailures,
+            BackoffUntilUtc = record.BackoffUntilUtc,
+            TransientFailures = record.TransientFailures,
+            FailedIPv4 = record.FailedIPv4,
+            FailedIPv6 = record.FailedIPv6
+        };
+    }
+}

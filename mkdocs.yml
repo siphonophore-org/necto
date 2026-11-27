@@ -42,6 +42,7 @@ markdown_extensions:
 
 nav:
   - Overview: index.md
+  - Getting Started: GettingStarted.md
   - Tools:
       - Invites: Invites.md
       - Groups: Groups.md
@@ -50,5 +51,7 @@ nav:
       - Custom Pages: CustomPages.md
       - Storage: Storage.md
       - Notifications: Notifications.md
+      - Proxy: Proxy.md
+      - DDNS: DDNS.md
   - Development:
       - Plan: Plan.md

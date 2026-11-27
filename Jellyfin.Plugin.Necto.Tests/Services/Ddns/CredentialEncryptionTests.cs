@@ -1,0 +1,111 @@
+using System;
+using System.IO;
+using Siphonophore.Stolon;
+using Microsoft.Extensions.Logging.Abstractions;
+using Xunit;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Configuration.Proxy;
+using Jellyfin.Plugin.Necto.Services.Ddns;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Network;
+using Jellyfin.Plugin.Necto.Services.Notifications;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+
+namespace Jellyfin.Plugin.Necto.Tests.Services.Ddns;
+
+/// <summary>
+/// Tests for the shared credential encryption pass that guards every configuration write path,
+/// including the OnConfigurationSaving hook on the generic plugin configuration endpoint.
+/// </summary>
+public class CredentialEncryptionTests
+{
+    private static string TempKeyDir() =>
+        Path.Join(Path.GetTempPath(), "remoteaccess-keys-" + Guid.NewGuid().ToString("N"));
+
+    private static SecretProtector Protector(string dir) => new(
+        "Jellyfin.Plugin.DynamicDns.Secrets.v1",
+        NullLogger.Instance,
+        StableSecretProtection.Build(dir, "Jellyfin.Plugin.Necto", NullLogger.Instance));
+
+    [Fact]
+    public void ProtectAll_EncryptsPlaintextCredentials()
+    {
+        var dir = TempKeyDir();
+        try
+        {
+            var secrets = Protector(dir);
+            var record = new DNSRecord { Login = "user", Password = "hunter2" };
+
+            var changed = CredentialEncryption.ProtectAll(new[] { record }, secrets);
+
+            Assert.True(changed);
+            Assert.True(SecretProtector.IsProtected(record.Login));
+            Assert.True(SecretProtector.IsProtected(record.Password));
+            Assert.Equal("user", secrets.Unprotect(record.Login));
+            Assert.Equal("hunter2", secrets.Unprotect(record.Password));
+        }
+        finally
+        {
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+    }
+
+    [Fact]
+    public void ProtectAll_LeavesEncryptedAndEmptyValuesUntouched()
+    {
+        var dir = TempKeyDir();
+        try
+        {
+            var secrets = Protector(dir);
+            var record = new DNSRecord { Login = secrets.Protect("user"), Password = string.Empty };
+            var storedLogin = record.Login;
+
+            var changed = CredentialEncryption.ProtectAll(new[] { record }, secrets);
+
+            Assert.False(changed);
+            Assert.Equal(storedLogin, record.Login);
+            Assert.Equal(string.Empty, record.Password);
+        }
+        finally
+        {
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+    }
+
+    [Fact]
+    public void ProtectAll_WithoutDataProtection_ReportsNoChange()
+    {
+        // A degraded protector passes values through, so the pass must not claim a change happened.
+        var secrets = new SecretProtector("Jellyfin.Plugin.DynamicDns.Secrets.v1", NullLogger.Instance);
+        var record = new DNSRecord { Login = "user", Password = "hunter2" };
+
+        var changed = CredentialEncryption.ProtectAll(new[] { record }, secrets);
+
+        Assert.False(changed);
+        Assert.Equal("user", record.Login);
+        Assert.Equal("hunter2", record.Password);
+    }
+
+    [Fact]
+    public void Clone_CopiesFieldsToADistinctInstance()
+    {
+        var record = new DNSRecord { Id = "abc", Hostname = "home.example.com", Login = "user" };
+
+        var copy = record.Clone();
+        copy.Login = "other";
+
+        Assert.NotSame(record, copy);
+        Assert.Equal("abc", copy.Id);
+        Assert.Equal("home.example.com", copy.Hostname);
+        Assert.Equal("user", record.Login);
+    }
+}

@@ -33,6 +33,8 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         Services.Storage.StorageServices.Register(serviceCollection);
         Services.CustomPages.CustomPagesServices.Register(serviceCollection);
         serviceCollection.AddBaseNotifier();
+        Services.Ddns.DdnsServices.Register(serviceCollection);
+        Services.Proxy.ProxyServices.Register(serviceCollection);
     }
 
     /// <summary>

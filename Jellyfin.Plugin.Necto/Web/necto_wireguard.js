@@ -152,11 +152,11 @@ export default function (view) {
         var counts = countCards(w, ends);
         var host = ends.filter(function (e) { return e.Kind === 'Host'; })[0];
         var cards = [];
-        if (w.HostEnabled) cards.push({ count: tunnelStateLabel(t, host ? host.State : 'Stopped'), label: t.tr('WireGuardTabHost'), color: host && host.State === 'Running' ? 'green' : host && host.State === 'Failed' ? 'red' : 'gray' });
+        if (w.HostEnabled) cards.push({ count: tunnelStateLabel(t, host ? host.State : 'Stopped'), label: t.tr('LabelServerHost'), color: host && host.State === 'Running' ? 'green' : host && host.State === 'Failed' ? 'red' : 'gray' });
         if (w.ConnectEnabled || (w.Connections || []).length) cards.push({ count: t.tr(w.ConnectEnabled ? 'InvitesStateActive' : 'WireGuardStatusInactive'), label: t.tr('WireGuardLabelConnectEnabled'), color: w.ConnectEnabled ? 'green' : 'gray' });
         cards.push({ count: counts.peers, label: t.tr('WireGuardHeaderPeers') });
         cards.push({ count: counts.connections, label: t.tr('WireGuardHeaderConnections') });
-        cards.push({ count: counts.connected, label: t.tr('WireGuardCardConnected'), color: counts.connected ? 'green' : 'gray' });
+        cards.push({ count: counts.connected, label: t.tr('ProxyConnected'), color: counts.connected ? 'green' : 'gray' });
         cards.push({ count: counts.over, label: t.tr('WireGuardTagOverLimit'), color: counts.over ? 'red' : 'gray' });
         if (counts.refused) cards.push({ count: counts.refused, label: t.tr('WireGuardCardLeftOut'), color: 'orange' });
         shared.renderCards('wireguardCards', cards);
@@ -186,9 +186,9 @@ export default function (view) {
             var hostState = host ? host.State : 'Stopped';
             self.push({
                 id: SELF_ID,
-                title: serverName || t.tr('WireGuardTabHost'),
+                title: serverName || t.tr('LabelServerHost'),
                 secondary: w.PublicEndpoint || '-',
-                tags: [stateTag(t, hostState === 'Running' ? 'Connected' : hostState === 'Failed' ? 'Failed' : 'Offline'), { label: t.tr('WireGuardTabHost'), icon: 'dns' }]
+                tags: [stateTag(t, hostState === 'Running' ? 'Connected' : hostState === 'Failed' ? 'Failed' : 'Offline'), { label: t.tr('LabelServerHost'), icon: 'dns' }]
             });
         }
         connectionList.setItems(self.concat((w.Connections || []).map(function (c) {
@@ -536,7 +536,7 @@ export default function (view) {
         var peerKey = field('WireGuardLabelRemotePublicKey', 'text', c.PeerPublicKey, null, '');
         var psk = field('WireGuardLabelPresharedKey', 'password', '', null, c.PresharedKey ? t.tr('WireGuardPlaceholderKept') : t.tr('PagesPlaceholderOptional'));
         var address = field('WireGuardLabelOurAddress', 'text', c.Address, null, '10.0.0.5');
-        var privateKey = field('WireGuardLabelPrivateKey', 'password', '', 'WireGuardPrivateKeyHelp', c.PrivateKey ? t.tr('WireGuardPlaceholderKept') : t.tr('WireGuardPlaceholderMadeForYou'));
+        var privateKey = field('ProxyLabelUploadKey', 'password', '', 'WireGuardPrivateKeyHelp', c.PrivateKey ? t.tr('WireGuardPlaceholderKept') : t.tr('WireGuardPlaceholderMadeForYou'));
         var forwards = textArea('WireGuardLabelForwards', 'WireGuardForwardsHelp', (c.Forwards || []).map(function (f) { return f.LocalPort + ' ' + f.RemoteHost + ':' + f.RemotePort; }).join('\n'), '18096 10.0.0.1:8096', 3);
         var enabled = nectoModule.createCheckbox({ label: t.tr('ScriptsLabelEnabled'), checked: c.Enabled !== false });
         var keepalive = field('WireGuardLabelKeepalive', 'number', c.Keepalive, null, '25');

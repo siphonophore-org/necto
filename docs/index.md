@@ -9,6 +9,6 @@ Necto is a Jellyfin plugin with tools to keep your server reachable, secure and 
 
 ## The Page
 
-Necto is one page, **Dashboard > Plugins > Necto**, with a sidebar of tools. The sidebar lists **Dashboard**, **Requests**, **Issues**, **Invites**, **Groups**, **Proxy**, **DDNS**, **WireGuard**, **Scripts**, **Custom pages**, **Storage**, **Notifications**, **Settings**, and **Troubleshooting**. [Invites](Invites.md), [Groups](Groups.md), [WireGuard](WireGuard.md), [Scripts](Scripts.md), [Custom pages](CustomPages.md), [Storage](Storage.md), [Notifications](Notifications.md), **Settings**, and **Troubleshooting** are built, and every other tool shows that it is coming.
+Necto is one page, **Dashboard > Plugins > Necto**, with a sidebar of tools. The sidebar lists **Dashboard**, **Requests**, **Issues**, **Invites**, **Groups**, **Proxy**, **DDNS**, **WireGuard**, **Scripts**, **Custom pages**, **Storage**, **Notifications**, **Settings**, and **Troubleshooting**. [Invites](Invites.md), [Groups](Groups.md), [Proxy](Proxy.md), [DDNS](DDNS.md), [WireGuard](WireGuard.md), [Scripts](Scripts.md), [Custom pages](CustomPages.md), [Storage](Storage.md), [Notifications](Notifications.md), **Settings**, and **Troubleshooting** are built, and every other tool shows that it is coming.
 
 The [Plan](Plan.md) lists what each tool holds and the order the tools are built in.

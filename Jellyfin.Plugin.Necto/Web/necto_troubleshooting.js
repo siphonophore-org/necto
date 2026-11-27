@@ -10,6 +10,8 @@ import './configurationpage?name=necto_storage_sections.js';
 import './configurationpage?name=necto_pages_sections.js';
 import './configurationpage?name=necto_notifications_sections.js';
 import './configurationpage?name=necto_invites_sections.js';
+import './configurationpage?name=necto_ddns_sections.js';
+import './configurationpage?name=necto_proxy_sections.js';
 
 export default function (view) {
     'use strict';

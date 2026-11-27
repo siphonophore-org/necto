@@ -1,0 +1,193 @@
+using System;
+using System.Globalization;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Siphonophore.Stolon;
+using Microsoft.Extensions.Logging;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Configuration.Proxy;
+using Jellyfin.Plugin.Necto.Services.Ddns;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Network;
+using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
+using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+
+namespace Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+
+/// <summary>
+/// Dinahosting (port of ddclient's <c>nic_dinahosting_update</c>). Basic-auth GET against the dinahosting
+/// API using <see cref="DNSRecord.Login"/>/<see cref="DNSRecord.Password"/>. <see cref="DNSRecord.Zone"/>,
+/// when set, is the domain and the rest of the hostname is the host label; otherwise the hostname is
+/// split on its first dot (with a two-label hostname treated as the apex domain). The
+/// <c>Domain_Zone_UpdateType</c> command sets the A or AAAA record. <see cref="DNSRecord.Server"/>
+/// overrides the API host.
+/// </summary>
+public sealed class DinahostingProvider : DNSProviderBase
+{
+    private const string DefaultServer = "dinahosting.com";
+    private const string Script = "/special/api.php";
+
+    /// <summary>Initializes a new instance of the <see cref="DinahostingProvider"/> class.</summary>
+    /// <param name="httpClientFactory">The HTTP client factory.</param>
+    /// <param name="logger">The logger.</param>
+    public DinahostingProvider(IHttpClientFactory httpClientFactory, ILogger<DinahostingProvider> logger)
+        : base(httpClientFactory, logger)
+    {
+    }
+
+    /// <inheritdoc />
+    public override DNSProviderKind Kind => DNSProviderKind.Dinahosting;
+
+    /// <inheritdoc />
+    public override string Label => "Dinahosting";
+
+    /// <inheritdoc />
+    public override string Hint => TranslationKeys.DdnsProviderHintDinahosting;
+
+    /// <inheritdoc />
+    public override ProviderFields Fields => new()
+    {
+        Hostname = TranslationKeys.DdnsLabelHostAndDomain,
+        Login = TranslationKeys.LabelUsername,
+        Password = TranslationKeys.LabelPassword,
+        Zone = TranslationKeys.ProxyLabelDomain,
+        Server = true,
+    };
+
+    /// <inheritdoc />
+    public override async Task<DNSUpdateResult> UpdateAsync(DNSRecord record, DetectedIP ip, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        ArgumentNullException.ThrowIfNull(ip);
+
+        if (string.IsNullOrWhiteSpace(record.Login) || string.IsNullOrWhiteSpace(record.Password))
+        {
+            return DNSUpdateResult.Fail("A login and password are required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(record.Hostname))
+        {
+            return DNSUpdateResult.Fail("A hostname is required.");
+        }
+
+        string hostname;
+        string domain;
+        if (!string.IsNullOrWhiteSpace(record.Zone))
+        {
+            domain = record.Zone.Trim();
+            if (string.Equals(record.Hostname, domain, StringComparison.OrdinalIgnoreCase))
+            {
+                hostname = string.Empty;
+            }
+            else if (record.Hostname.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase))
+            {
+                hostname = record.Hostname.Substring(0, record.Hostname.Length - domain.Length - 1);
+            }
+            else
+            {
+                return DNSUpdateResult.Fail("hostname does not end with the zone value: " + domain);
+            }
+        }
+        else
+        {
+            var dot = record.Hostname.IndexOf('.', StringComparison.Ordinal);
+            if (dot <= 0 || dot >= record.Hostname.Length - 1)
+            {
+                return DNSUpdateResult.Fail("Hostname must be fully qualified (host.domain.tld).");
+            }
+
+            // A two-label hostname is the apex domain itself, not a host inside the TLD. Deeper
+            // hostnames split on the first dot; set the zone explicitly for multi-label subdomains or
+            // multi-label TLDs like .co.uk.
+            if (record.Hostname.IndexOf('.', dot + 1) < 0)
+            {
+                hostname = string.Empty;
+                domain = record.Hostname;
+            }
+            else
+            {
+                hostname = record.Hostname.Substring(0, dot);
+                domain = record.Hostname.Substring(dot + 1);
+            }
+        }
+
+        var server = ServerBase(record, DefaultServer);
+
+        return await ApplyPerFamilyAsync(
+            record,
+            ip,
+            (type, address, ct) => PushAsync(record, server, hostname, domain, type, address, ct),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<(bool Ok, string Message)> PushAsync(
+        DNSRecord record,
+        string server,
+        string hostname,
+        string domain,
+        string type,
+        string address,
+        CancellationToken cancellationToken)
+    {
+        var url = server + Script
+            + "?hostname=" + Uri.EscapeDataString(hostname)
+            + "&domain=" + Uri.EscapeDataString(domain)
+            + "&command=Domain_Zone_UpdateType" + type
+            + "&ip=" + Uri.EscapeDataString(address);
+
+        var result = await SendAsync(HttpMethod.Get, url, cancellationToken, login: record.Login, password: record.Password).ConfigureAwait(false);
+        if (result.Status == 0)
+        {
+            return (false, result.Body);
+        }
+
+        if (!result.Ok)
+        {
+            return (false, "HTTP " + result.Status.ToString(CultureInfo.InvariantCulture) + ".");
+        }
+
+        if (result.Body.Contains("Success", StringComparison.OrdinalIgnoreCase))
+        {
+            return (true, address + " set");
+        }
+
+        var code = ExtractField(result.Body, "responseCode = ", false) ?? "<undefined>";
+        var message = ExtractField(result.Body, "errors_0_message = '", true) ?? "<undefined>";
+        return (false, "error " + code + ": " + message);
+    }
+
+    private static string? ExtractField(string body, string prefix, bool quoted)
+    {
+        var idx = body.IndexOf(prefix, StringComparison.Ordinal);
+        if (idx < 0)
+        {
+            return null;
+        }
+
+        var start = idx + prefix.Length;
+        var end = quoted ? body.IndexOf('\'', start) : FindLineEnd(body, start);
+        if (end < 0)
+        {
+            end = body.Length;
+        }
+
+        return body.Substring(start, end - start);
+    }
+
+    private static int FindLineEnd(string body, int start)
+    {
+        for (var i = start; i < body.Length; i++)
+        {
+            if (body[i] == '\r' || body[i] == '\n')
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+}

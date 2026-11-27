@@ -117,7 +117,7 @@ public sealed class TunnelActivity
     {
         var language = StolonTranslations.ServerLanguage(_config);
         var name = tunnelKey == SidecarConfigBuilder.HostKey
-            ? StolonTranslations.Get(TranslationKeys.WireGuardTabHost, language)
+            ? StolonTranslations.Get(TranslationKeys.LabelServerHost, language)
             : ConnectionName(tunnelKey);
         Write(
             WireGuardEvents.TunnelFailed,

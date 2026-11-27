@@ -1,0 +1,102 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Net.Sockets;
+using Jellyfin.Plugin.Necto.Configuration.Ddns;
+using Jellyfin.Plugin.Necto.Configuration.Proxy;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
+using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
+using Jellyfin.Plugin.Necto.Services.Proxy;
+using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
+using Jellyfin.Plugin.Necto.Services.Proxy.Network;
+using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
+using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
+using Jellyfin.Plugin.Necto.Api.Ddns;
+
+namespace Jellyfin.Plugin.Necto.Services.Ddns;
+
+/// <summary>
+/// The addresses a hostname currently resolves to in DNS, or a failed lookup. The update cycle uses this
+/// to decide whether a record already serves the detected public IP, so a record is left alone only when
+/// live DNS already agrees rather than when a locally stored value does.
+/// </summary>
+public sealed class DNSResolution
+{
+    private readonly IReadOnlyList<IPAddress> _addresses;
+
+    private DNSResolution(bool succeeded, IReadOnlyList<IPAddress> addresses, bool checkedLive = true)
+    {
+        Succeeded = succeeded;
+        _addresses = addresses;
+        Checked = checkedLive;
+    }
+
+    /// <summary>Gets a value indicating whether the lookup completed and returned an answer.</summary>
+    public bool Succeeded { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether live DNS was consulted at all. A record with no name to resolve (a
+    /// record id, several DuckDNS labels, a proxied record) is never looked up, so it is compared against
+    /// the last address pushed instead.
+    /// </summary>
+    public bool Checked { get; }
+
+    /// <summary>Gets a value indicating whether the lookup returned at least one address.</summary>
+    public bool Answered => Succeeded && _addresses.Count > 0;
+
+    /// <summary>Gets a failed or unresolved lookup, which serves no address and so forces an update.</summary>
+    public static DNSResolution Failed { get; } = new(false, new List<IPAddress>());
+
+    /// <summary>Gets the resolution for a record whose name is not looked up by design.</summary>
+    public static DNSResolution NotChecked { get; } = new(false, new List<IPAddress>(), checkedLive: false);
+
+    /// <summary>
+    /// Builds a successful resolution from the addresses a hostname resolved to.
+    /// </summary>
+    /// <param name="addresses">The resolved addresses.</param>
+    /// <returns>A resolution that serves those addresses.</returns>
+    public static DNSResolution Resolved(IReadOnlyList<IPAddress> addresses) => new(true, addresses);
+
+    /// <summary>
+    /// Returns whether DNS currently serves the given address for the hostname.
+    /// </summary>
+    /// <param name="ipText">The address to look for.</param>
+    /// <returns>True when the lookup succeeded and the address is among the resolved set.</returns>
+    public bool Serves(string? ipText)
+    {
+        if (!Succeeded || string.IsNullOrEmpty(ipText) || !IPAddress.TryParse(ipText, out var target))
+        {
+            return false;
+        }
+
+        return _addresses.Any(address => address.Equals(target));
+    }
+
+    /// <summary>
+    /// Returns whether DNS serves any public address of the given family. When it does not, a successful
+    /// lookup that returned only private addresses is a split horizon resolver and cannot be trusted to
+    /// reflect the public record, so the caller should compare against the last pushed address instead.
+    /// </summary>
+    /// <param name="family">The address family to check.</param>
+    /// <returns>True when at least one resolved address of that family is public.</returns>
+    public bool ServesPublic(AddressFamily family)
+    {
+        if (!Succeeded)
+        {
+            return false;
+        }
+
+        return _addresses.Any(address => address.AddressFamily == family && IPAddressClassifier.IsPublic(address));
+    }
+
+    /// <summary>Returns whether the lookup returned any address of the given family, public or private.</summary>
+    /// <param name="family">The address family to check.</param>
+    /// <returns>True when at least one resolved address has that family.</returns>
+    public bool HasFamily(AddressFamily family)
+        => Succeeded && _addresses.Any(address => address.AddressFamily == family);
+
+    /// <summary>Returns whether the lookup returned any public address of any family.</summary>
+    /// <returns>True when at least one resolved address is public.</returns>
+    public bool ServesAnyPublic()
+        => Succeeded && _addresses.Any(IPAddressClassifier.IsPublic);
+}

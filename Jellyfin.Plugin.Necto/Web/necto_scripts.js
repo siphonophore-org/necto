@@ -939,7 +939,7 @@ export default function (view) {
             case 'SendMessage':
                 return select(op, 'Target', t.tr('ScriptsLabelSendTo'), messageTargets()) +
                     input(op, 'Title', t.tr('LabelTitle')) +
-                    input(op, 'Text', t.tr('ScriptsLabelMessage'), { textarea: true, rows: 2 }) +
+                    input(op, 'Text', t.tr('DdnsLabelMessage'), { textarea: true, rows: 2 }) +
                     input(op, 'DisplaySeconds', t.tr('ScriptsLabelShowFor'), { number: true, help: t.tr('ScriptsHelpShowFor') });
             case 'StopPlayback':
                 return input(op, 'Text', t.tr('ScriptsLabelStopMessage'), { textarea: true, rows: 2, help: t.tr('ScriptsHelpOptional') }) +
@@ -964,7 +964,7 @@ export default function (view) {
                 return checkbox(op, 'FullRefresh', t.tr('ScriptsLabelFullRefresh'), t.tr('ScriptsHelpFullRefresh')) +
                     checkbox(op, 'ReplaceAll', t.tr('ScriptsLabelReplaceAll'));
             case 'SetUserDisabled':
-                return select(op, 'Disable', t.tr('ScriptsLabelAction'), [{ value: 'true', label: t.tr('ScriptsOptionDisableTheUser') }, { value: 'false', label: t.tr('ScriptsOptionEnableUser') }], { bool: true, help: t.tr('ScriptsHelpSetUserDisabled') });
+                return select(op, 'Disable', t.tr('ProxyColumnAction'), [{ value: 'true', label: t.tr('ScriptsOptionDisableTheUser') }, { value: 'false', label: t.tr('ScriptsOptionEnableUser') }], { bool: true, help: t.tr('ScriptsHelpSetUserDisabled') });
             case 'SignOutUser':
                 return note(t.tr('ScriptsHelpSignOutUser'));
             case 'ScanLibraries':
