@@ -8,6 +8,8 @@ The page opens with notices that need a look, such as a port another program hol
 
 The proxy is off until **Settings > Proxy > Enable proxy** is on. While it is off the page says so.
 
+The page reads the proxy's status and routes again every 10 seconds, and the visitors every 30 seconds, so a certificate being issued, Jellyfin restarting, and new visitors or bans show without a reload.
+
 ## Routes
 
 Each row shows the route's host name, where it forwards, and its certificate, such as **HTTPS ready**, **Expires soon**, or **Certificate failed**, with **Local only** and **Off** where they apply. Select a row to open the route in a sidecar. **Add route** starts from a template: **Jellyfin**, **Jellyfin LAN**, or **Blank**.
@@ -33,7 +35,7 @@ Each route has its own certificate, and a handshake is served the one whose name
 * **Self-signed** issues a certificate from Necto's own root. **Download root** saves the root, to install once on each device. The root vouches only for the self-signed routes' names and private addresses.
 * **No certificate** serves the route over HTTP only.
 
-Nothing is asked of Let's Encrypt until **Settings > Proxy > Accept the Let's Encrypt terms** is on. **Request certificate** orders one now, past the usual timing, and still waits out Let's Encrypt's rate limit. After a failure a route backs off before it asks again, and each route keeps its own record of attempts. The sidecar shows what the certificate covers, when it expires, who issued it, and the last attempt's error.
+Nothing is asked of Let's Encrypt until **Settings > Proxy > Accept the Let's Encrypt terms** is on. **Request certificate** orders one now, past the usual timing, and still waits out Let's Encrypt's rate limit. It asks first, and is off until the proxy runs with the terms accepted. After a failure a route backs off before it asks again, and each route keeps its own record of attempts. The sidecar shows what the certificate covers, when it expires, who issued it, and the last attempt's error. A self-signed route also shows when the root expires and its SHA-256 fingerprint.
 
 **Test route** sends one request through the running proxy for the route's name and says whether its service answered.
 
@@ -41,7 +43,7 @@ Nothing is asked of Let's Encrypt until **Settings > Proxy > Accept the Let's En
 
 The **Jellyfin** section sets Jellyfin to trust the proxy, so Jellyfin sees each visitor's real address and its own remote access rules and bitrate limits apply. Internet visitors cannot reach a Jellyfin route until it does. Routes to other services do not wait for it.
 
-**Trust the proxy** first starts a test copy of the proxy and checks it reaches this Jellyfin, then writes Jellyfin's network settings and restarts Jellyfin once. **Undo** puts them back as they were, and keeps anything an administrator changed since. Jellyfin keeps its own ports throughout, so a proxy that fails to start never locks anyone out. Uninstalling Necto also puts them back.
+**Trust the proxy** asks first. It then starts a test copy of the proxy and checks it reaches this Jellyfin, writes Jellyfin's network settings, and restarts Jellyfin once. Forward only ports 80 and 443 to this server, since anyone who reaches Jellyfin's own ports gets past the proxy. **Undo** asks first, then puts them back as they were, and keeps anything an administrator changed since. Jellyfin keeps its own ports throughout, so a proxy that fails to start never locks anyone out. Uninstalling Necto also puts them back.
 
 ## Protection
 
@@ -56,7 +58,11 @@ Every response drops the `Server`, `X-Powered-By`, and timing headers, and gets 
 
 ## Visitors
 
-The **Visitors** section shows the banned addresses with **Unban**, what each address did with **Block**, **Unblock**, or **Unblock** for its country, and the totals by country. Your network is never blocked. With **Record visitors** off, nothing is recorded. Locations are looked up on this server with DB-IP's free database, which the location task keeps current.
+The **Visitors** section shows the banned addresses with when each ban began and ends and **Unban**, what each address did with **Block**, **Unblock**, or **Unblock** for its country, and the totals by country with the last visit from each. With **Locations** set to **Country and city**, the activity table also shows each visitor's city.
+
+**Block** and unblocking a country ask first, since a country rule covers many people. Unblocking a country lets its addresses through, and addresses blocked one by one stay blocked. Your network and trusted networks are never blocked, so their **Block** is off. An address blocked by a range in the block list has its **Unblock** off, since the range is changed in **Settings**. Hover a button that is off to see why.
+
+With **Record visitors** off, nothing is recorded. Locations are looked up on this server with DB-IP's free database, which the location task keeps current. The section says when lookups are off.
 
 The [Dashboard](Dashboard.md) map shows the same totals by country, through `GET /Dashboard/Map`, and its share card shows the proxy's public address from `GET /Proxy/PublicAddress`.
 
@@ -68,18 +74,21 @@ The [Dashboard](Dashboard.md) map shows the same totals by country, through `GET
 * **Accept the Let's Encrypt terms** lets Necto ask Let's Encrypt for certificates.
 * **Record visitors**, **Keep history (days)**, and **Locations** set the visitor history.
 * **Listener**: **HTTP port** (80), **HTTPS port** (443), **LAN address**, and **HTTP/2**.
-* **Jellyfin side**: **Only through the proxy**, which binds Jellyfin to this machine so every client goes through the proxy, and **Trusted networks**.
+* **Jellyfin side**: **Only through the proxy**, which binds Jellyfin to this machine so every client goes through the proxy, and **Trusted networks**. Turning on **Only through the proxy** asks before it saves, since apps, casting, and DLNA that use the server's own address stop working.
 * **Security headers**: **HSTS**, **HSTS age (days)**, and **Same origin frames only**.
 * **Bans and block list**, **Locations**, **Rate limits**, and **Timeouts** as described above.
 
+Under **Locations**, a note says what the picked country rule does and, for **This server's country**, where this server is. It warns while the location database is missing, when country rules either let everyone through or, with **Refuse without the database**, refuse every internet connection. A line under it counts who the country rules refused since Jellyfin started, by country. **Countries** hides while the rule is **Off**. A note under the **Locations** detail says what each choice costs, and **Country and city** downloads a database of about 130 MB.
+
 ## Troubleshooting
 
-**Troubleshooting > Proxy** shows the proxy's state, the addresses it listens on, the Jellyfin it forwards to, the LAN address, the location database, the server's country, and which defaults the server's memory picks.
+**Troubleshooting > Proxy** shows the proxy's state, the addresses it listens on, the Jellyfin it forwards to, the LAN address, the location database, the server's country, and which defaults the server's memory picks. With a public name, it also shows the name, the addresses it points to, and this server's public address.
 
-* **Test from outside** asks a few places on the internet to connect to the first internet route's HTTPS port. Only the name and port are sent.
+* **Test from outside** sends the first internet route's name to [check-host.net](https://check-host.net), which tries to connect to its HTTPS port from a few countries. Only the name and port are sent.
 * **Check from the internet**, **Renew certificates**, and **Update the location database** run their tasks now.
 * **Restart the proxy** stops it and starts it again, such as after a port was freed.
-* **Undo trusting the proxy**, **Reset to defaults**, and **Clear visitor history** ask first.
+* **Reset to defaults** puts every listener and protection value back to its default. It lists the settings that change and asks first. The routes, **Trusted networks**, the block list, and the country rule with its countries stay.
+* **Undo trusting the proxy** and **Clear visitor history** ask first.
 
 To turn the proxy off without the dashboard, create an empty file named `DISABLE` in the proxy's folder, `plugins/configurations/Jellyfin.Plugin.Necto.Proxy` in Jellyfin's data folder, and restart Jellyfin. The section shows the full path.
 
