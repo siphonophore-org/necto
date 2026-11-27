@@ -2,7 +2,7 @@
 
 Open a record on the **DDNS** page, or select **Add record**, set **Provider** to **DynDNS v1**, then fill in:
 
-- **Hostname**: the host to update.
+- **Host name**: the host to update.
 - **Username**: your account username at the DynDNS v1 compatible service.
 - **Password**: your account password.
 - **Server override**: the update host. Left blank, members.dyndns.org is used. Set it to your service's update host.

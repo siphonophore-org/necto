@@ -58,7 +58,7 @@ public sealed class NoIpProvider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.DdnsLabelHostname,
+        Hostname = TranslationKeys.LabelHostName,
         Login = TranslationKeys.LabelUsername,
         Password = TranslationKeys.DdnsLabelPasswordOrDdnsKey,
         Server = true,

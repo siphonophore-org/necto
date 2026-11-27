@@ -124,7 +124,7 @@ Several records, each with its own provider, credentials, name, and how often it
 
 * The update task runs every 5 minutes and checks only the records whose **Update every (minutes)** has passed, 15 by default and 5 at the shortest. **Update now** checks every record. **Review**
 * A record that follows the proxy pushes each enabled internet route's exact name under its zone, or every one when it names no zone. Wildcards and local only routes are left out, since neither can point at the public address. **Review**
-* Only a provider whose hostname field holds a name can follow the proxy. ClouDNS, Directnic, and INWX have no hostname field, and DNS Made Easy and Sitelutions take a record ID, so the sidecar hides the toggle for them and `/Ddns` refuses it. **Review**
+* Only a provider whose host name field holds a name can follow the proxy. ClouDNS, Directnic, and INWX have no host name field, and DNS Made Easy and Sitelutions take a record ID, so the sidecar hides the toggle for them and `/Ddns` refuses it. **Review**
 * The provider setup guides live on the docs site under `providers/`, and the record sidecar links each from **Provider**. **Review**
 * DDNS carries no group permission, since only administrators use it. Groups choose who receives its events. **Review**
 * Records and their credentials change only through the `/Ddns` routes, for the same reason as the proxy's routes. **Review**

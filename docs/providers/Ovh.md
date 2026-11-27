@@ -2,7 +2,7 @@
 
 Open a record on the **DDNS** page, or select **Add record**, set **Provider** to **OVH**, then fill in:
 
-- **Hostname**: the record to update.
+- **Host name**: the record to update.
 - **Username**: your OVH DynHost username. Create a DynHost user in the OVH control panel.
 - **Password**: the DynHost password.
 - **Server override**: leave blank to use OVH's own server.

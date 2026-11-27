@@ -67,7 +67,7 @@ test('the route editor reads an upstream only for another service and shows what
     field('Target').dispatchEvent(new globalThis.Event('change'));
     assert.equal(editor.getValue().Upstream, '');
     field('Host').value = '';
-    assert.equal(editor.validate(), 'ProxyErrorRouteNeedsHost');
+    assert.equal(editor.validate(), 'ErrorEnterHostName');
 });
 
 test('statusCards and notices sum how the proxy stands', async function () {

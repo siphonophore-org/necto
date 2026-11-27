@@ -60,7 +60,7 @@ public sealed class ZoneEdit1Provider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.DdnsLabelHostname,
+        Hostname = TranslationKeys.LabelHostName,
         Login = TranslationKeys.LabelUsername,
         Password = TranslationKeys.DdnsLabelDdnsToken,
         Zone = TranslationKeys.DdnsLabelZone,

@@ -123,7 +123,7 @@ public static class ProxySettingsValidator
         var errors = new List<string>();
         if (route.Host.Length == 0)
         {
-            errors.Add(Text(language, TranslationKeys.ProxyErrorRouteNeedsHost));
+            errors.Add(Text(language, TranslationKeys.ErrorEnterHostName));
         }
         else if (HostnameMatcher.Normalize(route.Host).Length == 0)
         {

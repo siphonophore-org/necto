@@ -45,7 +45,7 @@ public sealed class DynadotProvider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.DdnsLabelHostname,
+        Hostname = TranslationKeys.LabelHostName,
         Password = TranslationKeys.DdnsLabelDdnsPassword,
         Zone = TranslationKeys.LabelDomain,
         Server = true,

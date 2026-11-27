@@ -2,7 +2,7 @@
 
 Open a record on the **DDNS** page, or select **Add record**, set **Provider** to **Mythic Beasts**, then fill in:
 
-- **Hostname**: the record name. The service sets it to the address the request comes from.
+- **Host name**: the record name. The service sets it to the address the request comes from.
 - **Username**: your Mythic Beasts dynamic DNS API key.
 - **Password**: the API key's secret. Create a Dynamic DNS credential in the Mythic Beasts panel.
 - **Server override**: leave blank to use Mythic Beasts's own server.

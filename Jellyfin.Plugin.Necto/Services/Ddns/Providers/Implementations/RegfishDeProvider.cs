@@ -52,7 +52,7 @@ public sealed class RegfishDeProvider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.DdnsLabelHostname,
+        Hostname = TranslationKeys.LabelHostName,
         Password = TranslationKeys.DdnsLabelUpdateToken,
         Server = true,
     };

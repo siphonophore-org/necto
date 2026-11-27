@@ -2,7 +2,7 @@
 
 Open a record on the **DDNS** page, or select **Add record**, set **Provider** to **FreeDNS**, then fill in:
 
-- **Hostname**: the record to update.
+- **Host name**: the record to update.
 - **Username**: your afraid.org username.
 - **Password**: your afraid.org password.
 - **Server override**: leave blank to use FreeDNS's own server.

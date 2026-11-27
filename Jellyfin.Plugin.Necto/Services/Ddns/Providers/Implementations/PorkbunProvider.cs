@@ -53,7 +53,7 @@ public sealed class PorkbunProvider : DNSProviderBase
     /// <inheritdoc />
     public override ProviderFields Fields => new()
     {
-        Hostname = TranslationKeys.DdnsLabelHostname,
+        Hostname = TranslationKeys.LabelHostName,
         Login = TranslationKeys.HeaderApiKey,
         Password = TranslationKeys.DdnsLabelSecretApiKey,
         Zone = TranslationKeys.DdnsLabelRootDomain,
