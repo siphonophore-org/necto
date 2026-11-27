@@ -1,6 +1,6 @@
 // necto_notifications.test.mjs
-// Tests for Notifications: the channel list with a test for each, the Settings section that saves through its own
-// route, the Troubleshooting section's log and repairs, and the browser notification helper for user pages.
+// Tests for Notifications: the Settings section with its send counts and a test for each channel, which saves through
+// its own route, the Troubleshooting section's log and repairs, and the browser notification helper for user pages.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -60,72 +60,40 @@ async function openTool(name, answers) {
     return { page: page, view: view, dom: dom, section: view.querySelector('[data-tool="notifications"]') };
 }
 
-test('the page lists every channel with its kind, its state, and a Test that reports what happened', async function () {
-    var page = installPage({});
-    var dom = page.dom;
-    var view = pageView(dom, [dom.el('div', { id: 'notificationsStatus' }), dom.el('div', { id: 'channelList' }), dom.el('button', { id: 'btnChannelSettings' })]);
-    dom.document.documentElement.appendChild(view);
-    routeApi(page, { 'GET Notifications/Channels': channels(), 'POST Notifications/Channels/hook/Test': { Ok: false, Message: 'Add an address to the channel first.' } });
-    var mod = await loadScript('necto_notifications.js');
-    mod.default(view);
-    view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
-    await settle(50);
-
-    var rows = view.querySelectorAll('.stolon-record-list-row');
-    assert.equal(rows.length, 4);
-    assert.match(rows[0].textContent, /Browser notifications/);
-    assert.equal(rows[0].querySelector('[data-role="channel-state"]'), null);
-    assert.match(rows[1].querySelector('.stolon-record-list-aside [data-role="channel-state"]').innerHTML, /Off/);
-    assert.match(rows[3].textContent, /Home Assistant[\s\S]*2 events/);
-    assert.match(rows[3].querySelector('.stolon-record-list-aside [data-role="channel-state"]').innerHTML, /Not set up/);
-
-    rows[3].querySelector('[data-action="test"]').click();
-    await settle(50);
-    assert.ok(page.requests.some(function (r) { return r.type === 'POST' && r.url === 'Notifications/Channels/hook/Test'; }));
-    assert.equal(statusText(view.querySelector('#notificationsStatus')), 'Home Assistant: Add an address to the channel first.');
-});
-
-test('a row names its kind only when the channel has a name of its own, and its Test is a full size button', async function () {
-    var page = installPage({});
-    var dom = page.dom;
-    var view = pageView(dom, [dom.el('div', { id: 'notificationsStatus' }), dom.el('div', { id: 'notificationsCards' }), dom.el('div', { id: 'channelList' }), dom.el('button', { id: 'btnChannelSettings' })]);
-    dom.document.documentElement.appendChild(view);
-    routeApi(page, {
+test('the Settings section counts the sends that went and failed, and tests the user channels and each administrators channel', async function () {
+    var opened = await openTool('settings', {
         'GET Notifications/Channels': channels(),
-        'GET Notifications/Log': [{ Ok: true }, { Ok: false }, { Ok: true }]
+        'GET Notifications/Log': [{ Ok: true }, { Ok: false }, { Ok: true }],
+        'POST Notifications/Channels/hook/Test': { Ok: false, Message: 'Add an address to the channel first.' },
+        'POST Notifications/Channels/browsers/Test': { Ok: true, Message: 'Sent to 1 browser.' }
     });
-    var mod = await loadScript('necto_notifications.js');
-    mod.default(view);
-    view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
-    await settle(50);
+    var section = opened.section;
 
-    var rows = view.querySelectorAll('.stolon-record-list-row');
-    assert.equal((rows[0].textContent.match(/Browser notifications/g) || []).length, 1);
-    assert.match(rows[3].textContent, /Webhook/);
-    var test = rows[3].querySelector('[data-action="test"]');
-    assert.equal(test.classList.contains('stolon-small'), false);
-    var cards = view.querySelector('#notificationsCards').textContent;
+    var cards = section.querySelector('[data-role="send-cards"]').textContent;
     assert.match(cards, /2\s*Sent/);
     assert.match(cards, /1\s*Failed/);
+    assert.deepEqual(texts(section.querySelector('[data-role="user-tests"]'), 'button'), ['Test browser notifications', 'Test Jellyfin messages']);
+
+    section.querySelector('[data-role="user-tests"] [data-action="test"]').click();
+    await settle(50);
+    assert.ok(opened.page.requests.some(function (r) { return r.type === 'POST' && r.url === 'Notifications/Channels/browsers/Test'; }));
+
+    var rows = section.querySelectorAll('[data-role="channels"] .stolon-record-list-row');
+    assert.equal(rows.length, 3);
+    assert.ok(Array.prototype.every.call(rows, function (row) { return !!row.querySelector('[data-action="test"]'); }));
+    rows[2].querySelector('[data-action="test"]').click();
+    await settle(50);
+    assert.ok(opened.page.requests.some(function (r) { return r.type === 'POST' && r.url === 'Notifications/Channels/hook/Test'; }));
+    assert.match(section.textContent, /Home Assistant: Add an address to the channel first\./);
 });
 
-test('sendCounts counts the sends that went and those that failed', async function () {
+test('sendCards shows dashes until the log is read, then the sends that went and failed', async function () {
     installPage({});
-    var mod = await loadScript('necto_notifications.js');
+    var mod = await loadScript('necto_notifications_sections.js');
+    var t = { tr: function (k) { return k; } };
 
-    assert.deepEqual(mod.sendCounts([{ Ok: true }, { Ok: false }]), { sent: 1, failed: 1 });
-    assert.deepEqual(mod.sendCounts(null), { sent: 0, failed: 0 });
-});
-
-test('channelSummary says what each channel gets', async function () {
-    installPage({});
-    var mod = await loadScript('necto_notifications.js');
-    var shared = { t: { tr: function (k) { return k; }, plural: function (n, one, many) { return n + (n === 1 ? one : many); } } };
-
-    assert.equal(mod.channelSummary({ Kind: 'Browsers' }, shared), 'NotificationsByGroups');
-    assert.equal(mod.channelSummary({ Kind: 'Email', AllEvents: true }, shared), 'NotificationsEveryEvent');
-    assert.equal(mod.channelSummary({ Kind: 'Email', EventCount: 0 }, shared), 'NotificationsNoEvents');
-    assert.equal(mod.channelSummary({ Kind: 'Email', EventCount: 3 }, shared), '3NotificationsEventCountMany');
+    assert.deepEqual(mod.sendCards(null, t).map(function (c) { return c.count; }), ['–', '–']);
+    assert.deepEqual(mod.sendCards([{ Ok: true }, { Ok: false }], t).map(function (c) { return c.count; }), [1, 1]);
 });
 
 test('the Settings section fills from its route and saves back through it, keeping hidden secrets as kept', async function () {

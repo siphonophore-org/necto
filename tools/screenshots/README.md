@@ -6,7 +6,7 @@ The demo server is Living Room, run by `alex`. Its people are `jordan`, `sam`, `
 
 | File | Does |
 | :--- | :--- |
-| `server.py` | Builds the plugin, starts the `necto-shots` container on a free port from 8190 up, runs the startup wizard, seeds the data, and removes it all again |
+| `server.py` | Builds the plugin, starts the `necto-shots` container, or the one `NECTO_SHOTS_NAME` names, on a free port from 8190 up, runs the startup wizard, seeds the data, and removes it all again |
 | `seed.py` | The demo data: films, users, groups, invites, DDNS records, proxy routes, WireGuard peers, scripts, custom pages, notification channels, requests, and issues |
 | `shoot.mjs` | Opens one page in Chromium at 2x, signed in, with the dashboard header hidden. Pages open at `http://media.example.com`, which it sends to the kit's Jellyfin, so every address they show is the demo one |
 | `shots.mjs` | Sets up each subject and writes its PNG to `docs/screenshots/` |

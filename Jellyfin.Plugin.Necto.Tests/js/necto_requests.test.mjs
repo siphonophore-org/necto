@@ -421,3 +421,17 @@ test('the sidecar shows the status once, in its header, and a movie with one pro
     assert.equal((sidecar.textContent.match(/Pending/g) || []).length, 1);
     assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Mark available', 'Reject', 'Edit note', 'Approve']);
 });
+
+test('userImage asks for a picture only for a user who has one, and usersImageTags reads them from the users', async function () {
+    installPage({});
+    var mod = await loadScript('necto_requests.js');
+    globalThis.ApiClient.getUrl = function (path, query) { return path + '?tag=' + query.tag; };
+    globalThis.ApiClient.getUsers = function () { return Promise.resolve([{ Id: 'AAAA-1', PrimaryImageTag: 'p1' }, { Id: 'bbbb2' }]); };
+
+    var tags = await mod.usersImageTags();
+
+    assert.deepEqual(tags, { aaaa1: 'p1' });
+    assert.equal(mod.userImage('AAAA-1', tags), 'Users/AAAA-1/Images/Primary?tag=p1');
+    assert.equal(mod.userImage('bbbb2', tags), '');
+    assert.equal(mod.userImage('bbbb2', null), '');
+});

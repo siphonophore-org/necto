@@ -108,7 +108,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 | **Invites** | **Allow invites**, **Open invites**, and **Invite groups** as **Permissive** for any group or **Restrictive** for the groups picked. See [Invites](Invites.md#members-invites) |
 | **VPN** | **Allow peers**, **Peers per member**, **Data per member (GB)**, **Period**. See [VPN](VPN.md#permissions) |
 | **Pages** | **Permissive** for every signed in page, pages added later too, or **Restrictive** for the pages picked |
-| **Notifications** | Each event about a member, under the tool that sends it, with a **Browser** switch for browser notifications and a **Jellyfin** switch for Jellyfin messages. Events for administrators are set in Notifications. See [Notifications](Notifications.md#who-gets-an-event) |
+| **Notifications** | Each event about a member, under the tool that sends it, with a **Browser** switch for browser notifications and a **Jellyfin** switch for Jellyfin messages. Events for administrators are set in **Settings > Notifications**. See [Notifications](Notifications.md#who-gets-an-event) |
 
 A new group starts with **Pages** and **Invite groups** on **Permissive**. Which users a script runs for is set on the script, in its editor's **Groups** section. See [Scripts](Scripts.md#groups).
 

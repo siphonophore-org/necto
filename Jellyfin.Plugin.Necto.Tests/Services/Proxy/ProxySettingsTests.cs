@@ -207,7 +207,7 @@ public class ProxySettingsTests
         Assert.Equal(256, recommended.BackendConnections);
         var low = RouteProfiles.For(JellyfinProfile.LowMemory);
         Assert.Equal(new int?[] { 20, 120, 60, 32 }, new[] { low.MaxBodyMb, low.TimeoutSeconds, low.MediaTimeoutMinutes, low.BackendConnections });
-        var remote = RouteProfiles.For(JellyfinProfile.RemoteStreaming);
+        var remote = RouteProfiles.For(JellyfinProfile.HighBandwidth);
         Assert.Equal(new int?[] { 2048, 900, 720, 512 }, new[] { remote.MaxBodyMb, remote.TimeoutSeconds, remote.MediaTimeoutMinutes, remote.BackendConnections });
         Assert.All(Enum.GetValues<JellyfinProfile>(), p => Assert.True(RouteProfiles.For(p).WebSockets && !RouteProfiles.For(p).Buffering && RouteProfiles.For(p).PreserveHost));
 

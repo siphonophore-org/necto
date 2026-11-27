@@ -136,7 +136,6 @@ export function nectoTools() {
         { key: 'scripts', name: tabName('TabScripts', 'Scripts'), icon: 'code', page: 'necto_scripts', visibleWhen: switchOn('Scripts') },
         { key: 'pages', name: tabName('TabPages', 'Pages'), icon: 'web', page: 'necto_pages', visibleWhen: switchOn('CustomPages') },
         { key: 'storage', name: tabName('TabStorage', 'Storage'), icon: 'storage', page: 'necto_storage', visibleWhen: switchOn('Storage') },
-        { key: 'notifications', name: tabName('TabNotifications', 'Notifications'), icon: 'notifications', page: 'necto_notifications' },
         { key: 'settings', name: tabName('Settings', 'Settings'), icon: 'settings', page: 'necto_settings' },
         { key: 'troubleshooting', name: tabName('HeaderTroubleshooting', 'Troubleshooting'), icon: 'bug_report', page: 'necto_troubleshooting' }
     ];
@@ -174,34 +173,49 @@ export function registerSection(kind, key, section) {
     sectionRegistry[kind][key] = section;
 }
 
+// SYSTEM_SECTIONS
+// The Settings and Troubleshooting sections that apply across Necto, in the order the System group shows them. Every
+// other section belongs to one tool and goes under Services.
+var SYSTEM_SECTIONS = ['groups', 'notifications', 'menulinks'];
+
 // nectoSections
-// Lists the tools Settings or Troubleshooting draws a section for, in sidebar order, each with the section it
-// added. A tool that added none is left out, as are the dashboard, Settings, and Troubleshooting. A section that
-// belongs to no tool, such as Menu links, names its own name and icon and follows the tools.
+// Lists the sections Settings or Troubleshooting draws, the System ones first and then each tool's in sidebar order,
+// each with the section it added and its group. A tool that added none is left out, as are the dashboard, Settings, and
+// Troubleshooting. A section that belongs to no tool, such as Menu links, names its own name and icon.
 //
 // Inputs
 // kind [string]: settings or troubleshooting.
 //
 // Output
-// [object[]]: Each tool's key, name, icon, and section.
+// [object[]]: Each section's key, name, icon, section, and group, system or services.
 export function nectoSections(kind) {
     var registered = sectionRegistry[kind] || {};
-    return nectoTools().filter(function (tool) {
-        return ['dashboard', 'settings', 'troubleshooting'].indexOf(tool.key) < 0;
-    }).filter(function (tool) {
-        return !!registered[tool.key];
-    }).map(function (tool) {
-        return { key: tool.key, name: tool.name, icon: tool.icon, section: registered[tool.key] };
-    }).concat(Object.keys(registered).filter(function (key) {
-        return !nectoTools().some(function (tool) { return tool.key === key; }) && registered[key].icon;
-    }).map(function (key) {
+    var tools = nectoTools();
+    var entry = function (key) {
+        var tool = tools.find(function (x) { return x.key === key; });
         var section = registered[key];
-        return { key: key, name: typeof section.name === 'function' ? section.name() : section.name, icon: section.icon, section: section };
-    }));
+        var name = tool ? tool.name : (typeof section.name === 'function' ? section.name() : section.name);
+        return { key: key, name: name, icon: tool ? tool.icon : section.icon, section: section, group: SYSTEM_SECTIONS.indexOf(key) >= 0 ? 'system' : 'services' };
+    };
+    var system = SYSTEM_SECTIONS.filter(function (key) {
+        return registered[key] && (tools.some(function (x) { return x.key === key; }) || registered[key].icon);
+    });
+    var services = tools.filter(function (tool) {
+        return ['dashboard', 'settings', 'troubleshooting'].indexOf(tool.key) < 0 && SYSTEM_SECTIONS.indexOf(tool.key) < 0 && !!registered[tool.key];
+    }).map(function (tool) { return tool.key; });
+    return system.concat(services).map(entry);
 }
 
+// SECTION_GROUPS
+// The heading and intro of each group of sections, by page.
+var SECTION_GROUPS = {
+    system: { title: 'LabelSystem', settings: 'HelpSettingsSystem', troubleshooting: 'HelpTroubleshootingSystem' },
+    services: { title: 'HeaderServices', settings: 'HelpSettingsServices', troubleshooting: 'HelpTroubleshootingServices' }
+};
+
 // drawSections
-// Draws a collapsible section per tool into a container, with the content each tool's section fills.
+// Draws a collapsible section per tool into a container, under the heading of its group, System or Services, with the
+// content each tool's section fills.
 //
 // Inputs
 // container [HTMLElement]: Where the sections go.
@@ -214,7 +228,15 @@ export function nectoSections(kind) {
 // [object[]]: One entry per tool, with its key, collapsible, and handle.
 export function drawSections(container, kind, shared, page, addFooter) {
     container.innerHTML = '';
+    var group = null;
     return nectoSections(kind).map(function (tool) {
+        // Each group opens with its heading and one line on what it holds.
+        if (tool.group !== group) {
+            group = tool.group;
+            var heads = SECTION_GROUPS[group];
+            container.appendChild(h('h3', { class: 'stolon-subsection-title', 'data-group': group, text: shared.t.tr(heads.title) }));
+            container.appendChild(h('div', { class: 'fieldDescription', 'data-group-help': group, text: shared.t.tr(heads[kind]) }));
+        }
         var content = h('div', { class: 'stolon-stack', 'data-role': 'section-content' });
         var section = createCollapsibleSection({ title: tool.name, icon: tool.icon, collapsed: true, content: content });
         section.element.setAttribute('data-tool', tool.key);

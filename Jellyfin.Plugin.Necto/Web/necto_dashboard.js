@@ -186,13 +186,15 @@ function failedCard(t, card) {
 // Starts a tool's card with the tool's own icon and name.
 //
 // Inputs
-// key [string]: The tool's key, as nectoTools lists it.
+// key [string]: The tool's key, as nectoTools lists it, or notifications.
 //
 // Output
-// [object]: The card's icon, title, and tool.
+// [object]: The card's icon, title, tool, and open, the tool and the section a click opens.
 function toolCard(key) {
+    // Notifications has no page of its own, so its card opens its section of Settings.
+    if (key === 'notifications') return { icon: 'notifications', title: nectoModule.toolName('TabNotifications', 'Notifications'), tool: key, open: ['settings', 'notifications'] };
     var tool = nectoModule.nectoTools().filter(function (x) { return x.key === key; })[0];
-    return { icon: tool.icon, title: tool.name, tool: key };
+    return { icon: tool.icon, title: tool.name, tool: key, open: [key] };
 }
 
 // sum
@@ -602,7 +604,7 @@ export function notificationsCard(t, log, now) {
 
 // toolsOn
 // Lists the tools that get a card: every tool in the sidebar but the dashboard, Settings, and Troubleshooting, without
-// each tool that is turned off.
+// each tool that is turned off, and Notifications last.
 //
 // Inputs
 // config [object]: The plugin configuration.
@@ -613,7 +615,7 @@ export function toolsOn(config) {
     var never = { dashboard: true, settings: true, troubleshooting: true };
     return nectoModule.nectoTools().map(function (tool) { return tool.key; }).filter(function (key) {
         return !never[key] && nectoModule.toolIsOn(config, key);
-    });
+    }).concat(['notifications']);
 }
 
 // showsMap
@@ -826,6 +828,7 @@ var SEVERITY_STATUS = { Critical: 'red', Error: 'red', Warning: 'orange' };
 export function activityItems(entries, shared) {
     var icons = {};
     nectoModule.nectoTools().forEach(function (tool) { icons[tool.key] = tool.icon; });
+    icons.notifications = 'notifications';
     return (Array.isArray(entries) ? entries : []).map(function (entry) {
         var tool = toolOfType(entry.Type);
         var item = {
@@ -896,7 +899,8 @@ export default function (view) {
         grid.setCards(cards.map(function (card) {
             var options = Object.assign({}, card);
             delete options.tool;
-            options.onClick = function () { nectoModule.openTool(view, card.tool); };
+            delete options.open;
+            options.onClick = function () { nectoModule.openTool(view, card.open[0], card.open[1]); };
             return options;
         }));
     }

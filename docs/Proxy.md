@@ -28,13 +28,13 @@ Each row shows the route's host name, where it forwards, and **Local only** wher
 
 **Forwarding** sets how the route forwards.
 
-A route to **Jellyfin** picks a **Preset**, built on [Jellyfin's reverse proxy guide](https://jellyfin.org/docs/general/post-install/networking/reverse-proxy). Every preset passes WebSockets, streams answers without buffering, and sends the forwarding headers and the visitor's host name to Jellyfin, as the guide's examples do. Under the select, the route lists what its preset sets. **Custom** shows those four values as fields to edit, starting from the preset picked before it. A route saved before presets existed uses **Recommended**.
+A route to **Jellyfin** picks a **Preset**, built on [Jellyfin's reverse proxy guide](https://jellyfin.org/docs/general/post-install/networking/reverse-proxy). Every preset passes WebSockets, streams answers without buffering, and sends the forwarding headers and the visitor's host name to Jellyfin, as the guide's examples do. Each preset is a card with what it is for. Under the cards, the route lists what its preset sets. **Custom** shows those four values as fields to edit, starting from the preset picked before it. A route saved before presets existed uses **Recommended**.
 
 | Preset | Upload limit | Idle timeout | Media idle timeout | Connections to Jellyfin | For |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Recommended** | Same as Settings | Same as Settings | 360 minutes | 256 | Most servers. The limits in **Settings** are above the guide's 20 MB |
 | **Low memory** | 20 MB | 120 seconds | 60 minutes | 32 | A Raspberry Pi or a small VPS. Fewer connections are held, and idle ones go sooner |
-| **Remote streaming** | 2048 MB | 900 seconds | 720 minutes | 512 | Viewers on slow or distant links, and large uploads |
+| **High bandwidth** | 2048 MB | 900 seconds | 720 minutes | 512 | Viewers on slow or distant links, and large uploads |
 | **Custom** | Set | Set | Set | Set | Any other mix |
 
 * **Upload limit (MB)** replaces the limit in **Settings** for this route. Blank keeps the limit in **Settings**, and 0 is no limit.

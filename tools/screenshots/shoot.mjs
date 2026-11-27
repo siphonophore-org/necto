@@ -70,7 +70,9 @@ export async function open(path, vp, user, keepForm, direct) {
   const errors = [];
   p.on('pageerror', (e) => errors.push(String(e.message)));
   // The live updates socket cannot follow the demo address, and the pages work without it.
-  p.on('console', (m) => { if (m.type() === 'error' && !/WebSocket/.test(m.text())) errors.push(m.text()); });
+  // A failed load names its address, since the console's line for it does not.
+  p.on('console', (m) => { if (m.type() === 'error' && !/WebSocket|Failed to load resource/.test(m.text())) errors.push(m.text()); });
+  p.on('response', (r) => { if (r.status() >= 400) errors.push(`${r.status()} ${r.url().replace(ORIGIN, '')}`); });
   await p.goto((direct ? state.url : ORIGIN) + path);
   await p.waitForLoadState('networkidle').catch(() => {});
   await p.waitForTimeout(2500);

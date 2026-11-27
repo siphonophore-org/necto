@@ -114,8 +114,6 @@ validate_resources() {
         "$PROJECT_DIR/Web/necto_pages.js"
         "$PROJECT_DIR/Web/necto_storage.html"
         "$PROJECT_DIR/Web/necto_storage.js"
-        "$PROJECT_DIR/Web/necto_notifications.html"
-        "$PROJECT_DIR/Web/necto_notifications.js"
         "$PROJECT_DIR/Web/necto_settings.html"
         "$PROJECT_DIR/Web/necto_settings.js"
         "$PROJECT_DIR/Web/necto_troubleshooting.html"

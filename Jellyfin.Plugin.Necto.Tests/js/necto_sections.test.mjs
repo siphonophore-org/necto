@@ -11,7 +11,7 @@ globalThis.clearTimeout = function () {};
 globalThis.setInterval = function () { return 1; };
 globalThis.clearInterval = function () {};
 
-var TOOLS = ['Groups', 'Requests', 'Issues', 'Invites', 'Proxy', 'DDNS', 'VPN', 'Scripts', 'Pages', 'Storage', 'Notifications'];
+var TOOLS = ['Groups', 'Notifications', 'Requests', 'Issues', 'Invites', 'Proxy', 'DDNS', 'VPN', 'Scripts', 'Pages', 'Storage'];
 var FAMILY = '11111111-2222-3333-4444-555555555555';
 
 // openTool
@@ -54,11 +54,35 @@ test('Settings draws a collapsible section per tool, with the Groups section fil
 
     var titles = texts(opened.view, '.stolon-collapsible-title');
     assert.deepEqual(titles.filter(function (t) { return TOOLS.indexOf(t) >= 0; }), TOOLS);
+    assert.deepEqual(texts(opened.view, '[data-group]'), ['System', 'Services']);
+    assert.deepEqual(texts(opened.view, '[data-group-help]'), ['Sets what applies across Necto, whatever the tool.', 'Sets how each tool works, while groups set who may use it.']);
+    var order = Array.prototype.map.call(opened.view.querySelector('#settingsSections').children, function (n) { return n.getAttribute('data-group') || n.getAttribute('data-tool') || ''; }).filter(Boolean);
+    assert.deepEqual(order.slice(0, 5), ['system', 'groups', 'notifications', 'menulinks', 'services']);
+    assert.equal(order[5], 'requests');
     var groups = opened.section('groups');
     assert.deepEqual(texts(groups, '.stolon-subsection-title'), ['New users']);
     assert.equal(groups.querySelector('[data-field="NewUserGroupId"]').value, FAMILY);
     assert.deepEqual(texts(groups.querySelector('[data-field="NewUserGroupId"]'), 'option'), ['Everyone', 'Family']);
     assert.equal(groups.querySelector('[data-field="ShowResetCodes"]'), null);
+});
+
+test('Settings opens and keeps open the section another tool asked for', async function () {
+    var page = installPage({ config: {} });
+    var dom = page.dom;
+    var view = pageView(dom, [dom.el('div', { id: 'settingsStatus' }), dom.el('div', { id: 'settingsSections' })]);
+    view.setAttribute('data-stolon-tool-param', 'notifications');
+    dom.document.documentElement.appendChild(view);
+    routeApi(page, {});
+    var mod = await loadScript('necto_settings.js');
+    mod.default(view);
+    view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
+    await settle();
+
+    var section = view.querySelector('[data-tool="notifications"]');
+    var open = function (node) { return node.querySelector('[aria-expanded]').getAttribute('aria-expanded'); };
+    assert.equal(open(section), 'true');
+    assert.equal(view.getAttribute('data-stolon-tool-param'), null);
+    assert.equal(open(view.querySelector('[data-tool="groups"]')), 'false');
 });
 
 test('the Groups section of Settings saves its own fields into the config', async function () {

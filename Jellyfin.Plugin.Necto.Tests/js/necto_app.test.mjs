@@ -8,9 +8,9 @@ import { installPage, loadScript, pageView, settle, sidebar } from './support.mj
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
 
-var KEYS = ['dashboard', 'groups', 'requests', 'issues', 'invites', 'proxy', 'ddns', 'wireguard', 'scripts', 'pages', 'storage', 'notifications', 'settings', 'troubleshooting'];
-var NAMES = ['Dashboard', 'Groups', 'Requests', 'Issues', 'Invites', 'Proxy', 'DDNS', 'VPN', 'Scripts', 'Pages', 'Storage', 'Notifications', 'Settings', 'Troubleshooting'];
-var ICONS = ['dashboard', 'groups', 'movie_filter', 'report_problem', 'mail', 'security', 'dns', 'vpn_lock', 'code', 'web', 'storage', 'notifications', 'settings', 'bug_report'];
+var KEYS = ['dashboard', 'groups', 'requests', 'issues', 'invites', 'proxy', 'ddns', 'wireguard', 'scripts', 'pages', 'storage', 'settings', 'troubleshooting'];
+var NAMES = ['Dashboard', 'Groups', 'Requests', 'Issues', 'Invites', 'Proxy', 'DDNS', 'VPN', 'Scripts', 'Pages', 'Storage', 'Settings', 'Troubleshooting'];
+var ICONS = ['dashboard', 'groups', 'movie_filter', 'report_problem', 'mail', 'security', 'dns', 'vpn_lock', 'code', 'web', 'storage', 'settings', 'bug_report'];
 
 // The config sections of the tools with a switch, as the plugin's ToolSwitches lists them.
 var SECTIONS = { requests: 'Requests', issues: 'Issues', invites: 'InviteSettings', proxy: 'Proxy', ddns: 'Ddns', wireguard: 'WireGuard', scripts: 'Scripts', pages: 'CustomPages', storage: 'Storage' };
@@ -34,11 +34,11 @@ async function openApp(config) {
     return view;
 }
 
-test('nectoTools lists the 14 tools in sidebar order, each with its icon and its own page', async function () {
+test('nectoTools lists the 13 tools in sidebar order, each with its icon and its own page', async function () {
     installPage({});
     var shared = await loadScript('necto_shared.js');
     var tools = shared.nectoTools();
-    assert.equal(tools.length, 14);
+    assert.equal(tools.length, 13);
     assert.deepEqual(tools.map(function (tool) { return tool.key; }), KEYS);
     assert.deepEqual(tools.map(function (tool) { return tool.name; }), NAMES);
     assert.deepEqual(tools.map(function (tool) { return tool.icon; }), ICONS);
@@ -73,7 +73,7 @@ test('toolIsOn reads the switch of each tool from its config section, and the al
         assert.equal(shared.toolIsOn(on, key), true, key);
     });
     assert.deepEqual(shared.nectoTools().filter(function (tool) { return tool.visibleWhen; }).map(function (tool) { return tool.key; }), Object.keys(SECTIONS));
-    ['dashboard', 'groups', 'notifications', 'settings', 'troubleshooting'].forEach(function (key) {
+    ['dashboard', 'groups', 'settings', 'troubleshooting'].forEach(function (key) {
         assert.equal(shared.toolIsOn({}, key), true);
     });
 });
@@ -81,7 +81,7 @@ test('toolIsOn reads the switch of each tool from its config section, and the al
 test('the sidebar drops every optional tool while all are off, keeping the always on ones', async function () {
     var view = await openApp({});
     await settle();
-    assert.deepEqual(sidebar(view).names, ['Dashboard', 'Groups', 'Notifications', 'Settings', 'Troubleshooting']);
+    assert.deepEqual(sidebar(view).names, ['Dashboard', 'Groups', 'Settings', 'Troubleshooting']);
 });
 
 test('the sidebar has its fold button', async function () {

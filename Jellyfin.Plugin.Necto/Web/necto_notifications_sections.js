@@ -100,10 +100,58 @@ function clearButton(wrap, t) {
     return button;
 }
 
+// sendCards
+// Counts the sends in the log that went and those that failed, as the cards over the section. A log not read yet shows
+// dashes.
+//
+// Inputs
+// log [object[]]: What Notifications/Log answered, or null while it is not read.
+// t [object]: The strings.
+//
+// Output
+// [object[]]: The Sent and Failed cards.
+export function sendCards(log, t) {
+    var failed = Array.isArray(log) ? log.filter(function (e) { return !e.Ok; }).length : '–';
+    var sent = Array.isArray(log) ? log.length - failed : '–';
+    return [
+        { count: sent, label: t.tr('StateSent'), color: 'green' },
+        { count: failed, label: t.tr('LabelFailed'), color: 'red' }
+    ];
+}
+
+// testButton
+// Builds a Test button that sends a test through one channel and reports what happened on the section's line.
+//
+// Inputs
+// shared [object]: The Necto helper bag.
+// text [string]: The button's text.
+// channelId [function]: Gives the id of the channel to test, or empty while it is not saved.
+// name [function]: Gives the channel's name, for the report.
+// report [function]: Shows a result, with true for a failure.
+//
+// Output
+// [HTMLButtonElement]: The button.
+export function testButton(shared, text, channelId, name, report) {
+    var t = shared.t;
+    var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'test' }, [h('span', { text: text })]);
+    button.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var id = channelId();
+        if (!id) { report(t.tr('NotificationsErrorTestUnsaved'), true); return; }
+        button.disabled = true;
+        shared.request('Notifications/Channels/' + encodeURIComponent(id) + '/Test', 'POST').then(function (result) {
+            report(name() + ': ' + ((result && result.Message) || ''), !(result && result.Ok));
+        }).catch(function (err) {
+            return shared.errorText(err, t.tr('NotificationsErrorTest')).then(function (msg) { report(msg, true); });
+        }).then(function () { button.disabled = false; });
+    });
+    return button;
+}
+
 // buildSettings
-// Fills the Notifications section of Settings: the user channels, the server's address and push contact, the email
-// server, and the administrators' channels, each edited in a sidecar. It saves through Notifications/Settings, so no
-// secret reaches the page.
+// Fills the Notifications section of Settings: the sends that went and failed, the user channels with a test for
+// each, the server's address and push contact, the email server, and the administrators' channels, each edited in a
+// sidecar and tested from its row. It saves through Notifications/Settings, so no secret reaches the page.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -118,6 +166,11 @@ function buildSettings(content, ctx) {
     var events = [];
     var list = null;
     var status = h('div', { class: 'stolon-status-text', role: 'status' });
+    var cards = h('div', { class: 'stolon-cards stolon-even', 'data-role': 'send-cards' });
+    var builtIn = {};
+    // report
+    // Shows a test's result on the section's status line.
+    var report = function (message, isError) { shared.setStatus(status, message, !!isError, { timeout: 10000 }); };
 
     var browsers = nectoModule.createCheckboxField({ label: t.tr('LabelBrowserNotifications'), help: t.tr('NotificationsBrowsersHelp'), field: 'BrowserNotifications' });
     var apps = nectoModule.createCheckboxField({ label: t.tr('NotificationsChannelApps'), help: t.tr('NotificationsAppsHelp'), field: 'JellyfinMessages' });
@@ -141,11 +194,17 @@ function buildSettings(content, ctx) {
         return button;
     }));
 
+    var userTests = h('div', { class: 'stolon-button-row', 'data-role': 'user-tests' }, [
+        testButton(shared, t.tr('NotificationsButtonTestBrowsers'), function () { return builtIn.Browsers; }, function () { return t.tr('LabelBrowserNotifications'); }, report),
+        testButton(shared, t.tr('NotificationsButtonTestApps'), function () { return builtIn.Apps; }, function () { return t.tr('NotificationsChannelApps'); }, report)
+    ]);
+
     [
         status,
+        cards,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderUsers') }),
         h('div', { class: 'fieldDescription', text: t.tr('NotificationsUsersHelp') }),
-        browsers.element, apps.element,
+        browsers.element, apps.element, userTests,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLinks') }),
         server.element, contact.element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderEmail') }),
@@ -167,7 +226,10 @@ function buildSettings(content, ctx) {
         var items = (settings.Channels || []).map(function (c, i) {
             var tags = [{ label: t.tr(KIND_KEYS[kindName(c.Kind)]), icon: 'send' }];
             if (!c.Enabled) tags.push({ label: t.tr('Off'), color: 'gray', off: true });
-            return { id: String(i), title: channelTitle(c, t), secondary: eventsLine(c, shared), tags: tags, channel: c };
+            var aside = h('div', { class: 'necto-row-aside', 'data-role': 'channel-aside' }, [
+                testButton(shared, t.tr('ButtonTest'), function () { return c.Id; }, function () { return channelTitle(c, t); }, report)
+            ]);
+            return { id: String(i), title: channelTitle(c, t), secondary: eventsLine(c, shared), tags: tags, aside: aside, channel: c };
         });
         if (list) list.setItems(items);
         else {
@@ -252,6 +314,13 @@ function buildSettings(content, ctx) {
 
     return {
         load: function () {
+            shared.renderCards(cards, sendCards(null, t));
+            shared.request('Notifications/Log').then(function (log) {
+                shared.renderCards(cards, sendCards(Array.isArray(log) ? log : [], t));
+            }).catch(function () { /* the dashes stay */ });
+            shared.request('Notifications/Channels').then(function (channels) {
+                (Array.isArray(channels) ? channels : []).forEach(function (c) { if (c.Kind === 'Browsers' || c.Kind === 'Apps') builtIn[c.Kind] = c.Id; });
+            }).catch(function () { /* the user tests say the channel is not saved */ });
             return Promise.all([shared.request('Notifications/Settings'), shared.request('Notifications/Events').catch(function () { return []; })]).then(function (answers) {
                 settings = answers[0] || {};
                 settings.Channels = Array.isArray(settings.Channels) ? settings.Channels : [];
@@ -637,5 +706,6 @@ function buildTroubleshooting(content, ctx) {
     };
 }
 
-nectoModule.registerSection('settings', 'notifications', { build: buildSettings });
-nectoModule.registerSection('troubleshooting', 'notifications', { build: buildTroubleshooting });
+var section = { name: function () { return nectoModule.toolName('TabNotifications', 'Notifications'); }, icon: 'notifications' };
+nectoModule.registerSection('settings', 'notifications', Object.assign({ build: buildSettings }, section));
+nectoModule.registerSection('troubleshooting', 'notifications', Object.assign({ build: buildTroubleshooting }, section));

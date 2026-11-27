@@ -1,5 +1,6 @@
 // necto_settings.js
-// The Settings tool. It draws one collapsible section per tool from the registry, each saving on its own.
+// The Settings tool. It draws the System sections and then each tool's, as collapsible sections from the registry, each
+// saving on its own.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import './configurationpage?name=necto_groups_sections.js';
@@ -86,10 +87,23 @@ export default function (view) {
         return show;
     }
 
+    // openAsked
+    // Opens and scrolls to the section another tool asked for, such as the Dashboard's Notifications card, once.
+    function openAsked() {
+        var key = view.getAttribute('data-stolon-tool-param');
+        if (!key) return;
+        view.removeAttribute('data-stolon-tool-param');
+        var entry = entries.find(function (e) { return e.key === key; });
+        if (!entry) return;
+        entry.collapsible.setValue(true);
+        if (entry.collapsible.element.scrollIntoView) entry.collapsible.element.scrollIntoView({ block: 'start' });
+    }
+
     // loadPage
     // Reads the config and fills every section from it, each time the page shows. A tile follows its switch once
     // the section has loaded, since some sections read their own route.
     function loadPage(shared) {
+        openAsked();
         shared.getConfig().then(function (config) {
             entries.forEach(function (entry) {
                 if (!entry.handle) return;

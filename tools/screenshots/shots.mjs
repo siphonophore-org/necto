@@ -71,7 +71,7 @@ async function section(p, title) {
 const TOOLS = [
   ['Dashboard', 'dashboard'], ['Requests', 'requests'], ['Issues', 'issues'], ['Invites', 'invites'], ['Groups', 'groups'],
   ['Proxy', 'proxy'], ['DDNS', 'ddns'], ['WireGuard', 'wireguard'], ['Scripts', 'scripts'], ['Pages', 'pages'],
-  ['Storage', 'storage'], ['Notifications', 'notifications']
+  ['Storage', 'storage']
 ];
 const SECTIONS = ['Requests', 'Issues', 'Invites', 'Groups', 'Proxy', 'DDNS', 'WireGuard', 'Scripts', 'Pages', 'Storage', 'Notifications'];
 const title = (s) => s.replace(/\b\w/g, (c) => c.toUpperCase()).replace('Ddns', 'DDNS').replace('Wireguard', 'WireGuard');

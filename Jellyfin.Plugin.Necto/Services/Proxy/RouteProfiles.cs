@@ -39,7 +39,7 @@ public static class RouteProfiles
                 options.MediaTimeoutMinutes = 60;
                 options.BackendConnections = 32;
                 break;
-            case JellyfinProfile.RemoteStreaming:
+            case JellyfinProfile.HighBandwidth:
                 // Slow links stall longer, a paused film may sit for hours, and large files go up whole.
                 options.MaxBodyMb = 2048;
                 options.TimeoutSeconds = 900;

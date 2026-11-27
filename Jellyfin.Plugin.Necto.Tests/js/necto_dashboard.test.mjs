@@ -287,6 +287,8 @@ test('the Scripts, Storage, and Notifications cards show failures first', async 
     assert.equal(sends.detail, t.format('ScheduledTaskFailedWithName', 1));
     assert.equal(sends.statusColor, 'orange');
     assert.equal(dashboard.notificationsCard(t, [{ Ok: false }]).status, 'Failed');
+    assert.deepEqual([sends.tool, sends.open, sends.icon], ['notifications', ['settings', 'notifications'], 'notifications']);
+    assert.deepEqual(dashboard.cardFor('proxy', t, shared, {}, null, null, NOW).open, ['proxy']);
     assert.equal(dashboard.notificationsCard(t, []).detail, 'No sends yet');
 });
 

@@ -394,16 +394,34 @@ export function detailItems(r, t, goesTo) {
 }
 
 // userImage
-// Gives the address of a user's Jellyfin picture, which the avatar swaps for the person icon when there is none.
+// Gives the address of a user's Jellyfin picture, or nothing for a user without one, so the avatar shows the person
+// icon without asking for a picture that is not there.
 //
 // Inputs
 // userId [string]: The user's id.
+// tags [object]: Each user's picture tag by compact id, from usersImageTags, or null while they are not read.
 //
 // Output
-// [string]: The address, or empty without a server connection.
-export function userImage(userId) {
+// [string]: The address, or empty without a picture or a server connection.
+export function userImage(userId, tags) {
     if (!userId || typeof ApiClient === 'undefined' || !ApiClient.getUrl) return '';
-    return ApiClient.getUrl('Users/' + userId + '/Images/Primary', { height: 96, quality: 90 });
+    var tag = tags ? tags[String(userId).replace(/-/g, '').toLowerCase()] : null;
+    if (!tag) return '';
+    return ApiClient.getUrl('Users/' + userId + '/Images/Primary', { height: 96, quality: 90, tag: tag });
+}
+
+// usersImageTags
+// Reads which users have a Jellyfin picture.
+//
+// Output
+// [Promise]: Resolves with each picture tag by compact user id, empty when the users cannot be read.
+export function usersImageTags() {
+    if (typeof ApiClient === 'undefined' || !ApiClient.getUsers) return Promise.resolve({});
+    return Promise.resolve(ApiClient.getUsers()).then(function (users) {
+        var tags = {};
+        (users || []).forEach(function (u) { if (u && u.Id && u.PrimaryImageTag) tags[String(u.Id).replace(/-/g, '').toLowerCase()] = u.PrimaryImageTag; });
+        return tags;
+    }).catch(function () { return {}; });
 }
 
 // noteItems
@@ -456,6 +474,7 @@ export default function (view) {
     var filters = { status: 'Open', requester: '' };
     var requesters = [];
     var tableRequesters = null;
+    var imageTags = null;
     var profiles = [];
     var shownStats = null;
     var requestersTotal = null;
@@ -622,6 +641,7 @@ export default function (view) {
     // reload
     // Reads the counts, the requesters, and the list again from the top.
     function reload() {
+        usersImageTags().then(function (tags) { imageTags = tags; });
         return Promise.all([loadStats(), loadRequesters()]).then(function (results) {
             if (results[0]) requestersTotal = results[0].Total;
             return loadTable().then(function () { markShown(results[0]); });
@@ -792,7 +812,7 @@ export default function (view) {
         var parts = [card, details];
 
         // The requester with their picture, then the notes on the request.
-        var requester = nectoModule.createUserChip({ name: r.UserName, image: userImage(r.UserId), text: t.format('RequestsValueRequestedOn', when(r.CreatedUtc)) });
+        var requester = nectoModule.createUserChip({ name: r.UserName, image: userImage(r.UserId, imageTags), text: t.format('RequestsValueRequestedOn', when(r.CreatedUtc)) });
         var notes = noteItems(r, t);
         var timeline = notes.length ? nectoModule.createTimeline({ items: notes }) : null;
         var requesterBody = h('div', { class: 'stolon-stack', 'data-role': 'requester' }, [requester.element, timeline ? timeline.element : null]);
@@ -806,7 +826,7 @@ export default function (view) {
         if (joiners.length) {
             var joinedBody = h('div', { class: 'stolon-stack', 'data-role': 'joined' });
             joiners.forEach(function (j) {
-                var chip = nectoModule.createUserChip({ name: j.name, image: userImage(j.userId), text: t.format('RequestsValueJoinedOn', j.when) });
+                var chip = nectoModule.createUserChip({ name: j.name, image: userImage(j.userId, imageTags), text: t.format('RequestsValueJoinedOn', j.when) });
                 parts.push(chip);
                 joinedBody.appendChild(chip.element);
             });

@@ -9,7 +9,7 @@ Necto is a Jellyfin plugin with tools to keep your server reachable, secure and 
 
 ## The Page
 
-Necto is one page, **Dashboard > Plugins > Necto**, with a sidebar of tools: [Dashboard](Dashboard.md), [Groups](Groups.md), [Requests](Requests.md), [Issues](Issues.md), [Invites](Invites.md), [Proxy](Proxy.md), [DDNS](DDNS.md), [VPN](VPN.md), [Scripts](Scripts.md), [Pages](Pages.md), [Storage](Storage.md), [Notifications](Notifications.md), **Settings**, and **Troubleshooting**. **Dashboard** is home, with a card for each tool that is on. **Settings** holds a section of settings for each tool, and [Menu links](MenuLinks.md) for the web client's side menu. **Troubleshooting** holds a section of resets, tests, and repairs for each tool.
+Necto is one page, **Dashboard > Plugins > Necto**, with a sidebar of tools: [Dashboard](Dashboard.md), [Groups](Groups.md), [Requests](Requests.md), [Issues](Issues.md), [Invites](Invites.md), [Proxy](Proxy.md), [DDNS](DDNS.md), [VPN](VPN.md), [Scripts](Scripts.md), [Pages](Pages.md), [Storage](Storage.md), **Settings**, and **Troubleshooting**. **Dashboard** is home, with a card for each tool that is on. **Settings** holds its sections in two groups. **System** holds what applies across Necto, the Groups settings, [Notifications](Notifications.md), and [Menu links](MenuLinks.md) for the web client's side menu. **Services** holds a section for each tool. **Troubleshooting** holds a section of resets, tests, and repairs for each, in the same two groups.
 
 ## Turning Tools On and Off
 

@@ -145,15 +145,15 @@ export function newRoute() {
 // What each Jellyfin preset forwards with, after Jellyfin's reverse proxy guide, as RouteProfiles does on the server.
 // A null upload limit or timeout takes the one in Settings.
 export var PROFILES = {
-    Recommended: { key: 'ProxyPresetRecommended', MaxBodyMb: null, TimeoutSeconds: null, MediaTimeoutMinutes: 360, BackendConnections: 256 },
-    LowMemory: { key: 'ProxyPresetLowMemory', MaxBodyMb: 20, TimeoutSeconds: 120, MediaTimeoutMinutes: 60, BackendConnections: 32 },
-    RemoteStreaming: { key: 'ProxyPresetRemoteStreaming', MaxBodyMb: 2048, TimeoutSeconds: 900, MediaTimeoutMinutes: 720, BackendConnections: 512 },
-    Custom: { key: 'Custom', MaxBodyMb: null, TimeoutSeconds: null, MediaTimeoutMinutes: 360, BackendConnections: 256 }
+    Recommended: { key: 'ProxyPresetRecommended', help: 'ProxyPresetRecommendedHelp', MaxBodyMb: null, TimeoutSeconds: null, MediaTimeoutMinutes: 360, BackendConnections: 256 },
+    LowMemory: { key: 'ProxyPresetLowMemory', help: 'ProxyPresetLowMemoryHelp', MaxBodyMb: 20, TimeoutSeconds: 120, MediaTimeoutMinutes: 60, BackendConnections: 32 },
+    HighBandwidth: { key: 'ProxyPresetHighBandwidth', help: 'ProxyPresetHighBandwidthHelp', MaxBodyMb: 2048, TimeoutSeconds: 900, MediaTimeoutMinutes: 720, BackendConnections: 512 },
+    Custom: { key: 'Custom', help: 'ProxyPresetCustomHelp', MaxBodyMb: null, TimeoutSeconds: null, MediaTimeoutMinutes: 360, BackendConnections: 256 }
 };
 
 // PROFILE_NAMES
 // The Jellyfin presets in the order the server numbers them.
-var PROFILE_NAMES = ['Recommended', 'LowMemory', 'RemoteStreaming', 'Custom'];
+var PROFILE_NAMES = ['Recommended', 'LowMemory', 'HighBandwidth', 'Custom'];
 
 // defaultOptions
 // Builds the forwarding settings of a new route to another service, the proxy's own behavior.
@@ -305,13 +305,14 @@ export function createRouteEditor(route, ctx) {
     opts.Profile = profileName(opts.Profile);
     var number = function (input) { var n = parseInt(input.value, 10); return input.value.trim() === '' || isNaN(n) ? null : n; };
     var text = function (n) { return n == null ? '' : String(n); };
-    var profile = nectoModule.createSelectField({
+    var profile = nectoModule.createChoiceGroup(null, {
         label: t.tr('ProxyLabelPreset'),
-        field: 'Options.Profile',
-        options: PROFILE_NAMES.map(function (name) { return { value: name, text: t.tr(PROFILES[name].key) }; }),
         value: opts.Profile,
-        help: t.tr('ProxyPresetHelp')
+        choices: PROFILE_NAMES.map(function (name) { return { value: name, name: t.tr(PROFILES[name].key), text: t.tr(PROFILES[name].help) }; })
     });
+    profile.element.setAttribute('data-field', 'Options.Profile');
+    handles.push(profile);
+    var profileHelp = h('div', { class: 'fieldDescription', text: t.tr('ProxyPresetHelp') });
     var custom = opts.Profile === 'Custom' ? opts : PROFILES[opts.Profile];
     var jfBody = nectoModule.createInputField({ label: t.tr('ProxyLabelRouteBodyLimit'), field: 'Options.Jellyfin.MaxBodyMb', type: 'number', min: 0, value: text(custom.MaxBodyMb), help: t.tr('ProxyRouteBodyLimitHelp') });
     var jfTimeout = nectoModule.createInputField({ label: t.tr('ProxyLabelRouteTimeout'), field: 'Options.Jellyfin.TimeoutSeconds', type: 'number', min: 1, max: 86400, value: text(custom.TimeoutSeconds), help: t.tr('ProxyRouteTimeoutHelp') });
@@ -321,7 +322,7 @@ export function createRouteEditor(route, ctx) {
     handles.push(summary);
     summary.element.setAttribute('data-role', 'profile-summary');
     var customBody = h('div', { class: 'stolon-stack', 'data-role': 'profile-custom' }, [jfBody.element, jfTimeout.element, jfMedia.element, jfConnections.element]);
-    var jellyfinPart = h('div', { class: 'stolon-stack', 'data-role': 'jellyfin-forwarding' }, [profile.element, summary.element, customBody]);
+    var jellyfinPart = h('div', { class: 'stolon-stack', 'data-role': 'jellyfin-forwarding' }, [profileHelp, profile.element, summary.element, customBody]);
 
     var webSockets = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelWebSockets'), field: 'Options.WebSockets', checked: opts.WebSockets !== false, help: t.tr('ProxyWebSocketsHelp') });
     var buffering = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelBuffering'), field: 'Options.Buffering', checked: !!opts.Buffering, help: t.tr('ProxyBufferingHelp') });
@@ -356,7 +357,7 @@ export function createRouteEditor(route, ctx) {
     // showProfile
     // Shows what the picked preset forwards with, or the fields to set under Custom.
     function showProfile() {
-        var name = profile.input.value;
+        var name = profile.get();
         var isCustom = name === 'Custom';
         customBody.classList.toggle('stolon-hidden', !isCustom);
         summary.element.classList.toggle('stolon-hidden', isCustom);
@@ -365,15 +366,15 @@ export function createRouteEditor(route, ctx) {
 
     // Custom starts from the preset picked before it, so its fields begin from working values.
     var lastProfile = opts.Profile;
-    profile.input.addEventListener('change', function () {
-        if (profile.input.value === 'Custom' && lastProfile !== 'Custom') {
+    profile.element.addEventListener('change', function () {
+        if (profile.get() === 'Custom' && lastProfile !== 'Custom') {
             var from = PROFILES[lastProfile];
             jfBody.input.value = text(from.MaxBodyMb);
             jfTimeout.input.value = text(from.TimeoutSeconds);
             jfMedia.input.value = text(from.MediaTimeoutMinutes);
             jfConnections.input.value = text(from.BackendConnections);
         }
-        lastProfile = profile.input.value;
+        lastProfile = profile.get();
         showProfile();
     });
     showProfile();
@@ -386,7 +387,7 @@ export function createRouteEditor(route, ctx) {
     function readOptions(jellyfin) {
         var headers = function (editor) { return editor.getValue().filter(function (x) { return x.key; }).map(function (x) { return { Name: String(x.key).trim(), Value: String(x.value || '').trim() }; }); };
         if (jellyfin) {
-            var name = profile.input.value;
+            var name = profile.get();
             var p = name === 'Custom'
                 ? { MaxBodyMb: number(jfBody.input), TimeoutSeconds: number(jfTimeout.input), MediaTimeoutMinutes: number(jfMedia.input), BackendConnections: number(jfConnections.input) }
                 : PROFILES[name];
@@ -399,7 +400,7 @@ export function createRouteEditor(route, ctx) {
             });
         }
         return {
-            Profile: profile.input.value,
+            Profile: profile.get(),
             WebSockets: !!webSockets.input.checked,
             Buffering: !!buffering.input.checked,
             MaxBodyMb: number(bodyLimit.input),

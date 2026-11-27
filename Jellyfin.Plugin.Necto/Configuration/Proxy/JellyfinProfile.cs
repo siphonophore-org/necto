@@ -12,7 +12,7 @@ public enum JellyfinProfile
     LowMemory,
 
     /// <summary>Long timeouts and large uploads, for streaming far from home.</summary>
-    RemoteStreaming,
+    HighBandwidth,
 
     /// <summary>The route's own values.</summary>
     Custom

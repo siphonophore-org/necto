@@ -80,10 +80,15 @@ test('a route to Jellyfin picks a preset, Custom opens its fields from the last 
     var field = function (name) { return editor.element.querySelector('[data-field="' + name + '"]'); };
     var hidden = function (node) { return node.closest('.stolon-hidden') !== null; };
     var summary = editor.element.querySelector('[data-role="profile-summary"]');
-    var pick = function (name) { field('Options.Profile').value = name; field('Options.Profile').dispatchEvent(new globalThis.Event('change')); };
+    var radios = function () { return Array.prototype.slice.call(field('Options.Profile').querySelectorAll('input[type="radio"]')); };
+    var pick = function (name) {
+        radios().forEach(function (r) { r.checked = r.value === name; });
+        radios().find(function (r) { return r.value === name; }).dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    };
 
-    assert.deepEqual(Array.prototype.map.call(field('Options.Profile').options, function (o) { return o.value; }), ['Recommended', 'LowMemory', 'RemoteStreaming', 'Custom']);
-    assert.equal(field('Options.Profile').value, 'Recommended');
+    assert.deepEqual(radios().map(function (r) { return r.value; }), ['Recommended', 'LowMemory', 'HighBandwidth', 'Custom']);
+    assert.equal(radios().find(function (r) { return r.checked; }).value, 'Recommended');
+    assert.match(field('Options.Profile').textContent, /Low memory[\s\S]*Holds fewer connections/);
     assert.deepEqual([hidden(summary), hidden(field('Options.Jellyfin.MaxBodyMb')), hidden(field('Options.WebSockets'))], [false, true, true]);
     assert.match(summary.textContent, /Same as Settings/);
     assert.match(summary.textContent, /360 minutes/);
@@ -112,7 +117,7 @@ test('a route to Jellyfin picks a preset, Custom opens its fields from the last 
     assert.equal(editor.validate(), null);
     var icons = Array.prototype.map.call(editor.element.querySelectorAll('.stolon-collapsible-tile'), function (n) { return n.textContent; });
     assert.equal(new Set(icons).size, icons.length);
-    assert.equal(proxy.profileName(2), 'RemoteStreaming');
+    assert.equal(proxy.profileName(2), 'HighBandwidth');
     assert.equal(proxy.profileName('Seerr'), 'Recommended');
 });
 

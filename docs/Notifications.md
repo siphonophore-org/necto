@@ -2,15 +2,13 @@
 
 Notifications sends every event a Necto tool reports to the people and channels it goes to.
 
+Notifications has no page of its own. Everything about it lives in **Settings > Notifications**, in the **System** group, and the Dashboard's **Notifications** card opens that section.
+
 ## Channels
 
-Cards at the top count the sends in the send log that went, as **Sent**, and those that **Failed**. They show a dash until the log is read.
+Cards at the top of **Settings > Notifications** count the sends in the send log that went, as **Sent**, and those that **Failed**. They show a dash until the log is read.
 
-**Notifications** lists every channel, each with **Test**, which sends the test event to that channel and shows what happened. A badge beside **Test** marks a channel that is **Off** or **Not set up**. A channel with a name of its own, such as a webhook, also shows its kind. **Channel settings** opens **Settings > Notifications**, where the channels are set.
-
-| Notifications | Notifications on a phone |
-| :---: | :---: |
-| ![Notifications](screenshots/Notifications.png) | ![Notifications on a phone](screenshots/Notifications%20Phone.png) |
+**Test browser notifications** and **Test Jellyfin messages**, under the user channels, and **Test** on each administrators' channel send the test event to that channel. The section's status line shows what happened. A channel added since the last **Save** asks to be saved first.
 
 ![Channel editor](screenshots/Channel%20Editor.png)
 
@@ -30,7 +28,7 @@ A test of **Browser notifications**, **Jellyfin messages**, or **Administrators*
 
 * **Groups > Notifications** lists the events for users, those about a member such as a request's or an invite's, under the tool that sends each. Each has a **Browser** switch for browser notifications and a **Jellyfin** switch for Jellyfin messages, and an event with both off is off for members.
 * An event for users goes only to the user it is about, when the account is on, by the methods their group turns on for it. Administrators get every event about them.
-* Any other event, such as a proxy ban or a missing disk, is for administrators only. It goes only to the channels on this page that pick it, such as **Administrators**.
+* Any other event, such as a proxy ban or a missing disk, is for administrators only. It goes only to the administrators' channels that pick it, such as **Administrators**.
 * Every event goes to each administrators' channel that picks it, or takes every event.
 * An administrator the event is about gets it once, as a user, and not again through **Administrators**. An event can also leave people out, such as the administrator who approved a request.
 * **Everyone** sends **Request approved**, **Request rejected**, **Request available**, and **Issue resolved** by both methods on a fresh install, so a user in no group hears about their own requests and issues. A new group starts with the same four, and can turn them off.

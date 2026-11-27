@@ -33,7 +33,6 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
         "scripts",
         "pages",
         "storage",
-        "notifications",
         "settings",
         "troubleshooting"
     };
