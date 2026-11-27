@@ -108,3 +108,10 @@
 /* The share card's body, its note and warning over the QR code and the Share button. */
 /* Example: <div class="necto-dashboard-share"><div class="fieldDescription"></div></div> */
 .necto-dashboard-share { display: flex; flex-direction: column; gap: var(--stolon-gap-narrow); }
+
+/* necto-link-aside */
+/* A record row whose aside holds a link with Copy and a QR button, such as an invite's. The link wraps inside a capped width, so the row's name and details keep their room. */
+/* Example: <div class="stolon-record-list-aside"><div class="stolon-qr-code stolon-inline">...</div></div> */
+.stolon-record-list-aside:has(> .stolon-qr-code.stolon-inline) { flex: 0 1 22em; min-width: 0; }
+.stolon-record-list-aside > .stolon-qr-code.stolon-inline { min-width: 0; width: 100%; }
+.stolon-record-list-aside > .stolon-qr-code.stolon-inline .stolon-copy-field-text { min-width: 0; overflow-wrap: anywhere; }
