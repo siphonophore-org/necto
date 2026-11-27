@@ -134,11 +134,11 @@ Every response drops the `Server`, `X-Powered-By`, and timing headers, and gets 
 
 ## Visitors
 
-The **Visitors** section shows the banned addresses with when each ban began and ends and **Unban**, what each address did with **Block**, **Unblock**, or **Unblock** for its country, and the totals by country with the last visit from each. With **Location lookup** set to **Country and city**, the activity table also shows each visitor's city.
+The **Visitors** section shows the banned addresses with when each ban began and ends and **Unban**, and what each address did with **Block**, **Unblock**, or **Unblock** for its country. The totals by country are on the [Dashboard](Dashboard.md)'s **Locations**. With **Location lookup** set to **Country and city**, the activity table also shows each visitor's city.
 
 **Block** and unblocking a country ask first, since a country rule covers many people. Unblocking a country lets its addresses through, and addresses blocked one by one stay blocked. Your network and trusted networks are never blocked, so their **Block** is off. An address blocked by a range in the block list has its **Unblock** off, since the range is changed in **Settings**. Hover a button that is off to see why.
 
-With **Record visitors** off, nothing is recorded. Locations are looked up on this server with DB-IP's free database, which the location task keeps current. The section says when lookups are off.
+With **Record visitors** off, nothing is recorded. Locations are looked up on this server with DB-IP's free database, which the location task keeps current. **Troubleshooting > Proxy** says how the location database stands, or that lookups are off.
 
 The [Dashboard](Dashboard.md) map shows the same totals by country, through `GET /Dashboard/Map`, and its share card shows the proxy's public address from `GET /Proxy/PublicAddress`.
 
@@ -162,7 +162,7 @@ The description under **Country rule** says what the picked rule does and, for *
 
 ## Troubleshooting
 
-**Troubleshooting > Proxy** shows the proxy's state, the addresses it listens on, the Jellyfin it forwards to, the LAN address, the location database, the server's country, and which defaults the server's memory picks. While a country rule refused anyone, **Refused by country** counts them since Jellyfin started. With a public name, it also shows the name, the addresses it points to, and this server's public address.
+**Troubleshooting > Proxy** shows what the Proxy page does not: the addresses the proxy listens on, the Jellyfin it forwards to, the LAN address, the location database, the server's country, and which defaults the server's memory picks. While a country rule refused anyone, **Refused by country** counts them since Jellyfin started. With a public name, it also shows the name, the addresses it points to, and this server's public address.
 
 ![Proxy troubleshooting](screenshots/troubleshooting/Proxy.png)
 
@@ -170,7 +170,7 @@ The description under **Country rule** says what the picked rule does and, for *
 * **Check from the internet**, **Renew certificates**, and **Update the location database** run their tasks now.
 * **Restart the proxy** stops it and starts it again, such as after a port was freed.
 * **Reset to defaults** puts every listener and protection value back to its default. It lists the settings that change and asks first. The routes, **Trusted networks**, the block list, and the country rule with its countries stay.
-* **Undo trusting the proxy** and **Clear visitor history** ask first. The tile of **Undo trusting the proxy** is gray while Jellyfin does not trust the proxy.
+* **Clear visitor history** asks first. Bans stay.
 
 To turn the proxy off without the dashboard, create an empty file named `DISABLE` in the proxy's folder, `plugins/configurations/Jellyfin.Plugin.Necto.Proxy` in Jellyfin's data folder, and restart Jellyfin. **Recovery** shows the full path in a code block.
 

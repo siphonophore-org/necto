@@ -133,11 +133,10 @@ Saving or deleting a group applies its peers to the tunnel at once, and any othe
 
 ## Troubleshooting
 
-**Troubleshooting > VPN** holds the tunnels and the peers by user.
+**Troubleshooting > VPN** holds the peers by user and **Restart tunnels**. Each tunnel's state and error show on the VPN page.
 
 ![WireGuard troubleshooting](screenshots/troubleshooting/WireGuard.png)
 
-* **Tunnels** lists the host and each connection that runs, with its state and its last error or how many peers are connected.
 * **Restart tunnels** stops every tunnel and starts them again. Peers reconnect on their own.
 * **Peers by user** lists each user's peers against what their groups give, such as "2 of 3 peers".
 

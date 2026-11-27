@@ -4,7 +4,7 @@
 // defaults. Troubleshooting holds the tunnels' state, a restart, and each user's peers against their groups.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
-import { readCount, createDataLimitField, normalizePeriod, dataText, tunnelStateLabel } from './configurationpage?name=necto_wireguard_common.js';
+import { readCount, createDataLimitField, normalizePeriod, dataText } from './configurationpage?name=necto_wireguard_common.js';
 
 var h = nectoModule.h;
 
@@ -246,28 +246,6 @@ export function buildSettings(content, ctx) {
     };
 }
 
-// tunnelItems
-// Turns the running tunnels into rows: the host and each connection, with its state and last error.
-//
-// Inputs
-// tunnels [object[]]: The answer of WireGuard/Status.
-// t [object]: The strings.
-//
-// Output
-// [object[]]: The rows for a record list.
-export function tunnelItems(tunnels, t) {
-    return (tunnels || []).map(function (tunnel) {
-        var color = tunnel.State === 'Running' ? 'green' : tunnel.State === 'Failed' ? 'red' : 'purple';
-        var connected = (tunnel.Peers || []).filter(function (p) { return p.Connected; }).length;
-        return {
-            id: tunnel.Key,
-            title: tunnel.Key === 'host' ? t.tr('LabelServerHost') : tunnel.Name,
-            secondary: tunnel.Error || t.format('WireGuardTunnelConnected', connected),
-            tags: [{ label: tunnelStateLabel(t, tunnel.State), color: color }]
-        };
-    });
-}
-
 // allowanceText
 // Says what a user's groups give them, such as "2 of 3 peers, 500 GB/month together".
 //
@@ -286,8 +264,8 @@ export function allowanceText(row, shared) {
 }
 
 // buildTroubleshooting
-// Fills the WireGuard section of Troubleshooting: the tunnels with their state and errors, Restart tunnels, and each
-// user's peers against what their groups give.
+// Fills the WireGuard section of Troubleshooting: each user's peers against what their groups give, and Restart
+// tunnels. Each tunnel's state and error show on the VPN page.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -301,19 +279,17 @@ export function buildTroubleshooting(content, ctx) {
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var restartRow = nectoModule.createResetRow({ icon: 'autorenew', label: t.tr('WireGuardRestartTitle'), help: t.tr('WireGuardRestartHelp'), button: t.tr('Restart'), action: 'restart' });
     var restart = restartRow.button;
-    var tunnelList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderTunnels'), emptyText: t.tr('WireGuardEmptyTunnels') });
     var userList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderPeersByUser'), emptyText: t.tr('EmptyUsers') });
 
     [
         status,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderTunnels') }),
-        tunnelList.element,
-        nectoModule.createResetGroup([
-            restartRow
-        ]).element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderPeersByUser') }),
         h('div', { class: 'fieldDescription', text: t.tr('WireGuardPeersByUserHelp') }),
-        userList.element
+        userList.element,
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
+        nectoModule.createResetGroup([
+            restartRow
+        ]).element
     ].forEach(function (node) { content.appendChild(node); });
 
     function report(message, isError) {
@@ -321,9 +297,6 @@ export function buildTroubleshooting(content, ctx) {
     }
 
     function load() {
-        shared.request('WireGuard/Status').then(function (tunnels) { tunnelList.setItems(tunnelItems(tunnels, t)); }).catch(function () {
-            report(t.tr('WireGuardErrorLoad'), true);
-        });
         shared.request('WireGuard/Users').then(function (rows) {
             userList.setItems((rows || []).map(function (row) {
                 return { id: row.UserId, title: row.Name, secondary: allowanceText(row, shared) };
@@ -344,7 +317,6 @@ export function buildTroubleshooting(content, ctx) {
     return {
         load: load,
         destroy: function () {
-            tunnelList.destroy();
             userList.destroy();
         }
     };

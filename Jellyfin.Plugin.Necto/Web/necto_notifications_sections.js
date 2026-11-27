@@ -570,8 +570,8 @@ export function browserItems(browsers, shared) {
 }
 
 // buildTroubleshooting
-// Fills the Notifications section of Troubleshooting: a test to the administrator, the send log, the browsers with
-// notifications on, the held messages, and new push keys.
+// Fills the Notifications section of Troubleshooting: the send log, the browsers with notifications on, the held
+// messages, and new push keys. The tests live beside their channels in Settings.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -593,10 +593,6 @@ function buildTroubleshooting(content, ctx) {
 
     [
         status,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderTests') }),
-        nectoModule.createResetGroup([
-            nectoModule.createResetRow({ icon: 'send', label: t.tr('NotificationsTestMe'), help: t.tr('NotificationsTestMeHelp'), button: t.tr('ButtonSendTest'), action: 'test-me' })
-        ]).element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderLog') }),
         h('div', { class: 'fieldDescription', text: t.tr('NotificationsLogHelp') }),
         logBox,
@@ -671,14 +667,6 @@ function buildTroubleshooting(content, ctx) {
         });
     }
 
-    button('test-me').addEventListener('click', function () {
-        Promise.all(['browsers', 'apps'].map(function (id) {
-            return shared.request('Notifications/Channels/' + id + '/Test', 'POST').catch(function () { return { Ok: false, Message: t.tr('NotificationsErrorTest') }; });
-        })).then(function (results) {
-            report(t.tr('LabelBrowserNotifications') + ': ' + results[0].Message + ' ' + t.tr('NotificationsChannelApps') + ': ' + results[1].Message, !(results[0].Ok || results[1].Ok));
-            loadLog();
-        });
-    });
     button('refresh-log').addEventListener('click', loadLog);
     button('clear-log').addEventListener('click', function () {
         shared.request('Notifications/Log', 'DELETE').then(function () { report(t.tr('NotificationsLogCleared'), false); loadLog(); }).catch(fail('NotificationsErrorClear'));

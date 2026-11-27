@@ -192,11 +192,10 @@ A test checks that every key a tool sends is in a list, so no event is left out 
 
 ## Troubleshooting
 
-**Troubleshooting > Notifications** holds the tests and repairs.
+**Troubleshooting > Notifications** holds the send log and the repairs. The tests sit beside their channels in **Settings > Notifications**.
 
 ![Notifications troubleshooting](screenshots/troubleshooting/Notifications.png)
 
-* **Send test** beside **Send a test to me** sends the test to your browsers and your Jellyfin apps.
 * **Send log** lists the latest 200 sends, newest first, with what happened. It starts empty when the server starts. **Refresh** reads it again, and **Clear** beside **Clear the send log** empties it.
 * **Browsers** lists the browsers with notifications on, by user, and the count of Jellyfin messages waiting for an app while any wait.
 * **Clear waiting messages** asks first, then drops every held Jellyfin message. Its tile is gray while none wait, and the tile of **Clear the send log** is gray while the log is empty.

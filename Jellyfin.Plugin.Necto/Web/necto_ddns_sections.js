@@ -129,8 +129,8 @@ function buildSettings(content, ctx) {
 }
 
 // buildTroubleshooting
-// Fills the DDNS section of Troubleshooting: why the last run could not find the public IP, running the update now,
-// and resetting a record.
+// Fills the DDNS section of Troubleshooting: running the update task now and resetting a record. Update now and why
+// the last run could not find the public IP show on the DDNS page.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -143,16 +143,13 @@ function buildTroubleshooting(content, ctx) {
     var t = shared.t;
     var pollers = [];
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var detection = h('div', { class: 'stolon-error stolon-hidden', role: 'status', 'data-role': 'detection' });
     var record = nectoModule.createSelectField({ label: t.tr('DdnsLabelRecord'), field: 'ResetRecord', help: t.tr('DdnsResetRecordHelp') });
     var rows = nectoModule.createResetGroup([
-        nectoModule.createResetRow({ icon: 'schedule', label: t.tr('DdnsTaskUpdate'), help: t.tr('DdnsTaskUpdateHelp'), button: t.tr('ButtonRunTask'), action: 'run-update' }),
-        nectoModule.createResetRow({ icon: 'published_with_changes', label: t.tr('DdnsButtonCheckAll'), help: t.tr('DdnsCheckAllHelp'), button: t.tr('ButtonRunTask'), action: 'update-now' })
+        nectoModule.createResetRow({ icon: 'schedule', label: t.tr('DdnsTaskUpdate'), help: t.tr('DdnsTaskUpdateHelp'), button: t.tr('ButtonRunTask'), action: 'run-update' })
     ]).element;
     var resetRow = nectoModule.createResetRow({ icon: 'replay', label: t.tr('DdnsResetRecord'), help: t.tr('DdnsResetRecordRowHelp'), button: t.tr('Reset'), action: 'reset-record' }).element;
     [
         status,
-        detection,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderChecks') }),
         rows,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
@@ -173,11 +170,9 @@ function buildTroubleshooting(content, ctx) {
     }
 
     // load
-    // Reads the records, and why the last run could not find the public IP.
+    // Reads the records the reset picker offers.
     function load() {
         return shared.request('Ddns/Records').then(function (data) {
-            detection.textContent = data.DetectionMessage || '';
-            detection.classList.toggle('stolon-hidden', !data.DetectionMessage);
             record.setOptions((data.Records || []).map(function (entry) {
                 var r = entry.Record;
                 return { value: r.Id, text: (r.Name || r.Hostname || r.Id) };
@@ -191,18 +186,6 @@ function buildTroubleshooting(content, ctx) {
     button('run-update').addEventListener('click', function () {
         shared.runScheduledTask(button('run-update'), DDNS_UPDATE_TASK, t.tr('ButtonRunTask'), load).then(function (p) { pollers.push(p); }).catch(function (err) {
             return shared.errorText(err, t.tr('DdnsErrorRunTask')).then(function (text) { report(text, true); });
-        });
-    });
-    button('update-now').addEventListener('click', function () {
-        report(t.tr('DdnsUpdating'), false);
-        shared.request('Ddns/Update', 'POST').then(function (outcome) {
-            var records = (outcome && outcome.Records) || [];
-            var failed = records.filter(function (r) { return !r.Success && !r.Skipped; });
-            var lines = records.map(function (r) { return r.Hostname + ': ' + (r.Message || r.Action); });
-            report(lines.length ? lines.join(' ') : t.tr('DdnsNoRecordsToUpdate'), failed.length > 0);
-            load();
-        }).catch(function (err) {
-            return shared.errorText(err, t.tr('DdnsErrorUpdate')).then(function (text) { report(text, true); });
         });
     });
     button('reset-record').addEventListener('click', function () {

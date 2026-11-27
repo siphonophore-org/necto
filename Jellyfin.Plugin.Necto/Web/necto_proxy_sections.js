@@ -281,6 +281,25 @@ export function nameItems(name, t) {
     ];
 }
 
+// locationText
+// Says how the location database stands, or that lookups are off.
+//
+// Inputs
+// loc [object]: The location database status from Proxy/Visitors, or null.
+// shared [object]: The Necto helper bag.
+//
+// Output
+// [string]: The sentence, or empty when there is no status.
+export function locationText(loc, shared) {
+    var t = shared.t;
+    if (!loc) return '';
+    if (fields.enumName(loc.Detail, LOCATIONS) === 'Off') return t.tr('ProxyLocationOff');
+    if (loc.Downloading) return t.tr('ProxyLocationDownloading');
+    if (loc.Error) return loc.Error;
+    if (loc.Loaded) return loc.BuiltUtc ? t.format('ProxyLocationLoadedOn', shared.formatDate(loc.BuiltUtc)) : t.tr('ProxyLoaded');
+    return t.tr('ProxyNotLoaded');
+}
+
 // buildSettings
 // Fills the Proxy section of Settings: turning the proxy on, the Let's Encrypt terms, the visitor history, and the
 // listener and protection values. It saves through Proxy/Settings, which leaves the routes alone.
@@ -439,8 +458,8 @@ function buildSettings(content, ctx) {
 }
 
 // buildTroubleshooting
-// Fills the Proxy section of Troubleshooting: the proxy's checks and restart, the tasks, the repairs, and how to
-// turn the proxy off without the dashboard.
+// Fills the Proxy section of Troubleshooting: what the Proxy page does not show of the proxy's state, the checks and
+// tasks, the repairs, and how to turn the proxy off without the dashboard.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -455,7 +474,6 @@ function buildTroubleshooting(content, ctx) {
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var state = nectoModule.createDefinitionList({ items: [] });
     var reach = nectoModule.createDefinitionList({ items: [] });
-    var undoRow = nectoModule.createResetRow({ icon: 'undo', label: t.tr('ProxyUndoTrust'), help: t.tr('ProxyUndoTrustHelp'), button: t.tr('ButtonUndo'), action: 'undo', destructive: true });
     var recoveryPath = h('pre', { class: 'stolon-code stolon-code-block', 'data-role': 'recovery-path' });
     [
         status,
@@ -472,7 +490,6 @@ function buildTroubleshooting(content, ctx) {
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
         nectoModule.createResetGroup([
             nectoModule.createResetRow({ icon: 'restart_alt', label: t.tr('ProxyRestart'), help: t.tr('ProxyRestartHelp'), button: t.tr('Restart'), action: 'restart' }),
-            undoRow,
             nectoModule.createResetRow({ icon: 'settings_backup_restore', label: t.tr('ProxyResetDefaults'), help: t.tr('ProxyResetDefaultsHelp'), button: t.tr('Reset'), action: 'reset', destructive: true }),
             nectoModule.createResetRow({ icon: 'delete_sweep', label: t.tr('ProxyClearHistory'), help: t.tr('ProxyClearHistoryHelp'), button: t.tr('ButtonClear'), action: 'clear', destructive: true })
         ]).element,
@@ -516,29 +533,25 @@ function buildTroubleshooting(content, ctx) {
     }
 
     // load
-    // Reads the proxy's status and the defaults.
+    // Reads the proxy's status, the defaults, and how the location database stands. Whether it runs, whether Jellyfin trusts it, and its error show on
+    // the Proxy page, so they stay off this list.
     function load() {
-        return Promise.all([shared.request('Proxy/Status'), shared.request('Proxy/Defaults')]).then(function (answers) {
+        return Promise.all([shared.request('Proxy/Status'), shared.request('Proxy/Defaults'), shared.request('Proxy/Visitors').catch(function () { return null; })]).then(function (answers) {
             var s = answers[0] || {};
             var d = answers[1] || {};
             var items = [
-                { label: t.tr('TabProxy'), value: t.tr(s.Running ? 'StateRunning' : 'StateStopped') },
                 { label: t.tr('ProxyLabelListening'), value: (s.Addresses || []).join(', ') || t.tr('None') },
                 { label: t.tr('LabelJellyfin'), value: s.Backend },
-                { label: t.tr('ProxyLabelJellyfinTrusts'), value: t.tr(s.JellyfinTrustsProxy ? 'Yes' : 'No') },
                 { label: t.tr('ProxyLabelLan'), value: s.LanAddress || s.DetectedLanAddress || t.tr('Unknown') },
-                { label: t.tr('ProxyLabelLocationDatabase'), value: t.tr(s.CountryDatabaseLoaded ? 'ProxyLoaded' : 'ProxyNotLoaded') },
+                { label: t.tr('ProxyLabelLocationDatabase'), value: answers[2] && answers[2].Location ? locationText(answers[2].Location, shared) : t.tr(s.CountryDatabaseLoaded ? 'ProxyLoaded' : 'ProxyNotLoaded') },
                 { label: t.tr('ProxyLabelServerCountry'), value: s.ServerCountry || t.tr('Unknown') },
                 { label: t.tr('ProxyLabelMemory'), value: t.format(d.IsLowMemory ? 'ProxyMemoryLow' : 'ProxyMemoryStandard', d.MemoryMb) }
             ];
             if (s.CountryRefused && Object.keys(s.CountryRefused).length) items.push({ label: t.tr('ProxyLabelRefusedByCountry'), value: refusedText(s.CountryRefused, t) });
             items = items.concat(nameItems(s.Name, t));
-            if (s.Error) items.push({ label: t.tr('LabelProblem'), value: s.Error });
             state.setItems(items);
             showReach(s.Reachability);
             recoveryPath.textContent = s.DisableFlagPath || 'DISABLE';
-            // Undo turns gray while Jellyfin has nothing of the proxy's to undo.
-            undoRow.setEmpty(fields.enumName(s.TakeoverPhase, ['Unmanaged', 'PendingRestart', 'Managed', 'Degraded']) === 'Unmanaged');
         }).catch(fail('ProxyErrorLoad'));
     }
 
@@ -569,11 +582,6 @@ function buildTroubleshooting(content, ctx) {
             report(s.Running ? t.tr('ProxyRestarted') : (s.Error || t.tr('StateStopped')), !s.Running);
             load();
         }).catch(fail('ProxyErrorRestart'));
-    });
-    button('undo').addEventListener('click', function () {
-        confirmThen('ProxyConfirmUndoTrust', 'ProxyUndoTrust', 'ButtonUndo', function () {
-            shared.request('Proxy/Trust/Undo', 'POST').then(function (r) { report(r.Message || t.tr('ProxyDone'), !r.Success); load(); }).catch(fail('ProxyErrorTrust'));
-        });
     });
     button('reset').addEventListener('click', function () {
         shared.request('Proxy/Settings').then(function (s) {

@@ -175,6 +175,9 @@ test('the Troubleshooting section lists the send log and the browsers, and asks 
     assert.match(section.querySelector('[data-role="log"]').textContent, /Invite used[\s\S]*Could not send\./);
     assert.match(section.querySelector('[data-role="browsers"]').textContent, /viewer[\s\S]*Safari/);
     assert.equal(section.querySelector('[data-role="held"]').textContent, '2 Jellyfin messages wait for an app to come online.');
+    // The tests live beside their channels in Settings, never a second time here.
+    assert.equal(section.querySelector('[data-action="test-me"]'), null);
+    assert.deepEqual(texts(section, '.stolon-subsection-title'), ['Send log', 'Browsers']);
 
     section.querySelector('[data-action="reset-keys"]').click();
     await settle(50);

@@ -699,48 +699,6 @@ export function rowAction(row) {
     return { action: 'block', value: row.Ip };
 }
 
-// countryRows
-// Joins the totals by country into one row per country, with the latest visit any of them saw.
-//
-// Inputs
-// data [object]: The answer from Proxy/Visitors.
-//
-// Output
-// [object[]]: One row per country.
-export function countryRows(data) {
-    var rows = {};
-    var add = function (list, field) {
-        (list || []).forEach(function (c) {
-            var row = rows[c.CountryCode] || (rows[c.CountryCode] = { Code: c.CountryCode, Country: c.Country || c.CountryCode, People: 0, Failed: 0, Blocked: 0, LastUtc: null });
-            row[field] += c.Count || 0;
-            if (c.LastUtc && (!row.LastUtc || new Date(c.LastUtc) > new Date(row.LastUtc))) row.LastUtc = c.LastUtc;
-        });
-    };
-    add(data.PeopleByCountry, 'People');
-    add(data.FailedByCountry, 'Failed');
-    add(data.BlockedByCountry, 'Blocked');
-    return Object.keys(rows).map(function (k) { return rows[k]; });
-}
-
-// locationText
-// Says how the location database stands, or that lookups are off.
-//
-// Inputs
-// loc [object]: The location database status from Proxy/Visitors, or null.
-// shared [object]: The Necto helper bag.
-//
-// Output
-// [string]: The sentence, or empty when there is no status.
-export function locationText(loc, shared) {
-    var t = shared.t;
-    if (!loc) return '';
-    if (fields.enumName(loc.Detail, LOCATIONS) === 'Off') return t.tr('ProxyLocationOff');
-    if (loc.Downloading) return t.tr('ProxyLocationDownloading');
-    if (loc.Error) return loc.Error;
-    if (loc.Loaded) return loc.BuiltUtc ? t.format('ProxyLocationLoadedOn', shared.formatDate(loc.BuiltUtc)) : t.tr('ProxyLoaded');
-    return t.tr('ProxyNotLoaded');
-}
-
 // showsCity
 // Tells whether the visitor history looks up cities, so the activity table shows them.
 //
@@ -794,6 +752,17 @@ export default function (view) {
         showOff(!proxyStatus.Enabled);
     }
 
+    // showRouteParts
+    // Shows the framed No routes yet box with its own Add route while the proxy is on with no route, and the route
+    // list with Add route under it once there is one. While the proxy is off, only routes already added show.
+    function showRouteParts() {
+        var off = !proxyStatus.Enabled;
+        var none = routes.length === 0;
+        shared.setVisible('proxyNoRoutes', !off && none);
+        shared.setVisible('proxyRoutes', !none);
+        shared.setVisible('proxyActions', !off && !none);
+    }
+
     // showOff
     // Shows the off state while the proxy is off: one line pointing to Settings in place of the cards, Add route,
     // Jellyfin, and Visitors. Routes already added stay listed. The heading names the tool itself, since a tool that
@@ -805,8 +774,7 @@ export default function (view) {
         box.innerHTML = off ? shared.emptySection(t.tr('ProxyOffNotice')) : '';
         shared.setVisible(box, off);
         shared.setVisible('proxyCards', !off);
-        shared.setVisible('proxyActions', !off);
-        shared.setVisible('proxyRoutes', !off || routes.length > 0);
+        showRouteParts();
         if (jellyfin) shared.setVisible(jellyfin.section.element, !off);
         if (visitors) shared.setVisible(visitors.element, !off);
     }
@@ -880,11 +848,7 @@ export default function (view) {
         routes = (answer && answer.Routes) || [];
         statuses = (answer && answer.Status) || [];
         var items = routeItems(routes, statuses, shared.t);
-        var none = items.length === 0;
-        [['#proxyNoRoutes', !none], ['#proxyRoutes', none], ['#proxyActions', none]].forEach(function (pair) {
-            var node = view.querySelector(pair[0]);
-            if (node) node.classList.toggle('stolon-hidden', pair[1]);
-        });
+        showRouteParts();
         if (list) list.setItems(items);
         else {
             list = nectoModule.createRecordList({
@@ -1139,7 +1103,8 @@ export default function (view) {
     }
 
     // createVisitors
-    // Builds the Visitors section: the bans, what each address did, and the countries.
+    // Builds the Visitors section: the bans and what each address did. The countries show on the Dashboard's
+    // Locations, and how the location database stands shows in Troubleshooting.
     function createVisitors() {
         var t = shared.t;
         var content = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr('ProxyVisitorsHelp') })]);
@@ -1147,14 +1112,11 @@ export default function (view) {
         var status = h('div', { class: 'stolon-status-text', role: 'status' });
         var bannedHost = h('div', {});
         var activityHost = h('div', {});
-        var countryHost = h('div', {});
         var attribution = h('div', { class: 'fieldDescription' });
-        var location = h('div', { class: 'fieldDescription', 'data-role': 'location' });
         [off, status,
             h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderBanned') }), bannedHost,
             h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderActivity') }), activityHost,
-            h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderCountries') }), countryHost,
-            location, attribution].forEach(function (n) { content.appendChild(n); });
+            attribution].forEach(function (n) { content.appendChild(n); });
         var section = nectoModule.createCollapsibleSection({ title: t.tr('HeaderVisitors'), icon: 'travel_explore', collapsed: true, content: content });
         section.element.id = 'proxyVisitors';
         var holderVisitors = view.querySelector('#proxyVisitors');
@@ -1213,20 +1175,6 @@ export default function (view) {
             emptyText: t.tr('ProxyEmptyActivity')
         });
         activityHost.appendChild(activity.element);
-        var countries = nectoModule.createDataTable({
-            columns: [
-                { key: 'Country', label: t.tr('HeaderCountry'), icon: 'flag' },
-                { key: 'People', label: t.tr('People'), icon: 'group', align: 'end' },
-                { key: 'Failed', label: t.tr('HeaderFailedSignIns'), icon: 'error', align: 'end' },
-                { key: 'Blocked', label: t.tr('HeaderRefused'), icon: 'block', align: 'end' },
-                { key: 'LastUtc', label: t.tr('ProxyColumnLastSeen'), icon: 'schedule', value: function (c) { return c.LastUtc ? shared.formatDate(c.LastUtc) : ''; } }
-            ],
-            rows: [],
-            rowKey: 'Code',
-            label: t.tr('HeaderCountries'),
-            emptyText: t.tr('ProxyEmptyCountries')
-        });
-        countryHost.appendChild(countries.element);
         var loads = 0;
 
         // visitorAction
@@ -1278,8 +1226,6 @@ export default function (view) {
                 activity.setColumnHidden('city', !showsCity(data));
                 activity.setRows(rows);
                 activity.setFilterOptions('place', placeOptions(rows));
-                location.textContent = locationText(data.Location, shared);
-                countries.setRows(countryRows(data));
                 attribution.textContent = data.Attribution || '';
             }).catch(function (err) {
                 if (mine !== loads) return;
@@ -1287,7 +1233,7 @@ export default function (view) {
             });
         }
 
-        return { element: section.element, load: load, destroy: function () { banned.destroy(); activity.destroy(); countries.destroy(); section.destroy && section.destroy(); } };
+        return { element: section.element, load: load, destroy: function () { banned.destroy(); activity.destroy(); section.destroy && section.destroy(); } };
     }
 
     var made = nectoModule.createNectoPage(view, {

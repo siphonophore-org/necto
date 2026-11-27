@@ -254,15 +254,15 @@ test('turning WireGuard on without wireguard-go asks to download it, and Cancel 
     assert.equal(opened.page.requests.some(function (r) { return r.url === 'WireGuard/Sidecar/Download'; }), false);
 });
 
-test('the WireGuard section of Troubleshooting lists the tunnels, Restart, and each user against their groups', async function () {
+test('the WireGuard section of Troubleshooting lists each user against their groups and Restart, and leaves the tunnels to the VPN page', async function () {
     var opened = await openTool('troubleshooting', {
         'GET WireGuard/Status': [{ Key: 'host', Name: 'Host', State: 'Failed', Error: 'address already in use', Peers: [] }],
         'GET WireGuard/Users': [{ UserId: VIEWER, Name: 'viewer', Used: 2, MayHavePeers: true, MaxPeers: 1, DataLimit: 0 }]
     });
     var section = opened.section;
 
-    assert.deepEqual(texts(section, '.stolon-subsection-title'), ['Tunnels', 'Peers by user']);
-    assert.match(section.textContent, /address already in use/);
+    assert.deepEqual(texts(section, '.stolon-subsection-title'), ['Peers by user', 'Repairs']);
+    assert.doesNotMatch(section.textContent, /address already in use/);
     assert.match(section.textContent, /2 of 1 peers/);
     clickButton(section, 'Restart');
     await settle(50);

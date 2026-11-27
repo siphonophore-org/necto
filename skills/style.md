@@ -263,6 +263,21 @@ Every tool page uses Jellyfin's page shell. The tool app takes the page's view o
 * A tool turned off in **Settings** leaves the sidebar, the Dashboard, the group editor, and Troubleshooting.
 * A tool page holds no settings and no permissions. Settings go in the tool's section of **Settings**, and permissions go on groups.
 
+### Where Things Live
+
+Each control, status, action, list, and setting lives in exactly one place. This is the user's decision, and it holds for every tool.
+
+| Place | Holds |
+| :--- | :--- |
+| A tool's own page | The tool's day-to-day work and its status: its lists, its editors, the actions taken on its records, and its own state and health. |
+| **Settings** | Configuration. |
+| **Troubleshooting** | Only what a user reaches for when something is wrong: running a scheduled task now, repairs and re-applies, clearing or resetting data, and diagnostics that are not the tool's normal status. |
+
+* Nothing in Troubleshooting repeats what the tool page or Settings already shows or does. A tool page's **Refresh** or **Update now** leaves no matching Troubleshooting row, and a state the page shows in a card, badge, or banner leaves no matching line in Troubleshooting.
+* A test sits beside the channel or record it tests, so it lives where that is set, never again in Troubleshooting.
+* The Dashboard sums up each tool with its card, and a table it shows, such as **Locations**, is not repeated on a tool page.
+* When something turns up in two places, keep it where this table puts it and remove the other copy with its strings, code, docs, and tests. A Troubleshooting section left with nothing leaves the page.
+
 ### Sections
 
 | Need | Component |
@@ -506,6 +521,7 @@ Run every new or changed string through this list.
 * [ ] Stolon's typings were searched before any markup was built by hand.
 * [ ] The component comes from Stolon, unchanged.
 * [ ] Each Settings or Troubleshooting section, and each reset row, leads with its icon tile.
+* [ ] Nothing is shown or done in two places, per [Where Things Live](#where-things-live).
 * [ ] Colors come from Stolon tokens and mean what [Meaning](#meaning) says.
 * [ ] The string comes from a key, per [Translations](#translations).
 * [ ] The docs use the same label.

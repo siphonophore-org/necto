@@ -177,22 +177,15 @@ test('rowAction unbans a ban, never blocks your network, and lets a country thro
     assert.equal(proxy.rowAction({ Ip: '198.51.100.9' }).action, 'block');
 });
 
-test('countryRows joins the totals and keeps the latest visit, and locationText says when lookups are off', async function () {
+test('locationText says how the location database stands, and showsCity whether visits carry a city', async function () {
     var bag = await strings();
     var proxy = await loadScript('necto_proxy.js');
-    var rows = proxy.countryRows({
-        PeopleByCountry: [{ CountryCode: 'FR', Country: 'France', Count: 2, LastUtc: '2026-11-01T00:00:00Z' }],
-        FailedByCountry: [{ CountryCode: 'FR', Country: 'France', Count: 1, LastUtc: '2026-11-20T00:00:00Z' }],
-        BlockedByCountry: [{ CountryCode: 'CN', Country: 'China', Count: 4, LastUtc: '2026-11-05T00:00:00Z' }]
-    });
+    var sections = await loadScript('necto_proxy_sections.js');
 
-    assert.deepEqual(rows.map(function (r) { return [r.Code, r.People, r.Failed, r.Blocked, r.LastUtc]; }), [
-        ['FR', 2, 1, 0, '2026-11-20T00:00:00Z'],
-        ['CN', 0, 0, 4, '2026-11-05T00:00:00Z']
-    ]);
-    assert.equal(proxy.locationText({ Detail: 'Off', Loaded: false }, bag), 'Location lookups are off.');
-    assert.equal(proxy.locationText({ Detail: 2 }, bag), 'Location lookups are off.');
-    assert.equal(proxy.locationText({ Detail: 'Country', Loaded: false }, bag), 'Not loaded');
+    assert.equal(sections.locationText({ Detail: 'Off', Loaded: false }, bag), 'Location lookups are off.');
+    assert.equal(sections.locationText({ Detail: 2 }, bag), 'Location lookups are off.');
+    assert.equal(sections.locationText({ Detail: 'Country', Loaded: false }, bag), 'Not loaded');
+    assert.equal(sections.locationText({ Detail: 'Country', Downloading: true }, bag), 'The location database is downloading.');
     assert.equal(proxy.showsCity({ Settings: { Location: 'City' } }), true);
     assert.equal(proxy.showsCity({ Settings: { Location: 'Country' } }), false);
 });
@@ -223,7 +216,7 @@ test('the route editor turns Request certificate off until the proxy can order o
 test('while the proxy is off the page says so in place of its cards and sections, and keeps its routes listed', async function () {
     var page = installPage({});
     var dom = page.dom;
-    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyRoutes', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }).concat([dom.el('button', { id: 'btnAddRoute' }), dom.el('span', { id: 'proxyStatus' })]));
+    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyNoRoutes', 'proxyRoutes', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }).concat([dom.el('button', { id: 'btnAddRoute' }), dom.el('span', { id: 'proxyStatus' })]));
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
         'GET Proxy/Routes': { Routes: ROUTES, Status: [] },
@@ -242,10 +235,27 @@ test('while the proxy is off the page says so in place of its cards and sections
     assert.match(view.querySelector('#proxyOff').innerHTML, /The proxy is off\. Turn it on in Settings to forward its routes\./);
     assert.equal(view.querySelector('#proxyOff').classList.contains('stolon-hidden'), false);
     assert.equal(view.querySelector('#proxyNotices').classList.contains('stolon-hidden'), true);
-    ['proxyCards', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].forEach(function (id) {
+    ['proxyCards', 'proxyNoRoutes', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].forEach(function (id) {
         assert.equal(view.querySelector('#' + id).classList.contains('stolon-hidden'), true, id);
     });
     assert.deepEqual(texts(view, '.stolon-collapsible-title'), ['Jellyfin', 'Visitors']);
+});
+
+test('with no route the page shows only the framed No routes yet box with its own Add route, and the list once one is added', async function () {
+    var routes = [];
+    var opened = await openProxyPage({ 'GET Proxy/Routes': function () { return { Routes: routes, Status: [] }; } });
+    var hidden = function (id) { return opened.view.querySelector('#' + id).classList.contains('stolon-hidden'); };
+
+    assert.equal(hidden('proxyNoRoutes'), false);
+    assert.equal(hidden('proxyRoutes'), true);
+    assert.equal(hidden('proxyActions'), true);
+
+    routes = ROUTES;
+    opened.timers.filter(function (x) { return x.ms === 10000; }).forEach(function (x) { x.fn(); });
+    await settle();
+    assert.equal(hidden('proxyNoRoutes'), true);
+    assert.equal(hidden('proxyRoutes'), false);
+    assert.equal(hidden('proxyActions'), false);
 });
 
 test('the Proxy Settings section saves a value equal to its default as unset', async function () {
@@ -306,7 +316,7 @@ test('Settings and Troubleshooting draw the Proxy and DDNS sections, filled from
     assert.ok(page.requests.find(function (r) { return r.type === 'POST' && r.url === 'Proxy/Visitors/Settings'; }));
 });
 
-test('the Proxy Troubleshooting section shows the state and the recovery file', async function () {
+test('the Proxy Troubleshooting section shows what the Proxy page does not, and the recovery file', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
     var view = pageView(dom, [dom.el('div', { id: 'troubleshootingSections' })]);
@@ -314,6 +324,7 @@ test('the Proxy Troubleshooting section shows the state and the recovery file', 
     routeApi(page, {
         'GET Proxy/Status': { Running: true, Addresses: ['http://[::]:80'], Backend: 'http://127.0.0.1:8096/', DisableFlagPath: '/config/Jellyfin.Plugin.Necto.Proxy/DISABLE', Reachability: {} },
         'GET Proxy/Defaults': { IsLowMemory: false, MemoryMb: 8192 },
+        'GET Proxy/Visitors': { Location: { Detail: 'Country', Loaded: false, Downloading: true } },
         'GET Ddns/Records': { Records: [] }
     });
     var mod = await loadScript('necto_troubleshooting.js');
@@ -323,8 +334,18 @@ test('the Proxy Troubleshooting section shows the state and the recovery file', 
 
     var section = view.querySelector('[data-tool="proxy"]');
     assert.ok(section.textContent.indexOf('/config/Jellyfin.Plugin.Necto.Proxy/DISABLE') >= 0);
-    assert.ok(section.textContent.indexOf('Running') >= 0);
-    assert.ok(view.querySelector('[data-tool="ddns"]').textContent.indexOf('Public IPv4') < 0);
+    assert.ok(section.textContent.indexOf('http://[::]:80') >= 0);
+    assert.ok(section.textContent.indexOf('The location database is downloading.') >= 0);
+    // Whether the proxy runs and whether Jellyfin trusts it, with Trust and Undo, live on the Proxy page.
+    assert.equal(section.textContent.indexOf('Running'), -1);
+    assert.equal(section.textContent.indexOf('trusts the proxy'), -1);
+    assert.equal(section.querySelector('[data-action="undo"]'), null);
+    var ddns = view.querySelector('[data-tool="ddns"]');
+    assert.ok(ddns.textContent.indexOf('Public IPv4') < 0);
+    // Update now and why the public IP was not found live on the DDNS page, so only the task and the reset stay.
+    assert.ok(ddns.querySelector('[data-action="run-update"]'));
+    assert.equal(ddns.querySelector('[data-action="update-now"]'), null);
+    assert.equal(ddns.querySelector('[data-role="detection"]'), null);
 });
 
 // openProxyPage
@@ -341,7 +362,7 @@ async function openProxyPage(answers) {
     var timers = [];
     globalThis.setTimeout = function (fn, ms) { timers.push({ fn: fn, ms: ms }); return timers.length; };
     globalThis.setInterval = function (fn, ms) { timers.push({ fn: fn, ms: ms }); return timers.length; };
-    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyRoutes', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }).concat([dom.el('button', { id: 'btnAddRoute' }), dom.el('span', { id: 'proxyStatus' })]));
+    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyNoRoutes', 'proxyRoutes', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }).concat([dom.el('button', { id: 'btnAddRoute' }), dom.el('span', { id: 'proxyStatus' })]));
     dom.document.documentElement.appendChild(view);
     routeApi(page, Object.assign({
         'GET Proxy/Routes': { Routes: ROUTES, Status: [] },
@@ -419,6 +440,8 @@ test('the visitor tables show the city, when each ban began, and why a row canno
     assert.ok(headers.indexOf('City') >= 0);
     assert.ok(headers.indexOf('Banned') >= 0);
     assert.ok(visitors.textContent.indexOf('Paris') >= 0);
+    // The countries show on the Dashboard's Locations, never a second time here.
+    assert.deepEqual(texts(visitors, '.stolon-subsection-title'), ['Banned', 'Activity']);
     var titles = Array.prototype.map.call(visitors.querySelectorAll('button'), function (b) { return b.disabled ? b.getAttribute('title') : null; });
     assert.ok(titles.indexOf('Your network and trusted networks are never blocked.') >= 0);
     assert.ok(titles.indexOf('Blocked by a range in the block list in Settings.') >= 0);
