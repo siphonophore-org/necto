@@ -289,7 +289,7 @@ export function createRouteEditor(route, ctx) {
         value: lockedTo,
         help: t.tr('ProxyDdnsNameHelp')
     });
-    var subdomain = nectoModule.createInputField({ label: t.tr('ProxyLabelSubdomain'), field: 'Subdomain', value: subdomainOf(draft.Host, lockedTo), placeholder: 'media', help: t.format('ProxySubdomainHelp', 'example.com') });
+    var subdomain = nectoModule.createInputField({ label: t.tr('LabelHostName'), field: 'Subdomain', value: subdomainOf(draft.Host, lockedTo), placeholder: 'media', suffix: lockedTo.indexOf('*.') === 0 ? lockedTo.slice(1) : '', help: t.tr('ProxySubdomainHelp') });
     var enabled = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelRouteEnabled'), field: 'Enabled', checked: draft.Enabled !== false, help: t.tr('ProxyRouteEnabledHelp') });
     var target = nectoModule.createSelectField({
         label: t.tr('ProxyLabelForwardTo'),
@@ -537,10 +537,12 @@ export function createRouteEditor(route, ctx) {
     function lockHost() {
         var picked = ddnsNames.input.value;
         var wild = picked.indexOf('*.') === 0;
+        // A wildcard name takes one field, the subdomain with the base shown after it, in place of the host name.
         subdomain.element.classList.toggle('stolon-hidden', !wild);
+        host.element.classList.toggle('stolon-hidden', wild);
         host.input.readOnly = !!picked;
         if (wild) {
-            subdomain.help.textContent = t.format('ProxySubdomainHelp', picked.slice(2));
+            subdomain.setSuffix(picked.slice(1));
             host.input.value = hostFor(picked, subdomain.input.value);
         } else if (picked) {
             host.input.value = picked;

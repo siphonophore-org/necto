@@ -274,17 +274,18 @@ function when(iso) {
 }
 
 // noteItems
-// Turns an issue's notes into timeline entries in the order they were written, each with its writer and time, and a
-// person in its marker.
+// Turns an issue's notes into timeline entries in the order they were written, each with its writer and time, and the
+// writer's picture in its marker, or a person for a writer without one.
 //
 // Inputs
-// notes [object[]]: The notes, as User, Text, and Time.
+// notes [object[]]: The notes, as UserId, User, Text, and Time.
+// tags [object]: Each user's picture tag by compact id, or null while they are not read. [optional]
 //
 // Output
 // [object[]]: The entries.
-export function noteItems(notes) {
+export function noteItems(notes, tags) {
     return (notes || []).map(function (n) {
-        return { title: n.User || '', time: when(n.Time), datetime: n.Time || undefined, body: n.Text || '', icon: 'person' };
+        return nectoModule.withAvatar({ title: n.User || '', time: when(n.Time), datetime: n.Time || undefined, body: n.Text || '' }, n.UserId, n.User, tags);
     });
 }
 
@@ -333,6 +334,7 @@ export default function (view) {
     var filters = { state: 'Open', type: '', reporter: '' };
     var reporters = [];
     var tableReporters = null;
+    var imageTags = null;
 
     // storage
     // Gives the browser storage, or null where the browser refuses it.
@@ -472,6 +474,7 @@ export default function (view) {
     // reload
     // Reads the counts, the reporters, and the list again from the top, building the list the first time.
     function reload() {
+        nectoModule.usersImageTags().then(function (tags) { imageTags = tags; });
         loadStats();
         return loadReporters().then(function () {
             if (!table) { createTable(); return table.load(); }
@@ -552,7 +555,7 @@ export default function (view) {
         });
         var items = detailItems(issue, t);
         var details = nectoModule.createDefinitionList({ items: items });
-        var notes = (issue.Notes || []).length ? nectoModule.createTimeline({ items: noteItems(issue.Notes) }) : null;
+        var notes = (issue.Notes || []).length ? nectoModule.createTimeline({ items: noteItems(issue.Notes, imageTags) }) : null;
         var status = h('div', { class: 'stolon-status-text', role: 'alert', 'data-role': 'status' });
         var body = h('div', { class: 'stolon-stack', 'data-role': 'issue-detail' }, [
             card.element,

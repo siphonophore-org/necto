@@ -262,7 +262,7 @@ test('the tool checks every disk, lists the disks in use with their state, and l
     assert.equal(rows.length, 1);
     assert.match(rows[0].textContent, /media/);
     assert.match(rows[0].textContent, /Local/);
-    assert.ok(rows[0].querySelector('.necto-storage-disk-badge'));
+    assert.ok(rows[0].querySelector('.stolon-usage-meter-badge, [data-role="row-state"]'));
     assert.ok(view.querySelector('#storageDisks .stolon-collapsible-header #btnStorageCheck'));
 
     rows[0].click();

@@ -75,7 +75,7 @@ function iconButton(icon, title, action, onClick) {
 
 // bindPushRow
 // Draws the browser notification switch as a checkbox row of the web client's settings pages. The section stays
-// hidden while the server offers no web push, and on a page that is not HTTPS.
+// hidden while the server offers no web push, and the toggle hides itself on a page that is not HTTPS.
 //
 // Inputs
 // doc [Document]: The page.
@@ -100,9 +100,8 @@ export function bindPushRow(doc, session, t) {
         failedText: t.tr('NotificationsErrorPush'),
         onChange: function () { sync(); }
     });
-    // A browser offers notifications only over HTTPS, so the row shows only there.
-    var secure = typeof globalThis.isSecureContext !== 'boolean' || globalThis.isSecureContext;
-    var sync = function () { section.hidden = !secure || toggle.getState() === null; };
+    // The toggle hides itself off HTTPS, and its section with its heading goes with it.
+    var sync = function () { var state = toggle.getState(); section.hidden = state === null || state === 'insecure'; };
     doc.getElementById('pushRow').appendChild(toggle.element);
     toggle.refresh().then(sync, sync);
     return toggle;

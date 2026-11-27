@@ -100,6 +100,59 @@ export function rowBadge(state) {
     return badge;
 }
 
+// userImage
+// Gives the address of a user's Jellyfin picture, or nothing for a user without one, so the avatar shows the person
+// icon without asking for a picture that is not there.
+//
+// Inputs
+// userId [string]: The user's id.
+// tags [object]: Each user's picture tag by compact id, from usersImageTags, or null while they are not read.
+//
+// Output
+// [string]: The address, or empty without a picture or a server connection.
+export function userImage(userId, tags) {
+    if (!userId || typeof ApiClient === 'undefined' || !ApiClient.getUrl) return '';
+    var tag = tags ? tags[String(userId).replace(/-/g, '').toLowerCase()] : null;
+    if (!tag) return '';
+    return ApiClient.getUrl('Users/' + userId + '/Images/Primary', { height: 96, quality: 90, tag: tag });
+}
+
+// usersImageTags
+// Reads which users have a Jellyfin picture.
+//
+// Output
+// [Promise]: Resolves with each picture tag by compact user id, empty when the users cannot be read.
+export function usersImageTags() {
+    if (typeof ApiClient === 'undefined' || !ApiClient.getUsers) return Promise.resolve({});
+    return Promise.resolve(ApiClient.getUsers()).then(function (users) {
+        var tags = {};
+        (users || []).forEach(function (u) { if (u && u.Id && u.PrimaryImageTag) tags[String(u.Id).replace(/-/g, '').toLowerCase()] = u.PrimaryImageTag; });
+        return tags;
+    }).catch(function () { return {}; });
+}
+
+// withAvatar
+// Marks a timeline entry with its writer's Jellyfin picture, or the person icon for a writer without one.
+//
+// Inputs
+// item [object]: The timeline entry.
+// userId [string]: The writer's id.
+// userName [string]: The writer's name, which a screen reader hears for the picture.
+// tags [object]: Each user's picture tag by compact id, from usersImageTags, or null while they are not read.
+//
+// Output
+// [object]: The entry, with avatar and avatarLabel, or icon.
+export function withAvatar(item, userId, userName, tags) {
+    var image = userImage(userId, tags);
+    if (image) {
+        item.avatar = image;
+        item.avatarLabel = userName || '';
+    } else {
+        item.icon = 'person';
+    }
+    return item;
+}
+
 // isSecurePage
 // Tells whether the page is open over HTTPS or on this machine, the only places a browser offers notifications.
 //

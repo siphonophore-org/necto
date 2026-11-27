@@ -133,6 +133,7 @@ test('a DDNS name locks the host, and a wildcard takes a subdomain in front of i
     assert.deepEqual(order, ['DdnsHostname', 'Subdomain', 'Host']);
     assert.equal(field('Subdomain').value, 'media');
     assert.equal(hidden('Subdomain'), false);
+    assert.equal(hidden('Host'), true);
     assert.equal(field('Host').readOnly, true);
     field('Subdomain').value = '*';
     field('Subdomain').dispatchEvent(new globalThis.Event('input'));
@@ -142,7 +143,7 @@ test('a DDNS name locks the host, and a wildcard takes a subdomain in front of i
 
     field('DdnsHostname').value = 'home.example.com';
     field('DdnsHostname').dispatchEvent(new globalThis.Event('change'));
-    assert.deepEqual([hidden('Subdomain'), field('Host').value, field('Host').readOnly, editor.getValue().Host], [true, 'home.example.com', true, 'home.example.com']);
+    assert.deepEqual([hidden('Subdomain'), hidden('Host'), field('Host').value, field('Host').readOnly, editor.getValue().Host], [true, false, 'home.example.com', true, 'home.example.com']);
     field('DdnsHostname').value = '';
     field('DdnsHostname').dispatchEvent(new globalThis.Event('change'));
     field('Host').value = 'free.example.org';

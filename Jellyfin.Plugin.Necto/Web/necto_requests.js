@@ -5,6 +5,9 @@
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
 var h = nectoModule.h;
+var userImage = nectoModule.userImage;
+var usersImageTags = nectoModule.usersImageTags;
+export { userImage, usersImageTags };
 var esc = nectoModule.escapeHtml;
 
 // The rows a page of the list holds, and the most requesters the filter lists.
@@ -393,37 +396,6 @@ export function detailItems(r, t, goesTo) {
     ].filter(Boolean);
 }
 
-// userImage
-// Gives the address of a user's Jellyfin picture, or nothing for a user without one, so the avatar shows the person
-// icon without asking for a picture that is not there.
-//
-// Inputs
-// userId [string]: The user's id.
-// tags [object]: Each user's picture tag by compact id, from usersImageTags, or null while they are not read.
-//
-// Output
-// [string]: The address, or empty without a picture or a server connection.
-export function userImage(userId, tags) {
-    if (!userId || typeof ApiClient === 'undefined' || !ApiClient.getUrl) return '';
-    var tag = tags ? tags[String(userId).replace(/-/g, '').toLowerCase()] : null;
-    if (!tag) return '';
-    return ApiClient.getUrl('Users/' + userId + '/Images/Primary', { height: 96, quality: 90, tag: tag });
-}
-
-// usersImageTags
-// Reads which users have a Jellyfin picture.
-//
-// Output
-// [Promise]: Resolves with each picture tag by compact user id, empty when the users cannot be read.
-export function usersImageTags() {
-    if (typeof ApiClient === 'undefined' || !ApiClient.getUsers) return Promise.resolve({});
-    return Promise.resolve(ApiClient.getUsers()).then(function (users) {
-        var tags = {};
-        (users || []).forEach(function (u) { if (u && u.Id && u.PrimaryImageTag) tags[String(u.Id).replace(/-/g, '').toLowerCase()] = u.PrimaryImageTag; });
-        return tags;
-    }).catch(function () { return {}; });
-}
-
 // noteItems
 // Lists a request's notes for its timeline, oldest first: the requester's note, then the decision with its reason.
 //
@@ -433,9 +405,9 @@ export function usersImageTags() {
 //
 // Output
 // [object[]]: The timeline items, empty when the request has no note and no decision.
-export function noteItems(r, t) {
+export function noteItems(r, t, tags) {
     var items = [];
-    if (r.RequesterNote) items.push({ title: r.UserName, time: when(r.CreatedUtc), datetime: r.CreatedUtc || undefined, body: r.RequesterNote, icon: 'person' });
+    if (r.RequesterNote) items.push(nectoModule.withAvatar({ title: r.UserName, time: when(r.CreatedUtc), datetime: r.CreatedUtc || undefined, body: r.RequesterNote }, r.UserId, r.UserName, tags));
     if (r.DecidedBy) {
         var declined = r.Status === 'Declined';
         items.push({
@@ -813,7 +785,7 @@ export default function (view) {
 
         // The requester with their picture, then the notes on the request.
         var requester = nectoModule.createUserChip({ name: r.UserName, image: userImage(r.UserId, imageTags), text: t.format('RequestsValueRequestedOn', when(r.CreatedUtc)) });
-        var notes = noteItems(r, t);
+        var notes = noteItems(r, t, imageTags);
         var timeline = notes.length ? nectoModule.createTimeline({ items: notes }) : null;
         var requesterBody = h('div', { class: 'stolon-stack', 'data-role': 'requester' }, [requester.element, timeline ? timeline.element : null]);
         var requesterSection = nectoModule.createCollapsibleSection({ title: t.tr('RequestsLabelRequester'), icon: 'person', collapsible: false, content: requesterBody });

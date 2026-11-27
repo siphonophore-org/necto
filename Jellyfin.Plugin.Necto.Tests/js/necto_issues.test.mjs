@@ -112,6 +112,9 @@ test('an issue is named as the server names it, with what the reporters say is w
     assert.equal(mod.titleOf({ ItemType: 'Movie', Title: 'Dune (2021)', Year: 2021 }, t), 'Dune (2021)');
     assert.equal(mod.subline(issue(), t), 'The Long Night · Audio, Subtitles');
     assert.deepEqual(mod.noteItems(issue().Notes).map(function (n) { return [n.title, n.body, n.icon]; }), [['viewer', 'Sound drops out.', 'person']]);
+    globalThis.ApiClient.getUrl = function (path) { return path; };
+    var pictured = mod.noteItems([{ UserId: 'u1', User: 'viewer', Text: 'Hi', Time: '2026-11-26T12:00:00Z' }], { u1: 'tag' })[0];
+    assert.deepEqual([pictured.avatar, pictured.avatarLabel, pictured.icon], ['Users/u1/Images/Primary', 'viewer', undefined]);
 });
 
 test('an open issue offers Decline, Confirm, and Resolve, and a closed one Reopen', async function () {

@@ -14,14 +14,6 @@
 #NectoScriptsPage #forEachLimitRow:not(.stolon-hidden):has(+ #forEachWarn:not(.stolon-hidden)),
 #NectoScriptsPage #conditionList:has(+ #conditionWarnings:not(:empty)) { margin-bottom: var(--stolon-gap-wide); }
 
-/* necto-storage-disk-aside */
-/* The end of a disk row: a usage meter, then the state badge, a fixed width so meters and badges line up down the list. */
-/* The row's aside fills, so under the text on a phone it takes the row's full width. */
-/* Example: <div class="necto-storage-disk-aside"><div class="stolon-usage-meter"></div><span class="necto-storage-disk-badge"><span class="stolon-badge stolon-green">Available</span></span></div> */
-.necto-storage-disk-aside { display: flex; align-items: center; justify-content: flex-end; gap: var(--stolon-gap-wide); width: 22rem; max-width: 100%; }
-.necto-storage-disk-aside > :first-child:not(.necto-storage-disk-badge) { flex: 1 1 auto; }
-.necto-storage-disk-badge { flex: none; }
-
 /* necto-storage-alert-editor */
 /* The full disk and health alerts: the checkboxes, Measurement, and the panels, a field gap apart. */
 /* Example: <div class="necto-storage-alert-editor"><div class="stolon-field"></div><div class="stolon-field-row necto-storage-alert-panels"></div></div> */

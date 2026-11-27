@@ -366,15 +366,12 @@ export default function (view) {
     }
 
     // asideOf
-    // Builds the end of a disk's row: a usage meter of its space when the disk was read, then its one state badge.
+    // Builds the end of a disk's row: a usage meter of its space with the state badge in its head when the disk was
+    // read, or the state badge alone when it was not.
     function asideOf(disk) {
         var state = stateOf(t, disk);
-        var badge = h('span', { class: 'necto-storage-disk-badge' });
-        badge.innerHTML = shared.badge(state.color, state.label);
-        var aside = h('div', { class: 'necto-storage-disk-aside' });
-        if (isRead(disk)) aside.appendChild(nectoModule.createUsageMeter(meterOptions(disk)).element);
-        aside.appendChild(badge);
-        return aside;
+        if (isRead(disk)) return nectoModule.createUsageMeter(Object.assign(meterOptions(disk), { badge: { label: state.label, color: state.color } })).element;
+        return nectoModule.rowBadge(state);
     }
 
     // itemOf

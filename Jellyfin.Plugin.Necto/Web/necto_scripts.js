@@ -1604,6 +1604,8 @@ export default function (view) {
                     icon: stepTypes[op.Type] ? stepTypes[op.Type].icon : 'extension',
                     title: stepTypes[op.Type] ? stepTypes[op.Type].label : op.Type,
                     subtitle: operationSummary(op),
+                    // A command, an address, or a file path reads in the mono font, and words in the plain one.
+                    mono: (op.Type === 'RunCommand' && !!op.Command) || (op.Type === 'HttpRequest' && !!op.Url) || (op.Type === 'AppendToFile' && !!op.FilePath),
                     badges: badges,
                     dot: 'none'
                 };
