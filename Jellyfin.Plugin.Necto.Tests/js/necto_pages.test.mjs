@@ -52,21 +52,24 @@ test('a tier reads as a name or a number, and an unknown one falls back', async 
     assert.equal(pages.tierLabel('Anonymous', t), 'Anyone');
 });
 
-test('the page rows name each page by its address with its tier, publishing, and system access', async function () {
+test('the page rows lead with each page title over its address, with its tier, publishing, and system access', async function () {
     installPage({});
     var pages = await loadScript('necto_pages.js');
     var list = [
         { Slug: 'rules', Title: 'House rules', Visibility: 'User' },
-        { Slug: 'tools', Title: 'Tools', Visibility: 'Admin', Enabled: false, ApiRoutes: [{ Name: 'rpc' }] }
+        { Slug: 'tools', Title: 'Tools', Visibility: 'Admin', Enabled: false, ApiRoutes: [{ Name: 'rpc' }] },
+        { Slug: 'bare', Title: '', Visibility: 'Anonymous' }
     ];
 
     var rows = pages.pageItems(list, t);
 
-    assert.equal(rows[0].title, '/pages/rules');
-    assert.equal(rows[0].secondary, 'House rules');
+    assert.equal(rows[0].title, 'House rules');
+    assert.equal(rows[0].secondary, '/pages/rules');
+    assert.equal(rows[2].title, '/pages/bare');
+    assert.equal(rows[2].secondary, '');
     assert.deepEqual(rows[0].tags.map(function (g) { return g.label; }), ['Signed in']);
     assert.deepEqual(rows[1].tags.map(function (g) { return g.label; }), ['Administrators', 'Unpublished', 'System access']);
-    assert.deepEqual(pages.pageCounts(list.concat([{ Slug: 'x' }])), { anyone: 1, user: 1, admin: 0, unpublished: 1 });
+    assert.deepEqual(pages.pageCounts(list.slice(0, 2).concat([{ Slug: 'x' }])), { anyone: 1, user: 1, admin: 0, unpublished: 1 });
 });
 
 test('the store rows show who reads and writes and how full each store is, and the counts flag open stores', async function () {
@@ -157,12 +160,17 @@ test('the page editor reads its fields, keeps each source pane, and keeps a stor
     }, sharedBag());
     var root = editor.element;
 
-    assert.equal(root.querySelector('[data-role="groups-note"]').className.indexOf('stolon-hidden') < 0, true);
+    var visibilityHelp = root.querySelector('[data-field="Visibility"]').parentNode.querySelectorAll('.fieldDescription');
+    assert.equal(visibilityHelp.length, 1);
+    assert.equal(visibilityHelp[0].textContent, 'Opens for administrators and the groups that give it in Groups.');
+    assert.equal(root.querySelector('.stolon-info'), null);
+    assert.equal(root.querySelector('[data-field="Source"]'), null);
     assert.equal(root.querySelector('[data-field="Unsandboxed"]').checked, true);
     root.querySelector('[data-field="Slug"]').value = 'House Rules';
-    var source = root.querySelector('[data-field="Source"]');
-    source.value = 'css';
-    source.dispatchEvent(new globalThis.Event('change'));
+    var tabs = root.querySelectorAll('[data-role="source-tabs"] [role="tab"]');
+    assert.deepEqual(Array.prototype.map.call(tabs, function (n) { return n.textContent; }), ['HTML', 'CSS', 'JavaScript']);
+    tabs[1].click();
+    assert.equal(root.querySelector('[data-role="hint"]').textContent, 'Styles the page from a style element.');
     root.querySelector('[data-field="Code"]').value = 'body{}';
 
     var value = editor.getValue();
@@ -193,7 +201,8 @@ test('the page editor drops the routes when system access is off and edits the d
     assert.deepEqual(value.ApiRoutes, []);
     assert.equal(value.SingleFile, true);
     assert.equal(value.Document, '<!DOCTYPE html>');
-    assert.equal(root.querySelector('[data-role="groups-note"]').className.indexOf('stolon-hidden') >= 0, true);
+    assert.equal(root.querySelector('[data-field="Visibility"]').parentNode.querySelector('.fieldDescription').textContent, 'Sets who may open the page.');
+    assert.equal(root.querySelector('[data-role="source-tabs"]').className.indexOf('stolon-hidden') >= 0, true);
     editor.destroy();
 });
 
@@ -298,7 +307,7 @@ test('the Pages tool holds no settings, and a page saves only after the server c
     rows[0].click();
     await settle(50);
     var sidecar = dom.document.querySelector('.stolon-sidecar');
-    assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, '/pages/rules');
+    assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'Rules');
     sidecar.querySelector('[data-field="Title"]').value = 'Changed';
     assert.equal(clickButton(sidecar, 'Save'), true);
     await settle(50);
