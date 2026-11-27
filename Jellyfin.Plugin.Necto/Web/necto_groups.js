@@ -520,7 +520,10 @@ export function createGroupEditor(group, ctx) {
         var members = shared.createUserMultiSelector({
             adminFilter: 'exclude',
             search: true,
-            noteFor: function (user) { return otherGroupName(user, draft, ctx.groups, t); },
+            noteFor: function (user) {
+                var known = (ctx.users || []).find(function (u) { return sameId(u.Id, user.Id || user.id); });
+                return known ? otherGroupName(known, draft, ctx.groups, t) : null;
+            },
             value: draft.MemberIds || [],
             fetchUsers: function () { return Promise.resolve(ctx.users || []); }
         });
