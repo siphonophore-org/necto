@@ -138,11 +138,12 @@ export function speedText(downOwn, downDefault, upOwn, upDefault) {
 // Inputs
 // t [object]: The strings.
 // value [object]: { bytes, period } to start with. bytes 0 is no limit.
+// label [string]: The label over the field, which then sits in its own form field. [optional]
 //
 // Output
 // [object]: { element, getValue, setValue }, where getValue gives { bytes, period }.
-export function createDataLimitField(t, value) {
-    var amount = createNumberUnitField({ units: DATA_UNITS, unit: 'GB', min: 0, valueLabel: t.tr('WireGuardLabelAmount'), unitLabel: t.tr('WireGuardLabelUnit') });
+export function createDataLimitField(t, value, label) {
+    var amount = createNumberUnitField({ units: DATA_UNITS, unit: 'GB', min: 0, label: label || undefined, valueLabel: label ? undefined : t.tr('WireGuardLabelAmount'), unitLabel: t.tr('WireGuardLabelUnit') });
     var select = document.createElement('select');
     select.setAttribute('aria-label', t.tr('WireGuardLabelPeriod'));
     PERIODS.forEach(function (p) {

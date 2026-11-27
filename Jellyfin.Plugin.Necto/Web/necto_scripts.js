@@ -805,7 +805,6 @@ export default function (view) {
         var script = current();
         el('operationEmpty').innerHTML = script.Operations.length ? '' : Shared.emptySection(t.tr('ScriptsEmptySteps'), { inline: true });
         Shared.setVisible('operationEmpty', script.Operations.length === 0);
-        operationList.render();
     }
 
     // A step's text field, or with opts.number a mount for the Base control STEP_NUMBERS names for its key.
@@ -1144,6 +1143,7 @@ export default function (view) {
                     { key: 'Value', label: t.tr('LabelValue'), type: 'secret', placeholder: t.tr('LabelValue'), width: 'minmax(11rem, 2fr)', clearable: true }
                 ],
                 addText: t.tr('ScriptsButtonAddSecret'),
+                addSize: 'medium',
                 rowName: t.tr('ScriptsRowSecret'),
                 emptyText: t.tr('ScriptsEmptySecrets'),
                 onChange: onSecretsChanged
@@ -1688,6 +1688,8 @@ export default function (view) {
             searchKeys: ['Label', 'Description', 'Category'],
             // Every trigger shows at once, with the page scrolling, rather than in a box that scrolls inside.
             maxHeight: null,
+            // A description wraps at a word, so the whole sentence reads.
+            wrapSublabels: true,
             // A phone leaves out the category, so the description has the row's width.
             renderRow: function (t) { return { label: t.Label, sublabel: t.Description, note: narrow() ? null : t.Category }; },
             onChange: function (ids) {

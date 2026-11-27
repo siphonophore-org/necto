@@ -14,7 +14,7 @@
 
 ## The Pages Tool
 
-**Pages** has three tabs: **Pages**, **Images**, and **Stores**, each with one line under it on what it holds. Each list opens a record in a sidecar, whose shelf holds **Delete**, **Cancel**, and **Save**. A save asks the server first whether it would take the change, so a refused save shows its reason, such as "Two pages use the slug rules.". The tool holds no settings, which are in **Settings > Pages**.
+**Pages** has three tabs: **Pages**, **Images**, and **Stores**, each with one line under it on what it holds. Each list opens a record in a sidecar, whose shelf holds **Remove**, **Cancel**, and **Save**, or **Delete** for a store, since its records go with it. A save asks the server first whether it would take the change, so a refused save shows its reason, such as "Two pages use the slug rules.". The tool holds no settings, which are in **Settings > Pages**.
 
 | Pages | Pages on a phone |
 | :---: | :---: |
@@ -22,7 +22,7 @@
 
 ## Pages
 
-**Pages** counts the pages by tier and lists each by its title over its address, with its tier and tags for **Unpublished** and **System access**. A page with no title is listed by its address. Select **Add page** for a new one.
+**Pages** counts the pages by tier and lists each by its title over its address, with a **System access** tag where it applies, and ends each row with its tier, or **Unpublished** while it is off. A page with no title is listed by its address. Select **Add page** for a new one.
 
 ![Page editor](screenshots/Page%20Editor.png)
 
@@ -63,7 +63,7 @@ A group gives pages in **Groups > Pages**, with **Open every page** or **Pages m
 
 ## Images
 
-**Images** hosts images for the pages. The list of images comes first, and the drop zone under it takes new ones. Drop or select images to upload them, up to 5 MB each. An upload with the name of an image already there replaces it and keeps its tier. The cards count **Images**, **Other** files, and their total **Size**.
+**Images** hosts images for the pages. The list of images comes first, and the drop zone under it takes new ones. Drop or select images to upload them, up to 5 MB each. An upload with the name of an image already there replaces it and keeps its tier. The cards count **Images**, **Other** files, and their total **Size**. **Remove** on a row asks first, and pages that use the image show a broken image.
 
 ![Pages images](screenshots/Pages%20Images.png)
 

@@ -331,9 +331,18 @@ export default function (view) {
     }
 
     // section
-    // Builds a sidecar section with its heading.
-    function section(title) {
-        return h('div', { class: 'necto-storage-section' }, [h('h3', { class: 'stolon-subsection-title', text: title })]);
+    // Builds a sidecar section led by its icon tile, always open, whose content stacks its parts.
+    //
+    // Inputs
+    // title [string]: The section's title.
+    // icon [string]: The Material icon of its tile.
+    //
+    // Output
+    // [object]: { element, content }.
+    function section(title, icon) {
+        var content = h('div', { class: 'stolon-stack' });
+        var made = nectoModule.createCollapsibleSection({ title: title, icon: icon, collapsible: false, content: content });
+        return { element: made.element, content: content };
     }
 
     // asideOf
@@ -351,7 +360,7 @@ export default function (view) {
     // itemOf
     // Turns a disk into a record list row.
     function itemOf(disk) {
-        return { id: disk.MountPoint || disk.Device, title: nameOf(t, disk), secondary: secondaryOf(t, shared, disk), tags: tagsOf(t, disk), aside: asideOf(disk), disk: disk };
+        return { id: disk.MountPoint || disk.Device, title: nameOf(t, disk), secondary: secondaryOf(t, shared, disk), tags: tagsOf(t, disk), aside: asideOf(disk), asideFill: true, disk: disk };
     }
 
     // stopItem
@@ -382,82 +391,70 @@ export default function (view) {
                 { label: t.tr('StorageLabelFree'), value: disk.FreeBytes, color: token('--stolon-gray-fg') }
             ]
         });
-        var part = section(t.tr('StorageLabelSpace'));
-        part.setAttribute('data-role', 'disk-space');
-        part.appendChild(chart.element);
-        return part;
+        var part = section(t.tr('StorageLabelSpace'), 'pie_chart');
+        part.element.setAttribute('data-role', 'disk-space');
+        part.content.appendChild(chart.element);
+        return part.element;
     }
 
     // librariesSection
     // Builds the sidecar's libraries, one tag each.
     function librariesSection(disk) {
-        var part = section(t.tr('HeaderLibraries'));
-        part.appendChild(h('div', { class: 'stolon-tags' }, disk.Libraries.map(function (l) { return h('span', { class: 'stolon-tag stolon-tag-pill', text: l.Name }); })));
-        return part;
+        var part = section(t.tr('HeaderLibraries'), 'video_library');
+        part.content.appendChild(h('div', { class: 'stolon-tags' }, disk.Libraries.map(function (l) { return h('span', { class: 'stolon-tag stolon-tag-pill', text: l.Name }); })));
+        return part.element;
     }
 
     // foldersSection
     // Builds the sidecar's folders as a table: whether each was found, the folder, and its library.
     function foldersSection(disk) {
-        var part = section(t.tr('Folders'));
+        var part = section(t.tr('Folders'), 'folder');
+        part.element.setAttribute('data-role', 'disk-folders');
         var gone = disk.State !== 'Available';
         var rows = disk.Folders.map(function (folder) {
             var missing = gone || disk.MissingFolders.indexOf(folder.Path) >= 0;
             var readOnly = (disk.ReadOnlyFolders || []).indexOf(folder.Path) >= 0;
-            var badge = missing ? shared.badge('orange', t.tr('TextNotFound'))
-                : readOnly ? shared.badge('orange', t.tr('StorageFolderReadOnly'))
-                : shared.badge('green', t.tr('StorageFolderFound'));
             // One of Jellyfin's own folders is named as the dashboard names it, such as Cache.
-            var owner = folder.Server ? t.tr(folder.Library) : folder.Library;
-            return '<tr><td>' + badge + '</td><td class="stolon-mono">' + nectoModule.escapeHtml(folder.Path) + '</td><td>' + nectoModule.escapeHtml(owner) + '</td></tr>';
-        }).join('');
-        var wrap = h('div', { class: 'stolon-static-table-scroll' });
-        wrap.innerHTML = '<table class="stolon-static-table"><thead><tr><th>' + nectoModule.escapeHtml(t.tr('LabelStatus')) + '</th><th>'
-            + nectoModule.escapeHtml(t.tr('LabelFolder')) + '</th><th>' + nectoModule.escapeHtml(t.tr('LabelUsage')) + '</th></tr></thead><tbody>' + rows + '</tbody></table>';
-        part.appendChild(wrap);
-        return part;
-    }
-
-    // saveBar
-    // Ends a sidecar section that saves with its own Save Bar, which closes the sidecar and checks the disks again once
-    // the save lands.
-    //
-    // Inputs
-    // part [HTMLElement]: The section.
-    // onSave [function]: Saves the section, returning the save's promise.
-    //
-    // Output
-    // [object]: The Save Bar.
-    function saveBar(part, onSave) {
-        var bar = nectoModule.createSaveBar({
-            fill: true,
-            onSave: function () {
-                return onSave().then(function () {
-                    closeDisk();
-                    check();
-                }, function (err) {
-                    return shared.errorText(err, t.tr('StorageErrorSaveSettings')).then(function (text) { throw new Error(text); });
-                });
-            }
+            return {
+                Path: folder.Path,
+                Owner: folder.Server ? t.tr(folder.Library) : folder.Library,
+                State: missing ? { label: t.tr('TextNotFound'), color: 'orange' }
+                    : readOnly ? { label: t.tr('StorageFolderReadOnly'), color: 'orange' }
+                    : { label: t.tr('StorageFolderFound'), color: 'green' }
+            };
         });
-        part.appendChild(bar.element);
-        part.addEventListener('input', function () { bar.setDirty(true); });
-        part.addEventListener('change', function () { bar.setDirty(true); });
-        return bar;
+        var table = nectoModule.createDataTable({
+            columns: [
+                { key: 'State', label: t.tr('LabelStatus'), icon: 'check_circle', value: function (r) { return r.State.label; }, render: function (r) { return nectoModule.rowBadge(r.State); } },
+                { key: 'Path', label: t.tr('LabelFolder'), icon: 'folder', render: function (r) { return h('span', { class: 'stolon-mono', text: r.Path }); } },
+                { key: 'Owner', label: t.tr('LabelUsage'), icon: 'video_library' }
+            ],
+            rows: rows,
+            rowKey: 'Path',
+            label: t.tr('Folders'),
+            emptyText: t.tr('StorageEmptyFolders')
+        });
+        part.content.appendChild(table.element);
+        return part.element;
     }
 
     // alertsSection
     // Builds the sidecar's full disk alerts: the points they fire at on this disk, then the global ones, or the disk's
-    // own while Use its own alerts is on, with a Save Bar.
-    function alertsSection(disk) {
-        var part = section(t.tr('Alerts'));
-        part.setAttribute('data-role', 'disk-alerts');
+    // own while Use its own alerts is on. Its save joins the sidecar's Save.
+    //
+    // Inputs
+    // disk [object]: The disk.
+    // savers [function[]]: The sidecar's saves, which this section adds its own to.
+    function alertsSection(disk, savers) {
+        var part = section(t.tr('Alerts'), 'notifications_active');
+        part.element.setAttribute('data-role', 'disk-alerts');
+        var holder = part.content;
         if (isRead(disk)) {
             var points = [
                 stopItem(disk, disk.WarningStop, disk.WarningPercent, t.tr('StorageAlertLow')),
                 stopItem(disk, disk.ErrorStop, disk.ErrorPercent, t.tr('StorageAlertFull'))
             ].filter(Boolean);
-            if (points.length) part.appendChild(nectoModule.createDefinitionList({ layout: 'columns', items: points }).element);
+            if (points.length) holder.appendChild(nectoModule.createDefinitionList({ items: points }).element);
         }
         shared.getConfig().then(function (config) {
             var storage = sections.storageOf(config);
@@ -468,11 +465,11 @@ export default function (view) {
             var indent = h('div', { class: 'stolon-indent' }, [editor.element]);
             var toggle = nectoModule.createCheckboxField({
                 label: t.tr('StorageLabelOwnAlerts'),
-                help: t.format('StorageInheritedAlerts', sections.alertText(t, globals)),
+                help: t.tr('StorageHelpOwnAlerts'),
                 checked: !!own
             });
             toggle.input.addEventListener('change', changed);
-            [toggle.element, indent].forEach(function (node) { part.appendChild(node); });
+            [toggle.element, indent].forEach(function (node) { holder.appendChild(node); });
 
             // changed
             // Shows the editor while the disk has its own alerts.
@@ -481,7 +478,7 @@ export default function (view) {
             }
             changed();
 
-            saveBar(part, function () {
+            savers.push(function () {
                 var on = !!toggle.input.checked;
                 var value = editor.getValue();
                 var error = on ? editor.errorText() : '';
@@ -492,17 +489,17 @@ export default function (view) {
                 });
             });
         }).catch(function () {
-            part.appendChild(h('div', { class: 'stolon-error', text: t.tr('StorageErrorLoadSettings') }));
+            holder.appendChild(h('div', { class: 'stolon-error', text: t.tr('StorageErrorLoadSettings') }));
         });
-        return part;
+        return part.element;
     }
 
     // addressSection
     // Builds the sidecar's share address: where the share is mounted from, so a missing share can be mounted again.
-    // Saving closes the sidecar and checks the disks again, which remounts the share when it is missing.
-    function addressSection(disk) {
+    // Its save joins the sidecar's Save, which checks the disks again and so remounts the share when it is missing.
+    function addressSection(disk, savers) {
         var windows = /^[A-Za-z]:|^\\\\/.test(disk.MountPoint);
-        var part = section(t.tr('StorageHeaderShareAddress'));
+        var part = section(t.tr('StorageHeaderShareAddress'), 'lan');
         var field = nectoModule.createInputField({
             label: t.tr('LabelAddress'),
             help: t.tr(windows ? 'StorageHelpShareAddressWindows' : 'StorageHelpShareAddress'),
@@ -511,15 +508,15 @@ export default function (view) {
         });
         field.input.classList.add('stolon-mono');
         field.input.setAttribute('spellcheck', 'false');
-        part.appendChild(field.element);
-        saveBar(part, function () {
+        part.content.appendChild(field.element);
+        savers.push(function () {
             var address = field.input.value.trim();
             return shared.saveConfigWith(function (latest) {
                 latest.Storage = latest.Storage || {};
                 withAddress(latest.Storage, disk.MountPoint, address);
             });
         });
-        return part;
+        return part.element;
     }
 
     // librarySelect
@@ -539,13 +536,13 @@ export default function (view) {
     // Builds the sidecar's New folder form: a name, made at the top of the disk, and an optional library to add it
     // to. Once it is made the sidecar closes and the disks are checked again.
     function newFolderSection(disk) {
-        var part = section(t.tr('StorageHeaderNewFolder'));
-        part.setAttribute('data-role', 'new-folder');
+        var part = section(t.tr('StorageHeaderNewFolder'), 'create_new_folder');
+        part.element.setAttribute('data-role', 'new-folder');
         ApiClient.getVirtualFolders().catch(function () { return []; }).then(function (found) {
             var id = 'necto-storage-folder-' + Math.random().toString(36).slice(2, 8);
             var input = h('input', { is: 'emby-input', type: 'text', id: id, maxlength: '100' });
             var library = librarySelect(librariesOf(found));
-            part.appendChild(h('div', { class: 'stolon-field-row necto-storage-folder-fields' }, [
+            part.content.appendChild(h('div', { class: 'stolon-field-row necto-storage-folder-fields' }, [
                 h('div', { class: 'inputContainer' }, [
                     h('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: t.tr('StorageLabelFolderName') }),
                     input,
@@ -554,7 +551,7 @@ export default function (view) {
                 library.element
             ]));
             var row = actionRow(t.tr('StorageButtonCreateFolder'));
-            part.appendChild(row.element);
+            part.content.appendChild(row.element);
 
             row.button.addEventListener('click', function () {
                 var name = input.value.trim();
@@ -584,15 +581,15 @@ export default function (view) {
                 });
             });
         });
-        return part;
+        return part.element;
     }
 
     // formatSection
     // Builds the sidecar's format form for a disk with nothing mounted: its new name, its file system, and an optional
     // library, with where it will be mounted. Format asks for a name to be typed first, since it erases the disk.
     function formatSection(disk) {
-        var part = section(t.tr('StorageHeaderFormat'));
-        part.setAttribute('data-role', 'format');
+        var part = section(t.tr('StorageHeaderFormat'), 'cleaning_services');
+        part.element.setAttribute('data-role', 'format');
         Promise.all([
             shared.request('Storage/Format'),
             ApiClient.getVirtualFolders().catch(function () { return []; })
@@ -600,14 +597,14 @@ export default function (view) {
             var options = loaded[0] || {};
             var systems = options.FileSystems || [];
             if (!systems.length) {
-                part.appendChild(h('div', { class: 'stolon-info', text: t.tr('StorageNoticeFormatUnavailable') }));
+                part.content.appendChild(h('div', { class: 'stolon-info', text: t.tr('StorageNoticeFormatUnavailable') }));
                 return;
             }
 
             var nameId = 'necto-storage-volume-' + Math.random().toString(36).slice(2, 8);
             var input = h('input', { is: 'emby-input', type: 'text', id: nameId, maxlength: '11' });
             input.value = 'Media';
-            part.appendChild(h('div', { class: 'inputContainer' }, [
+            part.content.appendChild(h('div', { class: 'inputContainer' }, [
                 h('label', { class: 'inputLabel inputLabelUnfocused', for: nameId, text: t.tr('Name') }),
                 input,
                 h('div', { class: 'fieldDescription', text: t.tr('StorageHelpVolumeName') })
@@ -622,16 +619,16 @@ export default function (view) {
                     h('span', { class: 'stolon-choice-text', text: FILE_SYSTEM_HELP[value] ? t.tr(FILE_SYSTEM_HELP[value]) : '' })
                 ]);
             }));
-            part.appendChild(h('div', { class: 'stolon-field' }, [h('label', { text: t.tr('StorageLabelFileSystem') }), choices]));
+            part.content.appendChild(h('div', { class: 'stolon-field' }, [h('label', { text: t.tr('StorageLabelFileSystem') }), choices]));
             var system = nectoModule.createChoiceGroup(choices, {});
             system.set(systems[0]);
 
             var library = librarySelect(librariesOf(loaded[1]));
-            part.appendChild(library.element);
+            part.content.appendChild(library.element);
 
             // Where it will be mounted, which follows the name.
             var where = h('div', { class: 'stolon-warn' });
-            part.appendChild(where);
+            part.content.appendChild(where);
             var describe = function () {
                 var name = input.value.trim();
                 var at = options.MountRoot ? options.MountRoot + '/' + (options.DashesForSpaces ? name.replace(/ /g, '-') : name) : '';
@@ -644,7 +641,7 @@ export default function (view) {
             var erase = disk.State === 'NotMounted';
             var action = t.tr(erase ? 'StorageButtonEraseFormat' : 'StorageButtonFormatDisk');
             var row = actionRow(action, true);
-            part.appendChild(row.element);
+            part.content.appendChild(row.element);
 
             row.button.addEventListener('click', function () {
                 var name = input.value.trim();
@@ -698,9 +695,9 @@ export default function (view) {
                 });
             });
         }).catch(function () {
-            part.appendChild(h('div', { class: 'stolon-error', text: t.tr('StorageErrorLoadFormat') }));
+            part.content.appendChild(h('div', { class: 'stolon-error', text: t.tr('StorageErrorLoadFormat') }));
         });
-        return part;
+        return part.element;
     }
 
     // libraryMount
@@ -738,9 +735,11 @@ export default function (view) {
     }
 
     // openDisk
-    // Opens a sidecar with one disk's facts, space, alerts, libraries, folders, and forms.
+    // Opens a sidecar with one disk's facts, space, alerts, libraries, folders, and forms. A disk with settings, its
+    // alerts or its share address, saves them with Save on the sidecar's shelf.
     function openDisk(disk) {
-        var body = h('div', { class: 'necto-storage-disk', 'data-role': 'disk' });
+        var body = h('div', { class: 'stolon-stack', 'data-role': 'disk' });
+        var savers = [];
         var state = stateOf(t, disk);
         var health = healthFacts(disk);
         // The status shows as the sidecar's badge, so the facts start with its health.
@@ -755,7 +754,7 @@ export default function (view) {
         if (disk.Device) facts.push({ label: t.tr('LabelDevice'), value: disk.Device, mono: true });
         if (disk.Model) facts.push({ label: t.tr('StorageLabelModel'), value: disk.Model });
         health.forEach(function (fact) { facts.push(fact); });
-        body.appendChild(nectoModule.createDefinitionList({ layout: 'columns', items: facts }).element);
+        body.appendChild(nectoModule.createDefinitionList({ items: facts }).element);
 
         if (isRead(disk)) {
             body.appendChild(spaceSection(disk));
@@ -775,16 +774,21 @@ export default function (view) {
             body.appendChild(formatSection(disk));
         } else if (disk.InUse) {
             // A share, or a disk gone missing, can be given the address it is mounted from.
-            if (disk.TakesAddress && (disk.Kind === 'Share' || disk.State !== 'Available')) body.appendChild(addressSection(disk));
-            body.appendChild(alertsSection(disk));
+            if (disk.TakesAddress && (disk.Kind === 'Share' || disk.State !== 'Available')) body.appendChild(addressSection(disk, savers));
+            body.appendChild(alertsSection(disk, savers));
             if (disk.Libraries.length) body.appendChild(librariesSection(disk));
             body.appendChild(foldersSection(disk));
             if (disk.State === 'Available') body.appendChild(newFolderSection(disk));
         } else {
-            body.appendChild(alertsSection(disk));
+            body.appendChild(alertsSection(disk, savers));
             body.appendChild(h('div', { class: 'stolon-info', text: t.tr('StorageNoticeDiskUnused') }));
             body.appendChild(newFolderSection(disk));
         }
+
+        // Why the last Save failed, at the end of the body, over the shelf.
+        var problem = h('div', { class: 'stolon-error stolon-hidden', role: 'status', 'data-role': 'save-problem' });
+        body.appendChild(problem);
+        var takesSave = disk.State !== 'Unformatted' && disk.State !== 'NotMounted';
 
         closeDisk();
         sidecar = nectoModule.openSidecar({
@@ -795,7 +799,37 @@ export default function (view) {
             size: 'large',
             page: page,
             autofocus: false,
+            buttons: takesSave ? [
+                { text: t.tr('ButtonCancel'), className: 'raised stolon-button stolon-secondary', action: function (close) { close(); } },
+                { text: t.tr('Save'), className: 'raised stolon-button stolon-primary', action: function (close, dismiss, button) { saveDisk(savers, problem, button); } }
+            ] : undefined,
             onClose: function () { sidecar = null; }
+        });
+    }
+
+    // saveDisk
+    // Runs the sidecar's saves one after another, then closes it and checks the disks again. A save that fails keeps
+    // the sidecar open and says why.
+    //
+    // Inputs
+    // savers [function[]]: Each returns its save's promise.
+    // problem [HTMLElement]: The line that says why a save failed.
+    // button [HTMLElement]: Save, turned off while the saves run.
+    function saveDisk(savers, problem, button) {
+        problem.classList.add('stolon-hidden');
+        button.disabled = true;
+        return savers.reduce(function (done, save) {
+            return done.then(save);
+        }, Promise.resolve()).then(function () {
+            closeDisk();
+            check();
+        }, function (err) {
+            return shared.errorText(err, t.tr('StorageErrorSaveSettings')).then(function (text) {
+                problem.textContent = text;
+                problem.classList.remove('stolon-hidden');
+            });
+        }).then(function () {
+            button.disabled = false;
         });
     }
 
@@ -890,7 +924,7 @@ export default function (view) {
 
     // bindPage
     // Draws the Disks section once: its sub-tabs for the disks Jellyfin uses and every disk, the disk list under them,
-    // and Refresh in its header.
+    // and Refresh under the list.
     function bindPage(bag, handle) {
         shared = bag;
         page = handle;
@@ -912,9 +946,9 @@ export default function (view) {
         });
         tabs.getPanel('used').appendChild(list.element);
         var status = h('div', { id: 'storageCheckStatus', class: 'stolon-error stolon-hidden', role: 'status' });
-        var content = h('div', { class: 'stolon-stack' }, [status, tabs.element]);
         var refresh = refreshButton();
-        var disksSection = nectoModule.createCollapsibleSection({ title: t.tr('StorageHeaderDisks'), icon: 'storage', collapsible: false, content: content, aside: refresh });
+        var content = h('div', { class: 'stolon-stack' }, [status, tabs.element, h('div', { class: 'stolon-card-list-actions' }, [refresh])]);
+        var disksSection = nectoModule.createCollapsibleSection({ title: t.tr('StorageHeaderDisks'), icon: 'storage', collapsible: false, content: content });
         $('storageDisks').appendChild(disksSection.element);
         refresh.addEventListener('click', check);
         refresh.addEventListener('mouseenter', function () {

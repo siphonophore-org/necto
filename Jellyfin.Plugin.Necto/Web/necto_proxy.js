@@ -64,8 +64,24 @@ export function upstreamText(route, t) {
     return route.Upstream ? route.Upstream : t.tr('ProxyThisJellyfin');
 }
 
+// routeState
+// Gives the state a route's row ends with: Off while the route is off, else its certificate's state.
+//
+// Inputs
+// route [object]: The route.
+// status [object]: The route's status from Proxy/Routes, or null.
+// t [object]: The strings.
+//
+// Output
+// [object]: label and color.
+export function routeState(route, status, t) {
+    if (!route.Enabled) return { label: t.tr('Off'), color: 'gray' };
+    return certificateTag(status, route, t);
+}
+
 // routeItems
-// Turns the routes into rows for the record list, each with its upstream, its certificate, and who may reach it.
+// Turns the routes into rows for the record list, each with its upstream and who may reach it, and its state at its
+// end.
 //
 // Inputs
 // routes [object[]]: The routes from Proxy/Routes.
@@ -73,18 +89,16 @@ export function upstreamText(route, t) {
 // t [object]: The strings.
 //
 // Output
-// [object[]]: The rows, each carrying its route and status.
+// [object[]]: The rows, each carrying its route, status, and state.
 export function routeItems(routes, statuses, t) {
     var byId = {};
     (statuses || []).forEach(function (s) { byId[s.Id] = s; });
     return (routes || []).map(function (route) {
         var status = byId[route.Id] || null;
         var tags = [];
-        var cert = certificateTag(status, route, t);
-        if (cert) tags.push(cert);
         if (route.LocalOnly) tags.push({ label: t.tr('ProxyTagLocalOnly'), icon: 'home', color: 'blue' });
-        if (!route.Enabled) tags.push({ label: t.tr('Off'), color: 'gray', off: true });
-        return { id: route.Id, title: route.Host || t.tr('ProxyNoHost'), secondary: upstreamText(route, t), tags: tags, route: route, status: status };
+        var state = routeState(route, status, t);
+        return { id: route.Id, title: route.Host || t.tr('ProxyNoHost'), secondary: upstreamText(route, t), tags: tags, state: state, aside: nectoModule.rowBadge(state), route: route, status: status };
     });
 }
 
@@ -370,7 +384,6 @@ export function statusCards(status, routes, t) {
 // [object[]]: Each notice's class and text.
 export function notices(status, t) {
     var out = [];
-    if (!status.Enabled) out.push({ cls: 'stolon-info', text: t.tr('ProxyOffNotice') });
     if (status.DisableFlagPresent) out.push({ cls: 'stolon-warn', text: t.format('ProxyDisableFlagNotice', status.DisableFlagPath) });
     if (status.Error) out.push({ cls: 'stolon-error', text: status.Error });
     if (status.FolderProblem) out.push({ cls: 'stolon-error', text: status.FolderProblem });
@@ -378,7 +391,6 @@ export function notices(status, t) {
     if (status.JellyfinExposedAt) out.push({ cls: 'stolon-warn', text: t.format('ProxyExposedNotice', status.JellyfinExposedAt) });
     if (status.TakeoverError) out.push({ cls: 'stolon-error', text: status.TakeoverError });
     if (status.Name && status.Name.Hostname && status.Name.Error) out.push({ cls: 'stolon-warn', text: status.Name.Error });
-    if (status.CountryRule) out.push({ cls: 'stolon-info', text: status.CountryRule });
     return out;
 }
 
@@ -486,11 +498,31 @@ export default function (view) {
         proxyStatus = status || {};
         var box = view.querySelector('#proxyNotices');
         box.textContent = '';
-        notices(proxyStatus, t).forEach(function (n) {
+        var list = notices(proxyStatus, t);
+        list.forEach(function (n) {
             box.appendChild(nectoModule.createBanner({ kind: n.cls.replace('stolon-', ''), text: n.text, dismissible: false }).element);
         });
+        shared.setVisible(box, list.length > 0);
         shared.renderCards('proxyCards', statusCards(proxyStatus, routes, t));
         drawJellyfin();
+        showOff(!proxyStatus.Enabled);
+    }
+
+    // showOff
+    // Shows the off state while the proxy is off: one line pointing to Settings in place of the cards, Add route,
+    // Jellyfin, and Visitors. Routes already added stay listed. The heading names the tool itself, since a tool that
+    // is off leaves the sidebar the heading takes its name from.
+    function showOff(off) {
+        var t = shared.t;
+        if (shared.setPageTitle) shared.setPageTitle(off ? t.tr('TabProxy') : '');
+        var box = view.querySelector('#proxyOff');
+        box.innerHTML = off ? shared.emptySection(t.tr('ProxyOffNotice')) : '';
+        shared.setVisible(box, off);
+        shared.setVisible('proxyCards', !off);
+        shared.setVisible('proxyActions', !off);
+        shared.setVisible('proxyRoutes', !off || routes.length > 0);
+        if (jellyfin) shared.setVisible(jellyfin.section.element, !off);
+        if (visitors) shared.setVisible(visitors.element, !off);
     }
 
     // drawJellyfin
@@ -508,7 +540,10 @@ export default function (view) {
             var undo = undoRow.button;
             var content = h('div', { class: 'stolon-stack' }, [status, nectoModule.createResetGroup([trustRow, undoRow]).element]);
             var section = nectoModule.createCollapsibleSection({ title: t.tr('LabelJellyfin'), icon: 'shield', collapsed: managed, content: content });
-            view.querySelector('#proxyJellyfin').appendChild(section.element);
+            // The section takes its holder's place, so the page's column spaces it like its neighbors.
+            section.element.id = 'proxyJellyfin';
+            var holderJellyfin = view.querySelector('#proxyJellyfin');
+            holderJellyfin.parentNode.replaceChild(section.element, holderJellyfin);
             jellyfin = { section: section, trust: trust, undo: undo, undoRow: undoRow, status: status, busy: false };
             trust.addEventListener('click', function () {
                 nectoModule.confirmDialog(t.tr('ProxyConfirmTrust'), { title: t.tr('ProxyButtonTrust'), confirmText: t.tr('ProxyButtonTrustShort') }).then(function (ok) {
@@ -830,7 +865,9 @@ export default function (view) {
             h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderCountries') }), countryHost,
             location, attribution].forEach(function (n) { content.appendChild(n); });
         var section = nectoModule.createCollapsibleSection({ title: t.tr('HeaderVisitors'), icon: 'travel_explore', collapsed: true, content: content });
-        view.querySelector('#proxyVisitors').appendChild(section.element);
+        section.element.id = 'proxyVisitors';
+        var holderVisitors = view.querySelector('#proxyVisitors');
+        holderVisitors.parentNode.replaceChild(section.element, holderVisitors);
 
         var button = function (label, variant, act, name) {
             var b = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-small ' + variant, 'aria-label': name }, [h('span', { text: label })]);
@@ -842,11 +879,11 @@ export default function (view) {
         var place = function (r) { return r.IsLocal ? t.tr('LabelLocal') : (r.Country || t.tr('Unknown')); };
         var banned = nectoModule.createDataTable({
             columns: [
-                { key: 'Ip', label: t.tr('LabelAddress') },
-                { key: 'Country', label: t.tr('HeaderCountry'), value: function (b) { return b.Country || t.tr('Unknown'); } },
-                { key: 'Failures', label: t.tr('ProxyColumnFailures'), align: 'end' },
-                { key: 'BannedUtc', label: t.tr('ProxyHeaderBanned'), value: function (b) { return b.BannedUtc ? shared.formatDate(b.BannedUtc) : ''; } },
-                { key: 'UntilUtc', label: t.tr('ProxyColumnEnds'), value: function (b) { return b.UntilUtc ? shared.formatDate(b.UntilUtc) : t.tr('ProxyUntilLifted'); } },
+                { key: 'Ip', label: t.tr('LabelAddress'), icon: 'lan' },
+                { key: 'Country', label: t.tr('HeaderCountry'), icon: 'flag', value: function (b) { return b.Country || t.tr('Unknown'); } },
+                { key: 'Failures', label: t.tr('ProxyColumnFailures'), icon: 'error', align: 'end' },
+                { key: 'BannedUtc', label: t.tr('ProxyHeaderBanned'), icon: 'block', value: function (b) { return b.BannedUtc ? shared.formatDate(b.BannedUtc) : ''; } },
+                { key: 'UntilUtc', label: t.tr('ProxyColumnEnds'), icon: 'event', value: function (b) { return b.UntilUtc ? shared.formatDate(b.UntilUtc) : t.tr('ProxyUntilLifted'); } },
                 { key: 'action', label: t.tr('HeaderAction'), sortable: false, render: function (b) { return button(t.tr('ProxyButtonUnban'), 'stolon-secondary', { action: 'unban', value: b.Ip }, t.format('ProxyButtonUnbanAddress', b.Ip)); } }
             ],
             rows: [],
@@ -857,14 +894,14 @@ export default function (view) {
         bannedHost.appendChild(banned.element);
         var activity = nectoModule.createDataTable({
             columns: [
-                { key: 'Type', label: t.tr('ProxyColumnType'), value: function (r) { return t.tr(ACTIVITY_KEYS[fields.enumName(r.Type, ACTIVITY_TYPES)]); } },
-                { key: 'User', label: t.tr('LabelUser') },
-                { key: 'Ip', label: t.tr('LabelAddress') },
-                { key: 'Device', label: t.tr('LabelDevice') },
-                { key: 'Host', label: t.tr('LabelHostName'), value: function (r) { return (r.Host || '').replace(/^https?:\/\//, ''); } },
-                { key: 'place', label: t.tr('HeaderCountry'), value: place },
-                { key: 'city', label: t.tr('ProxyColumnCity'), hidden: true, value: function (r) { return r.IsLocal ? '' : (r.City || ''); } },
-                { key: 'LastUtc', label: t.tr('ProxyColumnLastSeen'), value: function (r) { return shared.formatDate(r.LastUtc); } },
+                { key: 'Type', label: t.tr('ProxyColumnType'), icon: 'category', value: function (r) { return t.tr(ACTIVITY_KEYS[fields.enumName(r.Type, ACTIVITY_TYPES)]); } },
+                { key: 'User', label: t.tr('LabelUser'), icon: 'person' },
+                { key: 'Ip', label: t.tr('LabelAddress'), icon: 'lan' },
+                { key: 'Device', label: t.tr('LabelDevice'), icon: 'devices' },
+                { key: 'Host', label: t.tr('LabelHostName'), icon: 'dns', value: function (r) { return (r.Host || '').replace(/^https?:\/\//, ''); } },
+                { key: 'place', label: t.tr('HeaderCountry'), icon: 'flag', value: place },
+                { key: 'city', label: t.tr('ProxyColumnCity'), icon: 'location_city', hidden: true, value: function (r) { return r.IsLocal ? '' : (r.City || ''); } },
+                { key: 'LastUtc', label: t.tr('ProxyColumnLastSeen'), icon: 'schedule', value: function (r) { return shared.formatDate(r.LastUtc); } },
                 {
                     key: 'action', label: t.tr('HeaderAction'), sortable: false, render: function (r) {
                         var act = rowAction(r);
@@ -887,11 +924,11 @@ export default function (view) {
         activityHost.appendChild(activity.element);
         var countries = nectoModule.createDataTable({
             columns: [
-                { key: 'Country', label: t.tr('HeaderCountry') },
-                { key: 'People', label: t.tr('People'), align: 'end' },
-                { key: 'Failed', label: t.tr('HeaderFailedSignIns'), align: 'end' },
-                { key: 'Blocked', label: t.tr('HeaderRefused'), align: 'end' },
-                { key: 'LastUtc', label: t.tr('ProxyColumnLastSeen'), value: function (c) { return c.LastUtc ? shared.formatDate(c.LastUtc) : ''; } }
+                { key: 'Country', label: t.tr('HeaderCountry'), icon: 'flag' },
+                { key: 'People', label: t.tr('People'), icon: 'group', align: 'end' },
+                { key: 'Failed', label: t.tr('HeaderFailedSignIns'), icon: 'error', align: 'end' },
+                { key: 'Blocked', label: t.tr('HeaderRefused'), icon: 'block', align: 'end' },
+                { key: 'LastUtc', label: t.tr('ProxyColumnLastSeen'), icon: 'schedule', value: function (c) { return c.LastUtc ? shared.formatDate(c.LastUtc) : ''; } }
             ],
             rows: [],
             rowKey: 'Code',
@@ -959,7 +996,7 @@ export default function (view) {
             });
         }
 
-        return { load: load, destroy: function () { banned.destroy(); activity.destroy(); countries.destroy(); section.destroy && section.destroy(); } };
+        return { element: section.element, load: load, destroy: function () { banned.destroy(); activity.destroy(); countries.destroy(); section.destroy && section.destroy(); } };
     }
 
     var made = nectoModule.createNectoPage(view, {

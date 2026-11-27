@@ -4,7 +4,7 @@
 
 ## The DDNS Tool
 
-The cards at the top count the **Records**, how many are **Up to date**, and under **Needs attention** how many last failed, paused, or found no address. Under them a card shows the **Public IPv4** and **Public IPv6** the last run found. Then each record has one row with its name, its provider, and one tag, its last result, such as **Updated**, **Up to date**, **Paused**, or **Failed**, or **Off** while it does not update. Select a row to open the record in a sidecar, or select **Add record**. **Update now** checks every enabled record at once, whatever its interval, and says how many were updated and how many failed.
+The cards at the top count the **Records**, how many are **Up to date**, and under **Needs attention** how many last failed, paused, or found no address. Under them a card shows the **Public IPv4** and **Public IPv6** the last run found. Then each record has one row with its name, its provider, and at its end its state, its last result, such as **Updated**, **Up to date**, **Paused**, or **Failed**, or **Off** while it does not update. Select a row to open the record in a sidecar, or select **Add record**. **Update now** checks every enabled record at once, whatever its interval, and says how many were updated and how many failed.
 
 | DDNS | DDNS on a phone |
 | :---: | :---: |

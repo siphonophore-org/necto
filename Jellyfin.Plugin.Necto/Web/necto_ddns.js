@@ -102,7 +102,7 @@ function recordState(entry) {
 
 // recordItems
 // Turns the records into rows for the record list. Each row names the record once, shows its provider and, for a
-// record that follows the proxy, how many names it covers, and carries one tag, Off or its last result.
+// record that follows the proxy, how many names it covers, and ends with its state, Off or its last result.
 //
 // Inputs
 // entries [object[]]: The Records from Ddns/Records, each { Record, Followed }.
@@ -118,12 +118,14 @@ export function recordItems(entries, providers, t) {
         var where = r.FollowProxyHosts
             ? t.plural((entry.Followed || []).length, 'DdnsFollowsHostsOne', 'DdnsFollowsHostsMany')
             : ((r.Hostname || '').trim() !== title ? (r.Hostname || '').trim() : '');
-        var tag = r.Enabled ? resultTag(recordState(entry), t) : { label: t.tr('Off'), color: 'gray' };
+        var state = r.Enabled ? resultTag(recordState(entry), t) : { label: t.tr('Off'), color: 'gray' };
         return {
             id: r.Id,
             title: title,
             secondary: [providerLabel(providers, r.Provider), where].filter(function (x) { return x; }).join(' · '),
-            tags: tag ? [tag] : [],
+            tags: [],
+            state: state,
+            aside: state ? nectoModule.rowBadge(state) : null,
             record: r,
             followed: entry.Followed || []
         };

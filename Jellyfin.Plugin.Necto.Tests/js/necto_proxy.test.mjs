@@ -25,16 +25,19 @@ var ROUTES = [
     { Id: 'b', Enabled: false, Host: 'home.example.com', Upstream: 'http://192.168.1.20:8096', LocalOnly: true, Certificate: { Mode: 'None' } }
 ];
 
-test('routeItems names each route, where it forwards, its certificate, and who may reach it', async function () {
+test('routeItems names each route, where it forwards, and who may reach it, and ends it with Off or its certificate', async function () {
     var bag = await strings();
     var proxy = await loadScript('necto_proxy.js');
     var items = proxy.routeItems(ROUTES, [{ Id: 'a', Certificate: { Loaded: true, NotAfterUtc: new Date(Date.now() + 60 * 86400000).toISOString() }, Acme: {} }], bag.t);
 
     assert.equal(items[0].title, 'media.example.com');
     assert.equal(items[0].secondary, 'This Jellyfin');
-    assert.deepEqual(items[0].tags.map(function (t) { return t.label; }), ['HTTPS ready']);
+    assert.deepEqual(items[0].tags, []);
+    assert.deepEqual(items[0].state, { label: 'HTTPS ready', color: 'green' });
+    assert.match(items[0].aside.innerHTML, /HTTPS ready/);
     assert.equal(items[1].secondary, 'http://192.168.1.20:8096');
-    assert.deepEqual(items[1].tags.map(function (t) { return t.label; }), ['HTTP only', 'Local only', 'Off']);
+    assert.deepEqual(items[1].tags.map(function (t) { return t.label; }), ['Local only']);
+    assert.deepEqual(items[1].state, { label: 'Off', color: 'gray' });
 });
 
 test('certificateTag tells a certificate expiring soon, one being requested, and one that failed', async function () {
@@ -79,7 +82,7 @@ test('statusCards and notices sum how the proxy stands', async function () {
     var list = proxy.notices(status, bag.t).map(function (n) { return n.text; });
     assert.ok(list.indexOf('Port 443 is in use.') >= 0);
     assert.ok(list.indexOf('It points elsewhere.') >= 0);
-    assert.equal(proxy.notices({ Enabled: false }, bag.t)[0].text, 'The proxy is off. Turn it on in Settings to forward its routes.');
+    assert.deepEqual(proxy.notices({ Enabled: false, CountryRule: 'Only visitors from United States can connect.' }, bag.t), []);
 });
 
 test('rowAction unbans a ban, never blocks your network, and lets a country through', async function () {
@@ -138,23 +141,31 @@ test('the route editor turns Request certificate off until the proxy can order o
     assert.equal(request.disabled, false);
 });
 
-test('the page draws its notices, cards and a row per route', async function () {
+test('while the proxy is off the page says so in place of its cards and sections, and keeps its routes listed', async function () {
     var page = installPage({});
     var dom = page.dom;
-    var view = pageView(dom, ['proxyNotices', 'proxyCards', 'proxyRoutes', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }).concat([dom.el('button', { id: 'btnAddRoute' }), dom.el('span', { id: 'proxyStatus' })]));
+    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyRoutes', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }).concat([dom.el('button', { id: 'btnAddRoute' }), dom.el('span', { id: 'proxyStatus' })]));
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
         'GET Proxy/Routes': { Routes: ROUTES, Status: [] },
         'GET Proxy/Status': { Enabled: false, Routes: [] },
         'GET Proxy/Visitors': { Recording: false, Activity: [], Banned: [], PeopleByCountry: [] }
     });
+    var titles = [];
+    view.addEventListener('stolontooltitle', function (e) { titles.push(e.detail); });
     var mod = await loadScript('necto_proxy.js');
     mod.default(view);
     view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
     await settle();
 
+    assert.equal(titles[titles.length - 1], 'Proxy');
     assert.ok(view.querySelector('#proxyRoutes').textContent.indexOf('media.example.com') >= 0);
-    assert.ok(view.querySelector('#proxyNotices').textContent.indexOf('The proxy is off.') >= 0);
+    assert.match(view.querySelector('#proxyOff').innerHTML, /The proxy is off\. Turn it on in Settings to forward its routes\./);
+    assert.equal(view.querySelector('#proxyOff').classList.contains('stolon-hidden'), false);
+    assert.equal(view.querySelector('#proxyNotices').classList.contains('stolon-hidden'), true);
+    ['proxyCards', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].forEach(function (id) {
+        assert.equal(view.querySelector('#' + id).classList.contains('stolon-hidden'), true, id);
+    });
     assert.deepEqual(texts(view, '.stolon-collapsible-title'), ['Jellyfin', 'Visitors']);
 });
 
@@ -251,7 +262,7 @@ async function openProxyPage(answers) {
     var timers = [];
     globalThis.setTimeout = function (fn, ms) { timers.push({ fn: fn, ms: ms }); return timers.length; };
     globalThis.setInterval = function (fn, ms) { timers.push({ fn: fn, ms: ms }); return timers.length; };
-    var view = pageView(dom, ['proxyNotices', 'proxyCards', 'proxyRoutes', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }).concat([dom.el('button', { id: 'btnAddRoute' }), dom.el('span', { id: 'proxyStatus' })]));
+    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyRoutes', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }).concat([dom.el('button', { id: 'btnAddRoute' }), dom.el('span', { id: 'proxyStatus' })]));
     dom.document.documentElement.appendChild(view);
     routeApi(page, Object.assign({
         'GET Proxy/Routes': { Routes: ROUTES, Status: [] },
@@ -324,7 +335,7 @@ test('the visitor tables show the city, when each ban began, and why a row canno
         }
     });
     var visitors = opened.view.querySelector('#proxyVisitors');
-    var headers = texts(visitors, '.stolon-data-heading').map(function (h) { return h.replace('arrow_upward', ''); });
+    var headers = texts(visitors, '.stolon-data-label');
 
     assert.ok(headers.indexOf('City') >= 0);
     assert.ok(headers.indexOf('Banned') >= 0);

@@ -70,7 +70,8 @@ export function buildSettings(content, ctx) {
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var enabled = nectoModule.createCheckboxField({ label: t.tr('WireGuardLabelEnable'), help: t.tr('WireGuardEnabledHelp') });
     var sidecarLine = h('div', { class: 'fieldDescription', 'data-role': 'sidecar' });
-    var replace = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'replace-sidecar' }, [h('span', { text: t.tr('WireGuardButtonReplace') })]);
+    var replaceRow = nectoModule.createResetRow({ icon: 'swap_horiz', label: t.tr('WireGuardTitleReplace'), help: t.tr('WireGuardSidecarHelp'), button: t.tr('WireGuardButtonReplace'), action: 'replace-sidecar' });
+    var replace = replaceRow.button;
     var info = null;
 
     var host = nectoModule.createCheckboxField({ label: t.tr('WireGuardLabelHostEnabled'), help: t.tr('WireGuardHostEnabledHelp') });
@@ -87,13 +88,13 @@ export function buildSettings(content, ctx) {
     var dnsFields = h('div', { class: 'stolon-indent' }, [dnsName.element, dnsUp.element]);
     var peerDown = nectoModule.createInputField({ label: t.tr('WireGuardLabelDownloadMbps'), type: 'number', min: 0, autocomplete: 'off' });
     var peerUp = nectoModule.createInputField({ label: t.tr('WireGuardLabelUploadMbps'), type: 'number', min: 0, autocomplete: 'off' });
-    var peerData = createDataLimitField(t, null);
+    var peerData = createDataLimitField(t, null, t.tr('WireGuardLabelPeerDataLimit'));
     var keepalive = nectoModule.createInputField({ label: t.tr('WireGuardLabelKeepalive'), type: 'number', min: 0, help: t.tr('WireGuardKeepaliveHelp'), autocomplete: 'off' });
     var mtu = nectoModule.createInputField({ label: t.tr('WireGuardLabelMtu'), type: 'number', min: 0, help: t.tr('WireGuardMtuHelp'), autocomplete: 'off' });
     var connect = nectoModule.createCheckboxField({ label: t.tr('WireGuardLabelConnectEnabled'), help: t.tr('WireGuardConnectEnabledHelp') });
     var connDown = nectoModule.createInputField({ label: t.tr('WireGuardLabelDownloadMbps'), type: 'number', min: 0, autocomplete: 'off' });
     var connUp = nectoModule.createInputField({ label: t.tr('WireGuardLabelUploadMbps'), type: 'number', min: 0, autocomplete: 'off' });
-    var connData = createDataLimitField(t, null);
+    var connData = createDataLimitField(t, null, t.tr('WireGuardLabelConnectionDataLimit'));
 
     // part
     // Builds a closed collapsible part of the section, led by its icon tile, holding the nodes given.
@@ -109,7 +110,7 @@ export function buildSettings(content, ctx) {
         part('WireGuardHeaderSidecar', 'download', [
             sidecarLine,
             nectoModule.createResetGroup([
-                nectoModule.createResetRow({ icon: 'swap_horiz', label: t.tr('WireGuardTitleReplace'), help: t.tr('WireGuardSidecarHelp'), button: replace })
+                replaceRow
             ]).element
         ]),
         part('LabelServerHost', 'router', [host.element, endpoint.element, port.element, subnet.element]),
@@ -117,13 +118,13 @@ export function buildSettings(content, ctx) {
         part('WireGuardHeaderDns', 'language', [dns.element, dnsFields]),
         part('WireGuardHeaderPeerLimits', 'data_usage', [
             h('div', { class: 'fieldDescription', text: t.tr('WireGuardPeerLimitsHelp') }),
-            peerDown.element, peerUp.element, labelled(t, 'WireGuardLabelPeerDataLimit', peerData.element)
+            peerDown.element, peerUp.element, peerData.element
         ]),
         part('TabAdvanced', 'tune', [keepalive.element, mtu.element]),
         part('HeaderConnections', 'cable', [
             connect.element,
             h('div', { class: 'fieldDescription', text: t.tr('WireGuardConnectionLimitsHelp') }),
-            connDown.element, connUp.element, labelled(t, 'WireGuardLabelConnectionDataLimit', connData.element)
+            connDown.element, connUp.element, connData.element
         ])
     ].forEach(function (node) { content.appendChild(node); });
 
@@ -138,7 +139,7 @@ export function buildSettings(content, ctx) {
     function showSidecar(next) {
         info = next;
         sidecarLine.textContent = sidecarText(info, shared);
-        replace.querySelector('span').textContent = t.tr(info && info.Installed ? 'WireGuardButtonReplace' : 'Download');
+        (replace.querySelector('span') || replace).textContent = t.tr(info && info.Installed ? 'WireGuardButtonReplace' : 'Download');
         replace.disabled = !(info && info.Platform);
     }
 
@@ -298,7 +299,8 @@ export function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var restart = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'restart' }, [h('span', { text: t.tr('Restart') })]);
+    var restartRow = nectoModule.createResetRow({ icon: 'autorenew', label: t.tr('WireGuardRestartTitle'), help: t.tr('WireGuardRestartHelp'), button: t.tr('Restart'), action: 'restart' });
+    var restart = restartRow.button;
     var tunnelList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderTunnels'), emptyText: t.tr('WireGuardEmptyTunnels') });
     var userList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderPeersByUser'), emptyText: t.tr('EmptyUsers') });
 
@@ -307,7 +309,7 @@ export function buildTroubleshooting(content, ctx) {
         h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderTunnels') }),
         tunnelList.element,
         nectoModule.createResetGroup([
-            nectoModule.createResetRow({ icon: 'autorenew', label: t.tr('WireGuardRestartTitle'), help: t.tr('WireGuardRestartHelp'), button: restart })
+            restartRow
         ]).element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderPeersByUser') }),
         h('div', { class: 'fieldDescription', text: t.tr('WireGuardPeersByUserHelp') }),

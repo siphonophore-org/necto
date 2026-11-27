@@ -167,6 +167,8 @@ export default function (view) {
         var w = cfg;
         var on = !!w.Enabled;
         shared.setVisible('wireguardOff', !on);
+        // A tool that is off leaves the sidebar the heading takes its name from, so the heading names it itself.
+        if (shared.setPageTitle) shared.setPageTitle(on ? '' : t.tr('TabWireGuard'));
         $('wireguardOff').innerHTML = on ? '' : shared.emptySection(t.tr('WireGuardEmptyOff'));
         var noSidecar = $('wireguardNoSidecar');
         if (!noSidecar.querySelector('.stolon-banner')) {
@@ -354,12 +356,6 @@ export default function (view) {
         return made;
     }
 
-    // labelled
-    // Puts a compound control, such as an Inherit Field, under its label, as a form field.
-    function labelled(labelKey, control) {
-        return h('div', { class: 'inputContainer' }, [h('label', { text: t.tr(labelKey) }), control]);
-    }
-
     // collapsible
     // A section of an editor's fields, led by its icon tile, its fields a wide gap apart, closed unless it is the first.
     function collapsible(titleKey, icon, children, open) {
@@ -372,16 +368,17 @@ export default function (view) {
     // inheritSpeed
     // A speed limit in Mbps that takes the default until it is overridden.
     function inheritSpeed(labelKey, own, inherited) {
-        var input = h('input', { is: 'emby-input', type: 'number', min: '0', 'aria-label': t.tr(labelKey) });
+        var input = h('input', { is: 'emby-input', type: 'number', min: '0' });
         var made = nectoModule.createInheritField({
             field: input,
             inheritedValue: inherited || 0,
             inheritedText: inherited > 0 ? limitText(null, inherited, 'Mbps') : t.tr('LabelNoLimit'),
             label: t.tr(labelKey),
+            fieldLabel: t.tr(labelKey),
             value: { inherit: own == null, value: own == null ? (inherited || 0) : own }
         });
         return {
-            element: labelled(labelKey, made.element),
+            element: made.element,
             read: function () {
                 var v = made.getValue();
                 if (v.inherit) return null;
@@ -400,10 +397,11 @@ export default function (view) {
             inheritedValue: inherited,
             inheritedText: inherited.bytes > 0 ? dataText(t, shared, inherited.bytes, inherited.period) : t.tr('LabelNoLimit'),
             label: t.tr('WireGuardLabelDataLimit'),
+            fieldLabel: t.tr('WireGuardLabelDataLimit'),
             value: { inherit: !own, value: own || inherited }
         });
         return {
-            element: labelled('WireGuardLabelDataLimit', made.element),
+            element: made.element,
             read: function () {
                 var v = made.getValue();
                 return v.inherit ? null : v.value;

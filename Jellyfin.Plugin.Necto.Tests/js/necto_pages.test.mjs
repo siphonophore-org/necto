@@ -53,7 +53,7 @@ test('a tier reads as a name or a number, and an unknown one falls back', async 
     assert.equal(pages.tierLabel('Anonymous', t), 'Anyone');
 });
 
-test('the page rows lead with each page title over its address, with its tier, publishing, and system access', async function () {
+test('the page rows lead with each page title over its address, end with its tier or Unpublished, and tag system access', async function () {
     installPage({});
     var pages = await loadScript('necto_pages.js');
     var list = [
@@ -68,8 +68,12 @@ test('the page rows lead with each page title over its address, with its tier, p
     assert.equal(rows[0].secondary, '/pages/rules');
     assert.equal(rows[2].title, '/pages/bare');
     assert.equal(rows[2].secondary, '');
-    assert.deepEqual(rows[0].tags.map(function (g) { return g.label; }), ['Signed in']);
-    assert.deepEqual(rows[1].tags.map(function (g) { return g.label; }), ['Administrators', 'Unpublished', 'System access']);
+    assert.deepEqual(rows[0].tags, []);
+    assert.deepEqual(rows[0].state, { label: 'Signed in', color: 'blue' });
+    assert.match(rows[0].aside.innerHTML, /Signed in/);
+    assert.deepEqual(rows[1].state, { label: 'Unpublished', color: 'gray' });
+    assert.deepEqual(rows[1].tags.map(function (g) { return g.label; }), ['System access']);
+    assert.deepEqual(rows[2].state, { label: 'Anyone', color: 'green' });
     assert.deepEqual(pages.pageCounts(list.slice(0, 2).concat([{ Slug: 'x' }])), { anyone: 1, user: 1, admin: 0, unpublished: 1 });
 });
 
@@ -86,7 +90,9 @@ test('the store rows show who reads and writes and how full each store is, and t
     assert.equal(rows[0].secondary, '4 of 50 records');
     assert.deepEqual(rows[0].tags.map(function (g) { return g.label; }), ['Read by Signed in', 'Written by Anyone']);
     assert.equal(rows[0].tags[1].color, 'orange');
+    assert.equal(rows[0].aside, null);
     assert.equal(rows[1].secondary, '');
+    assert.deepEqual(rows[1].state, { label: 'Off', color: 'gray' });
     assert.deepEqual(pages.storeCounts(stores, { queue: 4 }), { stores: 2, records: 4, open: 1 });
 });
 
@@ -340,7 +346,7 @@ test('the group editor offers the pages from the Pages route, hidden while Open 
     editor.destroy();
 });
 
-test('each image row draws Delete as a destructive row button', async function () {
+test('each image row draws Remove as a destructive row button', async function () {
     var page = installPage({ config: { CustomPages: { Pages: [], Assets: [{ Name: 'logo.png', ContentType: 'image/png', DataBase64: 'AAAA', Visibility: 'Anonymous' }], Stores: [] } } });
     var dom = page.dom;
     routeApi(page, {});
@@ -353,10 +359,11 @@ test('each image row draws Delete as a destructive row button', async function (
     clickButton(view, 'Images');
     await settle(50);
 
-    var remove = view.querySelector('[data-asset="logo.png"] [data-action="delete-asset"]');
+    var remove = view.querySelector('[data-asset="logo.png"] [data-action="remove-asset"]');
     assert.ok(remove);
     assert.match(remove.className, /stolon-row-btn/);
     assert.match(remove.className, /stolon-destructive/);
+    assert.equal(remove.getAttribute('title'), 'Remove');
 });
 
 test('the group editor offers only Signed in pages, and keeps a page the group already gives', async function () {

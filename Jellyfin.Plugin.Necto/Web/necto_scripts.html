@@ -15,7 +15,7 @@
 
                     <!-- Script selector -->
                     <div class="stolon-selector">
-                        <select is="emby-select" id="selectScript" class="stolon-selector-dropdown" aria-label="Script" data-str-label="ScriptsLabelScript"></select>
+                        <select id="selectScript" class="stolon-selector-dropdown" aria-label="Script" data-str-label="ScriptsLabelScript"></select>
                         <div class="stolon-selector-actions">
                             <button is="emby-button" type="button" id="btnNewScript" class="raised stolon-button stolon-primary">
                                 <span class="material-icons" aria-hidden="true">add</span>
@@ -193,7 +193,7 @@
                         <div class="stolon-section" data-fold="steps" data-fold-icon="format_list_bulleted" data-fold-state="closed">
                             <div class="stolon-section-title" data-str="ScriptsHeaderSteps">Steps</div>
                             <div class="stolon-section-content">
-                                <div class="fieldDescription" data-str="ScriptsHelpSteps">Runs in order. Drag a step to move it.</div>
+                                <div class="fieldDescription" data-str="ScriptsHelpSteps">Runs the steps in order, from the top.</div>
                                 <div id="operationList"></div>
                                 <div id="operationEmpty" class="stolon-hidden"></div>
                                 <div id="operationEditor"></div>
@@ -253,7 +253,7 @@
                         <div class="stolon-section" data-fold="testing" data-fold-icon="science" data-fold-state="closed">
                             <div class="stolon-section-title" data-str="ScriptsSectionTesting">Testing</div>
                             <div class="stolon-section-content">
-                                <div class="fieldDescription" data-str="ScriptsHelpTestAndRun">Tries the steps with sample values, unsaved edits included. Run now runs the saved script.</div>
+                                <div class="fieldDescription" data-str="ScriptsHelpTestAndRun">Tries the steps with sample values, unsaved edits included.</div>
                                 <div class="selectContainer">
                                     <label class="selectLabel" for="testTrigger" data-str="ScriptsLabelTestTrigger">Trigger to test with</label>
                                     <select is="emby-select" id="testTrigger"></select>
