@@ -4211,7 +4211,7 @@
         function fetchSimilar(r) {
             var done = !r.LibraryItemId
                 ? cachedTitleCall('Titles/Similar', r.Type, r, { Type: r.Type, Title: r.Title, Year: r.Year, ProviderIds: r.ProviderIds }).then(function (items) {
-                    var titles = (items || []).map(function (i) { return i.Result; });
+                    var titles = ((items && items.Items) || []).map(function (i) { return i.Result; }).filter(Boolean);
                     return titles.length ? function () { return cardsHtml(titles, titleCard); } : null;
                 })
                 : cachedTitleCall('/Items/' + r.LibraryItemId + '/Similar?limit=16&userId=' + me.UserId + '&fields=ProductionYear', r.Type, r).then(function (data) {

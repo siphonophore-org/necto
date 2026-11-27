@@ -927,13 +927,13 @@ public partial class RequestsController : ControllerBase, IActionFilter
     /// <param name="lookup">The title: its type and ids.</param>
     /// <param name="filters">What the titles are narrowed to: inLibrary, states, types and genres.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>The titles; empty when there are none.</returns>
+    /// <returns>The titles, as a page of search results; empty when there are none.</returns>
     [HttpPost("/Requests/Titles/Similar")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<List<SearchItemDto>>> Similar([FromBody] DetailsLookup lookup, [FromQuery] TitleFilterQuery filters, CancellationToken cancellationToken)
+    public async Task<ActionResult<RequestsQueryResult<SearchItemDto>>> Similar([FromBody] DetailsLookup lookup, [FromQuery] TitleFilterQuery filters, CancellationToken cancellationToken)
     {
         if (GetAccess() is not { CanRequest: true } access)
         {
@@ -948,7 +948,8 @@ public partial class RequestsController : ControllerBase, IActionFilter
         var items = (access.Movies && lookup.Type == RequestType.Movie) || (access.Series && lookup.Type == RequestType.Series)
             ? await _search.SimilarAsync(lookup.Type, lookup.ProviderIds ?? new Dictionary<string, string>(), access, cancellationToken, filters?.ToFilter()).ConfigureAwait(false)
             : new List<SearchResult>();
-        return Ok(_items.For(Outsiders(items, access), access.User));
+        var shown = _items.For(Outsiders(items, access), access.User);
+        return Ok(new RequestsQueryResult<SearchItemDto>(0, shown.Count, shown));
     }
 
     /// <summary>
