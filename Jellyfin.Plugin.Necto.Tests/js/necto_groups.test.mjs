@@ -85,12 +85,12 @@ test('the page lists Everyone and every group from the Groups route', async func
     assert.equal(opened.view.querySelectorAll('.stolon-record-list-row').length, 2);
 });
 
-test('a group opens in a sidecar named for it, with its sections, and Remove, Cancel, and Save on the shelf', async function () {
+test('a group opens in a sidecar named for it, with its sections, and Remove and Save on the shelf', async function () {
     var opened = await openPage();
     var sidecar = await openRow(opened, 1);
 
     assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'Family');
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Cancel', 'Save']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Save']);
     assert.equal((sidecar.textContent.match(/never holds administrators/g) || []).length, 1);
     assert.match(sidecar.querySelector('[data-section="members"]').textContent, /never holds administrators/);
     assert.deepEqual(texts(sidecar, '.stolon-collapsible-title'), ['Members', 'Account rules', 'Access and features', 'Preferences', 'Requests', 'Issues', 'Invites', 'VPN', 'Scripts', 'Pages', 'Notifications']);
@@ -106,7 +106,7 @@ test('Everyone opens with no name field, no members to pick, no Remove, and no w
 
     assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'Everyone');
     assert.equal(sidecar.querySelector('[data-field="Name"]'), null);
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Cancel', 'Save']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Save']);
     assert.match(sidecar.querySelector('[data-section="members"]').textContent, /every user who is in no other group/);
     assert.doesNotMatch(sidecar.textContent, /never holds administrators/);
 });
@@ -248,7 +248,7 @@ test('Add group posts a new group, and a blank name keeps the sidecar open with 
     await settle(50);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
     assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'New group');
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Cancel', 'Save']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Save']);
 
     clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Save');
     await settle(50);

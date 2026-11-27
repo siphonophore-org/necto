@@ -136,7 +136,7 @@ test('Show QR code opens the invite link\'s code in a sidecar, not the editor', 
     assert.equal(sidecar.querySelector('[data-field="Label"]'), null);
 });
 
-test('an invite opens with its link, its fields, and Turn off, Duplicate, Remove, Cancel, and Save', async function () {
+test('an invite opens with its link, its fields, and Turn off, Duplicate, Remove, and Save', async function () {
     var opened = await openPage();
     rowsOf(opened)[0].click();
     await settle(50);
@@ -146,7 +146,7 @@ test('an invite opens with its link, its fields, and Turn off, Duplicate, Remove
     assert.equal(sidecar.querySelector('[data-field="Label"]').value, 'Family');
     assert.equal(sidecar.querySelector('[data-field="GroupId"]').value, FAMILY);
     assert.deepEqual(texts(sidecar.querySelector('[data-field="GroupId"]'), 'option'), ['Group for new users', 'Everyone', 'Family']);
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Turn off', 'Duplicate', 'Cancel', 'Save']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Turn off', 'Duplicate', 'Save']);
 });
 
 test('the editor sets out its steps under icon tiles, never uppercase headings', async function () {
