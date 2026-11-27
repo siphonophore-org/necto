@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Services.Notifications;
 
@@ -18,12 +19,12 @@ public static class CustomPageEvents
     public const string StoreCleared = "pages.store_cleared";
 
     /// <summary>
-    /// Gets every key Custom pages sends, in the order Notifications lists them.
+    /// Gets every event Custom pages sends, in the order Notifications lists them.
     /// </summary>
-    public static IReadOnlyList<string> All { get; } = new[]
+    public static IReadOnlyList<NectoEventInfo> All { get; } = new[]
     {
-        RecordsAdded,
-        RecordsRemoved,
-        StoreCleared
+        new NectoEventInfo(RecordsAdded, TranslationKeys.PagesActivityAddedMany),
+        new NectoEventInfo(RecordsRemoved, TranslationKeys.PagesActivityRemovedMany),
+        new NectoEventInfo(StoreCleared, TranslationKeys.PagesActivityStoreCleared)
     };
 }

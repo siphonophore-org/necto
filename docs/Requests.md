@@ -29,7 +29,7 @@ Titles in libraries the viewer cannot see are never marked as in the library, an
 
 Open a title and select **Request**. The form asks for the **Profile**, the **Seasons** of a show, its **Specials** while **Allow specials** is on, and an optional **Note**. It says whether the request needs approval, and shows a bar for each limit the request counts against. A request past a limit cannot be sent.
 
-While a request waits, its requester can change its seasons, profile, and note, or cancel it. Someone else who wants the same title selects **Join request**, which costs no quota, and hears about it as its requester does. When a requester cancels a request others joined, the first who joined takes it over if it fits their own limits.
+While a request waits, its requester can change its seasons, profile, and note, or cancel it. Someone else who wants the same title selects **Join request**, which costs no quota, and hears about it as its requester does, without the requester's note or the reason, and without the requester's name unless they may see requesters. When a requester cancels a request others joined, the first who joined takes it over if it fits their own limits.
 
 ## The Requests Tool
 
@@ -131,7 +131,13 @@ Administrators may do everything, with no limit. A member of a group with **Mana
 
 ## Notifications
 
-Requests sends these events through **Notifications**, which picks the channels and who receives each. Every event is about the requester, so the requester receives it when their groups allow.
+Requests sends these events through **Notifications**, which picks the channels and who receives each.
+
+* The requester and everyone who joined receive a request's own events when their groups give them the event. **Everyone** gives **Request approved**, **Request rejected**, **Request available**, and **Issue resolved** on a fresh install.
+* A requester who approved their own request is not told so. Those who joined still are.
+* The administrators' channels get each event without the requester and without the administrator who approved or rejected it, since both already know.
+* When Radarr or Sonarr refuses a request, administrators and the channels read its error, and the requester reads that it is tried again.
+* The reminders, `requests.aging` and `requests.expiring`, go to the administrators' channels and to the groups that pick them, never to the requester. An aging reminder shows on each person's most recent Jellyfin app only. An expiring one goes only to apps online at the time, since the next day's replaces it.
 
 | Event | When |
 | :--- | :--- |
@@ -143,7 +149,9 @@ Requests sends these events through **Notifications**, which picks the channels 
 | `requests.aging` | A request waits longer than **Remind administrators after (days)**. Sent once |
 | `requests.expiring` | A waiting request is rejected within three days. Sent once a day |
 
-Each event carries the request's id, status, TMDb, TVDB, and IMDb ids, and the ids of the users who joined it, for webhooks.
+A notification opens the title in the library once it is there, and the title on the request page before then. It shows the poster when **Settings > Notifications > Server address** is set, and a newer update about one request replaces the older one on a device. A Jellyfin message held for someone away is dropped when the request is removed.
+
+A webhook gets the request's id, status, type, and its TMDb, TVDB, IMDb, and library item ids. Each Discord or webhook channel sets what else its posts carry. See [Notifications](Notifications.md#what-posts-carry).
 
 ## Scheduled Tasks
 

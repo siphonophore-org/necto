@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Linq;
+using System.Text.Json.Nodes;
 using Jellyfin.Plugin.Necto.Configuration.Notifications;
 using Siphonophore.Stolon;
 
@@ -85,7 +86,7 @@ public static class NotificationMessages
             Color = Color(nectoEvent.Level),
             Timestamp = now,
             Language = language,
-            Tag = "necto-" + nectoEvent.Key
+            Tag = string.IsNullOrWhiteSpace(nectoEvent.Tag) ? "necto-" + nectoEvent.Key : nectoEvent.Tag
         };
 
         message.Values["title"] = nectoEvent.Title ?? string.Empty;
@@ -118,6 +119,97 @@ public static class NotificationMessages
             {
                 message.Values[key] = value ?? string.Empty;
             }
+        }
+
+        foreach (var (key, value) in (nectoEvent.Values ?? new System.Collections.Generic.Dictionary<string, string>()).Where(p => !string.IsNullOrEmpty(p.Key)))
+        {
+            if (!message.Values.ContainsKey(key))
+            {
+                message.Values[key] = value ?? string.Empty;
+            }
+        }
+
+        return message;
+    }
+
+    /// <summary>
+    /// Picks the version of an event a channel sends: the event told without naming its user when the channel leaves
+    /// the user out and the event has such a version, or else the event itself.
+    /// </summary>
+    /// <param name="nectoEvent">The event.</param>
+    /// <param name="channel">The channel, or <c>null</c>.</param>
+    /// <returns>The event to send.</returns>
+    public static NectoEvent For(NectoEvent nectoEvent, NotificationChannel? channel)
+    {
+        ArgumentNullException.ThrowIfNull(nectoEvent);
+        return channel is not null && !channel.Shows(PostFields.User) && nectoEvent.Anonymous is { } anonymous ? anonymous : nectoEvent;
+    }
+
+    /// <summary>
+    /// Writes an event as a Discord or webhook post, with the fields, poster, and time the channel carries. A custom
+    /// body gets every field as a placeholder.
+    /// </summary>
+    /// <param name="nectoEvent">The event.</param>
+    /// <param name="channel">The Discord or webhook channel.</param>
+    /// <param name="settings">The Notifications settings, for the server's address.</param>
+    /// <param name="eventName">The event's name.</param>
+    /// <param name="now">When it is sent.</param>
+    /// <param name="language">The language the event is written in, or <c>null</c>.</param>
+    /// <returns>The message, with no recipients.</returns>
+    public static NotifyMessage Post(NectoEvent nectoEvent, NotificationChannel channel, NotificationSettings? settings, string eventName, DateTimeOffset now, string? language = null)
+    {
+        ArgumentNullException.ThrowIfNull(channel);
+        var sent = For(nectoEvent, channel);
+        var message = Build(sent, settings, eventName, now, language);
+        var fields = sent.Fields ?? Array.Empty<NectoEventField>();
+        var discord = channel.Kind == NotificationChannelKind.Discord;
+        message.Values[PostFields.Poster] = sent.ImageUrl ?? string.Empty;
+        message.PlainKeys.Add(PostFields.Poster);
+        foreach (var field in fields.Where(f => !f.Json && !message.Values.ContainsKey(f.Key)))
+        {
+            message.Values[field.Key] = field.Value ?? string.Empty;
+        }
+
+        foreach (var field in fields.Where(f => f.Json && !string.IsNullOrWhiteSpace(f.Value) && (channel.UseCustomBody || (!discord && channel.Shows(f.Key)))))
+        {
+            message.Data[field.Key] = JsonNode.Parse(field.Value);
+        }
+
+        if (channel.UseCustomBody)
+        {
+            return message;
+        }
+
+        if (!channel.Shows(PostFields.Poster))
+        {
+            message.ThumbnailUrl = null;
+        }
+
+        if (!channel.Shows(PostFields.Time))
+        {
+            message.Timestamp = null;
+        }
+
+        foreach (var field in fields.Where(f => !f.Json && channel.Shows(f.Key)))
+        {
+            var value = (field.Value ?? string.Empty).Trim();
+            if (!discord)
+            {
+                message.Data[field.Key] = value.Length == 0 ? null : value;
+            }
+            else if (field.InText)
+            {
+                message.Text += value.Length == 0 ? string.Empty : "\n\n{" + field.Key + "}";
+            }
+            else
+            {
+                message.Fields.Add(new NotifyField(field.Name ?? string.Empty, value, field.Inline));
+            }
+        }
+
+        if (!discord && channel.Shows(PostFields.Poster) && sent.ImageUrl is { Length: > 0 } poster)
+        {
+            message.Data[PostFields.Poster] = poster;
         }
 
         return message;

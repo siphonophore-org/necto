@@ -77,6 +77,9 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
         // DDNS and Proxy change only through their own routes, which encrypt credentials and check every change.
         incoming.Ddns = stored?.Ddns ?? new();
         incoming.Proxy = stored?.Proxy ?? new();
+
+        // Notifications changes only through its own route, which keeps every stored secret.
+        incoming.Notifications = stored?.Notifications ?? new();
     }
 
     /// <summary>

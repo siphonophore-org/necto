@@ -37,4 +37,22 @@ public class PluginConfigurationTests
         Assert.False(accounts.Sessions.Enabled);
         Assert.False(config.Everyone.Permissions.Requests.MayRequest);
     }
+
+    /// <summary>
+    /// Everyone gives a fresh install's users the updates about their own requests and issues, on every channel.
+    /// True: a requester hears their request was approved, declined, or is available, and a reporter that their issue
+    /// was decided, as the Requests plugin did by default.
+    /// False: no requester would hear about their requests until an administrator set it up.
+    /// </summary>
+    [Fact]
+    public void Defaults_EveryoneGetsTheirOwnUpdates()
+    {
+        var notifications = new PluginConfiguration().Everyone.Permissions.Notifications;
+
+        Assert.False(notifications.AllEvents);
+        Assert.Equal(new[] { "requests.approved", "requests.declined", "requests.available", "issues.updated" }, notifications.EventKeys);
+        Assert.True(notifications.BrowserNotifications);
+        Assert.True(notifications.JellyfinMessages);
+        Assert.Empty(new Group().Permissions.Notifications.EventKeys);
+    }
 }

@@ -1726,10 +1726,32 @@
         // (checkboxContainer-withDescription): on or off in this browser, or why it can't be turned on. Stolon's page
         // script (StolonPage) asks the browser and signs it up, and every sentence is the plugin's own.
         var PUSH_TEXT = { on: 'RequestsPushOn', off: 'RequestsPushOff', denied: 'RequestsPushBlocked', insecure: 'RequestsPushNeedsHttps', install: 'RequestsPushInstall', unsupported: 'RequestsPushUnsupported' };
-        var workerRegistration = null;
+        // The page's own worker keeps its copy for the installed app. In a browser, notifications go through the worker
+        // every user page shares at the server's root, so one subscription serves them all. The installed app keeps its
+        // own, since a phone ties notifications to the app's own worker.
+        var workerRegistration = null, appRegistration = null;
+        function installed() {
+            return navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+        }
+        function appWorker() {
+            if (!appRegistration) appRegistration = navigator.serviceWorker.register('sw.js');
+            return appRegistration;
+        }
         function pushWorker() {
-            if (!workerRegistration) workerRegistration = navigator.serviceWorker.register('sw.js');
+            if (!workerRegistration) {
+                workerRegistration = installed() ? appWorker() : navigator.serviceWorker.register(prefix + '/Notifications/Push/Worker.js', { scope: prefix + '/' });
+            }
             return workerRegistration;
+        }
+        // A browser that turned notifications on through the page's own worker moves to the shared one, so it never gets two.
+        function dropAppSubscription() {
+            if (installed() || !window.StolonPage) return Promise.resolve();
+            return appWorker().then(function (own) {
+                return own.pushManager.getSubscription().then(function (old) {
+                    if (!old) return null;
+                    return window.StolonPage.unsubscribeWebPush({ registration: own, remove: function (sub) { return call('/Notifications/Push/Unsubscribe', 'POST', sub).catch(function () { /* already forgotten */ }); } });
+                });
+            });
         }
         function openBrowserNotifications() {
             var push = window.StolonPage;
@@ -1750,8 +1772,8 @@
                 var save = function (sub) { return call('/Notifications/Push/Subscribe', 'POST', sub); };
                 var remove = function (sub) { return call('/Notifications/Push/Unsubscribe', 'POST', sub).catch(function () { /* already forgotten */ }); };
                 var done = on
-                    ? call('/Notifications/Push/Key').then(function (k) { return push.subscribeWebPush({ registration: pushWorker(), publicKey: k.PublicKey, save: save }); })
-                    : push.unsubscribeWebPush({ registration: pushWorker(), remove: remove });
+                    ? dropAppSubscription().catch(function () { }).then(function () { return call('/Notifications/Push/Key'); }).then(function (k) { return push.subscribeWebPush({ registration: pushWorker(), publicKey: k.PublicKey, save: save }); })
+                    : push.unsubscribeWebPush({ registration: pushWorker(), remove: remove }).then(function (state) { return dropAppSubscription().catch(function () { }).then(function () { return state; }); });
                 done.then(show, function () {
                     toast(str(on ? 'RequestsErrorPushNotTurnedOn' : 'RequestsErrorPushNotTurnedOff'));
                     push.webPushState(pushWorker()).then(show, function () { show('unsupported'); });
@@ -4479,6 +4501,7 @@
         begin();
 
         if ('serviceWorker' in navigator && window.isSecureContext) {
+            appWorker().catch(function () { });
             pushWorker().catch(function () { });
         }
     })();

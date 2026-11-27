@@ -226,7 +226,7 @@ public sealed class Notifier : INotifier
                     return new NotificationResult(false, StolonTranslations.Get(TranslationKeys.NotificationsResultNotSent, language));
                 }
 
-                var posted = await _stolon.SendAsync(channel, NotificationMessages.Build(nectoEvent, settings, name, now, serverLanguage), cancellationToken).ConfigureAwait(false);
+                var posted = await _stolon.SendAsync(channel, NotificationMessages.Post(nectoEvent, channel, settings, name, now, serverLanguage), cancellationToken).ConfigureAwait(false);
                 return new NotificationResult(posted.Ok, posted.Message);
             case NotificationTarget.Email:
                 return await EmailAsync(settings, channel, nectoEvent, language, cancellationToken).ConfigureAwait(false);
@@ -269,7 +269,7 @@ public sealed class Notifier : INotifier
     private async Task<NotificationResult> AppsAsync(NotificationSettings settings, NectoEvent nectoEvent, string name, DateTimeOffset now, IReadOnlyList<Guid> recipients, CancellationToken cancellationToken)
     {
         var message = NotificationMessages.Build(nectoEvent, settings, name, now, StolonTranslations.ServerLanguage(_serverConfig));
-        message.Subject = nectoEvent.Key;
+        message.Subject = string.IsNullOrWhiteSpace(nectoEvent.Subject) ? nectoEvent.Key : nectoEvent.Subject;
         foreach (var id in recipients)
         {
             message.Recipients.Add(id);
@@ -292,7 +292,7 @@ public sealed class Notifier : INotifier
             return new NotificationResult(false, StolonTranslations.Get(TranslationKeys.NotificationsResultNoAddresses, language));
         }
 
-        var (subject, body) = NotificationMessages.Email(nectoEvent, settings);
+        var (subject, body) = NotificationMessages.Email(NotificationMessages.For(nectoEvent, channel), settings);
         try
         {
             await _email.SendAsync(settings.Smtp, _secrets.Unprotect(settings.Smtp.Password), to, subject, body, cancellationToken).ConfigureAwait(false);

@@ -66,7 +66,7 @@ public class TunnelActivityTests
             notifier.Events.Select(e => e.Key));
         Assert.Equal(NectoEventLevel.Error, notifier.Events[3].Level);
         Assert.Equal(NectoEventLevel.Warning, notifier.Events[1].Level);
-        Assert.All(WireGuardEvents.All.Keys, k => Assert.StartsWith("wireguard.", k, StringComparison.Ordinal));
+        Assert.All(WireGuardEvents.All.Select(x => x.Key), k => Assert.StartsWith("wireguard.", k, StringComparison.Ordinal));
     }
 
     /// <summary>

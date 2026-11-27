@@ -77,14 +77,14 @@ Administrators may do everything, with no limit.
 
 ## Notifications
 
-Issues sends these events through **Notifications**. Each is about the first reporter, so that reporter receives it when their groups allow.
+Issues sends these events through **Notifications**. Every reporter receives an issue's events when their groups allow. The administrators' channels leave out the reporters of a new issue, and the administrator who resolved or declined one.
 
 | Event | When |
 | :--- | :--- |
 | `issues.created` | Someone reports an issue |
 | `issues.updated` | A manager resolves or declines an issue, with the manager's note |
 
-Each event carries the issue's id, its item's id, and the ids of every reporter, for webhooks.
+A webhook gets the issue's id, state, type, its item's id, and its TMDb, TVDB, and IMDb ids. A notification shows the item's poster when **Settings > Notifications > Server address** is set. See [Notifications](Notifications.md#what-posts-carry) for what else a post carries.
 
 ## Troubleshooting
 

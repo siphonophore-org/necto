@@ -1108,6 +1108,13 @@ public sealed partial class RequestService : IDisposable
         if (removed is not null)
         {
             Interlocked.Increment(ref _version);
+
+            // A request handed to someone who joined it lives on, so only a removed one's messages go.
+            if (handedTo is null)
+            {
+                _notifier.Forget(removed.Id);
+            }
+
             if (logActivity)
             {
                 _activity.Log(

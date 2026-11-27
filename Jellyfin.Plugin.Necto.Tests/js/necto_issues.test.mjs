@@ -66,7 +66,7 @@ function sent(opened) {
     return opened.page.requests.filter(function (r) { return r.type === 'POST'; });
 }
 
-test('statCards counts Open as the reported and confirmed issues, then each state in its color', async function () {
+test('statCards counts Open as the reported and confirmed issues, then each state in its color, Reported in yellow as on the user page', async function () {
     var t = await strings();
     var mod = await loadScript('necto_issues.js');
 
@@ -74,7 +74,7 @@ test('statCards counts Open as the reported and confirmed issues, then each stat
 
     assert.deepEqual(cards.map(function (c) { return c.label; }), ['Open', 'Reported', 'Confirmed', 'Resolved', 'Declined']);
     assert.deepEqual(cards.map(function (c) { return c.count; }), [3, 2, 1, 4, 1]);
-    assert.deepEqual(cards.map(function (c) { return c.color; }), ['', 'orange', 'red', 'green', 'gray']);
+    assert.deepEqual(cards.map(function (c) { return c.color; }), ['', 'yellow', 'red', 'green', 'gray']);
 });
 
 test('the state filter offers Open and every state, and the type filter every type', async function () {

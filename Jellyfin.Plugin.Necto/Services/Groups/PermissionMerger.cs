@@ -68,7 +68,11 @@ public static class PermissionMerger
             Notifications = new NotificationPermissions
             {
                 AllEvents = p.Any(x => x.Notifications.AllEvents),
-                EventKeys = Union(p.SelectMany(x => x.Notifications.EventKeys))
+                EventKeys = Union(p.SelectMany(x => x.Notifications.EventKeys)),
+
+                // A channel counts only from a group that gives events, so a group with none cannot add one.
+                BrowserNotifications = p.Any(x => x.Notifications.ReceivesAny() && x.Notifications.BrowserNotifications),
+                JellyfinMessages = p.Any(x => x.Notifications.ReceivesAny() && x.Notifications.JellyfinMessages)
             }
         };
     }

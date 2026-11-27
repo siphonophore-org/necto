@@ -115,13 +115,13 @@ public class ScheduleAndEventsTests
     [Fact]
     public void EventLists_NameEveryKeyTheToolsSend()
     {
-        Assert.Contains(DdnsEvents.Failed, DdnsEvents.All.Keys);
+        Assert.Contains(DdnsEvents.Failed, DdnsEvents.All.Select(x => x.Key));
         Assert.Equal("ddns.failed", DdnsEvents.Failed);
-        Assert.All(DdnsEvents.All.Keys, k => Assert.StartsWith("ddns.", k, StringComparison.Ordinal));
+        Assert.All(DdnsEvents.All.Select(x => x.Key), k => Assert.StartsWith("ddns.", k, StringComparison.Ordinal));
         Assert.Equal("proxy.banned", ProxyEvents.Banned);
         Assert.Equal("proxy.certificate_expiring", ProxyEvents.CertificateExpiring);
-        Assert.All(ProxyEvents.All.Keys, k => Assert.StartsWith("proxy.", k, StringComparison.Ordinal));
-        Assert.All(DdnsEvents.All.Values.Concat(ProxyEvents.All.Values), name => Assert.NotEqual(name, Siphonophore.Stolon.StolonTranslations.Get(name)));
+        Assert.All(ProxyEvents.All.Select(x => x.Key), k => Assert.StartsWith("proxy.", k, StringComparison.Ordinal));
+        Assert.All(DdnsEvents.All.Select(x => x.NameKey).Concat(ProxyEvents.All.Select(x => x.NameKey)), name => Assert.NotEqual(name, Siphonophore.Stolon.StolonTranslations.Get(name)));
     }
 
     /// <summary>

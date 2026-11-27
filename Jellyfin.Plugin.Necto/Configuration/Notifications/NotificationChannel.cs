@@ -37,6 +37,30 @@ public class NotificationChannel : NotifyDestination
     /// <summary>Gets or sets the addresses an email channel sends to, one a line or split by commas.</summary>
     public string Recipients { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets a value indicating whether a post carries the poster.</summary>
+    public bool ShowPoster { get; set; } = true;
+
+    /// <summary>Gets or sets a value indicating whether a post carries the title's summary.</summary>
+    public bool ShowOverview { get; set; } = true;
+
+    /// <summary>Gets or sets a value indicating whether a post names the requester or reporter. Off, it names no one.</summary>
+    public bool ShowRequester { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether a post carries how many others joined.</summary>
+    public bool ShowJoined { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether a post carries the seasons asked for.</summary>
+    public bool ShowSeasons { get; set; } = true;
+
+    /// <summary>Gets or sets a value indicating whether a post carries the requester's or reporter's note.</summary>
+    public bool ShowNote { get; set; } = true;
+
+    /// <summary>Gets or sets a value indicating whether a post carries when it happened.</summary>
+    public bool ShowTime { get; set; } = true;
+
+    /// <summary>Gets or sets a value indicating whether a webhook post carries the whole request or issue.</summary>
+    public bool ShowRecord { get; set; } = true;
+
     /// <summary>Gets a value indicating whether the channel is one Necto keeps, which cannot be removed.</summary>
     public bool IsBuiltIn => Kind is NotificationChannelKind.Administrators or NotificationChannelKind.ActivityLog;
 
@@ -50,6 +74,24 @@ public class NotificationChannel : NotifyDestination
         NotificationChannelKind.Discord => NotifyChannel.Discord,
         NotificationChannelKind.Webhook => NotifyChannel.Webhook,
         _ => NotifyChannel.Jellyfin
+    };
+
+    /// <summary>
+    /// Works out whether a post here carries a field. A field no setting names is always carried.
+    /// </summary>
+    /// <param name="fieldKey">The field's key, one of <see cref="PostFields"/>.</param>
+    /// <returns><c>true</c> when the post carries it.</returns>
+    public bool Shows(string fieldKey) => fieldKey switch
+    {
+        PostFields.Poster => ShowPoster,
+        PostFields.Overview => ShowOverview,
+        PostFields.User => ShowRequester,
+        PostFields.Joined => ShowJoined,
+        PostFields.Seasons => ShowSeasons,
+        PostFields.Note => ShowNote,
+        PostFields.Time => ShowTime,
+        PostFields.Request or PostFields.Issue => ShowRecord,
+        _ => true
     };
 
     /// <summary>

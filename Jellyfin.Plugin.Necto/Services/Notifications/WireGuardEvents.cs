@@ -27,15 +27,15 @@ public static class WireGuardEvents
     public const string TunnelFailed = "wireguard.failed";
 
     /// <summary>
-    /// Gets every WireGuard event key, with the key of its name in the plugin's strings.
+    /// Gets every WireGuard event, in the order Notifications lists them.
     /// </summary>
-    public static IReadOnlyDictionary<string, string> All { get; } = new Dictionary<string, string>
+    public static IReadOnlyList<NectoEventInfo> All { get; } = new[]
     {
-        [Connected] = TranslationKeys.WireGuardActivityNamePeerConnected,
-        [Disconnected] = TranslationKeys.WireGuardActivityNamePeerDisconnected,
-        [ConnectionEstablished] = TranslationKeys.WireGuardActivityNameConnectionEstablished,
-        [ConnectionLost] = TranslationKeys.WireGuardActivityNameConnectionLost,
-        [DataLimitReached] = TranslationKeys.WireGuardActivityNameDataLimitReached,
-        [TunnelFailed] = TranslationKeys.WireGuardActivityNameTunnelFailed
+        new NectoEventInfo(Connected, TranslationKeys.WireGuardActivityNamePeerConnected),
+        new NectoEventInfo(Disconnected, TranslationKeys.WireGuardActivityNamePeerDisconnected),
+        new NectoEventInfo(ConnectionEstablished, TranslationKeys.WireGuardActivityNameConnectionEstablished),
+        new NectoEventInfo(ConnectionLost, TranslationKeys.WireGuardActivityNameConnectionLost),
+        new NectoEventInfo(DataLimitReached, TranslationKeys.WireGuardActivityNameDataLimitReached),
+        new NectoEventInfo(TunnelFailed, TranslationKeys.WireGuardActivityNameTunnelFailed)
     };
 }

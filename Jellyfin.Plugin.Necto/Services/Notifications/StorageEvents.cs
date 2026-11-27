@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Jellyfin.Plugin.Necto.Services.Storage;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Services.Notifications;
 
@@ -39,20 +40,20 @@ public static class StorageEvents
     public const string FormatFailed = "storage.format_failed";
 
     /// <summary>
-    /// Gets every key Storage sends, in the order Notifications lists them.
+    /// Gets every event Storage sends, in the order Notifications lists them.
     /// </summary>
-    public static IReadOnlyList<string> All { get; } = new[]
+    public static IReadOnlyList<NectoEventInfo> All { get; } = new[]
     {
-        DiskMissing,
-        DiskUnresponsive,
-        DiskBack,
-        DiskRemounted,
-        RemountFailed,
-        SmartWarning,
-        SpaceLow,
-        SpaceFull,
-        ScanBlocked,
-        FormatFailed
+        new NectoEventInfo(DiskMissing, TranslationKeys.StorageActivityNameDiskMissing),
+        new NectoEventInfo(DiskUnresponsive, TranslationKeys.StorageActivityNameDiskUnresponsive),
+        new NectoEventInfo(DiskBack, TranslationKeys.StorageActivityNameDiskBack),
+        new NectoEventInfo(DiskRemounted, TranslationKeys.StorageActivityNameDiskRemounted),
+        new NectoEventInfo(RemountFailed, TranslationKeys.StorageActivityNameDiskNotRemounted),
+        new NectoEventInfo(SmartWarning, TranslationKeys.StorageEventSmartWarning),
+        new NectoEventInfo(SpaceLow, TranslationKeys.StorageActivityNameDiskLow),
+        new NectoEventInfo(SpaceFull, TranslationKeys.StorageActivityNameDiskFull),
+        new NectoEventInfo(ScanBlocked, TranslationKeys.StorageActivityNameScanBlocked),
+        new NectoEventInfo(FormatFailed, TranslationKeys.StorageActivityNameDiskNotFormatted)
     };
 
     /// <summary>

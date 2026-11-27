@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Services.Notifications;
 
@@ -20,13 +21,13 @@ public static class DdnsEvents
     public const string DetectionFailed = "ddns.detection_failed";
 
     /// <summary>
-    /// Gets every event key with the key of its name, in the order Notifications lists them.
+    /// Gets every event, in the order Notifications lists them.
     /// </summary>
-    public static IReadOnlyDictionary<string, string> All { get; } = new Dictionary<string, string>
+    public static IReadOnlyList<NectoEventInfo> All { get; } = new[]
     {
-        [Failed] = "DdnsEventFailed",
-        [Paused] = "DdnsEventPaused",
-        [Recovered] = "DdnsEventRecovered",
-        [DetectionFailed] = "DdnsEventDetectionFailed"
+        new NectoEventInfo(Failed, TranslationKeys.DdnsEventFailed),
+        new NectoEventInfo(Paused, TranslationKeys.DdnsEventPaused),
+        new NectoEventInfo(Recovered, TranslationKeys.DdnsEventRecovered),
+        new NectoEventInfo(DetectionFailed, TranslationKeys.DdnsEventDetectionFailed)
     };
 }

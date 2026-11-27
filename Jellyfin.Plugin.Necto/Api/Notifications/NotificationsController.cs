@@ -116,9 +116,9 @@ public class NotificationsController : ControllerBase
         var language = StolonTranslations.RequestLanguage(Request);
         var settings = _store.Read(c => ConfigurationCopy.Of(c.Notifications ?? new NotificationSettings()));
         var test = Notifier.TestEvent(Caller.UserId(User), language);
-        var message = NotificationMessages.Build(test, settings, StolonTranslations.Get(TranslationKeys.NotificationsEventTest, language), DateTimeOffset.UtcNow, language);
         var copy = ConfigurationCopy.Of(channel);
         copy.Kind = channel.Kind;
+        var message = NotificationMessages.Post(test, copy, settings, StolonTranslations.Get(TranslationKeys.NotificationsEventTest, language), DateTimeOffset.UtcNow, language);
         if (copy.Kind is NotificationChannelKind.Email or NotificationChannelKind.ActivityLog)
         {
             var (subject, body) = NotificationMessages.Email(test, settings);

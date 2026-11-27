@@ -300,7 +300,9 @@ export function sectionSpecs() {
         },
         { key: 'notifications', title: 'TabNotifications', icon: 'notifications', fields: [
             { path: 'Notifications.AllEvents', kind: 'check', label: 'LabelAllEvents', help: 'NotificationsAllEventsHelp' },
-            { path: 'Notifications.EventKeys', kind: 'events', label: 'NotificationsGroupEvents', help: 'NotificationsGroupEventsHelp' }
+            { path: 'Notifications.EventKeys', kind: 'events', label: 'NotificationsGroupEvents', help: 'NotificationsGroupEventsHelp' },
+            { path: 'Notifications.BrowserNotifications', kind: 'check', label: 'LabelBrowserNotifications', help: 'NotificationsGroupBrowsersHelp', fallback: true },
+            { path: 'Notifications.JellyfinMessages', kind: 'check', label: 'NotificationsChannelApps', help: 'NotificationsGroupAppsHelp', fallback: true }
         ] }
     ];
 }
@@ -553,7 +555,7 @@ export function createGroupEditor(group, ctx) {
             drawSessions(into, value || [], spec);
         } else if (spec.kind === 'events') {
             var events = nectoModule.createCheckboxList({
-                items: (ctx.events || []).filter(function (e) { return e.ForUsers; }),
+                items: ctx.events || [],
                 idKey: 'Key',
                 value: value || [],
                 renderRow: function (e) { return { label: e.Name, sublabel: e.Key }; },

@@ -19,9 +19,9 @@ public class IssueEventsTests
     [Fact]
     public void All_Keys_AreEachListedOnceUnderIssues()
     {
-        Assert.Equal(new[] { "issues.created", "issues.updated" }, IssueEvents.All);
-        Assert.Equal(IssueEvents.All.Count, IssueEvents.All.Distinct(StringComparer.Ordinal).Count());
-        Assert.All(IssueEvents.All, k => Assert.StartsWith("issues.", k, StringComparison.Ordinal));
+        Assert.Equal(new[] { "issues.created", "issues.updated" }, IssueEvents.All.Select(x => x.Key));
+        Assert.Equal(IssueEvents.All.Count, IssueEvents.All.Select(x => x.Key).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(IssueEvents.All.Select(x => x.Key), k => Assert.StartsWith("issues.", k, StringComparison.Ordinal));
     }
 
     /// <summary>
