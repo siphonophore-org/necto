@@ -64,7 +64,7 @@ Every response drops the `Server`, `X-Powered-By`, and timing headers, and gets 
 
 ## Visitors
 
-The **Visitors** section shows the banned addresses with when each ban began and ends and **Unban**, what each address did with **Block**, **Unblock**, or **Unblock** for its country, and the totals by country with the last visit from each. With **Locations** set to **Country and city**, the activity table also shows each visitor's city.
+The **Visitors** section shows the banned addresses with when each ban began and ends and **Unban**, what each address did with **Block**, **Unblock**, or **Unblock** for its country, and the totals by country with the last visit from each. With **Location lookup** set to **Country and city**, the activity table also shows each visitor's city.
 
 **Block** and unblocking a country ask first, since a country rule covers many people. Unblocking a country lets its addresses through, and addresses blocked one by one stay blocked. Your network and trusted networks are never blocked, so their **Block** is off. An address blocked by a range in the block list has its **Unblock** off, since the range is changed in **Settings**. Hover a button that is off to see why.
 
@@ -80,17 +80,19 @@ The [Dashboard](Dashboard.md) map shows the same totals by country, through `GET
 
 * **Enable proxy** starts the proxy on its ports. It is off on a fresh install, and while it is off **Proxy** leaves the sidebar, the Dashboard, and the group editor.
 * **Accept the Let's Encrypt terms** lets Necto ask Let's Encrypt for certificates.
-* **Record visitors**, **Keep history (days)**, and **Locations** set the visitor history.
+Every setting but the first two shows while **Enable proxy** is on, each group in its own part.
+
+* **Visitors**: **Record visitors**, **Keep history (days)**, and **Location lookup** set the visitor history.
 * **Listener**: **HTTP port** (80), **HTTPS port** (443), **LAN address**, and **HTTP/2**.
 * **Jellyfin side**: **Only through the proxy**, which binds Jellyfin to this machine so every client goes through the proxy, and **Trusted networks**. Turning on **Only through the proxy** asks before it saves, since apps, casting, and DLNA that use the server's own address stop working.
 * **Security headers**: **HSTS**, **HSTS age (days)**, and **Same origin frames only**.
 * **Bans and block list**, **Locations**, **Rate limits**, and **Timeouts** as described above.
 
-Under **Locations**, a note says what the picked country rule does and, for **This server's country**, where this server is. It warns while the location database is missing, when country rules either let everyone through or, with **Refuse without the database**, refuse every internet connection. A line under it counts who the country rules refused since Jellyfin started, by country. **Countries** hides while the rule is **Off**. A note under the **Locations** detail says what each choice costs, and **Country and city** downloads a database of about 130 MB.
+The description under **Country rule** says what the picked rule does and, for **This server's country**, where this server is. It warns while the location database is missing, when country rules either let everyone through or, with **Refuse without the database**, refuse every internet connection. **Countries** hides while the rule is **Off**. The description under **Location lookup** says what each choice costs, and **Country and city** downloads a database of about 130 MB.
 
 ## Troubleshooting
 
-**Troubleshooting > Proxy** shows the proxy's state, the addresses it listens on, the Jellyfin it forwards to, the LAN address, the location database, the server's country, and which defaults the server's memory picks. With a public name, it also shows the name, the addresses it points to, and this server's public address.
+**Troubleshooting > Proxy** shows the proxy's state, the addresses it listens on, the Jellyfin it forwards to, the LAN address, the location database, the server's country, and which defaults the server's memory picks. While a country rule refused anyone, **Refused by country** counts them since Jellyfin started. With a public name, it also shows the name, the addresses it points to, and this server's public address.
 
 ![Proxy troubleshooting](screenshots/troubleshooting/Proxy.png)
 
