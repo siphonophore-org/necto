@@ -31,7 +31,7 @@ test('routeItems names each route, where it forwards, and who may reach it, and 
     var items = proxy.routeItems(ROUTES, [{ Id: 'a', Certificate: { Loaded: true, NotAfterUtc: new Date(Date.now() + 60 * 86400000).toISOString() }, Acme: {} }], bag.t);
 
     assert.equal(items[0].title, 'media.example.com');
-    assert.equal(items[0].secondary, 'This Jellyfin');
+    assert.equal(items[0].secondary, 'Jellyfin');
     assert.deepEqual(items[0].tags, []);
     assert.deepEqual(items[0].state, { label: 'HTTPS ready', color: 'green' });
     assert.match(items[0].aside.innerHTML, /HTTPS ready/);
@@ -71,6 +71,36 @@ test('the route editor reads an upstream only for another service and shows what
     assert.equal(editor.getValue().Upstream, '');
     field('Host').value = '';
     assert.equal(editor.validate(), 'ErrorEnterHostName');
+});
+
+test('a DDNS name locks the host, and a wildcard takes a subdomain in front of its base', async function () {
+    var bag = await strings();
+    var proxy = await loadScript('necto_proxy.js');
+    var names = [{ Hostname: 'home.example.com' }, { Hostname: '*.example.com' }];
+    var editor = proxy.createRouteEditor(Object.assign({}, ROUTES[0], { Host: 'media.example.com', DdnsHostname: '*.example.com' }), { shared: bag, status: null, records: [], hostnames: names });
+    var field = function (name) { return editor.element.querySelector('[data-field="' + name + '"]'); };
+    var hidden = function (name) { return field(name).closest('.inputContainer, .selectContainer').classList.contains('stolon-hidden'); };
+    var order = Array.prototype.map.call(editor.element.querySelectorAll('[data-field="DdnsHostname"], [data-field="Subdomain"], [data-field="Host"]'), function (n) { return n.getAttribute('data-field'); });
+
+    assert.deepEqual(order, ['DdnsHostname', 'Subdomain', 'Host']);
+    assert.equal(field('Subdomain').value, 'media');
+    assert.equal(hidden('Subdomain'), false);
+    assert.equal(field('Host').readOnly, true);
+    field('Subdomain').value = '*';
+    field('Subdomain').dispatchEvent(new globalThis.Event('input'));
+    assert.deepEqual([editor.getValue().Host, editor.getValue().DdnsHostname, editor.validate()], ['*.example.com', '*.example.com', null]);
+    field('Subdomain').value = 'a.b';
+    assert.equal(editor.validate(), 'ProxyErrorEnterSubdomain');
+
+    field('DdnsHostname').value = 'home.example.com';
+    field('DdnsHostname').dispatchEvent(new globalThis.Event('change'));
+    assert.deepEqual([hidden('Subdomain'), field('Host').value, field('Host').readOnly, editor.getValue().Host], [true, 'home.example.com', true, 'home.example.com']);
+    field('DdnsHostname').value = '';
+    field('DdnsHostname').dispatchEvent(new globalThis.Event('change'));
+    field('Host').value = 'free.example.org';
+    assert.deepEqual([field('Host').readOnly, editor.getValue().Host, editor.getValue().DdnsHostname], [false, 'free.example.org', '']);
+    assert.equal(proxy.fitsDdnsName('x.example.com', '*.example.com'), true);
+    assert.equal(proxy.hostFor('*.example.com', ''), '');
 });
 
 test('statusCards and notices sum how the proxy stands', async function () {

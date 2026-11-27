@@ -150,6 +150,29 @@ public class ProxySettingsTests
     }
 
     /// <summary>
+    /// A route locked to a DDNS name takes that name, or for a wildcard the wildcard or one name under its base.
+    /// True: a route on a DDNS name always answers for a name the DDNS record keeps.
+    /// False: a route could say it uses a DDNS name while answering for another.
+    /// </summary>
+    [Theory]
+    [InlineData("home.example.com", "home.example.com", true)]
+    [InlineData("other.example.com", "home.example.com", false)]
+    [InlineData("media.example.com", "*.example.com", true)]
+    [InlineData("*.example.com", "*.example.com", true)]
+    [InlineData("a.b.example.com", "*.example.com", false)]
+    [InlineData("example.com", "*.example.com", false)]
+    [InlineData("media.example.org", "*.example.com", false)]
+    [InlineData("-bad.example.com", "*.example.com", false)]
+    [InlineData("anything.example.org", "", true)]
+    public void ValidateRoute_DdnsName_LocksTheHost(string host, string ddns, bool ok)
+    {
+        var errors = RouteErrors(new ProxyRoute { Host = host, DdnsHostname = ddns });
+
+        Assert.Equal(ok, ProxySettingsValidator.FitsDdnsName(host, ddns));
+        Assert.Equal(ok, !errors.Any(e => e.Contains("DDNS", System.StringComparison.Ordinal) || e.Contains("in front of", System.StringComparison.Ordinal)));
+    }
+
+    /// <summary>
     /// A route to another service needs an http or https address with nothing after the port.
     /// True: the proxy forwards each path as it came.
     /// False: a typo would send visitors nowhere.

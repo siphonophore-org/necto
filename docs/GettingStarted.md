@@ -29,7 +29,7 @@ Open **Proxy** and select **Add route**. The picker suggests your domain from th
 
 `example.com` to this Jellyfin, open to the internet, with a public certificate.
 
-* **Forward to** is **This Jellyfin**, and **Local network only** is off.
+* **Forward to** is **Jellyfin**, and **Local network only** is off.
 * **Certificate** is **Let's Encrypt** with **Pick for me**, which uses a DNS challenge through the DDNS record and an HTTP challenge on port 80 otherwise.
 
 Once saved, the row shows **HTTPS ready** within a minute or two. Then trust the proxy, below, so visitors from the internet get in.

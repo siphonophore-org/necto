@@ -59,9 +59,9 @@ export function certificateTag(status, route, t) {
 // t [object]: The strings.
 //
 // Output
-// [string]: This Jellyfin, or the upstream address.
+// [string]: Jellyfin, or the upstream address.
 export function upstreamText(route, t) {
-    return route.Upstream ? route.Upstream : t.tr('ProxyThisJellyfin');
+    return route.Upstream ? route.Upstream : t.tr('LabelJellyfin');
 }
 
 // routeState
@@ -138,7 +138,55 @@ export function certificateItems(status, shared, root) {
 // Output
 // [object]: The route.
 export function newRoute() {
-    return { Id: '', Enabled: true, Host: '', Upstream: '', LocalOnly: false, Certificate: { Mode: 'Automatic', Challenge: 'Auto', DnsRecordId: '', Path: '', KeyPath: '', Password: '' } };
+    return { Id: '', Enabled: true, Host: '', DdnsHostname: '', Upstream: '', LocalOnly: false, Certificate: { Mode: 'Automatic', Challenge: 'Auto', DnsRecordId: '', Path: '', KeyPath: '', Password: '' } };
+}
+
+// subdomainOf
+// Reads the part of a host in front of a wildcard DDNS name's base, such as media from media.example.com under
+// *.example.com.
+//
+// Inputs
+// host [string]: The host.
+// ddnsHostname [string]: The DDNS name, a wildcard or not.
+//
+// Output
+// [string]: The subdomain, or empty when the host is not under the wildcard.
+export function subdomainOf(host, ddnsHostname) {
+    var name = String(host || '').toLowerCase();
+    if (String(ddnsHostname || '').indexOf('*.') !== 0) return '';
+    var suffix = ddnsHostname.slice(1);
+    return name.length > suffix.length && name.slice(-suffix.length) === suffix ? name.slice(0, -suffix.length) : '';
+}
+
+// hostFor
+// Builds the host a DDNS name gives: the name itself, or the subdomain in front of a wildcard's base.
+//
+// Inputs
+// ddnsHostname [string]: The DDNS name.
+// sub [string]: The subdomain typed for a wildcard.
+//
+// Output
+// [string]: The host, empty while a wildcard has no subdomain.
+export function hostFor(ddnsHostname, sub) {
+    if (String(ddnsHostname || '').indexOf('*.') !== 0) return ddnsHostname || '';
+    var label = String(sub || '').trim().toLowerCase().replace(/\.+$/, '');
+    return label ? label + ddnsHostname.slice(1) : '';
+}
+
+// fitsDdnsName
+// Tells whether a host fits a DDNS name, as the server checks: the name itself, or the wildcard or one name under it.
+//
+// Inputs
+// host [string]: The host.
+// ddnsHostname [string]: The DDNS name, or empty for none.
+//
+// Output
+// [boolean]: Whether the host fits.
+export function fitsDdnsName(host, ddnsHostname) {
+    if (!ddnsHostname) return true;
+    if (ddnsHostname.indexOf('*.') !== 0) return host === ddnsHostname;
+    var label = subdomainOf(host, ddnsHostname);
+    return label === '*' || /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(label);
 }
 
 // createRouteEditor
@@ -164,17 +212,22 @@ export function createRouteEditor(route, ctx) {
     var handles = [];
 
     var host = nectoModule.createInputField({ label: t.tr('LabelHostName'), field: 'Host', value: draft.Host, placeholder: 'media.example.com', help: t.tr('ProxyHostHelp') });
+    var names = (ctx.hostnames || []).map(function (name) { return name.Hostname; });
+    var lockedTo = draft.DdnsHostname || '';
+    if (lockedTo && names.indexOf(lockedTo) < 0) names.push(lockedTo);
     var ddnsNames = nectoModule.createSelectField({
         label: t.tr('ProxyLabelDdnsName'),
-        field: 'DdnsName',
-        options: [{ value: '', text: t.tr('None') }].concat((ctx.hostnames || []).map(function (name) { return { value: name.Hostname, text: name.Hostname }; })),
-        value: ''
+        field: 'DdnsHostname',
+        options: [{ value: '', text: t.tr('None') }].concat(names.map(function (name) { return { value: name, text: name }; })),
+        value: lockedTo,
+        help: t.tr('ProxyDdnsNameHelp')
     });
+    var subdomain = nectoModule.createInputField({ label: t.tr('ProxyLabelSubdomain'), field: 'Subdomain', value: subdomainOf(draft.Host, lockedTo), placeholder: 'media', help: t.format('ProxySubdomainHelp', 'example.com') });
     var enabled = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelRouteEnabled'), field: 'Enabled', checked: draft.Enabled !== false, help: t.tr('ProxyRouteEnabledHelp') });
     var target = nectoModule.createSelectField({
         label: t.tr('ProxyLabelForwardTo'),
         field: 'Target',
-        options: [{ value: 'jellyfin', text: t.tr('ProxyThisJellyfin') }, { value: 'other', text: t.tr('ProxyOptionAnotherService') }],
+        options: [{ value: 'jellyfin', text: t.tr('LabelJellyfin') }, { value: 'other', text: t.tr('ProxyOptionAnotherService') }],
         value: draft.Upstream ? 'other' : 'jellyfin'
     });
     var upstream = nectoModule.createInputField({ label: t.tr('ProxyLabelUpstream'), field: 'Upstream', value: draft.Upstream, placeholder: 'http://192.168.1.20:8096', help: t.tr('ProxyUpstreamHelp') });
@@ -244,8 +297,11 @@ export function createRouteEditor(route, ctx) {
     upload.appendChild(h('div', { class: 'stolon-button-row' }, [uploadBtn]));
 
     // The route and its certificate are the editor's two steps, each led by its tile.
-    var routePart = h('div', { class: 'stolon-stack' }, [host.element]);
-    if ((ctx.hostnames || []).length) routePart.appendChild(ddnsNames.element);
+    // The DDNS name decides the host, so it comes first.
+    var routePart = h('div', { class: 'stolon-stack' });
+    if (names.length) routePart.appendChild(ddnsNames.element);
+    routePart.appendChild(subdomain.element);
+    routePart.appendChild(host.element);
     [enabled, target, upstream, localOnly].forEach(function (f) { routePart.appendChild(f.element); });
     var certPart = h('div', { class: 'stolon-stack' });
     [mode, challenge, record, path, keyPath, password].forEach(function (f) { certPart.appendChild(f.element); });
@@ -276,7 +332,28 @@ export function createRouteEditor(route, ctx) {
         path.element.querySelector('label').textContent = t.tr(m === 'PemFiles' ? 'ProxyLabelChainFile' : 'ProxyLabelCertificateFile');
     }
 
-    ddnsNames.input.addEventListener('change', function () { if (ddnsNames.input.value) host.input.value = ddnsNames.input.value; });
+    // lockHost
+    // Locks the host name to the picked DDNS name. A wildcard takes a subdomain in front of its base instead, and None
+    // frees the field.
+    function lockHost() {
+        var picked = ddnsNames.input.value;
+        var wild = picked.indexOf('*.') === 0;
+        subdomain.element.classList.toggle('stolon-hidden', !wild);
+        host.input.readOnly = !!picked;
+        if (wild) {
+            subdomain.help.textContent = t.format('ProxySubdomainHelp', picked.slice(2));
+            host.input.value = hostFor(picked, subdomain.input.value);
+        } else if (picked) {
+            host.input.value = picked;
+        }
+    }
+
+    ddnsNames.input.addEventListener('change', function () {
+        if (ddnsNames.input.value.indexOf('*.') === 0) subdomain.input.value = subdomainOf(host.input.value, ddnsNames.input.value);
+        lockHost();
+    });
+    subdomain.input.addEventListener('input', lockHost);
+    lockHost();
     [mode, challenge, target].forEach(function (f) { f.input.addEventListener('change', reflect); });
     mode.input.addEventListener('change', function () { if (handle) handle.setRouteStatus(lastStatus); });
     reflect();
@@ -287,7 +364,8 @@ export function createRouteEditor(route, ctx) {
         getValue: function () {
             var out = JSON.parse(JSON.stringify(draft));
             var m = mode.input.value;
-            out.Host = host.input.value.trim().toLowerCase();
+            out.DdnsHostname = ddnsNames.input.value;
+            out.Host = (out.DdnsHostname ? hostFor(out.DdnsHostname, subdomain.input.value) : host.input.value).trim().toLowerCase();
             out.Enabled = !!enabled.input.checked;
             out.Upstream = target.input.value === 'other' ? upstream.input.value.trim() : '';
             out.LocalOnly = !!localOnly.input.checked;
@@ -304,6 +382,7 @@ export function createRouteEditor(route, ctx) {
         validate: function () {
             var value = this.getValue();
             if (!value.Host) return 'ErrorEnterHostName';
+            if (value.DdnsHostname.indexOf('*.') === 0 && !fitsDdnsName(value.Host, value.DdnsHostname)) return 'ProxyErrorEnterSubdomain';
             if (target.input.value === 'other' && !/^https?:\/\/[^/]+\/?$/i.test(value.Upstream)) return 'ProxyErrorEnterUpstream';
             if (value.Certificate.Mode === 'Automatic' && value.Certificate.Challenge === 'Http' && (value.LocalOnly || value.Host.indexOf('*') === 0)) return 'ProxyErrorHttpChallengeNeedsInternet';
             return null;

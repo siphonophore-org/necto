@@ -20,9 +20,10 @@ Each row shows the route's host name, where it forwards, and **Local only** wher
 
 ![Route editor](screenshots/Route%20Editor.png)
 
-* **Host name** is the name visitors use, such as `media.example.com`, or a one label wildcard such as `*.example.com`. An exact name beats a wildcard. **Use a DDNS name** fills in a name a DDNS record keeps.
+* **Use a DDNS name** comes first while a DDNS record keeps a name, since it decides the host. Picking a name locks **Host name** to it. Picking a wildcard such as `*.example.com` shows **Subdomain**, which takes one name, such as `media`, or `*` for the wildcard itself, in front of `.example.com`. **None** frees **Host name**. The server refuses a host that does not fit the DDNS name the route uses.
+* **Host name** is the name visitors use, such as `media.example.com`, or a one label wildcard such as `*.example.com`. An exact name beats a wildcard.
 * **Answer for this route** turns the route on or off.
-* **Forward to** picks **This Jellyfin** or **Another service**. **Service address** is the other service's `http` or `https` address and port, such as `http://192.168.1.20:8096`. Paths are forwarded as they come.
+* **Forward to** picks **Jellyfin** or **Another service**. **Service address** is the other service's `http` or `https` address and port, such as `http://192.168.1.20:8096`. Paths are forwarded as they come.
 * **Local network only** answers only the local network and **Trusted networks**. The internet gets nothing.
 
 **Remove** asks first. The route's certificate files are deleted, and the service it forwarded to stays.

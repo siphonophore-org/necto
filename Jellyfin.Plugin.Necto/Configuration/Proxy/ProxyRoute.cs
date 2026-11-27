@@ -16,6 +16,12 @@ public class ProxyRoute
     /// <summary>Gets or sets the host name, such as <c>media.example.com</c>, or a one label wildcard such as <c>*.example.com</c>.</summary>
     public string Host { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the DDNS name the host is locked to, or empty for none. A plain name is the host itself, and a
+    /// wildcard such as <c>*.example.com</c> takes the wildcard or one name under it.
+    /// </summary>
+    public string DdnsHostname { get; set; } = string.Empty;
+
     /// <summary>Gets or sets the address forwarded to, such as <c>http://192.168.1.20:8096</c>. Empty forwards to this Jellyfin.</summary>
     public string Upstream { get; set; } = string.Empty;
 

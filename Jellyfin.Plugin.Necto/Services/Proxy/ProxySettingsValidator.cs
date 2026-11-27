@@ -21,7 +21,7 @@ namespace Jellyfin.Plugin.Necto.Services.Proxy;
 /// Normalizes proxy settings and reports what is wrong with them. Normalizing first means a save never
 /// stores half-valid values: hostnames are lower-cased, numbers are clamped and lists are cleaned.
 /// </summary>
-public static class ProxySettingsValidator
+public static partial class ProxySettingsValidator
 {
     /// <summary>
     /// Cleans the settings in place: normalizes hostnames and networks and clamps numbers to sane ranges.
@@ -80,6 +80,7 @@ public static class ProxySettingsValidator
         var normalized = HostnameMatcher.Normalize(route.Host);
         route.Host = normalized.Length > 0 ? normalized : (route.Host ?? string.Empty).Trim();
         route.Upstream = (route.Upstream ?? string.Empty).Trim().TrimEnd('/');
+        route.DdnsHostname = HostnameMatcher.Normalize(route.DdnsHostname);
         var c = route.Certificate ??= new ProxyCertificateSettings();
         c.Path = (c.Path ?? string.Empty).Trim();
         c.KeyPath = (c.KeyPath ?? string.Empty).Trim();
@@ -134,6 +135,13 @@ public static class ProxySettingsValidator
             errors.Add(Text(language, TranslationKeys.ProxyErrorRouteHostTaken, route.Host));
         }
 
+        if (route.Host.Length > 0 && !FitsDdnsName(route.Host, route.DdnsHostname))
+        {
+            errors.Add(route.DdnsHostname.StartsWith("*.", StringComparison.Ordinal)
+                ? Text(language, TranslationKeys.ProxyErrorDdnsSubdomain, route.DdnsHostname[2..])
+                : Text(language, TranslationKeys.ProxyErrorDdnsHost, route.DdnsHostname));
+        }
+
         if (!route.IsJellyfin && ParseUpstream(route.Upstream) is null)
         {
             errors.Add(Text(language, TranslationKeys.ProxyErrorUpstream, route.Upstream));
@@ -152,6 +160,39 @@ public static class ProxySettingsValidator
 
         return errors;
     }
+
+    /// <summary>
+    /// Tells whether a host fits the DDNS name a route is locked to: the name itself, or for a wildcard such as
+    /// <c>*.example.com</c>, the wildcard or one name under it, such as <c>media.example.com</c>.
+    /// </summary>
+    /// <param name="host">The normalized host.</param>
+    /// <param name="ddnsHostname">The normalized DDNS name, or empty for none.</param>
+    /// <returns><c>true</c> when the host fits, always with no DDNS name.</returns>
+    public static bool FitsDdnsName(string host, string? ddnsHostname)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        if (string.IsNullOrEmpty(ddnsHostname))
+        {
+            return true;
+        }
+
+        if (!ddnsHostname.StartsWith("*.", StringComparison.Ordinal))
+        {
+            return string.Equals(host, ddnsHostname, StringComparison.Ordinal);
+        }
+
+        var suffix = ddnsHostname[1..];
+        if (!host.EndsWith(suffix, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var label = host[..^suffix.Length];
+        return label == "*" || DnsLabel().IsMatch(label);
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$")]
+    private static partial System.Text.RegularExpressions.Regex DnsLabel();
 
     /// <summary>
     /// Lists every problem with already-normalized settings. Empty means valid.
