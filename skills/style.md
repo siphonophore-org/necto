@@ -269,7 +269,6 @@ Every tool page uses Jellyfin's page shell. The tool app takes the page's view o
 | A page with several independent groups of settings | `stolon-collapsible-section`, one per group |
 | A group that is always open | `stolon-collapsible-section fixed`, whose header is a `div` with no icon, so it matches the collapsible sections around it |
 | A heading inside a section | `stolon-subsection-title` |
-| An ordered setup, such as a route editor | `stolon-collapsible-section numbered`, which Stolon numbers in order |
 | Settings that only matter when a checkbox is on | `stolon-indent` under the checkbox, shown with `shared.bindReveal` |
 
 * A collapsible header is a `button.stolon-collapsible-header` holding `stolon-collapsible-title` and `stolon-collapsible-icon`. Stolon replaces the icon with `expand_more`.
@@ -279,11 +278,11 @@ Every tool page uses Jellyfin's page shell. The tool app takes the page's view o
 Every section on a Settings or Troubleshooting page leads with an icon tile, and so does every reset or action row. The tile names the topic at a glance, and makes a long page easy to scan.
 
 * A section header holds `<span class="stolon-collapsible-tile" aria-hidden="true"><span class="material-icons">…</span></span>` before its `stolon-collapsible-title`. A section built in script passes `icon` to `createCollapsibleSection`, which draws the same tile.
-* A reset or action row holds the same tile before its `stolon-reset-info`. Build it with `resetRow` in `necto_shared.js`, which draws the tile, and never by hand.
+* A reset or action row holds the same tile before its `stolon-reset-info`. Build it with `resetRow` in `necto_shared.js`, which draws the tile, and never by hand. A reset row's tile keeps the accent while there is something to reset, and turns `stolon-gray` while there is nothing, such as an empty table, which `resetRow` draws with `empty`.
 * Pick the Material icon that names the topic, such as `movie_filter` for Requests, `vpn_lock` for WireGuard. A section and the tool it belongs to use the same icon as the sidebar.
 * The tile takes the accent color when its section has no on or off switch. A section that turns its feature on or off takes `stolon-green` while it is on and `stolon-gray` while it is off, and follows the switch as it changes. The most destructive row, such as a full reset, takes `stolon-red`.
 * Give each section its own icon. Two sections on one page never share one.
-* Never use a tile for decoration alone. Leave a numbered section without one, since its number is its marker.
+* Never use a tile for decoration alone. Steps of a setup, such as a server editor, take tiles too, never numbers.
 * Start collapsibles closed, except the first one on a page someone opens to act on.
 * Give every top level group on one page the same header. A chart or a summary takes the `fixed` section, never a bare `stolon-subsection-title`.
 * Hide a whole section while its feature is off or it has nothing to show. Never show an empty section.
