@@ -134,7 +134,8 @@ export function resetItems(codes, shared, now) {
 
 // createPendingResets
 // Builds the Password resets tab of the Groups page: each member's pending reset in a table, opening its code in a
-// sidecar to copy. While no group shows reset codes, it says how to turn them on.
+// sidecar to copy. While no group shows reset codes, the empty table says how to turn them on. Over plain HTTP a
+// warning above the table says the codes can be read in transit.
 //
 // Inputs
 // shared [object]: The Necto helper bag.
@@ -167,19 +168,16 @@ export function createPendingResets(shared, page) {
             }
         }
     });
-    var off = h('div', { class: 'stolon-info stolon-hidden', 'data-role': 'resets-off', text: t.tr('ResetsDisabled') });
-    var warning = h('div', { class: 'stolon-warn', text: t.tr('ResetsHttpsWarning') });
-    var element = h('div', { class: 'stolon-stack', 'data-role': 'password-resets' }, [off, warning, status, table.element]);
+    var warning = h('div', { class: 'stolon-warn stolon-hidden', text: t.tr('ResetsHttpsWarning') });
+    var element = h('div', { class: 'stolon-stack', 'data-role': 'password-resets' }, [warning, status, table.element]);
 
     return {
         element: element,
         load: function () {
             return shared.request('Groups/ResetCodes').then(function (result) {
                 var on = !!(result && result.Enabled);
-                shared.setVisible(off, !on);
-                shared.setVisible(warning, on);
-                shared.setVisible(table.element, on);
-                if (on) return table.setRows(resetItems(result.Codes, shared, new Date()));
+                shared.setVisible(warning, on && !(globalThis.location && globalThis.location.protocol === 'https:'));
+                return table.setRows(on ? resetItems(result.Codes, shared, new Date()) : [], on ? null : t.tr('ResetsDisabled'));
             }).catch(function (err) {
                 return shared.errorText(err, t.tr('ErrorLoadResets')).then(function (text) { shared.setStatus(status, text, true); });
             });

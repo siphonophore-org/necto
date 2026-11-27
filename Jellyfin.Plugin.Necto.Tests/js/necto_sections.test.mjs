@@ -164,19 +164,20 @@ test('the Password resets tab of the Groups page lists pending resets in a table
     var opened = await openResets({ Enabled: true, Codes: [{ UserName: 'viewer', Pin: '123456', ExpirationDate: '2099-01-01T00:00:00Z', Expired: false }] });
     var element = opened.resets.element;
 
-    assert.equal(element.querySelector('[data-role="resets-off"]').classList.contains('stolon-hidden'), true);
     var cells = Array.prototype.map.call(element.querySelectorAll('.stolon-table-row .stolon-table-cell'), function (c) { return c.innerHTML; }).join(' ');
     assert.match(cells, /viewer[\s\S]*Active/);
-    assert.match(element.textContent, /Reset codes are sent over this connection\. Use HTTPS so they cannot be read in transit\./);
+    var warning = element.querySelector('.stolon-warn');
+    assert.match(warning.textContent, /Reset codes are sent over this connection\. Use HTTPS so they cannot be read in transit\./);
+    assert.equal(warning.classList.contains('stolon-hidden'), false);
     assert.equal(cells.indexOf('123456'), -1);
 });
 
-test('the Password resets tab says how to turn reset codes on while no group shows them', async function () {
+test('the Password resets tab says how to turn reset codes on inside its empty table while no group shows them', async function () {
     var opened = await openResets({ Enabled: false, Codes: [] });
-    var off = opened.resets.element.querySelector('[data-role="resets-off"]');
+    var empty = opened.resets.element.querySelector('.stolon-list-empty');
 
-    assert.equal(off.classList.contains('stolon-hidden'), false);
-    assert.match(off.textContent, /Turn on Show reset codes/);
+    assert.match(empty.textContent, /Turn on Show reset codes/);
+    assert.equal(opened.resets.element.querySelector('.stolon-warn').classList.contains('stolon-hidden'), true);
 });
 
 test('resetItems tags each reset as active, expiring, or expired, and lists expired ones last', async function () {

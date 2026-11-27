@@ -373,7 +373,7 @@
   "DdnsWildcardHelp": "Also updates every name under the host name, for the dyndns family.",
   "DisableInactiveUsersHelp": "Disables members who stop using the server.",
   "DisallowEmptyPasswordsHelp": "While off, an empty password always passes, since it means the account has no password.",
-  "EmptyPendingResets": "No pending password resets.",
+  "EmptyPendingResets": "No password resets yet.",
   "EmptyRules": "No rules yet. Select Add rule to add one.",
   "EmptyUsers": "No users on this server.",
   "EmptyUsersMatch": "No users match.",

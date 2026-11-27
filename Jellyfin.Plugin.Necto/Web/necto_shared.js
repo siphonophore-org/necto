@@ -767,7 +767,8 @@ export function runBulk(shared, o) {
 //   keep(row, query) for the filters.
 //
 // Output
-// [object]: element to place, setRows(rows) to draw them, table, and destroy().
+// [object]: element to place, setRows(rows, emptyText) to draw them, with emptyText in place of the usual empty text
+//   when given, table, and destroy().
 export function createRowsTable(shared, options) {
     var rows = [];
     var loaded = false;
@@ -781,11 +782,15 @@ export function createRowsTable(shared, options) {
     return {
         element: element,
         table: table,
-        setRows: function (next) {
+        setRows: function (next, emptyText) {
             rows = next || [];
             var run = loaded ? table.refresh() : table.load();
             loaded = true;
-            return Promise.resolve(run).catch(function () { /* the rows are local, so nothing can fail */ });
+            return Promise.resolve(run).catch(function () { /* the rows are local, so nothing can fail */ }).then(function () {
+                var empty = element.querySelector('.stolon-list-empty');
+                var usual = (options.emptyState && options.emptyState.message) || '';
+                if (empty && (emptyText || usual)) empty.textContent = emptyText || usual;
+            });
         },
         destroy: function () { table.destroy(); }
     };
