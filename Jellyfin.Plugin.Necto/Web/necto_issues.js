@@ -425,7 +425,7 @@ export default function (view) {
                 }
             ],
             pagination: { pageSize: PAGE_SIZE },
-            emptyState: { message: t.tr('IssuesEmptyMatch') },
+            emptyState: { message: t.tr('IssuesEmpty'), filteredMessage: t.tr('IssuesEmptyMatch') },
             columns: [
                 {
                     key: 'Title', type: 'custom', className: 'stolon-table-cell-with-thumb',

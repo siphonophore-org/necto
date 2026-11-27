@@ -209,6 +209,13 @@ test('with no issues at all the page says No issues yet in place of the list', a
     assert.equal(opened.view.querySelector('#issuesTable').classList.contains('stolon-hidden'), true);
 });
 
+test('a filter that finds no issue says No issues match, and the list with All says No issues yet', async function () {
+    var filtered = await openPage({ Issues: { Enabled: true } }, { 'GET Issues/All': { Items: [], TotalCount: 0 } }, { 'necto-issues-filters': JSON.stringify({ state: 'Declined' }) });
+    assert.match(filtered.view.querySelector('#issuesTable').textContent, /No issues match\./);
+    var all = await openPage({ Issues: { Enabled: true } }, { 'GET Issues/All': { Items: [], TotalCount: 0 } }, { 'necto-issues-filters': JSON.stringify({ state: 'All' }) });
+    assert.match(all.view.querySelector('#issuesTable').textContent, /No issues yet\./);
+});
+
 test('the bulk bar resolves every row picked that takes it with one note, and skips the rest', async function () {
     var closed = issue({ Id: 'i2', State: 'Resolved' });
     var opened = await openPage({ Issues: { Enabled: true } }, { 'GET Issues/All': { Items: [issue(), closed], TotalCount: 2 }, 'POST Issues/i1/Resolve': issue({ State: 'Resolved' }) });

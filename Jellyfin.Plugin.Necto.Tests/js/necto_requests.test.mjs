@@ -372,6 +372,13 @@ test('with no requests at all the page says No requests yet in place of the list
     assert.equal(opened.view.querySelector('#requestsTable').classList.contains('stolon-hidden'), true);
 });
 
+test('a filter that finds no request says No requests match, and the list with All says No requests yet', async function () {
+    var filtered = await openPage({ 'GET Requests/All': { Items: [], TotalCount: 0 } }, { 'necto-requests-filters': JSON.stringify({ status: 'Failed' }) });
+    assert.match(filtered.view.querySelector('#requestsTable').textContent, /No requests match\./);
+    var all = await openPage({ 'GET Requests/All': { Items: [], TotalCount: 0 } }, { 'necto-requests-filters': JSON.stringify({ status: 'All' }) });
+    assert.match(all.view.querySelector('#requestsTable').textContent, /No requests yet\./);
+});
+
 test('the sidecar shows the status once, in its header, and a movie with one profile edits its note alone', async function () {
     var opened = await openPage({ 'GET Requests/Profiles': [{ Id: 'p1', Name: '1080p', Type: 'Movie', ServerId: 's1', Server: 'Radarr' }] });
     opened.handle.showRequest(dune());
