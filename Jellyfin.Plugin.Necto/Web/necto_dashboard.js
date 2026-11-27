@@ -78,8 +78,9 @@ export function setState(card, t, state) {
     return card;
 }
 
-// legend
-// Names the parts of a card's bar that hold anything, in bar order, as the card's detail line.
+// emptyLine
+// The card's detail line, which says the card has nothing to count while every part of its bar is 0. The legend
+// under the bar names each part with its value.
 //
 // Inputs
 // t [object]: The strings.
@@ -87,10 +88,9 @@ export function setState(card, t, state) {
 // emptyKey [string]: The key of the line shown while every part is 0.
 //
 // Output
-// [string]: Such as "Pending 1, Approved 2".
-export function legend(t, segments, emptyKey) {
-    var parts = segments.filter(function (s) { return s.value > 0; }).map(function (s) { return t.format('DashboardLegendPart', s.label, s.value); });
-    return parts.length ? parts.join(', ') : t.tr(emptyKey);
+// [string]: Such as "No requests yet.", or empty while any part holds something.
+export function emptyLine(t, segments, emptyKey) {
+    return segments.some(function (s) { return s.value > 0; }) ? '' : t.tr(emptyKey);
 }
 
 // tally
@@ -124,7 +124,7 @@ export function fromCountCards(cards) {
 }
 
 // withBar
-// Gives a card its bar and the legend under it.
+// Gives a card its bar, the legend under it, and the line that says when it has nothing to count.
 //
 // Inputs
 // card [object]: The card.
@@ -136,7 +136,8 @@ export function fromCountCards(cards) {
 // [object]: The card.
 function withBar(card, t, segments, emptyKey) {
     card.segments = segments;
-    card.detail = legend(t, segments, emptyKey);
+    card.legend = true;
+    card.detail = emptyLine(t, segments, emptyKey);
     return card;
 }
 
@@ -646,6 +647,23 @@ export function countryRows(map, layers, active, nameOf) {
     });
 }
 
+// tableRows
+// The country table's rows. While the location database is still loading and no country is known yet, the table
+// keeps its row of dashes, so it never says it has no locations before it can know.
+//
+// Inputs
+// map [object]: What Dashboard/Map answered.
+// layers [object[]]: The layers, from mapLayers.
+// active [string[]]: The keys of the layers that are on.
+// nameOf [function]: Names a country by its code.
+//
+// Output
+// [object[]]: The rows.
+export function tableRows(map, layers, active, nameOf) {
+    var rows = countryRows(map, layers, active, nameOf);
+    return rows.length || map.LocationLoaded !== false ? rows : [placeholderRow(layers)];
+}
+
 // placeholderRow
 // The country table's one row while the map is read, a dash in every column.
 //
@@ -756,9 +774,8 @@ export default function (view) {
     function drawCards(cards) {
         clearCards();
         // The grid goes on the page before its cards, so its rows are balanced to the width they have.
-        grid = nectoModule.createStatusCardGrid({ minWidth: 150 });
         // Every card takes one width, so ten cards never read as two kinds.
-        grid.element.classList.add('stolon-even');
+        grid = nectoModule.createStatusCardGrid({ minWidth: 150, even: true });
         getEl('dashboardCards').appendChild(grid.element);
         grid.setCards(cards.map(function (card) {
             var options = Object.assign({}, card);
@@ -772,7 +789,7 @@ export default function (view) {
     function showLayers(active) {
         if (!countries || !mapData) return;
         layers.filter(function (layer) { return layer.column; }).forEach(function (layer) { countries.setColumnHidden(layer.key, active.indexOf(layer.key) < 0); });
-        countries.setRows(countryRows(mapData, layers, active, map.countryName));
+        countries.setRows(tableRows(mapData, layers, active, map.countryName));
     }
 
     function buildMap(t) {
@@ -803,9 +820,10 @@ export default function (view) {
         });
         mapHost.appendChild(map.element);
         countries = nectoModule.createDataTable({
-            // The columns share the width, each at least as wide as its icon heading on a narrow table.
-            columns: [{ key: 'name', label: t.tr('HeaderCountry'), width: 'minmax(4rem, 1fr)' }].concat(layers.filter(function (l) { return l.column; }).map(function (l) {
-                return { key: l.key, label: l.label, icon: l.icon, align: 'end', width: 'minmax(4rem, 1fr)' };
+            // The country takes the width of its longest name, and the counts share the rest, each turning into its
+            // icon heading on a narrow table.
+            columns: [{ key: 'name', label: t.tr('HeaderCountry'), width: 'auto' }].concat(layers.filter(function (l) { return l.column; }).map(function (l) {
+                return { key: l.key, label: l.label, icon: l.icon, align: 'end' };
             })),
             rows: [],
             rowKey: 'code',

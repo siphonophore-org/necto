@@ -181,7 +181,6 @@
     <!-- The plugin's own key keeps English Jellyfin also says, with another meaning. -->
     <JellyfinTextMatch Include="TitleNewGroup" />
     <!-- A dashboard card's legend, a part's label and its count, which Jellyfin words the same for a numbered name. -->
-    <JellyfinTextMatch Include="DashboardLegendPart" />
     <!-- The Dashboard's pill for a tool that needs a look soon. -->
     <JellyfinString Include="LogLevel.Warning" />
     <!-- The Jellyfin strings Requests and Issues use. -->

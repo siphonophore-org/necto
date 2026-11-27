@@ -56,7 +56,14 @@ function parts(card) {
     return card.segments.map(function (s) { return s.label + ' ' + s.value; });
 }
 
-test('every card states its pill in a Stolon badge word and color, and its legend names the parts that hold anything', async function () {
+// shown
+// Names the parts of a card's bar that hold anything, as its legend shows them, and checks the legend is on.
+function shown(card) {
+    assert.equal(card.legend, true);
+    return card.segments.filter(function (s) { return s.value > 0; }).map(function (s) { return s.label + ' ' + s.value; }).join(', ');
+}
+
+test('every card states its pill in a Stolon badge word and color, and its line says when its bar is empty', async function () {
     installPage({});
     var dashboard = await loadScript('necto_dashboard.js');
 
@@ -64,8 +71,8 @@ test('every card states its pill in a Stolon badge word and color, and its legen
     assert.deepEqual(dashboard.setState({}, t, 'attention'), { status: 'Warning', statusColor: 'orange' });
     assert.deepEqual(dashboard.setState({}, t, 'offline'), { status: 'Offline', statusColor: 'red' });
     assert.deepEqual(dashboard.setState({}, t, 'idle'), { status: 'Idle', statusColor: 'gray' });
-    assert.equal(dashboard.legend(t, [{ label: 'Pending', value: 1 }, { label: 'Approved', value: 0 }, { label: 'Failed', value: 2 }], 'DashboardEmptyRequests'), 'Pending 1, Failed 2');
-    assert.equal(dashboard.legend(t, [{ label: 'Pending', value: 0 }], 'DashboardEmptyRequests'), 'No requests yet');
+    assert.equal(dashboard.emptyLine(t, [{ label: 'Pending', value: 1 }, { label: 'Approved', value: 0 }], 'DashboardEmptyRequests'), '');
+    assert.equal(dashboard.emptyLine(t, [{ label: 'Pending', value: 0 }], 'DashboardEmptyRequests'), 'No requests yet');
     assert.deepEqual(dashboard.tally([{ label: 'A', color: 'green' }, { label: 'B' }, { label: 'A', color: 'red' }]),
         [{ label: 'A', value: 2, color: 'green' }, { label: 'B', value: 1, color: 'gray' }]);
 });
@@ -79,7 +86,7 @@ test('the Requests card counts those waiting for approval with a part per status
     assert.equal(card.status, 'Failed');
     assert.equal(card.statusColor, 'red');
     assert.equal(card.tool, 'requests');
-    assert.equal(card.detail, 'Pending 3, Approved 2, Failed 1, Available 5');
+    assert.deepEqual([card.detail, shown(card)], ['', 'Pending 3, Approved 2, Failed 1, Available 5']);
     assert.equal(card.segments[0].color, 'purple');
     var pending = dashboard.requestsCard(t, { ByStatus: { Pending: 1 } });
     assert.deepEqual([pending.status, pending.statusColor], ['Pending', 'purple']);
@@ -117,10 +124,10 @@ test('the Issues card counts the open reports, and the Invites card puts a used 
     var invites = dashboard.invitesCard(t, [{ State: 'Active' }, { State: 'Active' }, { State: 'Expired' }, { State: 'GroupExpired' }, { State: 'UsedUp' }]);
     assert.equal(invites.value, 2);
     assert.equal(invites.status, 'Active');
-    assert.equal(invites.detail, 'Active 2, Expired 1, Group expired 1, Used up 1');
+    assert.deepEqual([invites.detail, shown(invites)], ['', 'Active 2, Expired 1, Group expired 1, Used up 1']);
     var usedUp = dashboard.invitesCard(t, [{ State: 'UsedUp' }]);
     assert.equal(usedUp.value, 0);
-    assert.equal(usedUp.detail, 'Used up 1');
+    assert.deepEqual([usedUp.detail, shown(usedUp)], ['', 'Used up 1']);
     assert.equal(usedUp.segments.filter(function (s) { return s.value; })[0].color, 'gray');
     assert.equal(usedUp.status, 'Idle');
     assert.equal(dashboard.invitesCard(t, []).detail, 'No invites yet');
@@ -138,12 +145,12 @@ test('the Groups card counts the groups and the users in one beside those only E
 
     var groups = dashboard.groupsCard(t, config, users);
     assert.equal(groups.value, 1);
-    assert.equal(groups.detail, 'Members 1, No group 1');
+    assert.deepEqual([groups.detail, shown(groups)], ['', 'Members 1, No group 1']);
     assert.equal(groups.status, 'Active');
     assert.equal(dashboard.groupsCard(t, config, []).detail, 'No users yet');
     var pages = dashboard.pagesCard(t, config);
     assert.equal(pages.value, 2);
-    assert.equal(pages.detail, 'Published 2, Unpublished 1');
+    assert.deepEqual([pages.detail, shown(pages)], ['', 'Published 2, Unpublished 1']);
     assert.equal(dashboard.pagesCard(t, { CustomPages: { Pages: [{ Enabled: false }] } }).status, 'Off');
 });
 
@@ -157,7 +164,7 @@ test('the Proxy card counts its active routes and asks for attention as its firs
     var card = dashboard.proxyCard(t, shared, { Running: true, Routes: [route('a.example.com', true, days(60)), route('b.example.com', false, days(30))] }, NOW);
     assert.equal(card.value, 1);
     assert.equal(card.status, 'Active');
-    assert.equal(card.detail, 'Active 1, Off 1');
+    assert.deepEqual([card.detail, shown(card)], ['', 'Active 1, Off 1']);
 
     var soon = dashboard.proxyCard(t, shared, { Running: true, Routes: [route('a.example.com', true, days(5))] }, NOW);
     assert.deepEqual([soon.status, soon.statusColor], ['Warning', 'orange']);
@@ -191,12 +198,12 @@ test('the DDNS card counts every record, an off record among them, and a part pe
     assert.equal(card.value, 4);
     assert.deepEqual(card.segments.map(function (s) { return s.color; }), ['green', 'red', 'gray']);
     assert.equal(card.segments[2].label, 'Off');
-    assert.equal(card.detail, 'Up to date 2, Failed 1, Off 1');
+    assert.deepEqual([card.detail, shown(card)], ['', 'Up to date 2, Failed 1, Off 1']);
     assert.equal(card.status, 'Failed');
 
     var onlyOff = dashboard.ddnsCard(t, { Records: [{ Record: { Hostname: 'demo.example.com', Enabled: false, LastAction: '' }, Followed: [] }] });
     assert.equal(onlyOff.value, 1);
-    assert.equal(onlyOff.detail, 'Off 1');
+    assert.deepEqual([onlyOff.detail, shown(onlyOff)], ['', 'Off 1']);
     assert.equal(onlyOff.status, 'Off');
     var empty = dashboard.ddnsCard(t, { Records: [] });
     assert.deepEqual([empty.value, empty.detail, empty.status], [0, 'No records yet', 'Idle']);
@@ -220,7 +227,7 @@ test('the WireGuard card counts the connected peers and connections, and a faile
     assert.equal(dashboard.wireGuardCard(t, map).status, 'Failed');
     assert.equal(dashboard.wireGuardCard(t, { Tunnels: [{ Kind: 'Host', State: 'Running' }] }).status, 'Active');
     var none = dashboard.wireGuardCard(t, { Tunnels: [] });
-    assert.deepEqual([none.status, none.detail], ['Off', 'No tunnels yet']);
+    assert.deepEqual([none.status, none.detail], ['Off', 'No peers or connections yet']);
 });
 
 test('the Scripts, Storage, and Notifications cards show failures first', async function () {
@@ -229,7 +236,7 @@ test('the Scripts, Storage, and Notifications cards show failures first', async 
 
     var scripts = dashboard.scriptsCard(t, { Days: ['a', 'b'], Succeeded: [3, 1], Failed: [0, 2] });
     assert.equal(scripts.value, 2);
-    assert.equal(scripts.detail, 'Succeeded 4, Failed 2');
+    assert.deepEqual([scripts.detail, shown(scripts)], ['', 'Succeeded 4, Failed 2']);
     assert.equal(scripts.status, 'Failed');
     assert.equal(dashboard.scriptsCard(t, { Succeeded: [1], Failed: [0] }).status, 'Active');
     assert.equal(dashboard.scriptsCard(t, { Succeeded: [], Failed: [] }).detail, 'No runs in 14 days');
@@ -247,7 +254,7 @@ test('the Scripts, Storage, and Notifications cards show failures first', async 
 
     var sends = dashboard.notificationsCard(t, [{ Ok: true }, { Ok: false }, { Ok: true }]);
     assert.equal(sends.value, 3);
-    assert.equal(sends.detail, 'Sent 2, Failed 1');
+    assert.deepEqual([sends.detail, shown(sends)], ['', 'Sent 2, Failed 1']);
     assert.equal(sends.statusColor, 'orange');
     assert.equal(dashboard.notificationsCard(t, [{ Ok: false }]).status, 'Failed');
     assert.equal(dashboard.notificationsCard(t, []).detail, 'No sends yet');
@@ -276,6 +283,13 @@ test('the map keeps only the layers of the tools that are on, and counts the ser
     var rows = dashboard.countryRows(map, layers, ['visitors', 'blocked'], function (code) { return code === 'DE' ? 'Germany' : ''; });
     assert.deepEqual(rows.map(function (r) { return [r.code, r.name, r.total]; }), [['DE', 'Germany', 7], ['US', 'United States', 4]]);
     assert.deepEqual(dashboard.countryRows(map, layers, ['failed'], function () { return ''; }).map(function (r) { return r.code; }), ['US']);
+
+    // Until the location database is loaded the table keeps its dashes rather than saying it has no locations.
+    var loading = { LocationLoaded: false, Countries: [] };
+    assert.deepEqual(dashboard.tableRows(loading, layers, ['visitors'], function () { return ''; }), [dashboard.placeholderRow(layers)]);
+    assert.deepEqual(dashboard.tableRows({ LocationLoaded: true, Countries: [] }, layers, ['visitors'], function () { return ''; }), []);
+    assert.equal(dashboard.tableRows(Object.assign({ LocationLoaded: false }, map), layers, ['visitors'], function () { return ''; }).length, 1);
+    assert.equal(dashboard.tableRows(Object.assign({ LocationLoaded: false }, map), layers, ['visitors'], function () { return ''; })[0].code, 'US');
 });
 
 test('recent activity names each entry by its tool and marks errors and warnings', async function () {
