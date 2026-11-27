@@ -2506,8 +2506,38 @@
             var b = e.target.closest('[data-scroll]');
             if (!b) return;
             var row = el(b.getAttribute('data-scroll'));
-            if (row) row.scrollBy({ left: parseInt(b.getAttribute('data-dir'), 10) * row.clientWidth * 0.85, behavior: 'smooth' });
+            if (row) row.scrollTo({ left: scrollStop(row, parseInt(b.getAttribute('data-dir'), 10)), behavior: 'smooth' });
         });
+
+        // scrollStop
+        // Where a row's arrow scrolls to: forward, to the first card cut off at the right edge, and back, to the
+        // first card that ends a screen before the left edge, so each tap lands on a whole card and never past the row.
+        //
+        // Inputs
+        // row [Element]: The scrolling row.
+        // dir [number]: 1 forward, -1 back.
+        //
+        // Output
+        // [number]: The row's scrollLeft to scroll to.
+        function scrollStop(row, dir) {
+            var left = row.scrollLeft, shown = row.clientWidth, max = row.scrollWidth - shown;
+            var pad = parseFloat(getComputedStyle(row).paddingLeft) || 0;
+            var origin = row.getBoundingClientRect().left - left + pad;
+            var slider = row.querySelector('.scrollSlider') || row;
+            var starts = Array.prototype.map.call(slider.children, function (c) {
+                var r = c.getBoundingClientRect();
+                return { start: r.left - origin, end: r.right - origin };
+            });
+            var stop = dir > 0 ? left + shown : left - shown;
+            if (dir > 0) {
+                var cut = starts.filter(function (c) { return c.end > left + shown + 1; })[0];
+                if (cut && cut.start > left + 1) stop = cut.start;
+            } else {
+                var first = starts.filter(function (c) { return c.start >= left - shown - 1; })[0];
+                if (first && first.start < left - 1) stop = first.start;
+            }
+            return Math.max(0, Math.min(max, Math.round(stop)));
+        }
 
         // ---------- search ----------
 
