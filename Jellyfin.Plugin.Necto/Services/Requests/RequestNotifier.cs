@@ -212,11 +212,11 @@ public sealed partial class RequestNotifier
         var language = ServerWording.Language;
         var state = ServerWording.Get(issue.State switch
         {
-            IssueState.Confirmed => TranslationKeys.IssuesStateConfirmed,
-            IssueState.Resolved => TranslationKeys.IssuesStateResolved,
-            IssueState.Declined => TranslationKeys.IssuesStateDeclined,
-            IssueState.Rescinded => TranslationKeys.IssuesStateRescinded,
-            _ => TranslationKeys.IssuesStateReported
+            IssueState.Confirmed => TranslationKeys.StateConfirmed,
+            IssueState.Resolved => TranslationKeys.StateResolved,
+            IssueState.Declined => TranslationKeys.StateDeclined,
+            IssueState.Rescinded => TranslationKeys.StateRescinded,
+            _ => TranslationKeys.StateReported
         });
         var first = issue.FirstReporter?.UserId;
         return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

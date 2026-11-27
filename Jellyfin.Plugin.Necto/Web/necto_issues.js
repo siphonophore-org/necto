@@ -17,11 +17,11 @@ export var FILTERS_KEY = 'necto-issues-filters';
 // ISSUE_STATES
 // Each issue state by the name the server sends, with its string key and badge color.
 export var ISSUE_STATES = {
-    Reported: { key: 'IssuesStateReported', color: 'orange' },
-    Confirmed: { key: 'IssuesStateConfirmed', color: 'red' },
-    Resolved: { key: 'IssuesStateResolved', color: 'green' },
-    Declined: { key: 'IssuesStateDeclined', color: 'gray' },
-    Rescinded: { key: 'IssuesStateRescinded', color: 'gray' }
+    Reported: { key: 'StateReported', color: 'orange' },
+    Confirmed: { key: 'StateConfirmed', color: 'red' },
+    Resolved: { key: 'StateResolved', color: 'green' },
+    Declined: { key: 'StateDeclined', color: 'gray' },
+    Rescinded: { key: 'StateRescinded', color: 'gray' }
 };
 
 // The verbs an administrator decides an issue with, each with its button, its prompt's title, and its result.

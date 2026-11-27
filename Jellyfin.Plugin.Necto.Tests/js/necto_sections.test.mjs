@@ -1,6 +1,6 @@
 // necto_sections.test.mjs
 // Tests for Settings and Troubleshooting: one section per tool from the registry in sidebar order, the Groups
-// sections filled and saving, and every other tool showing that it is coming.
+// sections filled and saving.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -33,21 +33,23 @@ async function openTool(name, opts) {
     return { page: page, view: view, dom: dom, saved: saved, section: function (key) { return view.querySelector('[data-tool="' + key + '"]'); } };
 }
 
-test('nectoSections lists every tool but the dashboard, Settings, and Troubleshooting, and the sections a tool registered', async function () {
+test('nectoSections lists the tools that registered a section, in sidebar order, and leaves out the rest', async function () {
     installPage({});
     var shared = await loadScript('necto_shared.js');
-    shared.registerSection('settings', 'storage', { build: function () { return { load: function () {}, apply: function () {} }; } });
+    var section = { build: function () { return { load: function () {}, apply: function () {} }; } };
+    shared.registerSection('settings', 'storage', section);
+    shared.registerSection('settings', 'ddns', section);
+    shared.registerSection('settings', 'dashboard', section);
 
     var sections = shared.nectoSections('settings');
 
-    assert.deepEqual(sections.map(function (s) { return s.name; }), TOOLS);
-    assert.ok(sections.find(function (s) { return s.key === 'storage'; }).section);
-    assert.equal(sections.find(function (s) { return s.key === 'ddns'; }).section, null);
-    assert.equal(shared.nectoSections('troubleshooting').find(function (s) { return s.key === 'storage'; }).section, null);
+    assert.deepEqual(sections.map(function (s) { return s.name; }), ['DDNS', 'Storage']);
+    assert.equal(sections[1].section, section);
+    assert.equal(shared.nectoSections('troubleshooting').find(function (s) { return s.key === 'storage'; }), undefined);
     assert.throws(function () { shared.registerSection('elsewhere', 'storage', {}); });
 });
 
-test('Settings draws a collapsible section per tool, Groups filled and every other tool coming', async function () {
+test('Settings draws a collapsible section per tool, with the Groups section filled', async function () {
     var opened = await openTool('settings', { config: { Groups: [{ Id: FAMILY, Name: 'Family' }], GroupSettings: { NewUserGroupId: FAMILY }, AccountSettings: { ShowResetCodes: true } } });
 
     var titles = texts(opened.view, '.stolon-collapsible-title');
@@ -57,10 +59,6 @@ test('Settings draws a collapsible section per tool, Groups filled and every oth
     assert.equal(groups.querySelector('[data-field="NewUserGroupId"]').value, FAMILY);
     assert.deepEqual(texts(groups.querySelector('[data-field="NewUserGroupId"]'), 'option'), ['Everyone', 'Family']);
     assert.equal(groups.querySelector('[data-field="ShowResetCodes"]').checked, true);
-    [].forEach(function (key) {
-        assert.match(opened.section(key).querySelector('[data-role="section-content"]').innerHTML, /This tool is coming\./, key);
-        assert.equal(opened.section(key).querySelector('button.stolon-button'), null, key);
-    });
 });
 
 test('the Groups section of Settings saves its own fields into the config', async function () {

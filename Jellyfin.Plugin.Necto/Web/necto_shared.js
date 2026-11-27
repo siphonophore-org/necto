@@ -7,7 +7,7 @@
 // and load run once it has them, so the marked markup is in the viewer's language.
 //
 // Settings and Troubleshooting draw one section per tool from a registry. A tool adds its section with
-// registerSection from its own sections module, and a tool with none shows that it is coming.
+// registerSection from its own sections module.
 
 // The specifier is relative so it resolves against this module's own URL, and a server hosted under
 // a base URL still loads the bundle.
@@ -55,7 +55,7 @@ export {
     createNotifyPreview, bindSecretField, readSecretField, clearSecretField, placeholderHint, bindPlaceholders,
     subscribeWebPush, unsubscribeWebPush, webPushState, webPushLabel, startUserPage, startWebClientShell,
     showUserPageView, setUserPageMessage, loadTranslations, createTranslations, COUNTRY_CODES, createMediaCard,
-    createBanner
+    createBanner, createWorldMap, linkWorldMap, createStatusCardGrid
 } from './configurationpage?name=necto_stolon.js';
 
 var PLUGIN_ID = 'a8b5ecb0-fc00-428b-85e8-74b85820166d';
@@ -175,7 +175,7 @@ export function registerSection(kind, key, section) {
 
 // nectoSections
 // Lists the tools Settings or Troubleshooting draws a section for, in sidebar order, each with the section it
-// added or null when the tool is coming. The dashboard, Settings, and Troubleshooting draw none.
+// added. A tool that added none is left out, as are the dashboard, Settings, and Troubleshooting.
 //
 // Inputs
 // kind [string]: settings or troubleshooting.
@@ -186,14 +186,15 @@ export function nectoSections(kind) {
     var registered = sectionRegistry[kind] || {};
     return nectoTools().filter(function (tool) {
         return ['dashboard', 'settings', 'troubleshooting'].indexOf(tool.key) < 0;
+    }).filter(function (tool) {
+        return !!registered[tool.key];
     }).map(function (tool) {
-        return { key: tool.key, name: tool.name, icon: tool.icon, section: registered[tool.key] || null };
+        return { key: tool.key, name: tool.name, icon: tool.icon, section: registered[tool.key] };
     });
 }
 
 // drawSections
-// Draws a collapsible section per tool into a container, with the content each tool's section fills, or the coming
-// state for a tool with none.
+// Draws a collapsible section per tool into a container, with the content each tool's section fills.
 //
 // Inputs
 // container [HTMLElement]: Where the sections go.
@@ -203,20 +204,14 @@ export function nectoSections(kind) {
 // addFooter [function]: Called with each filled section's content and handle, to add what ends it, such as a Save Bar. [optional]
 //
 // Output
-// [object[]]: One entry per tool, with its key, collapsible, and handle, which is null while the tool is coming.
+// [object[]]: One entry per tool, with its key, collapsible, and handle.
 export function drawSections(container, kind, shared, page, addFooter) {
-    var t = shared.t;
     container.innerHTML = '';
     return nectoSections(kind).map(function (tool) {
         var content = el('div', { 'data-role': 'section-content' });
         var section = createCollapsibleSection({ title: tool.name, icon: tool.icon, collapsed: true, content: content });
         section.element.setAttribute('data-tool', tool.key);
         container.appendChild(section.element);
-        if (!tool.section) {
-            section.setBadge({ label: t.tr('BadgeComing'), color: 'gray' });
-            content.innerHTML = shared.emptySection(t.tr('MessageToolComing'), { inline: true });
-            return { key: tool.key, collapsible: section, handle: null };
-        }
         var handle = tool.section.build(content, { shared: shared, page: page });
         if (addFooter) addFooter(content, handle, tool);
         return { key: tool.key, collapsible: section, handle: handle };

@@ -1,6 +1,5 @@
 // necto_app.test.mjs
-// Tests for the Necto page: the tools its sidebar lists, in order, with the dashboard first, and the coming state
-// of each tool that is not built.
+// Tests for the Necto page: the tools its sidebar lists, in order, with the dashboard first.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -59,16 +58,3 @@ test('the sidebar has its fold button', async function () {
     assert.ok(view.querySelector('.stolon-tool-shell-fold'));
 });
 
-test('each tool page that is not built shows the empty state that says the tool is coming', async function () {
-    for (var key of KEYS.filter(function (k) { return ['requests', 'issues', 'groups', 'invites', 'notifications', 'wireguard', 'scripts', 'pages', 'storage', 'proxy', 'ddns', 'settings', 'troubleshooting'].indexOf(k) < 0; })) {
-        var page = installPage({});
-        var empty = page.dom.el('div', { class: 'stolon-empty-section', 'data-str': 'MessageToolComing' });
-        var view = pageView(page.dom, [empty]);
-        page.dom.document.documentElement.appendChild(view);
-        var controller = await loadScript('necto_' + key + '.js');
-        controller.default(view);
-        view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
-        await settle();
-        assert.equal(empty.textContent, 'This tool is coming.', key);
-    }
-});

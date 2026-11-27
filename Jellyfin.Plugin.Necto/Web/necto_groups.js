@@ -155,14 +155,14 @@ export function groupItems(groups, users, shared) {
 // sectionSpecs
 // Describes the permission sections of the editor after Account rules, one per tool, in sidebar order. Each field
 // names its path in the group's permissions. A field with reveals shows them while it is on, and fallback is its
-// value while the group has none. A section marked built belongs to a tool that is built, so it says nothing is coming.
+// value while the group has none.
 //
 // Output
-// [object[]]: Each section's tool key, title key, icon, whether it is built, and fields.
+// [object[]]: Each section's tool key, title key, icon, and fields.
 export function sectionSpecs() {
     return [
         {
-            key: 'requests', title: 'TabRequests', icon: 'movie_filter', built: true, fields: [
+            key: 'requests', title: 'TabRequests', icon: 'movie_filter', fields: [
                 { path: 'Requests.MayRequest', kind: 'check', label: 'LabelMayRequest', reveals: [
                     { path: 'Requests.Movies', kind: 'check', label: 'Movies', fallback: true },
                     { path: 'Requests.Series', kind: 'check', label: 'Series', fallback: true },
@@ -182,7 +182,7 @@ export function sectionSpecs() {
             ]
         },
         {
-            key: 'issues', title: 'TabIssues', icon: 'report_problem', built: true, fields: [
+            key: 'issues', title: 'TabIssues', icon: 'report_problem', fields: [
                 { path: 'Issues.MayReport', kind: 'check', label: 'IssuesLabelMayReport', reveals: [
                     { path: 'Issues.Limit', kind: 'number', label: 'RequestsLabelIssueQuota', help: 'IssuesHelpLimit', min: 0, fallback: 10 }
                 ] },
@@ -190,7 +190,7 @@ export function sectionSpecs() {
             ]
         },
         {
-            key: 'invites', title: 'TabInvites', icon: 'mail', built: true, fields: [
+            key: 'invites', title: 'TabInvites', icon: 'mail', fields: [
                 { path: 'Invites.MayCreate', kind: 'check', label: 'LabelMayCreateInvites', reveals: [
                     { path: 'Invites.MaxInvites', kind: 'number', label: 'LabelMaxInvites', help: 'MaxInvitesHelp', min: 0 },
                     { path: 'Invites.AnyGroup', kind: 'check', label: 'LabelAnyGroup' },
@@ -199,7 +199,7 @@ export function sectionSpecs() {
             ]
         },
         {
-            key: 'wireguard', title: 'TabWireGuard', icon: 'vpn_lock', built: true, fields: [
+            key: 'wireguard', title: 'TabWireGuard', icon: 'vpn_lock', fields: [
                 { path: 'WireGuard.MayHavePeers', kind: 'check', label: 'LabelMayHavePeers', reveals: [
                     { path: 'WireGuard.MaxPeers', kind: 'number', label: 'LabelMaxPeers', help: 'MaxPeersHelp', min: 0 },
                     { path: 'WireGuard.DataLimit', kind: 'gigabytes', label: 'WireGuardLabelMemberDataLimit', help: 'WireGuardMemberDataLimitHelp', min: 0 },
@@ -208,19 +208,19 @@ export function sectionSpecs() {
             ]
         },
         {
-            key: 'scripts', title: 'TabScripts', icon: 'code', built: true, fields: [
+            key: 'scripts', title: 'TabScripts', icon: 'code', fields: [
                 { path: 'Scripts.AllScripts', kind: 'check', label: 'LabelAllScripts', hides: [
                     { path: 'Scripts.ScriptIds', kind: 'records', label: 'ScriptsLabelGroupScripts', help: 'ScriptsGroupScriptsHelp', source: 'Scripts/Names' }
                 ] }
             ]
         },
         {
-            key: 'pages', title: 'TabPages', icon: 'web', built: true, fields: [
+            key: 'pages', title: 'TabPages', icon: 'web', fields: [
                 { path: 'CustomPages.AllPages', kind: 'check', label: 'LabelAllPages', help: 'PagesAllPagesHelp' },
                 { path: 'CustomPages.PageIds', kind: 'pages', label: 'PagesLabelGroupPages', help: 'PagesGroupPagesHelp', hiddenBy: 'CustomPages.AllPages' }
             ]
         },
-        { key: 'notifications', title: 'TabNotifications', icon: 'notifications', built: true, fields: [
+        { key: 'notifications', title: 'TabNotifications', icon: 'notifications', fields: [
             { path: 'Notifications.AllEvents', kind: 'check', label: 'LabelAllEvents', help: 'NotificationsAllEventsHelp' },
             { path: 'Notifications.EventKeys', kind: 'events', label: 'NotificationsGroupEvents', help: 'NotificationsGroupEventsHelp' }
         ] }
@@ -311,8 +311,7 @@ export function overlappingClients(clients, rules) {
 }
 
 // createGroupEditor
-// Builds the body of a group's sidecar: its name, its members, Account rules, and a section per tool. Sections for
-// tools that are not built show their fields and say the tool is coming.
+// Builds the body of a group's sidecar: its name, its members, Account rules, and a section per tool.
 //
 // Inputs
 // group [object]: The group to edit, or a new one.
@@ -626,14 +625,13 @@ export function createGroupEditor(group, ctx) {
     var templatesDrawn = nectoTemplates.drawTemplateSections(section, draft, ctx, readers, handles);
     ready = Promise.all([ready, templatesDrawn]);
 
-    // One section per tool, each saying the tool is coming until it is built.
+    // One section per tool.
     sectionSpecs().forEach(function (spec) {
         var content = el('div', {}, [
-            spec.built ? null : el('div', { class: 'stolon-info', 'data-role': 'coming', text: t.tr('MessageToolComing') }),
             el('div', { class: 'fieldDescription', text: t.tr('HelpPermissionMerge') })
         ]);
         spec.fields.forEach(function (field) { drawField(field, content); });
-        section(t.tr(spec.title), spec.icon, content, spec.built ? {} : { badge: { label: t.tr('BadgeComing'), color: 'gray' } }).element.setAttribute('data-section', spec.key);
+        section(t.tr(spec.title), spec.icon, content).element.setAttribute('data-section', spec.key);
     });
     ready = Promise.all([ready].concat(waits)).then(function () {});
 

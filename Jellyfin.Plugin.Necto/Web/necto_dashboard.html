@@ -1,12 +1,31 @@
 <!-- necto_dashboard.html -->
-<!-- The Dashboard tool. It shows an empty state that says the tool is coming. -->
+<!-- The Dashboard tool. A status card for each tool that is on, one world map of the proxy's visitors and the
+     WireGuard tunnels, the share card, and Necto's recent activity. -->
 
 <div id="NectoDashboardPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-button"
      data-controller="__plugin/necto_dashboard.js">
     <div data-role="content">
         <div class="content-primary">
-            <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+            <div class="verticalSection verticalSection-extrabottompadding necto-dashboard">
+                <div class="fieldDescription" data-str="DashboardHelp">Shows how each tool that is on stands. Select a card to open its tool.</div>
+                <div id="dashboardStatus" class="stolon-status-text" role="status"></div>
+
+                <!-- Cards -->
+                <!-- One status card per tool that is on, in sidebar order. -->
+                <div id="dashboardCards"></div>
+
+                <!-- Locations -->
+                <!-- The world map and its country table, shown while the proxy or WireGuard is on. -->
+                <div id="dashboardMap" class="stolon-hidden"></div>
+
+                <!-- Share -->
+                <!-- The server's public address as a QR code, shown once the proxy has one. -->
+                <div id="dashboardShare" class="stolon-hidden"></div>
+
+                <!-- Recent activity -->
+                <!-- Necto's newest activity log entries. -->
+                <div id="dashboardActivity"></div>
             </div>
         </div>
     </div>

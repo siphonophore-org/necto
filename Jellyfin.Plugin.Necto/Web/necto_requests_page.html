@@ -1985,7 +1985,7 @@
             if ((req && req.Status === 'Declined') || r.RequestStatus === 'Declined') return { cls: 'rejected', icon: 'thumb_down', tag: str('RequestsRequestStatusRejected') };
             if ((req && req.Status === 'Failed') || r.RequestStatus === 'Failed') {
                 // Approved but not sent on yet: administrators see it's being retried; requesters that it's approved.
-                return me.IsAdministrator ? { cls: 'failed', icon: 'error', tag: str('RequestsRequestStatusRetrying') } : { cls: 'approved', icon: 'event', tag: str('RequestsRequestStatusApproved') };
+                return me.IsAdministrator ? { cls: 'failed', icon: 'error', tag: str('RequestsRequestStatusRetrying') } : { cls: 'approved', icon: 'event', tag: str('StateApproved') };
             }
             if (droppedByArr(req)) return { cls: 'failed', icon: 'error', tag: str('RequestsRequestStatusNotDownloading') };
             if (r.LibraryItemId && r.Partial) return { cls: 'library', icon: 'check', tag: str('RequestsRequestStatusPartlyInLibrary') };
@@ -1996,7 +1996,7 @@
             // Approved, or Radarr or Sonarr has it, and not downloaded yet.
             if (r.RequestStatus === 'Approved') {
                 var p = req && typeof req.Progress === 'number' && req.Progress > 0 ? percent(req.Progress) : '';
-                return { cls: 'approved', icon: 'event', tag: p ? str('RequestsRequestStatusApprovedProgress', p) : str('RequestsRequestStatusApproved') };
+                return { cls: 'approved', icon: 'event', tag: p ? str('RequestsRequestStatusApprovedProgress', p) : str('StateApproved') };
             }
             if (r.Partial) return { cls: 'requested', icon: 'schedule', tag: str('RequestsRequestStatusPartlyRequested') };
             if (r.Blocked) return { cls: 'rejected', icon: 'block', tag: str(me.IsAdministrator ? 'RequestsRequestStatusBlocked' : 'RequestsRequestStatusNotRequestable') };
@@ -2783,13 +2783,13 @@
         // Where a title stands with requests (Requests/Discover's states), each as its badge says it.
         var TITLE_STATES = [
             { key: 'NotRequested', label: 'RequestsFilterNotRequested' }, { key: 'Requested', label: 'RequestsRequestStatusRequested' },
-            { key: 'Approved', label: 'RequestsRequestStatusApproved' }, { key: 'Monitored', label: 'RequestsFilterMonitored' },
+            { key: 'Approved', label: 'StateApproved' }, { key: 'Monitored', label: 'RequestsFilterMonitored' },
             { key: 'Downloaded', label: 'RequestsRequestStatusDownloaded' }
         ];
         // Where a request stands, each the request statuses it covers.
         var REQUEST_GROUPS = [
             { key: 'Pending', label: 'RequestsRequestStatusAwaitingApproval', statuses: ['Pending'] },
-            { key: 'Approved', label: 'RequestsRequestStatusApproved', statuses: ['Approved', 'Failed'] },
+            { key: 'Approved', label: 'StateApproved', statuses: ['Approved', 'Failed'] },
             { key: 'PartiallyAvailable', label: 'RequestsRequestStatusPartlyInLibrary', statuses: ['PartiallyAvailable'] },
             { key: 'Available', label: 'RequestsRequestStatusInLibrary', statuses: ['Available'] },
             { key: 'Declined', label: 'RequestsRequestStatusRejected', statuses: ['Declined'] }
@@ -3194,7 +3194,7 @@
                 : type === 'Video' ? WC.tr('Video', 'Video') : type === 'Audio' ? WC.tr('Audio', 'Audio') : type === 'Subtitles' ? WC.tr('Subtitles', 'Subtitles') : WC.tr('Other', 'Other');
         }
         function issueStateName(state) {
-            return { Reported: str('IssuesStateReported'), Confirmed: str('IssuesStateConfirmed'), Resolved: str('IssuesStateResolved'), Declined: str('IssuesStateDeclined'), Rescinded: str('IssuesStateRescinded') }[state] || state;
+            return { Reported: str('StateReported'), Confirmed: str('StateConfirmed'), Resolved: str('StateResolved'), Declined: str('StateDeclined'), Rescinded: str('StateRescinded') }[state] || state;
         }
         // An item's picture from the server, as the web client asks for it (imageHelper), its tag keeping it cached.
         function itemImage(id, tag, height) { return prefix + '/Items/' + id + '/Images/Primary?fillHeight=' + height + '&quality=90' + (tag ? '&tag=' + encodeURIComponent(tag) : ''); }
@@ -3731,7 +3731,7 @@
             if (status === 'Pending') return info(str('RequestsRequestStatusAwaitingApproval'));
             if (status === 'Failed') return info(str('RequestsRequestStatusWaitingToSend'));
             if (downloaded(r)) return info(str('RequestsRequestStatusAwaitingScan'));
-            return info(str('RequestsRequestStatusApproved'));
+            return info(str('StateApproved'));
         }
 
         // The request's details, from its state button, laid out as the web client's Media Info dialog: the title, then a

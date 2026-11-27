@@ -485,7 +485,7 @@ export function createChannelEditor(channel, ctx) {
 export function logItems(entries, shared) {
     var t = shared.t;
     return (entries || []).map(function (e, i) {
-        var tags = [{ label: e.Ok ? t.tr('NotificationsTagSent') : t.tr('LabelFailed'), color: e.Ok ? 'green' : 'red' }];
+        var tags = [{ label: e.Ok ? t.tr('StateSent') : t.tr('LabelFailed'), color: e.Ok ? 'green' : 'red' }];
         if (e.Test) tags.push({ label: t.tr('ButtonTest'), color: 'blue' });
         return {
             id: String(i),

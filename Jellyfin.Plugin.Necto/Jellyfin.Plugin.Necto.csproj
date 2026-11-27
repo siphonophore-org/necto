@@ -365,6 +365,10 @@
     <!-- The plugin's own key keeps English Jellyfin also says, with another meaning. -->
     <!-- A DNS record, not a TV recording. -->
     <JellyfinTextMatch Include="DdnsHeaderRecord" />
+    <!-- The Jellyfin strings the Dashboard uses. -->
+    <JellyfinString Include="HeaderError" />
+    <JellyfinString Include="PriorityIdle" />
+    <JellyfinString Include="Share" />
   </ItemGroup>
 
 </Project>

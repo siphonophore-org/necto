@@ -65,10 +65,10 @@ public static class CountryRules
 
     /// <summary>
     /// The location database detail to keep loaded: what the history asks for, and at least country
-    /// detail while country rules are on.
+    /// detail while something needs countries, such as the country rules.
     /// </summary>
     /// <param name="people">The history's detail.</param>
-    /// <param name="rulesOn">Whether country rules are on.</param>
+    /// <param name="rulesOn">Whether something needs country detail, such as the country rules or the WireGuard map layers.</param>
     /// <returns>The detail to load.</returns>
     public static LocationDetail RequiredDetail(LocationDetail people, bool rulesOn)
         => people == LocationDetail.Off && rulesOn ? LocationDetail.Country : people;

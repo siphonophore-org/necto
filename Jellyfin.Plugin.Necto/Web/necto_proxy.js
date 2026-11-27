@@ -13,7 +13,7 @@ export var CERTIFICATE_MODES = ['None', 'Automatic', 'Pkcs12File', 'PemFiles', '
 export var CHALLENGES = ['Auto', 'Http', 'Dns'];
 var PHASES = ['Unmanaged', 'PendingRestart', 'Managed', 'Degraded'];
 var ACTIVITY_TYPES = ['User', 'Failure', 'Blocked', 'Seen'];
-var ACTIVITY_KEYS = { User: 'ProxyActivityUser', Failure: 'ProxyActivityFailure', Blocked: 'ProxyColumnBlocked', Seen: 'ProxyActivitySeen' };
+var ACTIVITY_KEYS = { User: 'ProxyActivityUser', Failure: 'ProxyActivityFailure', Blocked: 'HeaderRefused', Seen: 'ProxyActivitySeen' };
 
 // The keys of the route templates, in the order the picker shows them.
 export var TEMPLATES = [
@@ -675,9 +675,9 @@ export default function (view) {
         [off, status,
             el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderBanned') }), bannedHost,
             el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderActivity') }), activityHost,
-            el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyLabelCountries') }), countryHost,
+            el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderCountries') }), countryHost,
             location, attribution].forEach(function (n) { content.appendChild(n); });
-        var section = nectoModule.createCollapsibleSection({ title: t.tr('ProxyHeaderVisitors'), icon: 'travel_explore', collapsed: true, content: content });
+        var section = nectoModule.createCollapsibleSection({ title: t.tr('HeaderVisitors'), icon: 'travel_explore', collapsed: true, content: content });
         view.querySelector('#proxyVisitors').appendChild(section.element);
 
         var button = function (label, variant, act, name) {
@@ -690,7 +690,7 @@ export default function (view) {
         var banned = nectoModule.createDataTable({
             columns: [
                 { key: 'Ip', label: t.tr('LabelAddress') },
-                { key: 'Country', label: t.tr('ProxyColumnCountry'), value: function (b) { return b.Country || t.tr('Unknown'); } },
+                { key: 'Country', label: t.tr('HeaderCountry'), value: function (b) { return b.Country || t.tr('Unknown'); } },
                 { key: 'Failures', label: t.tr('ProxyColumnFailures'), align: 'end' },
                 { key: 'UntilUtc', label: t.tr('ProxyColumnEnds'), value: function (b) { return b.UntilUtc ? shared.formatDate(b.UntilUtc) : t.tr('ProxyUntilLifted'); } },
                 { key: 'action', label: t.tr('HeaderAction'), sortable: false, render: function (b) { return button(t.tr('ProxyButtonUnban'), 'stolon-secondary', { action: 'unban', value: b.Ip }, t.format('ProxyButtonUnbanAddress', b.Ip)); } }
@@ -708,7 +708,7 @@ export default function (view) {
                 { key: 'Ip', label: t.tr('LabelAddress') },
                 { key: 'Device', label: t.tr('LabelDevice') },
                 { key: 'Host', label: t.tr('ProxyLabelHost'), value: function (r) { return (r.Host || '').replace(/^https?:\/\//, ''); } },
-                { key: 'place', label: t.tr('ProxyColumnCountry'), value: place },
+                { key: 'place', label: t.tr('HeaderCountry'), value: place },
                 { key: 'LastUtc', label: t.tr('ProxyColumnLastSeen'), value: function (r) { return shared.formatDate(r.LastUtc); } },
                 {
                     key: 'action', label: t.tr('HeaderAction'), sortable: false, render: function (r) {
@@ -723,7 +723,7 @@ export default function (view) {
             rowKey: function (r) { return r.Type + '|' + r.Ip + '|' + r.User + '|' + r.Host; },
             filters: [
                 { name: 'type', label: t.tr('ProxyColumnType'), field: 'kind', options: ACTIVITY_TYPES.map(function (k) { return { value: k, label: t.tr(ACTIVITY_KEYS[k]) }; }) },
-                { name: 'place', label: t.tr('ProxyColumnCountry'), field: 'placeCode', options: [] }
+                { name: 'place', label: t.tr('HeaderCountry'), field: 'placeCode', options: [] }
             ],
             pageSize: 25,
             maxHeight: '32rem',
@@ -733,14 +733,14 @@ export default function (view) {
         activityHost.appendChild(activity.element);
         var countries = nectoModule.createDataTable({
             columns: [
-                { key: 'Country', label: t.tr('ProxyColumnCountry') },
+                { key: 'Country', label: t.tr('HeaderCountry') },
                 { key: 'People', label: t.tr('People'), align: 'end' },
-                { key: 'Failed', label: t.tr('ProxyColumnFailed'), align: 'end' },
-                { key: 'Blocked', label: t.tr('ProxyColumnBlocked'), align: 'end' }
+                { key: 'Failed', label: t.tr('HeaderFailedSignIns'), align: 'end' },
+                { key: 'Blocked', label: t.tr('HeaderRefused'), align: 'end' }
             ],
             rows: [],
             rowKey: 'Code',
-            label: t.tr('ProxyLabelCountries'),
+            label: t.tr('HeaderCountries'),
             emptyText: t.tr('ProxyEmptyCountries')
         });
         countryHost.appendChild(countries.element);

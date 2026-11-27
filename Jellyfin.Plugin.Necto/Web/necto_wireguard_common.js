@@ -252,7 +252,7 @@ export function stateTag(t, state) {
     if (state === 'Disabled') return { label: t.tr('Disabled'), icon: 'pause', off: true };
     return state === 'Connected'
         ? { label: t.tr('StateConnected'), icon: 'link', color: 'green' }
-        : { label: t.tr('WireGuardTagOffline'), icon: 'link_off', color: 'gray' };
+        : { label: t.tr('StateOffline'), icon: 'link_off', color: 'gray' };
 }
 
 // tunnelStateLabel

@@ -56,14 +56,14 @@ public sealed class VisitorService
 
     /// <summary>
     /// Gets the location database detail to keep loaded: the history's choice, and at least country detail
-    /// while country rules are on.
+    /// while country rules are on or WireGuard is on, since the Dashboard map places the tunnel ends by country.
     /// </summary>
     public static LocationDetail RequiredLocation
     {
         get
         {
-            var rulesOn = Plugin.Instance?.ReadConfiguration(c => ProxyCountryRules.CountryRulesOn(c.Proxy)) ?? false;
-            return CountryRules.RequiredDetail(Recording ? Settings.Location : LocationDetail.Off, rulesOn);
+            var countryNeeded = Plugin.Instance?.ReadConfiguration(c => ProxyCountryRules.CountryRulesOn(c.Proxy) || c.WireGuard.Enabled) ?? false;
+            return CountryRules.RequiredDetail(Recording ? Settings.Location : LocationDetail.Off, countryNeeded);
         }
     }
 

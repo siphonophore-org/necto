@@ -52,9 +52,9 @@ export function advancedSpecs() {
             ]
         },
         {
-            title: 'ProxyLabelLocations', fields: [
+            title: 'HeaderLocations', fields: [
                 { key: 'CountryMode', kind: 'enum', label: 'ProxyLabelCountryRule', help: 'ProxyCountryRuleHelp', names: COUNTRY_MODES, options: ['Off', 'ProxyOptionServerCountry', 'ProxyOptionBlockCountries', 'ProxyOptionAllowCountries'] },
-                { key: 'Countries', kind: 'countries', label: 'ProxyLabelCountries', help: 'ProxyCountriesHelp' },
+                { key: 'Countries', kind: 'countries', label: 'HeaderCountries', help: 'ProxyCountriesHelp' },
                 { key: 'BlockUnknownCountries', kind: 'bool', label: 'ProxyLabelBlockUnknown', help: 'ProxyBlockUnknownHelp' },
                 { key: 'BlockWithoutDatabase', kind: 'bool', label: 'ProxyLabelBlockWithoutDatabase', help: 'ProxyBlockWithoutDatabaseHelp' }
             ]
@@ -165,12 +165,12 @@ function buildSettings(content, ctx) {
     var history = fields.checkField({ label: t.tr('ProxyLabelRecordHistory'), help: t.tr('ProxyRecordHistoryHelp'), field: 'Visitors.Enabled' });
     var days = fields.inputField({ label: t.tr('ProxyLabelHistoryDays'), help: t.tr('ProxyHistoryDaysHelp'), field: 'Visitors.HistoryDays', type: 'number', min: 1, max: 3650 });
     var location = fields.selectField({
-        label: t.tr('ProxyLabelLocations'), help: t.tr('ProxyLocationsHelp'), field: 'Visitors.Location',
-        options: [{ value: 'Country', label: t.tr('ProxyColumnCountry') }, { value: 'City', label: t.tr('ProxyOptionCountryAndCity') }, { value: 'Off', label: t.tr('Off') }]
+        label: t.tr('HeaderLocations'), help: t.tr('ProxyLocationsHelp'), field: 'Visitors.Location',
+        options: [{ value: 'Country', label: t.tr('HeaderCountry') }, { value: 'City', label: t.tr('ProxyOptionCountryAndCity') }, { value: 'Off', label: t.tr('Off') }]
     });
 
     [status, enabled.element, terms.element].forEach(function (n) { content.appendChild(n); });
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderVisitors') }));
+    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderVisitors') }));
     [history, days, location].forEach(function (f) { content.appendChild(f.element); });
     advancedSpecs().forEach(function (sub) {
         content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr(sub.title) }));

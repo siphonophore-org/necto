@@ -154,8 +154,8 @@ export default function (view) {
         var cards = [];
         if (w.HostEnabled) cards.push({ count: tunnelStateLabel(t, host ? host.State : 'Stopped'), label: t.tr('LabelServerHost'), color: host && host.State === 'Running' ? 'green' : host && host.State === 'Failed' ? 'red' : 'gray' });
         if (w.ConnectEnabled || (w.Connections || []).length) cards.push({ count: t.tr(w.ConnectEnabled ? 'StateActive' : 'WireGuardStatusInactive'), label: t.tr('WireGuardLabelConnectEnabled'), color: w.ConnectEnabled ? 'green' : 'gray' });
-        cards.push({ count: counts.peers, label: t.tr('WireGuardHeaderPeers') });
-        cards.push({ count: counts.connections, label: t.tr('WireGuardHeaderConnections') });
+        cards.push({ count: counts.peers, label: t.tr('HeaderPeers') });
+        cards.push({ count: counts.connections, label: t.tr('HeaderConnections') });
         cards.push({ count: counts.connected, label: t.tr('StateConnected'), color: counts.connected ? 'green' : 'gray' });
         cards.push({ count: counts.over, label: t.tr('WireGuardTagOverLimit'), color: counts.over ? 'red' : 'gray' });
         if (counts.refused) cards.push({ count: counts.refused, label: t.tr('WireGuardCardLeftOut'), color: 'orange' });
@@ -605,13 +605,13 @@ export default function (view) {
         page: 'necto_wireguard',
         bind: function (s, p) {
             t = s.t;
-            peerList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderPeers'), emptyText: t.tr('WireGuardEmptyPeers'), onOpen: function (item) { openPeer(item.id); } });
-            connectionList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderConnections'), emptyText: t.tr('WireGuardEmptyConnections'), onOpen: function (item) {
+            peerList = nectoModule.createRecordList({ label: t.tr('HeaderPeers'), emptyText: t.tr('WireGuardEmptyPeers'), onOpen: function (item) { openPeer(item.id); } });
+            connectionList = nectoModule.createRecordList({ label: t.tr('HeaderConnections'), emptyText: t.tr('WireGuardEmptyConnections'), onOpen: function (item) {
                 if (item.id === SELF_ID) nectoModule.openTool(view, 'settings');
                 else openConnection(item.id);
             } });
-            section($('peerSection'), t.tr('WireGuardHeaderPeers'), 'devices', peerList);
-            section($('connectionSection'), t.tr('WireGuardHeaderConnections'), 'link', connectionList);
+            section($('peerSection'), t.tr('HeaderPeers'), 'devices', peerList);
+            section($('connectionSection'), t.tr('HeaderConnections'), 'link', connectionList);
             $('btnAddPeer').addEventListener('click', function () { editPeer(null); });
             $('btnAddConnection').addEventListener('click', function () { editConnection(null); });
             p.addCleanup(function () {

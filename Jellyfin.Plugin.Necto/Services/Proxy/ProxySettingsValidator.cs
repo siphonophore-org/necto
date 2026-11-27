@@ -202,7 +202,7 @@ public static class ProxySettingsValidator
             errors.Add(Text(language, TranslationKeys.ProxyErrorBlockedAddress, raw));
         }
 
-        CheckEnum(errors, language, Text(language, TranslationKeys.ProxyLabelLocations), settings.Visitors.Location);
+        CheckEnum(errors, language, Text(language, TranslationKeys.HeaderLocations), settings.Visitors.Location);
         return errors;
     }
 

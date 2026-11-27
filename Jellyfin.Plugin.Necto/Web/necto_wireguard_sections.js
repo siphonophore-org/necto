@@ -144,7 +144,7 @@ export function buildSettings(content, ctx) {
         peerDown.element, peerUp.element, labelled(t, 'WireGuardLabelPeerDataLimit', peerData.element),
         el('h3', { class: 'stolon-subsection-title', text: t.tr('TabAdvanced') }),
         keepalive.element, mtu.element,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderConnections') }),
+        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderConnections') }),
         connect.element,
         el('div', { class: 'fieldDescription', text: t.tr('WireGuardConnectionLimitsHelp') }),
         connDown.element, connUp.element, labelled(t, 'WireGuardLabelConnectionDataLimit', connData.element)

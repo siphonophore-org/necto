@@ -1,6 +1,6 @@
 // necto_troubleshooting.js
 // The Troubleshooting tool. It draws one collapsible section per tool from the registry, with its checks and
-// repairs, and a tool with none yet shows that it is coming.
+// repairs.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import './configurationpage?name=necto_groups_sections.js';

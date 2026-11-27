@@ -18,8 +18,8 @@ export var FILTERS_KEY = 'necto-requests-filters';
 // REQUEST_STATES
 // Each request status by the name the server sends, with its string key and badge color.
 export var REQUEST_STATES = {
-    Pending: { key: 'RequestsStatusPending', color: 'purple' },
-    Approved: { key: 'RequestsRequestStatusApproved', color: 'blue' },
+    Pending: { key: 'StatePending', color: 'purple' },
+    Approved: { key: 'StateApproved', color: 'blue' },
     Failed: { key: 'LabelFailed', color: 'red' },
     PartiallyAvailable: { key: 'RequestsStatusPartial', color: 'orange' },
     Available: { key: 'LabelAvailable', color: 'green' },

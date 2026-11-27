@@ -1,6 +1,5 @@
 // necto_settings.js
-// The Settings tool. It draws one collapsible section per tool from the registry, each saving on its own, and a tool
-// with no settings yet shows that it is coming.
+// The Settings tool. It draws one collapsible section per tool from the registry, each saving on its own.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import './configurationpage?name=necto_groups_sections.js';

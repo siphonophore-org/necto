@@ -16,7 +16,7 @@ var STATE_COLORS = { Active: 'green', Locked: 'gray', Expired: 'orange', GroupEx
 
 // STATE_KEYS
 // The string key of each state's badge.
-export var STATE_KEYS = { Active: 'StateActive', Locked: 'InvitesStateLocked', Expired: 'InvitesStateExpired', GroupExpired: 'InvitesStateGroupExpired', UsedUp: 'InvitesStateUsedUp' };
+export var STATE_KEYS = { Active: 'StateActive', Locked: 'StateLocked', Expired: 'StateExpired', GroupExpired: 'StateGroupExpired', UsedUp: 'StateUsedUp' };
 
 // Ids for the editor's fields, so each label names its own field.
 var fieldSeq = 0;

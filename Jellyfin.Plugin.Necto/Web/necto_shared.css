@@ -97,3 +97,14 @@
 /* Example: <div class="necto-detail"><div class="stolon-media-card">...</div><dl class="stolon-defs">...</dl></div> */
 .necto-detail { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
 .necto-detail > .fieldDescription { margin: 0; }
+
+/* necto-dashboard */
+/* The Dashboard's column of cards, map, share card, and activity, spaced evenly. */
+/* Example: <div class="verticalSection necto-dashboard"><div id="dashboardCards"></div></div> */
+.necto-dashboard { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
+.necto-dashboard > .fieldDescription { margin: 0; }
+
+/* necto-dashboard-share */
+/* The share card's body, its note and warning over the QR code and the Share button. */
+/* Example: <div class="necto-dashboard-share"><div class="fieldDescription"></div></div> */
+.necto-dashboard-share { display: flex; flex-direction: column; gap: var(--stolon-gap-narrow); }
