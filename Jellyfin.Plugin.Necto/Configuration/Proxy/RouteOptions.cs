@@ -3,13 +3,14 @@ using System.Collections.Generic;
 namespace Jellyfin.Plugin.Necto.Configuration.Proxy;
 
 /// <summary>
-/// How a route to another service forwards: its preset and each setting the preset fills in. A route to Jellyfin
-/// ignores these and always uses Jellyfin's recommended settings. The defaults are the proxy's own behaviour.
+/// How a route forwards. A route to another service uses each setting as it is. A route to Jellyfin follows its
+/// <see cref="Profile"/>, and reads the upload limit, timeouts, and connections only under
+/// <see cref="JellyfinProfile.Custom"/>. The defaults are the proxy's own behaviour.
 /// </summary>
 public class RouteOptions
 {
-    /// <summary>Gets or sets the app the settings started from.</summary>
-    public RoutePreset Preset { get; set; } = RoutePreset.Generic;
+    /// <summary>Gets or sets the profile a route to Jellyfin forwards with. A route to another service ignores it.</summary>
+    public JellyfinProfile Profile { get; set; } = JellyfinProfile.Recommended;
 
     /// <summary>Gets or sets a value indicating whether WebSocket connections are passed on.</summary>
     public bool WebSockets { get; set; } = true;
@@ -22,6 +23,12 @@ public class RouteOptions
 
     /// <summary>Gets or sets how long the service may stay silent in seconds, or <c>null</c> for the timeout in Settings.</summary>
     public int? TimeoutSeconds { get; set; }
+
+    /// <summary>Gets or sets how long a media stream from Jellyfin may sit idle in minutes, or <c>null</c> for 6 hours.</summary>
+    public int? MediaTimeoutMinutes { get; set; }
+
+    /// <summary>Gets or sets the most connections the proxy opens to Jellyfin, or <c>null</c> for 256.</summary>
+    public int? BackendConnections { get; set; }
 
     /// <summary>Gets or sets a value indicating whether the service sees the host name the visitor asked for, rather than its own address.</summary>
     public bool PreserveHost { get; set; } = true;

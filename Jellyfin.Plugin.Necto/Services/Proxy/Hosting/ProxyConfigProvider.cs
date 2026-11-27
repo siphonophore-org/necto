@@ -29,15 +29,15 @@ namespace Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
 /// </remarks>
 public sealed class ProxyConfigProvider : IProxyConfigProvider
 {
-    /// <summary>How long a media stream may sit idle, long enough for a paused film.</summary>
-    public static readonly TimeSpan MediaActivityTimeout = TimeSpan.FromHours(6);
+    /// <summary>How long a media stream may sit idle when the route sets nothing, long enough for a paused film.</summary>
+    public static readonly TimeSpan MediaActivityTimeout = TimeSpan.FromMinutes(RouteProfiles.MediaTimeoutMinutes);
 
     /// <summary>
-    /// The most connections each Jellyfin cluster opens to Jellyfin. YARP otherwise opens one per request in
-    /// flight without limit. This is far above what a household uses, open sessions and streams included, and
-    /// requests past it wait for a free connection rather than fail.
+    /// The most connections each cluster opens to its service when the route sets nothing. YARP otherwise opens
+    /// one per request in flight without limit. This is far above what a household uses, open sessions and streams
+    /// included, and requests past it wait for a free connection rather than fail.
     /// </summary>
-    public const int JellyfinConnections = 256;
+    public const int JellyfinConnections = RouteProfiles.BackendConnections;
 
     private volatile Snapshot _snapshot;
 
@@ -112,20 +112,22 @@ public sealed class ProxyConfigProvider : IProxyConfigProvider
                     ActivityTimeout = o.TimeoutSeconds is { } seconds ? TimeSpan.FromSeconds(seconds) : request.ActivityTimeout
                 }
                 : request;
-            clusters.Add(Cluster(route.Id, route.Backend, own));
+            var connections = route.Options?.BackendConnections ?? JellyfinConnections;
+            clusters.Add(Cluster(route.Id, route.Backend, own, connections));
 
             // YARP's activity timer only restarts when a read or write completes, and a paused player stops
             // reading, which stalls the write. Media gets a long timer so a pause does not end the stream.
             if (route.IsJellyfin)
             {
-                clusters.Add(Cluster(route.Id + ProxyRuntime.MediaSuffix, route.Backend, request with { ActivityTimeout = MediaActivityTimeout }));
+                var media = route.Options?.MediaTimeoutMinutes is { } minutes ? TimeSpan.FromMinutes(minutes) : MediaActivityTimeout;
+                clusters.Add(Cluster(route.Id + ProxyRuntime.MediaSuffix, route.Backend, request with { ActivityTimeout = media }, connections));
             }
         }
 
         return clusters;
     }
 
-    private static ClusterConfig Cluster(string id, Uri backend, ForwarderRequestConfig request) => new()
+    private static ClusterConfig Cluster(string id, Uri backend, ForwarderRequestConfig request, int connections) => new()
     {
         ClusterId = id,
         Destinations = new Dictionary<string, DestinationConfig>(StringComparer.Ordinal)
@@ -133,7 +135,7 @@ public sealed class ProxyConfigProvider : IProxyConfigProvider
             [id] = new() { Address = backend.ToString() }
         },
         HttpRequest = request,
-        HttpClient = new HttpClientConfig { MaxConnectionsPerServer = JellyfinConnections }
+        HttpClient = new HttpClientConfig { MaxConnectionsPerServer = connections }
     };
 
     /// <summary>The route metadata key that says whether the backend sees the visitor's host name.</summary>

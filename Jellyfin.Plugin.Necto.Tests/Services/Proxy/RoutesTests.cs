@@ -170,6 +170,26 @@ public sealed class RoutesTests : IDisposable
         var clusters = ProxyConfigProvider.BuildClusters(runtime);
         Assert.Equal("https://192.168.1.30:8443/", clusters.Single(c => c.ClusterId == "a").Destinations!.Single().Value.Address);
         Assert.Equal(ProxyConfigProvider.MediaActivityTimeout, clusters.Single(c => c.ClusterId == "m-media").HttpRequest!.ActivityTimeout);
+        Assert.Equal(256, clusters.Single(c => c.ClusterId == "m").HttpClient!.MaxConnectionsPerServer);
+    }
+
+    /// <summary>
+    /// A route to Jellyfin forwards with its profile: Low memory opens fewer connections and lets idle streams go
+    /// sooner, and its upload limit reaches the policy.
+    /// True: a small server holds what the profile says.
+    /// False: the profile would change nothing the proxy does.
+    /// </summary>
+    [Fact]
+    public void ConfigProvider_JellyfinRoute_FollowsItsProfile()
+    {
+        var runtime = Runtime(Settings(new ProxyRoute { Id = "m", Host = "media.example.com", Options = new RouteOptions { Profile = JellyfinProfile.LowMemory } }));
+
+        var clusters = ProxyConfigProvider.BuildClusters(runtime);
+        Assert.Equal(TimeSpan.FromMinutes(60), clusters.Single(c => c.ClusterId == "m-media").HttpRequest!.ActivityTimeout);
+        Assert.Equal(TimeSpan.FromSeconds(120), clusters.Single(c => c.ClusterId == "m").HttpRequest!.ActivityTimeout);
+        Assert.All(clusters, c => Assert.Equal(32, c.HttpClient!.MaxConnectionsPerServer));
+        Assert.Equal(20, runtime.Routes.Single().Options!.MaxBodyMb);
+        Assert.False(clusters.Single(c => c.ClusterId == "m").HttpRequest!.AllowResponseBuffering);
     }
 
     /// <summary>

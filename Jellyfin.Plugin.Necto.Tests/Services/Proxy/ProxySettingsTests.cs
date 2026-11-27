@@ -181,31 +181,54 @@ public class ProxySettingsTests
         Assert.NotEmpty(RouteErrors(new ProxyRoute { Host = "a.example.com", Upstream = "http://h:1", Options = new RouteOptions { RequestHeaders = { new HeaderEntry { Name = "Bad Name", Value = "x" } } } }));
         Assert.NotEmpty(RouteErrors(new ProxyRoute { Host = "a.example.com", Upstream = "http://h:1", Options = new RouteOptions { ResponseHeaders = { new HeaderEntry { Name = "X-A", Value = "a\r\nSet-Cookie: x" } } } }));
         Assert.NotEmpty(RouteErrors(new ProxyRoute { Host = "a.example.com", Upstream = "http://h:1", Options = new RouteOptions { PathPrefix = "/a b" } }));
-        Assert.NotEmpty(RouteErrors(new ProxyRoute { Host = "a.example.com", Upstream = "http://h:1", Options = new RouteOptions { Preset = (RoutePreset)99 } }));
+        Assert.NotEmpty(RouteErrors(new ProxyRoute { Host = "j.example.com", Options = new RouteOptions { Profile = (JellyfinProfile)99 } }));
 
-        // A route to Jellyfin never reads its settings, so a stray value there is no reason to refuse it.
+        // A route to Jellyfin never reads its prefix or headers, so a stray value there is no reason to refuse it.
         Assert.Empty(RouteErrors(new ProxyRoute { Host = "j.example.com", Options = new RouteOptions { PathPrefix = "/a b" } }));
+        var custom = new ProxyRoute { Host = "j.example.com", Options = new RouteOptions { Profile = JellyfinProfile.Custom, MediaTimeoutMinutes = 99999, BackendConnections = 0 } };
+        Assert.Empty(RouteErrors(custom));
+        Assert.Equal(1440, custom.Options.MediaTimeoutMinutes);
+        Assert.Equal(1, custom.Options.BackendConnections);
     }
 
     /// <summary>
-    /// Each preset fills in the settings its app's reverse proxy guide uses, and a stored route without settings keeps the proxy's own behaviour.
-    /// True: picking an app gives working settings, and existing routes forward as they did.
-    /// False: qBittorrent would refuse every request, or an old route would change on upgrade.
+    /// Each Jellyfin profile sets what its table in the docs says, Custom reads the route's own values, and a stored
+    /// route without a profile takes Recommended.
+    /// True: a small server gets fewer connections and smaller uploads, and existing routes forward as they did.
+    /// False: a profile would forward differently than documented, or an upgrade would change a route.
     /// </summary>
     [Fact]
-    public void Presets_FillTheirAppsSettings()
+    public void Profiles_SetTheirDocumentedValues()
     {
-        Assert.False(RoutePresets.For(RoutePreset.QBittorrent).PreserveHost);
-        Assert.Equal(3600, RoutePresets.For(RoutePreset.HomeAssistant).TimeoutSeconds);
-        Assert.Equal(300, RoutePresets.For(RoutePreset.Arr).TimeoutSeconds);
-        Assert.Equal(20, RoutePresets.For(RoutePreset.Seerr).MaxBodyMb);
-        Assert.All(Enum.GetValues<RoutePreset>(), p => Assert.True(RoutePresets.For(p).WebSockets && !RoutePresets.For(p).Buffering));
+        var recommended = RouteProfiles.For(JellyfinProfile.Recommended);
+        Assert.Null(recommended.MaxBodyMb);
+        Assert.Null(recommended.TimeoutSeconds);
+        Assert.Equal(360, recommended.MediaTimeoutMinutes);
+        Assert.Equal(256, recommended.BackendConnections);
+        var low = RouteProfiles.For(JellyfinProfile.LowMemory);
+        Assert.Equal(new int?[] { 20, 120, 60, 32 }, new[] { low.MaxBodyMb, low.TimeoutSeconds, low.MediaTimeoutMinutes, low.BackendConnections });
+        var remote = RouteProfiles.For(JellyfinProfile.RemoteStreaming);
+        Assert.Equal(new int?[] { 2048, 900, 720, 512 }, new[] { remote.MaxBodyMb, remote.TimeoutSeconds, remote.MediaTimeoutMinutes, remote.BackendConnections });
+        Assert.All(Enum.GetValues<JellyfinProfile>(), p => Assert.True(RouteProfiles.For(p).WebSockets && !RouteProfiles.For(p).Buffering && RouteProfiles.For(p).PreserveHost));
+
+        var custom = RouteProfiles.ForJellyfin(new RouteOptions
+        {
+            Profile = JellyfinProfile.Custom, MaxBodyMb = 5, TimeoutSeconds = 30, MediaTimeoutMinutes = 15, BackendConnections = 8,
+            Buffering = true, PathPrefix = "/x", RequestHeaders = { new HeaderEntry { Name = "X-A", Value = "1" } }
+        });
+        Assert.Equal(new int?[] { 5, 30, 15, 8 }, new[] { custom.MaxBodyMb, custom.TimeoutSeconds, custom.MediaTimeoutMinutes, custom.BackendConnections });
+        Assert.False(custom.Buffering);
+        Assert.Empty(custom.PathPrefix);
+        Assert.Empty(custom.RequestHeaders);
+        Assert.Equal(20, RouteProfiles.ForJellyfin(new RouteOptions { Profile = JellyfinProfile.LowMemory, MaxBodyMb = 5 }).MaxBodyMb);
+        Assert.Equal(JellyfinProfile.Recommended, RouteProfiles.ForJellyfin(null).Profile);
 
         var stored = new ProxyRoute { Host = "a.example.com", Upstream = "http://h:1", Options = null! };
         ProxySettingsValidator.NormalizeRoute(stored);
         Assert.True(stored.Options.WebSockets && stored.Options.PreserveHost && !stored.Options.Buffering);
         Assert.Null(stored.Options.MaxBodyMb);
         Assert.Null(stored.Options.TimeoutSeconds);
+        Assert.Equal(JellyfinProfile.Recommended, stored.Options.Profile);
     }
 
     /// <summary>

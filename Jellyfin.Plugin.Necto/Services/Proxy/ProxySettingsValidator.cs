@@ -148,7 +148,11 @@ public static partial class ProxySettingsValidator
             errors.Add(Text(language, TranslationKeys.ProxyErrorUpstream, route.Upstream));
         }
 
-        if (!route.IsJellyfin)
+        if (route.IsJellyfin)
+        {
+            CheckEnum(errors, language, Text(language, TranslationKeys.ProxyLabelPreset), route.Options.Profile);
+        }
+        else
         {
             CheckOptions(errors, language, route.Options);
         }
@@ -177,6 +181,8 @@ public static partial class ProxySettingsValidator
         ArgumentNullException.ThrowIfNull(options);
         options.MaxBodyMb = options.MaxBodyMb is { } mb ? Math.Max(0, mb) : null;
         options.TimeoutSeconds = options.TimeoutSeconds is { } s ? Math.Clamp(s, 1, 86400) : null;
+        options.MediaTimeoutMinutes = options.MediaTimeoutMinutes is { } m ? Math.Clamp(m, 1, 1440) : null;
+        options.BackendConnections = options.BackendConnections is { } c ? Math.Clamp(c, 1, 4096) : null;
         var prefix = (options.PathPrefix ?? string.Empty).Trim().Trim('/');
         options.PathPrefix = prefix.Length == 0 ? string.Empty : "/" + prefix;
         options.RequestHeaders = Clean(options.RequestHeaders);
@@ -190,14 +196,13 @@ public static partial class ProxySettingsValidator
 
     private static void CheckOptions(List<string> errors, string? language, RouteOptions options)
     {
-        CheckEnum(errors, language, Text(language, TranslationKeys.ProxyLabelPreset), options.Preset);
         if (options.PathPrefix.Length > 0 && !PathPrefixPattern().IsMatch(options.PathPrefix))
         {
             errors.Add(Text(language, TranslationKeys.ProxyErrorPathPrefix, options.PathPrefix));
         }
 
-        CheckHeaders(errors, language, options.RequestHeaders, RoutePresets.ReservedRequestHeaders);
-        CheckHeaders(errors, language, options.ResponseHeaders, RoutePresets.ReservedResponseHeaders);
+        CheckHeaders(errors, language, options.RequestHeaders, RouteProfiles.ReservedRequestHeaders);
+        CheckHeaders(errors, language, options.ResponseHeaders, RouteProfiles.ReservedResponseHeaders);
     }
 
     private static void CheckHeaders(List<string> errors, string? language, List<HeaderEntry> headers, IReadOnlySet<string> reserved)

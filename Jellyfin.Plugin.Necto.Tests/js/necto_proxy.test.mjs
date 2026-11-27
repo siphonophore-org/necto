@@ -73,33 +73,47 @@ test('the route editor reads an upstream only for another service and shows what
     assert.equal(editor.validate(), 'ErrorEnterHostName');
 });
 
-test('a route to Jellyfin shows its fixed settings, and one to another service a preset that fills in Advanced', async function () {
+test('a route to Jellyfin picks a preset, Custom opens its fields from the last preset, and one to another service shows every setting', async function () {
     var bag = await strings();
     var proxy = await loadScript('necto_proxy.js');
     var editor = proxy.createRouteEditor(ROUTES[0], { shared: bag, status: null, records: [], hostnames: [] });
     var field = function (name) { return editor.element.querySelector('[data-field="' + name + '"]'); };
     var hidden = function (node) { return node.closest('.stolon-hidden') !== null; };
-    var note = editor.element.querySelector('[data-role="jellyfin-preset"]');
+    var summary = editor.element.querySelector('[data-role="profile-summary"]');
+    var pick = function (name) { field('Options.Profile').value = name; field('Options.Profile').dispatchEvent(new globalThis.Event('change')); };
 
-    assert.equal(note.textContent, "Uses Jellyfin's recommended proxy settings.");
-    assert.deepEqual([hidden(note), hidden(field('Options.Preset')), hidden(editor.element.querySelector('[data-section="advanced"]'))], [false, true, true]);
+    assert.deepEqual(Array.prototype.map.call(field('Options.Profile').options, function (o) { return o.value; }), ['Recommended', 'LowMemory', 'RemoteStreaming', 'Custom']);
+    assert.equal(field('Options.Profile').value, 'Recommended');
+    assert.deepEqual([hidden(summary), hidden(field('Options.Jellyfin.MaxBodyMb')), hidden(field('Options.WebSockets'))], [false, true, true]);
+    assert.match(summary.textContent, /Same as Settings/);
+    assert.match(summary.textContent, /360 minutes/);
+
+    pick('LowMemory');
+    assert.match(summary.textContent, /20 MB/);
+    var low = editor.getValue().Options;
+    assert.deepEqual([low.Profile, low.MaxBodyMb, low.TimeoutSeconds, low.MediaTimeoutMinutes, low.BackendConnections, low.WebSockets, low.Buffering, low.PreserveHost],
+        ['LowMemory', 20, 120, 60, 32, true, false, true]);
+
+    pick('Custom');
+    assert.deepEqual([hidden(summary), hidden(field('Options.Jellyfin.MaxBodyMb'))], [true, false]);
+    assert.equal(field('Options.Jellyfin.BackendConnections').value, '32');
+    field('Options.Jellyfin.MediaTimeoutMinutes').value = '90';
+    assert.deepEqual([editor.getValue().Options.Profile, editor.getValue().Options.MediaTimeoutMinutes, editor.getValue().Options.MaxBodyMb], ['Custom', 90, 20]);
 
     field('Target').value = 'other';
     field('Target').dispatchEvent(new globalThis.Event('change'));
     field('Upstream').value = 'http://192.168.1.20:8080';
-    assert.deepEqual([hidden(note), hidden(field('Options.Preset'))], [true, false]);
-    assert.deepEqual(Array.prototype.map.call(field('Options.Preset').options, function (o) { return o.value; }), ['Generic', 'Seerr', 'Ombi', 'Arr', 'QBittorrent', 'HomeAssistant']);
-    field('Options.Preset').value = 'QBittorrent';
-    field('Options.Preset').dispatchEvent(new globalThis.Event('change'));
-    var value = editor.getValue().Options;
-    assert.deepEqual([value.Preset, value.PreserveHost, value.MaxBodyMb, value.TimeoutSeconds, value.WebSockets], ['QBittorrent', false, 50, null, true]);
+    assert.deepEqual([hidden(field('Options.Profile')), hidden(field('Options.WebSockets')), hidden(field('Options.PathPrefix'))], [true, false, false]);
     field('Options.PathPrefix').value = '/qb';
     field('Options.TimeoutSeconds').value = '90';
-    assert.deepEqual([editor.getValue().Options.PathPrefix, editor.getValue().Options.TimeoutSeconds], ['/qb', 90]);
+    field('Options.PreserveHost').checked = false;
+    var value = editor.getValue().Options;
+    assert.deepEqual([value.PathPrefix, value.TimeoutSeconds, value.PreserveHost, value.WebSockets, value.MaxBodyMb], ['/qb', 90, false, true, null]);
     assert.equal(editor.validate(), null);
     var icons = Array.prototype.map.call(editor.element.querySelectorAll('.stolon-collapsible-tile'), function (n) { return n.textContent; });
     assert.equal(new Set(icons).size, icons.length);
-    assert.deepEqual(proxy.presetOptions('HomeAssistant').TimeoutSeconds, 3600);
+    assert.equal(proxy.profileName(2), 'RemoteStreaming');
+    assert.equal(proxy.profileName('Seerr'), 'Recommended');
 });
 
 test('a DDNS name locks the host, and a wildcard takes a subdomain in front of its base', async function () {

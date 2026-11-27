@@ -11,5 +11,5 @@ namespace Jellyfin.Plugin.Necto.Services.Proxy;
 /// <param name="Backend">Where requests go.</param>
 /// <param name="IsJellyfin">Whether it forwards to this Jellyfin, which turns on the Jellyfin side checks.</param>
 /// <param name="LocalOnly">Whether only the local network and trusted networks may reach it.</param>
-/// <param name="Options">How a route to another service forwards, or <c>null</c> for Jellyfin's recommended settings.</param>
+/// <param name="Options">How the route forwards, resolved from its profile for Jellyfin, or <c>null</c> for the settings in Settings.</param>
 public sealed record RuntimeRoute(string Id, string Host, Uri Backend, bool IsJellyfin, bool LocalOnly, RouteOptions? Options = null);

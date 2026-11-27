@@ -26,26 +26,33 @@ Each row shows the route's host name, where it forwards, and **Local only** wher
 * **Forward to** picks **Jellyfin** or **Another service**. **Service address** is the other service's `http` or `https` address and port, such as `http://192.168.1.20:8096`. Paths are forwarded as they come.
 * **Local network only** answers only the local network and **Trusted networks**. The internet gets nothing.
 
-**Forwarding** sets how the route forwards. A route to **Jellyfin** reads "Uses Jellyfin's recommended proxy settings.": WebSockets pass, answers stream without buffering, the forwarding headers and the visitor's host name go to Jellyfin, and media may sit idle for six hours. A route to **Another service** picks a **Preset**, which fills in **Advanced** from the app's own reverse proxy guide. Every field under **Advanced** can then be changed.
+**Forwarding** sets how the route forwards.
 
-* **Pass WebSockets** lets the app hold live connections open. Off, a WebSocket request gets 403.
-* **Buffer answers** holds each answer whole before sending it on. Leave it off for streams.
+A route to **Jellyfin** picks a **Preset**, built on [Jellyfin's reverse proxy guide](https://jellyfin.org/docs/general/post-install/networking/reverse-proxy). Every preset passes WebSockets, streams answers without buffering, and sends the forwarding headers and the visitor's host name to Jellyfin, as the guide's examples do. Under the select, the route lists what its preset sets. **Custom** shows those four values as fields to edit, starting from the preset picked before it. A route saved before presets existed uses **Recommended**.
+
+| Preset | Upload limit | Idle timeout | Media idle timeout | Connections to Jellyfin | For |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Recommended** | Same as Settings | Same as Settings | 360 minutes | 256 | Most servers. The limits in **Settings** are above the guide's 20 MB |
+| **Low memory** | 20 MB | 120 seconds | 60 minutes | 32 | A Raspberry Pi or a small VPS. Fewer connections are held, and idle ones go sooner |
+| **Remote streaming** | 2048 MB | 900 seconds | 720 minutes | 512 | Viewers on slow or distant links, and large uploads |
+| **Custom** | Set | Set | Set | Set | Any other mix |
+
+* **Upload limit (MB)** replaces the limit in **Settings** for this route. Blank keeps the limit in **Settings**, and 0 is no limit.
+* **Idle timeout (seconds)** closes a request Jellyfin stays silent on for this long. Blank keeps the timeout in **Settings**.
+* **Media idle timeout (minutes)** closes a stream a paused player has not read for this long.
+* **Connections to Jellyfin** limits the connections the proxy opens to Jellyfin, for pages and for media each. Requests past it wait for a free connection.
+
+The server's own memory also picks the defaults marked **Auto** in [Settings](#settings), such as fewer open connections below 3 GB.
+
+A route to **Another service** shows its settings directly, and a new one starts with the proxy's own behavior.
+
+* **Pass WebSockets** lets the app hold live connections open. On by default. Off, a WebSocket request gets 403.
+* **Buffer answers** holds each answer whole before sending it on. Off by default. Leave it off for streams.
 * **Upload limit (MB)** replaces the limit in **Settings** for this route. Blank keeps the limit in **Settings**, and 0 is no limit.
 * **Idle timeout (seconds)** replaces the timeout in **Settings** for this route. Blank keeps it.
-* **Send the visitor's host name** passes the name the visitor asked for. Off, the app sees its own address, and `X-Forwarded-Host` still carries the visitor's.
+* **Send the visitor's host name** passes the name the visitor asked for. On by default. Off, the app sees its own address, and `X-Forwarded-Host` still carries the visitor's. Turn it off for an app that refuses any other host, such as qBittorrent.
 * **Path prefix** puts a path in front of every request, such as `/radarr` for an app with a URL base.
 * **Request headers** and **Response headers** set headers on every request to the app and every answer to the visitor. The proxy refuses a header it sets itself, such as `Host`, `X-Forwarded-For`, or `Strict-Transport-Security`.
-
-| Preset | Upload limit | Idle timeout | Host name | For |
-| :--- | :--- | :--- | :--- | :--- |
-| **Any web app** | Settings | Settings | Visitor's | Any other app |
-| **Jellyseerr or Overseerr** | 20 MB | Settings | Visitor's | Jellyseerr, Seerr, Overseerr |
-| **Ombi** | 20 MB | Settings | Visitor's | Ombi |
-| **Radarr, Sonarr, Prowlarr, or Bazarr** | 500 MB | 300 seconds | Visitor's | The *arr apps, for long imports and backup restores |
-| **qBittorrent** | 50 MB | Settings | The app's own | qBittorrent's web UI, which refuses any other host |
-| **Home Assistant** | No limit | 3600 seconds | Visitor's | Home Assistant, which holds one WebSocket open and takes whole backups |
-
-Every preset passes WebSockets and never buffers. Home Assistant also needs this server in its own `trusted_proxies` with `use_x_forwarded_for` on. A route with no saved forwarding settings forwards as **Any web app**.
 
 **Remove** asks first. The route's certificate files are deleted, and the service it forwarded to stays.
 
