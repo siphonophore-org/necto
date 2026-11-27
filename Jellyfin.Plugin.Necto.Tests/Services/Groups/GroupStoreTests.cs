@@ -197,4 +197,26 @@ public class GroupStoreTests
 
         Assert.Empty(_config.Configuration.Groups[0].MemberIds);
     }
+
+    /// <summary>
+    /// Every group change that saves raises Changed once, and a refused one raises nothing.
+    /// True: WireGuard applies a group's peers the moment the group is saved.
+    /// False: a peer a group now allows or refuses keeps its old state until some other change.
+    /// </summary>
+    [Fact]
+    public void Changes_RaiseChanged_OnlyWhenSaved()
+    {
+        var store = Store();
+        var raised = 0;
+        store.Changed += (_, _) => raised++;
+
+        var id = store.Create(new Group { Name = "Family" }).Group!.Id;
+        store.Create(new Group { Name = "family" });
+        store.Update(id, new Group { Name = "Friends" });
+        store.Update(Guid.NewGuid(), new Group { Name = "Other" });
+        store.Delete(id);
+        store.Delete(id);
+
+        Assert.Equal(3, raised);
+    }
 }

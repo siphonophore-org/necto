@@ -88,4 +88,21 @@ public class PeerAccessTests
         Assert.Equal(0L, PeerAccess.OwnerLimit(PermissionMerger.Administrator(user)).Limit);
         Assert.Equal(0L, PeerAccess.OwnerLimit(new EffectivePermissions()).Limit);
     }
+
+    /// <summary>
+    /// Two refusal sets match only with the same peers for the same reasons.
+    /// True: the minute check applies again when a group change refuses or allows a peer.
+    /// False: a peer stays cut off or connected after its owner's groups changed.
+    /// </summary>
+    [Fact]
+    public void SameRefusals_ComparesPeersAndReasons()
+    {
+        var peer = Guid.NewGuid();
+        var notAllowed = new Dictionary<Guid, PeerRefusal> { [peer] = PeerRefusal.NotAllowed };
+
+        Assert.True(PeerAccess.SameRefusals(notAllowed, new Dictionary<Guid, PeerRefusal> { [peer] = PeerRefusal.NotAllowed }));
+        Assert.False(PeerAccess.SameRefusals(notAllowed, new Dictionary<Guid, PeerRefusal> { [peer] = PeerRefusal.OverPeerCount }));
+        Assert.False(PeerAccess.SameRefusals(notAllowed, new Dictionary<Guid, PeerRefusal>()));
+        Assert.False(PeerAccess.SameRefusals(notAllowed, new Dictionary<Guid, PeerRefusal> { [Guid.NewGuid()] = PeerRefusal.NotAllowed }));
+    }
 }

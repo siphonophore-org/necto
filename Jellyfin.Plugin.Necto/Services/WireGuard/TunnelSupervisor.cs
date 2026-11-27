@@ -34,6 +34,7 @@ public sealed class TunnelSupervisor : IDisposable
     private readonly SecretProtector _secrets;
     private readonly IConfigurationStore _store;
     private readonly PermissionService _permissions;
+    private readonly GroupStore _groups;
     private readonly ILogger<TunnelSupervisor> _logger;
     private readonly SemaphoreSlim _applyGate = new(1, 1);
     private readonly Dictionary<string, SidecarProcess> _running = new(StringComparer.Ordinal);
@@ -54,6 +55,7 @@ public sealed class TunnelSupervisor : IDisposable
     /// <param name="secrets">Decrypts and encrypts the stored keys.</param>
     /// <param name="store">Reads and changes the settings.</param>
     /// <param name="permissions">Gives what each peer's owner may have.</param>
+    /// <param name="groups">Tells when a group changed, so the peers it allows apply at once.</param>
     /// <param name="logger">Logs the tunnels.</param>
     public TunnelSupervisor(
         IServerConfigurationManager serverConfig,
@@ -63,6 +65,7 @@ public sealed class TunnelSupervisor : IDisposable
         SecretProtector secrets,
         IConfigurationStore store,
         PermissionService permissions,
+        GroupStore groups,
         ILogger<TunnelSupervisor> logger)
     {
         _serverConfig = serverConfig ?? throw new ArgumentNullException(nameof(serverConfig));
@@ -72,11 +75,12 @@ public sealed class TunnelSupervisor : IDisposable
         _secrets = secrets ?? throw new ArgumentNullException(nameof(secrets));
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _permissions = permissions ?? throw new ArgumentNullException(nameof(permissions));
+        _groups = groups ?? throw new ArgumentNullException(nameof(groups));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
-    /// Starts the tunnels, and follows every later change to the settings and to Jellyfin's network settings.
+    /// Starts the tunnels, and follows every later change to the settings, the groups, and Jellyfin's network settings.
     /// </summary>
     public void Start()
     {
@@ -84,6 +88,9 @@ public sealed class TunnelSupervisor : IDisposable
         {
             plugin.ConfigurationChanged += OnConfigurationChanged;
         }
+
+        // A group save does not raise ConfigurationChanged, so it is followed on its own.
+        _groups.Changed += OnGroupsChanged;
 
         // Jellyfin's own port is the host tunnel's target, so a network change applies again.
         _serverConfig.NamedConfigurationUpdated += OnNamedConfigurationUpdated;
@@ -106,6 +113,7 @@ public sealed class TunnelSupervisor : IDisposable
             plugin.ConfigurationChanged -= OnConfigurationChanged;
         }
 
+        _groups.Changed -= OnGroupsChanged;
         _serverConfig.NamedConfigurationUpdated -= OnNamedConfigurationUpdated;
         if (_limitCheck is not null)
         {
@@ -194,6 +202,8 @@ public sealed class TunnelSupervisor : IDisposable
 
     private void OnConfigurationChanged(object? sender, BasePluginConfiguration e) => Apply();
 
+    private void OnGroupsChanged(object? sender, EventArgs e) => Apply();
+
     private void OnNamedConfigurationUpdated(object? sender, ConfigurationUpdateEventArgs e)
     {
         if (string.Equals(e.Key, "network", StringComparison.OrdinalIgnoreCase))
@@ -202,15 +212,17 @@ public sealed class TunnelSupervisor : IDisposable
         }
     }
 
-    // Applies again when the peers over a limit are not the ones left out, such as when a window ended.
+    // Applies again when the peers over a limit or refused by groups are not the ones left out, such as when a
+    // window ended or a user became an administrator.
     private void CheckLimits()
     {
         var config = _store.Read(c => ConfigurationCopy.Of(c.WireGuard));
         var over = _usage.OverLimit(config, OwnerLimit);
+        var refused = PeerAccess.Refused(config, _permissions.For);
         bool changed;
         lock (_running)
         {
-            changed = !over.SetEquals(_blocked);
+            changed = !over.SetEquals(_blocked) || !PeerAccess.SameRefusals(refused, _refused);
         }
 
         if (changed)

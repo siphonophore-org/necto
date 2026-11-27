@@ -61,6 +61,24 @@ export function countCards(cfg, ends) {
     };
 }
 
+// connectCard
+// The Connect card. It follows the Connect to hosts switch, and reads Failed while any connection's tunnel failed.
+//
+// Inputs
+// t [object]: The strings.
+// cfg [object]: The WireGuard settings.
+// tunnels [object[]]: The running tunnels from WireGuard/Status.
+//
+// Output
+// [object]: A card, or null when Connect is off and there are no connections.
+export function connectCard(t, cfg, tunnels) {
+    if (!cfg.ConnectEnabled && !(cfg.Connections || []).length) return null;
+    var failed = (tunnels || []).some(function (x) { return x.Key !== 'host' && x.State === 'Failed'; });
+    var label = t.tr('WireGuardLabelConnectEnabled');
+    if (!cfg.ConnectEnabled) return { count: t.tr('WireGuardStatusInactive'), label: label, color: 'gray' };
+    return failed ? { count: t.tr('LabelFailed'), label: label, color: 'red' } : { count: t.tr('StateActive'), label: label, color: 'green' };
+}
+
 export default function (view) {
     'use strict';
 
@@ -153,7 +171,8 @@ export default function (view) {
         var host = ends.filter(function (e) { return e.Kind === 'Host'; })[0];
         var cards = [];
         if (w.HostEnabled) cards.push({ count: tunnelStateLabel(t, host ? host.State : 'Stopped'), label: t.tr('LabelServerHost'), color: host && host.State === 'Running' ? 'green' : host && host.State === 'Failed' ? 'red' : 'gray' });
-        if (w.ConnectEnabled || (w.Connections || []).length) cards.push({ count: t.tr(w.ConnectEnabled ? 'StateActive' : 'WireGuardStatusInactive'), label: t.tr('WireGuardLabelConnectEnabled'), color: w.ConnectEnabled ? 'green' : 'gray' });
+        var connect = connectCard(t, w, tunnels);
+        if (connect) cards.push(connect);
         cards.push({ count: counts.peers, label: t.tr('HeaderPeers') });
         cards.push({ count: counts.connections, label: t.tr('HeaderConnections') });
         cards.push({ count: counts.connected, label: t.tr('StateConnected'), color: counts.connected ? 'green' : 'gray' });
@@ -169,6 +188,9 @@ export default function (view) {
         shared.setVisible('btnAddPeer', on && !!w.HostEnabled);
         shared.setVisible('btnAddConnection', on && !!w.ConnectEnabled);
         shared.setVisible('addButtons', on && (!!w.HostEnabled || !!w.ConnectEnabled));
+        var bothOff = on && !w.HostEnabled && !w.ConnectEnabled && !(w.Peers || []).length && !(w.Connections || []).length;
+        $('wireguardBothOff').innerHTML = bothOff ? shared.emptySection(t.tr('WireGuardEmptyBothOff')) : '';
+        shared.setVisible('wireguardBothOff', bothOff);
 
         // A narrow list, such as on a phone, drops each row's tunnel address.
         var narrow = !!(globalThis.matchMedia && globalThis.matchMedia('(max-width: 600px)').matches);

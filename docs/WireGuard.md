@@ -31,7 +31,7 @@ The line under the heading says which wireguard-go the server has, such as "Vers
 | **Host peers** | Lets peers reach Jellyfin over one UDP port | Off |
 | **Public address** | The name or address peers connect to, such as `vpn.example.com`, with an optional port | Blank |
 | **Listen port** | The UDP port peers connect to. Forward it on your router | 51820 |
-| **Tunnel subnet** | The addresses the host gives itself and its peers. It must not overlap your network | `10.66.0.0/24` |
+| **Tunnel subnet** | The addresses the host gives itself and its peers. It must not overlap your network. A subnet that leaves a peer's address outside it is refused | `10.66.0.0/24` |
 
 ### Security
 
@@ -74,9 +74,9 @@ A connection over its data limit stops until its period starts over.
 
 ## The WireGuard Tool
 
-While WireGuard is off, the tool reads "WireGuard is off. Turn it on in Settings to add peers." While wireguard-go is not downloaded, a warning says so.
+While WireGuard is off, the tool reads "WireGuard is off. Turn it on in Settings to add peers." While **Host peers** and **Connect to hosts** are both off and there is nothing to list, it reads "Turn on Host peers or Connect to hosts in Settings to add peers." While wireguard-go is not downloaded, a warning says so.
 
-The cards at the top show the host's state and whether **Connect to hosts** is active, and count the peers, the connections, how many are connected, and how many are over their data limit. **Left out** counts the peers their owners' groups leave out, while there are any. When the host cannot start, the reason shows under the cards. **Add peer** shows while the host is on, and **Add connection** while connecting is on.
+The cards at the top show the host's state and whether **Connect to hosts** is active, or **Failed** while any connection failed, and count the peers, the connections, how many are connected, and how many are over their data limit. **Left out** counts the peers their owners' groups leave out, while there are any. When the host cannot start, the reason shows under the cards. **Add peer** shows while the host is on, and **Add connection** while connecting is on.
 
 ### Peers
 
@@ -117,7 +117,7 @@ Who may have peers is set on groups, in the **WireGuard** section of each group 
 | **Data per member (GB)** | How much data all of a member's peers may move together in the period. 0 is no limit |
 | **Period** | The window **Data per member (GB)** counts over |
 
-A member of several groups gets the most generous of the groups that allow peers. Administrators add peers for any user. A peer past its owner's count stays stored and shows **Over peer count** until the owner has room or a group gives more.
+A member of several groups gets the most generous of the groups that allow peers. Saving or deleting a group applies its peers to the tunnel at once, and any other change, such as a user becoming an administrator, applies within a minute. Administrators add peers for any user. A peer past its owner's count stays stored and shows **Over peer count** until the owner has room or a group gives more.
 
 ## Troubleshooting
 

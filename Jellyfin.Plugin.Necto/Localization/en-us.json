@@ -2885,6 +2885,7 @@
   "WireGuardDnsNameHelp": "Resolves to the host's own tunnel address.",
   "WireGuardDnsUpstreamsHelp": "DNS servers for every other name. Separate with commas.",
   "WireGuardDownloading": "Downloading…",
+  "WireGuardEmptyBothOff": "Turn on Host peers or Connect to hosts in Settings to add peers.",
   "WireGuardEmptyConnections": "No connections yet.",
   "WireGuardEmptyOff": "WireGuard is off. Turn it on in Settings to add peers.",
   "WireGuardEmptyPeers": "No peers yet.",
