@@ -6,6 +6,8 @@
 
 **Settings > Scripts** holds the settings, with **Save** at the end of the section.
 
+![Scripts settings](screenshots/settings/Scripts.png)
+
 * **Runs**
     * **Runs at once** is a slider that sets how many scripts may run at the same time. Further runs wait their turn.
     * **Default command timeout** is a duration in minutes and seconds. A **Run command** step that sets no timeout of its own is stopped after this long.
@@ -16,6 +18,10 @@
 
 
 The counts at the top show how many scripts there are, and how many are enabled and disabled. Select a script from the list above **New**, **Duplicate**, **Delete**, **Export**, and **Import** to edit it.
+
+| Scripts | Scripts on a phone |
+| :---: | :---: |
+| ![Scripts](screenshots/Scripts.png) | ![Scripts on a phone](screenshots/Scripts%20Phone.png) |
 
 Each script has a **Name** and an optional **Description** saying what it is for. **New** asks for both and starts from a blank script or a template, such as stopping playback paused for 30 minutes, limiting the server to 3 transcodes, asking "Still watching?" after 3 hours, posting new items to Discord, or scanning every library nightly. **Duplicate** adds a disabled copy of the open script, without its secrets. **Delete** asks first, then deletes the open script and saves that at once. Unsaved edits to other scripts stay unsaved.
 
@@ -206,6 +212,8 @@ Genre, Tag, and Studio match when any of the item's values does. A field the tri
 
 Steps run in order. Drag a step, or use its arrows, to reorder it, and open it to edit.
 
+![Script steps](screenshots/Script%20Steps.png)
+
 
 | Group | Step | Does | Needs |
 |---|---|---|---|
@@ -325,6 +333,8 @@ A test of a script that runs for each item or user uses one sample item or user.
 ## Troubleshooting
 
 **Troubleshooting > Scripts** holds the run history.
+
+![Scripts troubleshooting](screenshots/troubleshooting/Scripts.png)
 
 ### History
 

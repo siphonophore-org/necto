@@ -2,6 +2,10 @@
 
 **Dashboard** is Necto's home. It shows how each tool that is on stands, where the proxy's visitors and the WireGuard tunnels connect from, the address to share, and what Necto's tools did last.
 
+| Dashboard | Dashboard on a phone |
+| :---: | :---: |
+| ![Dashboard](screenshots/Dashboard.png) | ![Dashboard on a phone](screenshots/Dashboard%20Phone.png) |
+
 ## Cards
 
 A status card sums up each tool that is on, in sidebar order. Select a card to open its tool. **Issues** has a card only with **Enable issues** on, and **Proxy** and **WireGuard** only while each is on. A card whose tool could not be read shows "Error" and "Could not read this tool".

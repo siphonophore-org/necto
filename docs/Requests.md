@@ -15,6 +15,10 @@ Without Radarr or Sonarr, approved requests are still tracked, and turn availabl
 
 The request page is at `https://jellyfin.example.com/requests/`. It looks and works like the installed web client, with the same header, library buttons, user menu, cards, and details pages, since it loads the web client's own stylesheets. It uses the viewer's Jellyfin session from the same browser, and a viewer who is not signed in signs in on the page itself, with their user and password or with **Quick Connect**.
 
+| Request page | Request page on a phone |
+| :---: | :---: |
+| ![Request page](screenshots/Requests%20Page.png) | ![Request page on a phone](screenshots/Requests%20Page%20Phone.png) |
+
 * With nothing typed, it shows rows. **My requests**, then **Requests** with everyone else's for a viewer who may see them, then **Recently Added**, **Recommended for you**, the trending, upcoming, and popular rows from TMDb, and the home rows set in **Settings**.
 * Search checks the library first, then TMDb, in **Movies**, **Shows**, and **People** rows. Search `tmdb:603`, `imdb:tt0133093`, or `tvdb:81189` to find a title by its id.
 * A title's page has its genres, studios, and networks as links, **More Like This**, its seasons with their episodes, a trailer, and its collection. A collection's page has **Request all**.
@@ -35,6 +39,12 @@ While a request waits, its requester can change its seasons, profile, and note, 
 
 **Requests** in the Necto sidebar is the list of every request.
 
+| Requests | Requests on a phone |
+| :---: | :---: |
+| ![Requests](screenshots/Requests.png) | ![Requests on a phone](screenshots/Requests%20Phone.png) |
+
+![Request details](screenshots/Request%20Detail.png)
+
 * Cards count the requests by status, **Open** first.
 * Each row shows the poster, the title, its requester and when, how many joined it, and its status with any download progress.
 * **Search** matches titles, requesters, and notes. The status filter and the requester filter are kept for the next visit.
@@ -46,6 +56,8 @@ Select a row to open the request in a sidecar, with **Approve** to the profile p
 ## Settings
 
 **Settings > Requests** holds every setting of the tool. Who may request, and how much, is set on groups, see [Permissions](#permissions).
+
+![Requests settings](screenshots/settings/Requests.png)
 
 ### Rules
 
@@ -167,6 +179,8 @@ Requests also turn available as soon as their titles are scanned in.
 ## Troubleshooting
 
 **Troubleshooting > Requests** runs each scheduled task now, and **Refresh statuses now** reads every open request's progress from Radarr and Sonarr at once.
+
+![Requests troubleshooting](screenshots/troubleshooting/Requests.png)
 
 | Reason | What to do |
 | :--- | :--- |

@@ -6,6 +6,12 @@ Notifications sends every event a Necto tool reports to the people and channels 
 
 **Notifications** lists every channel, each with **Test**, which sends the test event to that channel and shows what happened. **Channel settings** opens **Settings > Notifications**, where the channels are set.
 
+| Notifications | Notifications on a phone |
+| :---: | :---: |
+| ![Notifications](screenshots/Notifications.png) | ![Notifications on a phone](screenshots/Notifications%20Phone.png) |
+
+![Channel editor](screenshots/Channel%20Editor.png)
+
 | Channel | Sends to | Events |
 | :--- | :--- | :--- |
 | **Browser notifications** | The browsers a user turned notifications on in, from a user page | The events the user's groups give them, when a group turns this channel on |
@@ -32,6 +38,8 @@ A test of **Browser notifications**, **Jellyfin messages**, or **Administrators*
 **Settings > Notifications** holds the settings. It saves through its own route, so no stored address, header, or password reaches the page.
 
 The SMTP password, the VAPID private key, and each channel's address, headers, and email addresses live encrypted in their own file, `Jellyfin.Plugin.Necto.Notifications.Secrets.json`, beside the configuration and readable by Jellyfin's account alone. The plugin configuration Jellyfin hands out holds none of them, and saving another page never changes them.
+
+![Notifications settings](screenshots/settings/Notifications.png)
 
 ### User Channels
 
@@ -185,6 +193,8 @@ A test checks that every key a tool sends is in a list, so no event is left out 
 ## Troubleshooting
 
 **Troubleshooting > Notifications** holds the tests and repairs.
+
+![Notifications troubleshooting](screenshots/troubleshooting/Notifications.png)
 
 * **Send a test to me** sends the test to your browsers and your Jellyfin apps.
 * **Send log** lists the latest 200 sends, newest first, with what happened. It starts empty when the server starts. **Refresh** reads it again, and **Clear log** empties it.

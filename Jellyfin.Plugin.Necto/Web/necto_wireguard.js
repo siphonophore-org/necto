@@ -164,6 +164,12 @@ export default function (view) {
         var on = !!w.Enabled;
         shared.setVisible('wireguardOff', !on);
         $('wireguardOff').innerHTML = on ? '' : shared.emptySection(t.tr('WireGuardEmptyOff'));
+        var noSidecar = $('wireguardNoSidecar');
+        if (!noSidecar.querySelector('.stolon-banner')) {
+            var warning = noSidecar.textContent.trim();
+            noSidecar.textContent = '';
+            noSidecar.appendChild(nectoModule.createBanner({ kind: 'warn', text: warning, dismissible: false }).element);
+        }
         shared.setVisible('wireguardNoSidecar', on && sidecar && !sidecar.Installed);
         shared.setVisible('wireguardBody', on || (w.Peers || []).length > 0 || (w.Connections || []).length > 0);
 

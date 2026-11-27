@@ -18,6 +18,8 @@ The sidecar is not part of the plugin. Turning on **Enable WireGuard** asks to d
 
 **Settings > WireGuard** holds the settings, with **Save** at the end of the section.
 
+![WireGuard settings](screenshots/settings/WireGuard.png)
+
 * **Enable WireGuard** runs WireGuard. Turning it on asks to download wireguard-go when the server has none, and stays off when the download is declined or fails.
 
 ### wireguard-go
@@ -76,11 +78,17 @@ A connection over its data limit stops until its period starts over.
 
 While WireGuard is off, the tool reads "WireGuard is off. Turn it on in Settings to add peers." While **Host peers** and **Connect to hosts** are both off and there is nothing to list, it reads "Turn on Host peers or Connect to hosts in Settings to add peers." While wireguard-go is not downloaded, a warning says so.
 
+| WireGuard | WireGuard on a phone |
+| :---: | :---: |
+| ![WireGuard](screenshots/WireGuard.png) | ![WireGuard on a phone](screenshots/WireGuard%20Phone.png) |
+
 The cards at the top show the host's state and whether **Connect to hosts** is active, or **Failed** while any connection failed, and count the peers, the connections, how many are connected, and how many are over their data limit. **Left out** counts the peers their owners' groups leave out, while there are any. When the host cannot start, the reason shows under the cards. **Add peer** shows while the host is on, and **Add connection** while connecting is on.
 
 ### Peers
 
 Each peer shows its owner, with tags for its state, address, where it connects from, and **Router** when it has child networks. On a phone the address is left out. A usage meter shows its data out of its data limit. The state is **Connected**, **Offline**, **Disabled**, **Over limit**, **Not allowed** when no group of its owner allows peers, or **Over peer count** when its owner has more peers than their groups give.
+
+![Peer editor](screenshots/Peer%20Editor.png)
 
 Select a peer to open its details in a sidecar, with its status, owner, address, child networks, last handshake, source, usage, and speed limit. The sidecar shows the peer's config file and a QR code of it. **Download** saves the config file, and **Edit** opens the editor.
 
@@ -122,6 +130,8 @@ A member of several groups gets the most generous of the groups that allow peers
 ## Troubleshooting
 
 **Troubleshooting > WireGuard** holds the tunnels and the peers by user.
+
+![WireGuard troubleshooting](screenshots/troubleshooting/WireGuard.png)
 
 * **Tunnels** lists the host and each connection that runs, with its state and its last error or how many peers are connected.
 * **Restart tunnels** stops every tunnel and starts them again. Peers reconnect on their own.

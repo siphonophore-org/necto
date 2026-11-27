@@ -365,8 +365,8 @@ export default function (view) {
         var t = shared.t;
         var notices = view.querySelector('#ddnsNotices');
         notices.textContent = '';
-        if (data.SecretsPlaintext) notices.appendChild(el('div', { class: 'stolon-warn', text: t.tr('DdnsKeyStoreUnavailable') }));
-        if (data.DetectionMessage) notices.appendChild(el('div', { class: 'stolon-warn', text: data.DetectionMessage }));
+        if (data.SecretsPlaintext) notices.appendChild(nectoModule.createBanner({ kind: 'warn', text: t.tr('DdnsKeyStoreUnavailable'), dismissible: false }).element);
+        if (data.DetectionMessage) notices.appendChild(nectoModule.createBanner({ kind: 'warn', text: data.DetectionMessage, dismissible: false }).element);
         var items = [
             { label: t.tr('DdnsLabelPublicIpv4'), value: data.DetectedIPv4 || t.tr('TextNotFound') },
             { label: t.tr('DdnsLabelPublicIpv6'), value: data.DetectedIPv6 || t.tr('TextNotFound') }

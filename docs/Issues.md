@@ -45,6 +45,12 @@ Each issue keeps the item's file as it was reported, with its path, size, and th
 
 **Issues** in the Necto sidebar lists every issue, most recently changed first.
 
+| Issues | Issues on a phone |
+| :---: | :---: |
+| ![Issues](screenshots/Issues.png) | ![Issues on a phone](screenshots/Issues%20Phone.png) |
+
+![Issue details](screenshots/Issue%20Detail.png)
+
 * Cards count the **Open**, **Reported**, **Confirmed**, **Resolved**, and **Declined** issues.
 * Each row shows the item and its poster, what the reporters say is wrong, who reported it and when it last changed, its state, and **File changed** when the file changed.
 * **Search** matches the item, its show, and the reporters' names. The state filter and the type filter are kept for the next visit.
@@ -56,6 +62,8 @@ While **Enable issues** is off, **Issues** leaves the sidebar, and opened by its
 ## Settings
 
 **Settings > Issues** holds the tool's settings. Who may report and manage is set on groups.
+
+![Issues settings](screenshots/settings/Issues.png)
 
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
@@ -89,6 +97,8 @@ A webhook gets the issue's id, state, type, its item's id, and its TMDb, TVDB, a
 ## Troubleshooting
 
 **Troubleshooting > Issues** runs **Clean expired requests** now, which clears closed issues past **Keep closed issues (days)** and marks open issues whose file changed.
+
+![Issues troubleshooting](screenshots/troubleshooting/Issues.png)
 
 | Reason | What to do |
 | :--- | :--- |
