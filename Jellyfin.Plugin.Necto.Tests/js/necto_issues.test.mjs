@@ -111,7 +111,7 @@ test('an issue is named as the server names it, with what the reporters say is w
     assert.equal(mod.titleOf({ ItemType: 'Movie', Title: 'Dune', Year: 2021 }, t), 'Dune (2021)');
     assert.equal(mod.titleOf({ ItemType: 'Movie', Title: 'Dune (2021)', Year: 2021 }, t), 'Dune (2021)');
     assert.equal(mod.subline(issue(), t), 'The Long Night · Audio, Subtitles');
-    assert.deepEqual(mod.noteItems(issue().Notes).map(function (n) { return [n.title, n.body]; }), [['viewer', 'Sound drops out.']]);
+    assert.deepEqual(mod.noteItems(issue().Notes).map(function (n) { return [n.title, n.body, n.icon]; }), [['viewer', 'Sound drops out.', 'person']]);
 });
 
 test('an open issue offers Decline, Confirm, and Resolve, and a closed one Reopen', async function () {

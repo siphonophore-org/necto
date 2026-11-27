@@ -265,8 +265,11 @@ export default function (view) {
 
         var hostTunnel = tunnels.filter(function (x) { return x.Key === 'host'; })[0];
         var error = hostTunnel && hostTunnel.State !== 'Running' ? hostTunnel.Error : (on && w.HostEnabled && !hostTunnel && sidecar && sidecar.Installed ? t.tr('WireGuardErrorNoTunnel') : '');
-        $('hostError').textContent = error || '';
-        shared.setVisible('hostError', !!error);
+        // The reason the host cannot run shows as an error banner under the cards.
+        var hostError = $('hostError');
+        hostError.textContent = '';
+        if (error) hostError.appendChild(nectoModule.createBanner({ kind: 'error', text: error, dismissible: false }).element);
+        shared.setVisible(hostError, !!error);
 
         var bothOff = on && !w.HostEnabled && !w.ConnectEnabled && !(w.Peers || []).length && !(w.Connections || []).length;
         $('wireguardBothOff').innerHTML = bothOff ? shared.emptySection(t.tr('WireGuardEmptyBothOff')) : '';
