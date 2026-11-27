@@ -75,9 +75,11 @@ def sign_in(api_class, base, state, name):
 
 
 def enable_tools(api):
-    """Issues, the proxy and WireGuard are off until turned on."""
+    """Issues, Invites, Pages, the proxy and WireGuard are off until turned on."""
     cfg = config(api)
     cfg['Issues']['Enabled'] = True
+    cfg['InviteSettings']['Enabled'] = True
+    cfg['CustomPages']['Enabled'] = True
     cfg['WireGuard']['Enabled'] = True
     cfg['WireGuard']['HostEnabled'] = True
     cfg['WireGuard']['PublicEndpoint'] = 'vpn.example.com'
@@ -102,7 +104,7 @@ def groups(api, ids):
             {'MayRequest': True, 'Movies': True, 'Series': True, 'Unreleased': True, 'AutoApproveMovies': True, 'AutoApproveSeries': False,
              'MaxOpenRequests': 20, 'MovieQuota': 0, 'SeriesQuota': 0, 'MaxSeasons': 0, 'MaySeeOthers': True, 'MaySeeRequesters': True, 'MayManage': False},
             {'MayReport': True, 'Limit': 10, 'MayManage': True},
-            {'MayCreate': True, 'MaxInvites': 3, 'AnyGroup': False, 'TargetGroupIds': []},
+            {'MayCreate': True, 'MaxInvites': 3, 'AnyGroup': True, 'TargetGroupIds': []},
             {'MayHavePeers': True, 'MaxPeers': 3, 'DataLimit': 0, 'DataPeriod': 'Month'}, pages=True)),
         ('Friends', ['riley', 'casey'], perms(
             {'MayRequest': True, 'Movies': True, 'Series': True, 'Unreleased': False, 'AutoApproveMovies': False, 'AutoApproveSeries': False,
@@ -140,6 +142,14 @@ def invites(api, made):
     for plan in plans:
         if plan['Label'] not in have:
             api.post('/Invites', plan)
+
+
+def member_invites(api_class, api, state, made):
+    """One invite jordan made on the members' page, for its shot."""
+    member = sign_in(api_class, api.base, state, 'jordan')
+    mine = member.get('/Invites/Mine') or {}
+    if not any(i.get('Label') == 'Game night' for i in mine.get('Invites') or []):
+        member.post('/Invites/Mine', {'Label': 'Game night', 'GroupId': made['Friends']['Id'], 'MaxUses': 2, 'ExpiresAt': None, 'Resources': []})
 
 
 def ddns(api):
@@ -274,6 +284,7 @@ def run(api, state, media):
     made = groups(api, ids)
     state['groups'] = {k: v['Id'] for k, v in made.items()}
     invites(api, made)
+    member_invites(type(api), api, state, made)
     state['ddnsRecords'] = ddns(api)
     proxy(api)
     wireguard(api, ids)

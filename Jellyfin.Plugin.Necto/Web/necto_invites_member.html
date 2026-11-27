@@ -1,48 +1,53 @@
 <!-- necto_invites_member.html -->
-<!-- The page at /invites where a signed in member makes and shares invites, as their groups allow, served by HostedPage. -->
+<!-- The page at /invites where a signed in member makes and shares invites, as their groups allow, served by HostedPage -->
+<!-- in the web client's signed in shell. Its markup is the web client's user settings pages (src/controllers/user). -->
+<div class="padded-left padded-right padded-bottom-page padded-top">
+<div class="readOnlyContent margin-auto-x">
 
 <!-- Invites -->
-<!-- The member's own invites, and a form for a new one. -->
-<section class="stolon-user-page-card" data-stolon-view="invites">
-    <h1 class="stolon-user-page-title" data-str="InvitesMemberTitle">Your invites</h1>
-    <p class="stolon-user-page-lead" id="memberLead" data-str="InvitesMemberLead">Share a link so someone can make their own account on this server.</p>
-    <div id="memberMessage" class="stolon-user-page-message" hidden></div>
-    <div id="memberList"></div>
-</section>
+<!-- The member's own invites, each a row of the web client's paper list. -->
+<div class="verticalSection verticalSection-extrabottompadding">
+    <h2 class="sectionTitle" data-str="InvitesMemberTitle">Your invites</h2>
+    <div class="fieldDescription" id="memberLead" data-str="InvitesMemberLead">Share a link so someone can make their own account on this server.</div>
+    <div class="paperList" id="memberList" hidden></div>
+    <div class="secondaryText" id="memberEmpty" data-str="InvitesMemberEmpty" hidden>No invites yet.</div>
+</div>
 
 <!-- New invite -->
-<section class="stolon-user-page-card" data-role="new-invite" id="newInvite" hidden>
-    <h2 class="stolon-user-page-subtitle" data-str="InvitesMemberNew">New invite</h2>
-    <form class="stolon-user-page-form" id="newInviteForm" novalidate>
-        <div class="stolon-user-page-field">
-            <label for="inviteLabel" data-str="LabelName">Name</label>
-            <input id="inviteLabel" type="text" />
-            <p class="stolon-user-page-hint" data-str="InvitesNameHelp">Only you and administrators see it.</p>
-        </div>
-        <div class="stolon-user-page-field">
-            <label for="inviteGroup" data-str="LabelGroup">Group</label>
-            <select id="inviteGroup"></select>
-        </div>
-        <div class="stolon-user-page-field">
-            <label for="inviteUses" data-str="InvitesLabelMaxUses">Accounts it may make</label>
-            <input id="inviteUses" type="number" min="0" value="1" />
-            <p class="stolon-user-page-hint" data-str="HelpZeroNoLimit">0 is no limit.</p>
-        </div>
-        <div class="stolon-user-page-field">
-            <label for="inviteExpiry" data-str="LabelExpiryDate">Expiry date</label>
-            <input id="inviteExpiry" type="date" />
-            <p class="stolon-user-page-hint" data-str="InvitesExpiryHelp">Leave blank to keep it until it is used up.</p>
-        </div>
-        <div class="stolon-user-page-actions">
-            <button class="raised stolon-button stolon-primary stolon-large stolon-fill" type="submit" id="createInvite" data-str="InvitesButtonCreate">Create invite</button>
-        </div>
-    </form>
-</section>
+<!-- A settings form, shown while the member's groups allow invites. -->
+<form class="verticalSection verticalSection-extrabottompadding" id="newInviteForm" novalidate hidden>
+    <h2 class="sectionTitle" data-str="InvitesMemberNew">New invite</h2>
+    <div class="inputContainer">
+        <label class="inputLabel inputLabelUnfocused" for="inviteLabel" data-str="LabelName">Name</label>
+        <input is="emby-input" class="emby-input" id="inviteLabel" type="text" maxlength="100" />
+        <div class="fieldDescription" data-str="InvitesNameHelp">Only you and administrators see it.</div>
+    </div>
+    <div class="selectContainer">
+        <label class="selectLabel" for="inviteGroup" data-str="LabelGroup">Group</label>
+        <select is="emby-select" class="emby-select emby-select-withcolor" id="inviteGroup"></select>
+        <div class="selectArrowContainer"><span class="selectArrow material-icons keyboard_arrow_down" aria-hidden="true"></span></div>
+    </div>
+    <div class="inputContainer">
+        <label class="inputLabel inputLabelUnfocused" for="inviteUses" data-str="InvitesLabelMaxUses">Accounts it may make</label>
+        <input is="emby-input" class="emby-input" id="inviteUses" type="number" min="0" value="1" />
+        <div class="fieldDescription" data-str="HelpZeroNoLimit">0 is no limit.</div>
+    </div>
+    <div class="inputContainer">
+        <label class="inputLabel inputLabelUnfocused" for="inviteExpiry" data-str="LabelExpiryDate">Expiry date</label>
+        <input is="emby-input" class="emby-input" id="inviteExpiry" type="date" />
+        <div class="fieldDescription" data-str="InvitesExpiryAdminHelp">Stops the link on this day. Leave blank to keep it.</div>
+    </div>
+    <button is="emby-button" type="submit" class="raised button-submit block emby-button" id="createInvite"><span data-str="InvitesButtonAdd">Add invite</span></button>
+</form>
 
 <!-- Notifications -->
-<!-- The browser notification switch every user page shares. -->
-<section class="stolon-user-page-card" id="pushCard">
-    <h2 class="stolon-user-page-subtitle" data-str="LabelBrowserNotifications">Browser notifications</h2>
-</section>
+<!-- The browser notification switch every user page shares, hidden while the server offers none. -->
+<div class="verticalSection verticalSection-extrabottompadding" id="pushSection" hidden>
+    <h2 class="sectionTitle" data-str="LabelBrowserNotifications">Browser notifications</h2>
+    <div id="pushRow"></div>
+</div>
+
+</div>
+</div>
 
 <script type="module" src="web/configurationpage?name=necto_invites_member.js"></script>

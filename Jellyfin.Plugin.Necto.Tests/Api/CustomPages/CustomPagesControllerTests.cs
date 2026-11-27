@@ -15,6 +15,7 @@ using MediaBrowser.Controller.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Siphonophore.Stolon;
 using Xunit;
 
 namespace Jellyfin.Plugin.Necto.Tests.Api.CustomPages;
@@ -86,31 +87,52 @@ public class CustomPagesControllerTests
     }
 
     /// <summary>
-    /// The anonymous path and the auth shell must carry byte-identical policies. A srcdoc frame inherits
-    /// its embedder's policy, so any divergence makes the same page behave differently by tier.
+    /// Author content runs under one policy on every path. A srcdoc frame inherits its embedder's policy, and the page
+    /// the loading screen writes in keeps the screen's header and adds its own meta policy.
+    /// True: the screen's header with the page's meta policy holds every directive the anonymous path sends.
+    /// False: the same page behaves differently by tier.
     /// </summary>
     [Fact]
-    public async Task Csp_IsIdenticalForAnonymousAndProtectedPaths()
+    public async Task Csp_IsTheSameForAuthorContentOnEveryPath()
     {
         var (anonController, anonPages) = Create();
         anonPages.Pages["a"] = Page(PageVisibility.Anonymous, "a");
-        anonPages.RenderHtml = "<html></html>";
         anonController.Get("a");
 
         var (shellController, shellPages) = Create();
         shellPages.Pages["b"] = Page(PageVisibility.User, "b");
-        shellPages.ShellHtml = "<html></html>";
         shellController.Get("b");
 
         var (userController, userPages) = Create(Guid.NewGuid(), admin: true);
         userPages.Pages["c"] = Page(PageVisibility.User, "c");
-        userPages.RenderHtml = "<html></html>";
         await userController.UserContent("c");
 
         var anonCsp = anonController.Response.Headers["Content-Security-Policy"].ToString();
-        Assert.Equal(anonCsp, shellController.Response.Headers["Content-Security-Policy"].ToString());
+        var screenCsp = shellController.Response.Headers["Content-Security-Policy"].ToString();
+        var written = Directives(screenCsp + "; object-src 'none'; base-uri 'none'");
+        Assert.Equal(Directives(anonCsp), written);
         Assert.Equal(anonCsp, userController.Response.Headers["Content-Security-Policy"].ToString());
     }
+
+    /// <summary>
+    /// The web client screens leave base-uri open, since their frame sets its base address to the server root.
+    /// True: the screens load the web client's stylesheets and Stolon's script.
+    /// False: the loading and not found screens show unstyled and never load the page.
+    /// </summary>
+    [Fact]
+    public void Csp_LetsTheScreensSetTheirBase()
+    {
+        var (controller, pages) = Create();
+        pages.Pages["p"] = Page(PageVisibility.User);
+
+        controller.Get("p");
+
+        Assert.DoesNotContain("base-uri", controller.Response.Headers["Content-Security-Policy"].ToString(), StringComparison.Ordinal);
+        Assert.Contains("frame-ancestors 'self'", controller.Response.Headers["Content-Security-Policy"].ToString(), StringComparison.Ordinal);
+    }
+
+    private static string[] Directives(string csp)
+        => csp.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct().OrderBy(d => d, StringComparer.Ordinal).ToArray();
 
     [Fact]
     public void Csp_DoesNotRestrictFormSubmission()
@@ -167,24 +189,62 @@ public class CustomPagesControllerTests
                 
         var result = controller.Get("nope");
 
-        Assert.Equal(StatusCodes.Status404NotFound, controller.Response.StatusCode);
+        Assert.Equal(StatusCodes.Status404NotFound, result.StatusCode);
         Assert.Equal("text/html; charset=utf-8", result.ContentType);
+        Assert.Contains("stolon-not-found", result.Content, StringComparison.Ordinal);
         Assert.False(string.IsNullOrEmpty(controller.Response.Headers["Content-Security-Policy"]));
+        Assert.Equal("SAMEORIGIN", controller.Response.Headers["X-Frame-Options"]);
+    }
+
+    /// <summary>
+    /// An Anyone page gets the web client's content style.
+    /// True: a page with no CSS of its own reads in the web client's look.
+    /// False: the author's page shows black serif text on the dark background.
+    /// </summary>
+    [Fact]
+    public void Get_AnonymousPage_RendersWithTheWebClientContentStyle()
+    {
+        var (controller, pages) = Create();
+        pages.Pages["p"] = Page(PageVisibility.Anonymous);
+
+        controller.Get("p");
+
+        Assert.Contains("stolon-web-content", pages.LastContentStyle, StringComparison.Ordinal);
     }
 
     [Theory]
     [InlineData(PageVisibility.User)]
     [InlineData(PageVisibility.Admin)]
-    public void Get_ProtectedPage_ServesShellRatherThanContent(PageVisibility visibility)
+    public void Get_ProtectedPage_ServesLoadingScreenRatherThanContent(PageVisibility visibility)
     {
         var (controller, pages) = Create();
         pages.Pages["p"] = Page(visibility);
-        pages.ShellHtml = "<html>shell</html>";
+        pages.Pages["p"].Title = "Family & friends";
 
         var result = controller.Get("p");
 
-        Assert.Equal("<html>shell</html>", result.Content);
+        Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
+        Assert.Contains("data-slug=\"p\"", result.Content, StringComparison.Ordinal);
+        Assert.Contains("necto_pages_loader.js", result.Content, StringComparison.Ordinal);
+        Assert.Contains("<title>Family &amp; friends</title>", result.Content, StringComparison.Ordinal);
         Assert.Equal(0, pages.Renders);
+    }
+
+    /// <summary>
+    /// The loading screen is the web client's signed out frame named after the page, and an untitled page keeps the
+    /// server's name.
+    /// True: the tab shows the page's title from the start, and the frame never follows a sign-in.
+    /// False: the tab reads Loading, or the frame keeps working after the page is written over it.
+    /// </summary>
+    [Fact]
+    public void LoadingPage_IsTheSignedOutFrameNamedAfterThePage()
+    {
+        var named = CustomPagesController.LoadingPage("Family");
+        var untitled = CustomPagesController.LoadingPage(" ");
+
+        Assert.Equal(HostedPageFrame.WebClientSignedOut, named.Frame);
+        Assert.Equal("Family", named.Title);
+        Assert.Null(untitled.Title);
     }
 
     [Fact]
@@ -196,7 +256,7 @@ public class CustomPagesControllerTests
 
         controller.Get("p");
 
-        Assert.Equal(new[] { ("p", PageVisibility.User, (string?)"de-de") }, pages.Shells);
+        Assert.Equal(new[] { ("p", PageVisibility.User, (string?)"de-de") }, pages.Loaders);
     }
 
     [Fact]
@@ -209,7 +269,7 @@ public class CustomPagesControllerTests
 
         controller.Get("p");
 
-        Assert.Equal(new[] { ("p", PageVisibility.User, (string?)"de") }, pages.Shells);
+        Assert.Equal(new[] { ("p", PageVisibility.User, (string?)"de") }, pages.Loaders);
     }
 
     // MARK: Tier gating on the content endpoints

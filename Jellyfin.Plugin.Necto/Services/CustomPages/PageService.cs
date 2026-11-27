@@ -85,18 +85,24 @@ public sealed partial class PageService : IPageService
     /// or storage, unless the page opts out.
     /// </summary>
     /// <remarks>
-    /// The author's markup only ever appears HTML encoded inside the frame's srcdoc, for every page. The sign in shell
+    /// The author's markup only ever appears HTML encoded inside the frame's srcdoc, for every page. The loading screen
     /// writes this output into a document on the Jellyfin origin, so live author markup there would run with the
     /// viewer's session. An unsandboxed page drops the sandbox attribute outright, since a frame with both
     /// allow-same-origin and allow-scripts can remove its own sandbox anyway.
     /// </remarks>
     /// <param name="page">The page.</param>
+    /// <param name="contentStyle">A style block that goes first in the page's head, so the author's own styles win.</param>
     /// <returns>The whole document to serve.</returns>
-    public string Render(CustomPage page)
+    public string Render(CustomPage page, string contentStyle = "")
     {
         ArgumentNullException.ThrowIfNull(page);
 
         var inner = BuildInnerDocument(page);
+        if (!string.IsNullOrEmpty(contentStyle))
+        {
+            inner = InsertPrelude(inner, contentStyle);
+        }
+
         if (page.ApiRoutes is { Count: > 0 })
         {
             inner = InjectServerFetch(inner, page.Slug);
@@ -179,39 +185,15 @@ public sealed partial class PageService : IPageService
     }
 
     /// <inheritdoc />
-    public string GetShellHtml(string slug, PageVisibility visibility, string? language)
+    public IReadOnlyDictionary<string, string> LoaderValues(string slug, PageVisibility visibility, string? language)
     {
-        var content = TemplateLoader.Fill("necto_pages_shell", new Dictionary<string, string>(StringComparer.Ordinal)
+        return new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["SLUG"] = StringUtilities.EscapeJsString(slug),
-            ["TIER"] = StringUtilities.EscapeJsString(visibility.EndpointTier()),
-            ["SIGNIN_HEADING"] = Text(TranslationKeys.PagesHeaderSignInRequired, language),
-            ["SIGNIN_MESSAGE"] = Text(TranslationKeys.PagesMessageSignInRequired, language),
-            ["SIGNIN_BUTTON"] = Text(TranslationKeys.ButtonSignIn, language),
-            ["DENIED_HEADING"] = Text(TranslationKeys.PagesHeaderNotAuthorized, language),
-            ["DENIED_MESSAGE"] = Text(TranslationKeys.PagesMessageNotAuthorized, language),
-            ["MISSING_HEADING"] = Text(TranslationKeys.HeaderPageNotFound, language),
-            ["MISSING_MESSAGE"] = Text(TranslationKeys.PagesMessagePageMissing, language),
-            ["BACK_BUTTON"] = Text("Stolon.BackToJellyfin", language)
-        });
-
-        return StatusPage.Render(
-            StolonTranslations.Get("Stolon.Loading", language),
-            string.Empty,
-            buttonText: null,
-            showSpinner: true,
-            content: content);
-    }
-
-    /// <inheritdoc />
-    public string NotFoundHtml(string slug, string? language)
-    {
-        var where = IsValidSlug(slug) ? "/pages/" + slug : StolonTranslations.Get(TranslationKeys.PagesMessageThisAddress, language);
-        return StatusPage.Render(
-            StolonTranslations.Get(TranslationKeys.HeaderPageNotFound, language),
-            StolonTranslations.Format(TranslationKeys.PagesMessageNothingPublished, language, where),
-            buttonText: StolonTranslations.Get("Stolon.BackToJellyfin", language),
-            buttonHref: "../web/");
+            ["SLUG"] = slug,
+            ["TIER"] = visibility.EndpointTier(),
+            ["LOADING"] = StolonTranslations.Get("Stolon.Loading", language),
+            ["DENIED_MESSAGE"] = StolonTranslations.Get(TranslationKeys.PagesMessageNotAuthorized, language)
+        };
     }
 
     /// <summary>
@@ -361,11 +343,6 @@ public sealed partial class PageService : IPageService
 
         return prelude + document;
     }
-
-    /// <summary>
-    /// Gives a string for the shell's markup, encoded, since a translation is text and never markup.
-    /// </summary>
-    private static string Text(string key, string? language) => WebUtility.HtmlEncode(StolonTranslations.Get(key, language));
 
     private static string BuildInnerDocument(CustomPage page)
     {

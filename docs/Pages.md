@@ -42,7 +42,11 @@ The slugs `asset`, `store`, `stores`, and `configuration` are kept for the pages
 
 The page is built into one document and embedded in a small host page as a sandboxed frame on an opaque origin, with no `allow-same-origin`. Its scripts run, its forms submit, and its links open in new tabs, but it cannot read the viewer's token, cookies, or storage. The Jellyfin origin may frame a page, and other sites cannot.
 
-A page that needs a signed in viewer is served through a sign in shell. The shell finds this server's saved token, matched by server id or by an address on this exact origin, asks for the page with it, and writes the page in. A viewer with no token sees **Sign in required**, one the page refuses sees **Not authorized**, and a page that went away shows **Page not found**.
+The page takes the web client's look before its own CSS: the web client's Noto Sans font, light text on its dark background, and its links, headings, tables, fields, and buttons. A page with no CSS reads like the web client, and any CSS the page sets wins. The browser tab shows the page's **Title**.
+
+![A page with no CSS of its own](screenshots/Custom%20Page.png)
+
+A page that needs a signed in viewer opens on the web client's loading screen. It finds this server's saved sign-in, matched by server id or by an address on this exact origin, asks for the page with it, and writes the page in. A viewer with no sign-in gets the web client's sign in form and the page once they sign in. One the page refuses sees **You can't open this page**, and a page that went away, or an address with no page, shows **Page not found**.
 
 ## Who May Open a Page
 
@@ -172,8 +176,8 @@ An API key reads and writes a store as an administrator with no user, so it owns
 
 | Reason | What to do |
 | :--- | :--- |
-| "Not authorized" on a **Signed in** page | Give the page to one of the viewer's groups in **Groups > Pages** |
-| "Sign in required" | Sign in to the web client on this server, then open the page again |
+| "You can't open this page" on a **Signed in** page | Give the page to one of the viewer's groups in **Groups > Pages** |
+| The sign in form shows on every visit | Turn on **Remember me** in the web client's own sign in, then open the page again |
 | "The saved password of the route *name* on the page *slug* could not be kept, since the route was renamed or points to another host. Enter the password again and save." | Enter the route's password again and save |
 | "The slug *slug* is kept for the pages' own routes. Pick another." | Pick another slug |
 | A store answers as empty and refuses writes | Check the server log for the store file, repair or remove it, then restart Jellyfin |
@@ -208,7 +212,7 @@ A read or write drops a store's expired records too, so the task is for stores n
 
 * Only administrators write pages, images, and stores.
 * A page runs in a sandboxed frame on an opaque origin unless it has system access. Its markup only ever reaches the viewer HTML encoded inside that frame.
-* Every served page has one `Content-Security-Policy` for every tier, with `object-src 'none'`, `base-uri 'none'`, and `frame-ancestors 'self'`, and sets `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, and `X-Robots-Tag: noindex`.
+* A page runs under one `Content-Security-Policy` on every tier, with `object-src 'none'`, `base-uri 'none'`, and `frame-ancestors 'self'`. The loading and not found screens leave out `base-uri`, since they set their own base address, and the page they write in brings `object-src 'none'` and `base-uri 'none'` in its own policy. Every response sets `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, and `X-Robots-Tag: noindex`.
 * A page may load images, fonts, styles, scripts, and media from anywhere, run inline script, submit forms, and open popups. It may not use `object` or `embed` content, set a `base` tag, or be framed by another site.
 * `allow-popups-to-escape-sandbox` lets a link to another site open as a normal page, and it is the widest hole in the sandbox, since a script can open and drive that window.
 * Each request is checked on the server against the page's tier and the caller's groups, or the store's tiers, never against which page made it.
@@ -223,7 +227,7 @@ The pages' own addresses:
 
 | Route | Who | What it does |
 | :--- | :--- | :--- |
-| `GET /pages/{slug}` | Anyone | Serves an **Anyone** page, or the sign in shell of any other |
+| `GET /pages/{slug}` | Anyone | Serves an **Anyone** page, the loading screen of any other, or the not found screen |
 | `GET /pages/{slug}/user` | Signed in | Serves a **Signed in** page to administrators and the groups that give it |
 | `GET /pages/{slug}/admin` | Administrators | Serves an **Administrators** page |
 | `GET`, `POST /pages/{slug}/api/{name}` | The page's audience | Forwards a server route |

@@ -19,29 +19,28 @@ public sealed class StubPageService : IPageService
 
     public string RenderHtml { get; set; } = "<html></html>";
 
-    public string ShellHtml { get; set; } = "<html>shell</html>";
-
     public int Renders { get; private set; }
 
     public int AssetReads { get; private set; }
 
-    public List<(string Slug, PageVisibility Visibility, string? Language)> Shells { get; } = new();
+    public List<(string Slug, PageVisibility Visibility, string? Language)> Loaders { get; } = new();
+
+    public string? LastContentStyle { get; private set; }
 
     public CustomPage? Find(string slug) => Pages.GetValueOrDefault(slug);
 
-    public string Render(CustomPage page)
+    public string Render(CustomPage page, string contentStyle = "")
     {
         Renders++;
+        LastContentStyle = contentStyle;
         return RenderHtml;
     }
 
-    public string GetShellHtml(string slug, PageVisibility visibility, string? language)
+    public IReadOnlyDictionary<string, string> LoaderValues(string slug, PageVisibility visibility, string? language)
     {
-        Shells.Add((slug, visibility, language));
-        return ShellHtml;
+        Loaders.Add((slug, visibility, language));
+        return new Dictionary<string, string> { ["SLUG"] = slug, ["TIER"] = "user", ["LOADING"] = "Loading", ["DENIED_MESSAGE"] = "No." };
     }
-
-    public string NotFoundHtml(string slug, string? language) => "<html>missing</html>";
 
     public PageAsset? FindAsset(string name) => Assets.GetValueOrDefault(name);
 

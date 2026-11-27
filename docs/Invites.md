@@ -22,31 +22,37 @@ Invites are links anyone may use to make their own account on the server, in the
 
 The sidecar of an invite shows its link with **Copy** and a QR button, which opens the QR code with **Copy image** and **Download**. Its shelf holds **Delete**, **Turn off** or **Turn on**, **Duplicate**, **Cancel**, and **Save**.
 
-* **Name** names the invite in the Invites tool. The signup page never shows it.
-* **Welcome message** shows under the signup page's heading.
+* **Name** names the invite in the Invites tool. The sign-up page never shows it.
+* **Welcome message** shows under the sign-up page's heading.
 * **Group** sets the group a new account joins. **Group for new users** follows **Settings > Groups > Group for new users** at the moment the link is used, and **Everyone** joins no group. A group that disallows password changes cannot take invites, so it is not listed. A warning shows while the picked group has expired, since signups into it are refused.
 * **Accounts it may make** sets how many accounts the link makes. 0 is no limit.
 * **Expiry date** stops the link on that day. Leave it blank to keep the link.
-* **PIN** asks for six digits on the signup page. A stored PIN stays hidden, and **Remove PIN** clears it on save.
+* **PIN** asks for six digits on the sign-up page. A stored PIN stays hidden, and **Remove PIN** clears it on save.
 * **Links for new users** shows each link as a button once the account is made, such as a guide. Each needs button text and a full http or https address.
 
 **Turn on** clears an invite's wrong PINs. It is refused while the expiry date has passed or the group disallows password changes. Moving the expiry date ahead turns an invite back on. **Duplicate** makes a new link with the same settings and PIN. **Delete** asks first, and the accounts the invite made stay.
 
-## The Signup Page
+## The Sign-up Page
 
-An invite link opens `/invites/{token}`. The page shows the welcome message, a PIN field when the invite has a PIN, and **User name**, **Password**, and **Confirm password**. **Create account** makes the account, then shows the invite's links and **Go to sign in**. A link that does not work shows "Invite unavailable" and never says why.
+An invite link opens `/invites/{token}`, drawn as the web client's sign in page with the server's logo and no user menu. The page shows the welcome message under **Create your account**, a **PIN** field when the invite has a PIN, and **User name**, **Password**, and **Confirm password**. **Create account** makes the account, then shows the invite's links under **Go to sign in**. A missing PIN, user name, or password, or passwords that differ, show their reason over the button before anything is sent. A link that does not work shows **Invite unavailable** and never says why.
 
-The account joins the invite's group, takes that group's password rules and template, and never takes the group for new users on the way. It is held disabled until its password is set, so it can never be signed in to without one, and it stays disabled when its group's template disables accounts. A signup that fails partway removes the account, so the user name can be tried again.
+| Sign-up | Sign-up on a phone |
+| :---: | :---: |
+| ![Sign-up page](screenshots/Sign-up%20Page.png) | ![Sign-up page on a phone](screenshots/Sign-up%20Page%20Phone.png) |
+
+The account joins the invite's group, takes that group's password rules and template, and never takes the group for new users on the way. It is held disabled until its password is set, so it can never be signed in to without one, and it stays disabled when its group's template disables accounts. A sign-up that fails partway removes the account, so the user name can be tried again.
 
 ## Members' Invites
 
-A member whose groups allow invites makes and shares their own at `/invites`, signed in. The page lists their invites with each link and QR code, and makes new ones with **Name**, **Group**, **Accounts it may make**, and **Expiry date**. **Groups > Invites** sets who may do this.
+A member whose groups allow invites makes and shares their own at `/invites`, in the web client with its header, libraries, and user menu. **Your invites** lists each invite with its state, group, and uses, and **Copy link**, **Show QR code**, and **Delete** buttons. **New invite** makes one with **Name**, **Group**, **Accounts it may make**, and **Expiry date**, and **Add invite** adds it. **Groups > Invites** sets who may do this.
+
+![Members' invites](screenshots/Member%20Invites.png)
 
 * **Allow invites** lets members make invites.
 * **Open invites** sets how many working invites a member may have at once. 0 is no limit.
 * **Invite to any group** lets members' invites join any group, or **Invite groups** names the groups.
 
-A member deletes only their own invites. The page also holds **Turn on notifications**, so the member hears when their invites are used, as their groups allow.
+A member deletes only their own invites. **Browser notifications** holds **Notify me in this browser**, so the member hears when their invites are used, as their groups allow. It shows while **Settings > Notifications** offers browser notifications.
 
 ## Limits
 
@@ -122,8 +128,8 @@ See [Notifications](Notifications.md#events) for who gets each event.
 | `POST /Invites/Mine` | Signed in users | Makes an invite for the caller, within their groups |
 | `DELETE /Invites/Mine/{id}` | Signed in users | Deletes one of the caller's invites |
 | `GET /invites` | Anyone | A member's invite page, which asks the viewer to sign in |
-| `GET /invites/{token}` | Anyone | The signup page |
+| `GET /invites/{token}` | Anyone | The sign-up page |
 | `GET /invites/{token}/Info` | Anyone | Says whether the invite works, its welcome message, and whether it asks for a PIN |
 | `POST /invites/{token}/Redeem` | Anyone | Makes the account |
 
-The list is at `/Invites/List` because `/invites` is the member page. A refused change answers `400` with `{ "Error": "..." }`, and the signup routes answer `429` past the address limit.
+The list is at `/Invites/List` because `/invites` is the member page. A refused change answers `400` with `{ "Error": "..." }`, and the sign-up routes answer `429` past the address limit.

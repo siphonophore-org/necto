@@ -1,57 +1,57 @@
 <!-- necto_invite_signup.html -->
-<!-- The signup page an invite link opens, served by HostedPage at /invites/{token}. Its script reads the invite and makes the account. -->
+<!-- The sign-up page an invite link opens, served by HostedPage at /invites/{token} in the web client's signed out frame. -->
+<!-- Its markup is the web client's login page (jellyfin-web 12.4, src/controllers/session/login). -->
 
 <!-- Loading -->
-<section class="stolon-user-page-card" data-stolon-view="loading">
-    <div class="stolon-spinner" role="status" aria-label="Loading" data-str-label="InvitesLoading"></div>
-</section>
+<div class="docspinner mdl-spinner mdlSpinnerActive" id="signupLoading" data-stolon-view="loading" role="status" aria-label="Loading" data-str-label="InvitesLoading"></div>
 
 <!-- Unavailable -->
-<!-- An invite that is not valid, or a caller past the limit. -->
-<section class="stolon-user-page-card stolon-user-page-done" data-stolon-view="invalid" data-stolon-state="warn" hidden>
-    <span class="stolon-user-page-done-icon"><span class="material-icons" aria-hidden="true">link_off</span></span>
-    <h1 class="stolon-user-page-title" data-str="InvitesHeaderUnavailable">Invite unavailable</h1>
-    <p class="stolon-user-page-lead" id="invalidMessage" data-str="InvitesUnavailableMessage">This invite link is not valid, has expired, or has made all its accounts.</p>
-    <div class="stolon-user-page-actions"><a class="raised stolon-button stolon-secondary stolon-large stolon-fill" href="web/" data-str="ButtonBackToJellyfin">Back to Jellyfin</a></div>
+<!-- An invite that is not valid, or a caller past the limit, drawn as Stolon's web client screens. -->
+<section class="stolon-screen stolon-screen-web" data-stolon-view="invalid" role="alert" hidden>
+    <h1 class="stolon-screen-title sectionTitle" data-str="InvitesHeaderUnavailable">Invite unavailable</h1>
+    <p class="stolon-screen-text secondaryText" id="invalidMessage" data-str="InvitesUnavailableMessage">This invite link is not valid, has expired, or has made all its accounts.</p>
+    <div class="stolon-screen-body">
+        <a class="raised block emby-button button-submit" href="web/" data-str="ButtonBackToJellyfin">Back to Jellyfin</a>
+    </div>
 </section>
 
 <!-- Form -->
 <!-- The invitee's user name, password, and the PIN when the invite has one. -->
-<section class="stolon-user-page-card" data-stolon-view="form" hidden>
-    <h1 class="stolon-user-page-title" data-str="InvitesHeaderCreateAccount">Create your account</h1>
-    <p class="stolon-user-page-lead" id="welcome"></p>
-    <form class="stolon-user-page-form" id="signupForm" autocomplete="off" novalidate>
-        <div class="stolon-user-page-field" id="pinField" hidden>
-            <label for="pin" data-str="InvitesLabelPin">Invite PIN</label>
-            <input id="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" />
-        </div>
-        <div class="stolon-user-page-field">
-            <label for="username" data-str="InvitesLabelUsername">User name</label>
-            <input id="username" type="text" autocomplete="username" required />
-        </div>
-        <div class="stolon-user-page-field">
-            <label for="password" data-str="LabelPassword">Password</label>
-            <input id="password" type="password" autocomplete="new-password" />
-        </div>
-        <div class="stolon-user-page-field">
-            <label for="confirm" data-str="InvitesLabelConfirmPassword">Confirm password</label>
-            <input id="confirm" type="password" autocomplete="new-password" />
-        </div>
-        <div id="formMessage" class="stolon-user-page-message" hidden></div>
-        <div class="stolon-user-page-actions">
-            <button class="raised stolon-button stolon-primary stolon-large stolon-fill" type="submit" id="submit" data-str="InvitesButtonCreateAccount">Create account</button>
-        </div>
-    </form>
-</section>
+<form class="manualLoginForm" id="signupForm" data-stolon-view="form" autocomplete="off" novalidate hidden>
+    <div class="padded-left padded-right flex align-items-center justify-content-center">
+        <h1 class="sectionTitle" data-str="InvitesHeaderCreateAccount">Create your account</h1>
+    </div>
+    <p class="secondaryText" id="welcome" hidden></p>
+    <div class="inputContainer" id="pinField" hidden>
+        <label class="inputLabel inputLabelUnfocused" for="pin" data-str="InvitesLabelPin">PIN</label>
+        <input is="emby-input" class="emby-input" id="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" />
+        <div class="fieldDescription" data-str="InvitesSignupPinHelp">Enter the six digits that came with the invite.</div>
+    </div>
+    <div class="inputContainer">
+        <label class="inputLabel inputLabelUnfocused" for="username" data-str="InvitesLabelUsername">User name</label>
+        <input is="emby-input" class="emby-input" id="username" type="text" autocomplete="username" autocapitalize="off" required />
+    </div>
+    <div class="inputContainer">
+        <label class="inputLabel inputLabelUnfocused" for="password" data-str="LabelPassword">Password</label>
+        <input is="emby-input" class="emby-input" id="password" type="password" autocomplete="new-password" />
+    </div>
+    <div class="inputContainer">
+        <label class="inputLabel inputLabelUnfocused" for="confirm" data-str="InvitesLabelConfirmPassword">Confirm password</label>
+        <input is="emby-input" class="emby-input" id="confirm" type="password" autocomplete="new-password" />
+    </div>
+    <div class="stolon-screen-error" id="formMessage" role="alert" aria-live="assertive"></div>
+    <button is="emby-button" type="submit" class="raised button-submit block emby-button" id="submit"><span data-str="InvitesButtonCreateAccount">Create account</span></button>
+</form>
 
 <!-- Done -->
-<!-- The new account, its links, and the way to sign in. -->
-<section class="stolon-user-page-card stolon-user-page-done" data-stolon-view="done" data-stolon-state="success" hidden>
-    <span class="stolon-user-page-done-icon"><span class="material-icons" aria-hidden="true">check_circle</span></span>
-    <h1 class="stolon-user-page-title" id="doneHeading"></h1>
-    <p class="stolon-user-page-lead" id="doneMessage"></p>
-    <div class="stolon-user-page-actions" id="resources"></div>
-    <div class="stolon-user-page-actions"><a class="raised stolon-button stolon-primary stolon-large stolon-fill" href="web/" data-str="InvitesButtonSignIn">Go to sign in</a></div>
+<!-- The new account, its links, and the way to sign in, drawn as Stolon's web client screens. -->
+<section class="stolon-screen stolon-screen-web" data-stolon-view="done" role="status" hidden>
+    <h1 class="stolon-screen-title sectionTitle" id="doneHeading"></h1>
+    <p class="stolon-screen-text secondaryText" id="doneMessage"></p>
+    <div class="stolon-screen-body">
+        <a class="raised block emby-button button-submit" href="web/" data-str="InvitesButtonSignIn">Go to sign in</a>
+        <div id="resources"></div>
+    </div>
 </section>
 
 <script type="module" src="web/configurationpage?name=necto_invite_signup.js"></script>

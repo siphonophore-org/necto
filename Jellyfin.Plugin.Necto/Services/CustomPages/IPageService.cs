@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Jellyfin.Plugin.Necto.Configuration.CustomPages;
 
 namespace Jellyfin.Plugin.Necto.Services.CustomPages;
@@ -19,25 +20,19 @@ public interface IPageService
     /// Renders a page in the frame that keeps the author's content apart from the viewer's session.
     /// </summary>
     /// <param name="page">The page.</param>
+    /// <param name="contentStyle">A style block that goes first in the page's head, so the author's own styles win.</param>
     /// <returns>The whole document to serve.</returns>
-    string Render(CustomPage page);
+    string Render(CustomPage page, string contentStyle = "");
 
     /// <summary>
-    /// Renders the sign in shell of a page that needs a signed in viewer.
+    /// Gives the values of the loading screen of a page that needs a signed in viewer: its slug, its tier, and the
+    /// sentences it shows. The screen's script asks for the page with the viewer's sign-in and writes it in.
     /// </summary>
     /// <param name="slug">The slug.</param>
     /// <param name="visibility">The page's tier.</param>
     /// <param name="language">The visitor's language, such as de, or <c>null</c> for US English.</param>
-    /// <returns>The shell document.</returns>
-    string GetShellHtml(string slug, PageVisibility visibility, string? language);
-
-    /// <summary>
-    /// Renders the page served when a slug has no published page.
-    /// </summary>
-    /// <param name="slug">The slug asked for.</param>
-    /// <param name="language">The visitor's language, such as de, or <c>null</c> for US English.</param>
-    /// <returns>A standalone 404 document.</returns>
-    string NotFoundHtml(string slug, string? language);
+    /// <returns>The values, as text the screen encodes.</returns>
+    IReadOnlyDictionary<string, string> LoaderValues(string slug, PageVisibility visibility, string? language);
 
     /// <summary>
     /// Finds an image by name, ignoring case.

@@ -32,17 +32,17 @@ namespace Jellyfin.Plugin.Necto.Api.Invites;
 [Produces(MediaTypeNames.Application.Json)]
 public class InvitesController : ControllerBase
 {
-    /// <summary>The page an invite link opens.</summary>
+    /// <summary>The page an invite link opens, drawn as the web client's login page.</summary>
     public static readonly HostedPage SignupPage = new("necto", HostedPageAccess.Anyone, HostedPageContent.Resource(typeof(Plugin).Assembly, "Web.necto_invite_signup.html"))
     {
-        Translations = "Necto/Translations",
-        Mark = "Invites",
-        MarkIcon = "mail"
+        Frame = HostedPageFrame.WebClientSignedOut,
+        Translations = "Necto/Translations"
     };
 
-    /// <summary>The page where a member makes and shares their own invites.</summary>
+    /// <summary>The page where a member makes and shares their own invites, in the web client's signed in shell.</summary>
     public static readonly HostedPage MemberPage = new("necto", HostedPageAccess.User, HostedPageContent.Resource(typeof(Plugin).Assembly, "Web.necto_invites_member.html"))
     {
+        Frame = HostedPageFrame.WebClient,
         Translations = "Necto/Translations",
         Mark = "Invites",
         MarkIcon = "mail"

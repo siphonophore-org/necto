@@ -55,5 +55,5 @@ Each shot prints `ok`, or the errors the page logged. Look at every PNG it write
 * Proxy routes use self-signed certificates, so no certificate authority is asked about `example.com`.
 * Notification channels are added last, after the demo events. Their made up addresses fail any later send.
 * The live updates socket cannot follow the demo address, so its errors are left out of what each shot prints.
-* The members' invites page has no shot, since Invites/Mine answers members with 403.
+* The sign-up, members' invites, and custom page shots open as `jordan`, so the web client's header shows. The sign-up shot keeps its form empty.
 * A new subject is one more entry in the `shots` list of `shots.mjs`. New data goes in `seed.py`.

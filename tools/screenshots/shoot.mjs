@@ -47,8 +47,11 @@ function credentials(user) {
 }
 
 // Opens a tab at the given window size, 800x900 unless named, signed in, at a path such as
-// /web/#/configurationpage?name=necto&tool=proxy. The errors the page logs collect in errors.
-export async function open(path, vp, user) {
+// /web/#/configurationpage?name=necto&tool=proxy. The errors the page logs collect in errors. A page whose form is
+// the subject, such as the sign-up page, passes keepForm so its fields stay empty. A page that shows no address of its
+// own and loads from a sandboxed frame, such as a custom page, passes direct to open at the kit's own address, since
+// the frame's requests do not reach the demo address's route.
+export async function open(path, vp, user, keepForm, direct) {
   const b = await launch();
   const context = await b.newContext({ viewport: vp || { width: 800, height: 900 }, deviceScaleFactor: 2, colorScheme: 'dark' });
   await context.addInitScript(([creds]) => {
@@ -68,11 +71,11 @@ export async function open(path, vp, user) {
   p.on('pageerror', (e) => errors.push(String(e.message)));
   // The live updates socket cannot follow the demo address, and the pages work without it.
   p.on('console', (m) => { if (m.type() === 'error' && !/WebSocket/.test(m.text())) errors.push(m.text()); });
-  await p.goto(ORIGIN + path);
+  await p.goto((direct ? state.url : ORIGIN) + path);
   await p.waitForLoadState('networkidle').catch(() => {});
   await p.waitForTimeout(2500);
   // A user page signs in with its own form.
-  if (user && await p.locator('input[type=password]:visible').count()) {
+  if (user && !keepForm && await p.locator('input[type=password]:visible').count()) {
     await p.locator('input[type=text]:visible').first().fill(user);
     await p.locator('input[type=password]:visible').first().fill(user === 'alex' ? state.password : state.users[user].password);
     await p.keyboard.press('Enter');

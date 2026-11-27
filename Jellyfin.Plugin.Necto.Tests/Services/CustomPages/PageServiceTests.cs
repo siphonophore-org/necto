@@ -247,56 +247,57 @@ public class PageServiceTests
         Assert.Contains("{{TITLE}}", html, System.StringComparison.Ordinal);
     }
 
-    // MARK: Auth shell
+    // MARK: Loading screen values
 
+    /// <summary>
+    /// The loading screen asks for the content at the page's own tier, and carries its sentences as text.
+    /// True: a signed in viewer gets the content route their tier guards, and a refused one reads why.
+    /// False: the screen asks the wrong route, or shows a raw token.
+    /// </summary>
     [Theory]
-    [InlineData(PageVisibility.User, "'user'")]
-    [InlineData(PageVisibility.Admin, "'admin'")]
-    public void GetShellHtml_BakesInTier(PageVisibility visibility, string expected)
+    [InlineData(PageVisibility.User, "user")]
+    [InlineData(PageVisibility.Admin, "admin")]
+    public void LoaderValues_GiveTheTierAndTheSentences(PageVisibility visibility, string expected)
     {
-        var html = CreateService().GetShellHtml("mypage", visibility, null);
+        var values = CreateService().LoaderValues("mypage", visibility, null);
 
-        Assert.Contains(expected, html, System.StringComparison.Ordinal);
-        Assert.Contains("mypage", html, System.StringComparison.Ordinal);
+        Assert.Equal("mypage", values["SLUG"]);
+        Assert.Equal(expected, values["TIER"]);
+        Assert.Equal("Your account does not have access to this page.", values["DENIED_MESSAGE"]);
+        Assert.Equal("Loading", values["LOADING"]);
     }
 
-    [Fact]
-    public void GetShellHtml_JsEscapesSlug()
-    {
-        var html = CreateService().GetShellHtml("a'b</script>", PageVisibility.User, null);
+    // MARK: Content style
 
-        // The single quote and angle brackets are escaped so they cannot break out of the JS string.
-        Assert.Contains("a\\'b\\x3C/script\\x3E", html, System.StringComparison.Ordinal);
-        Assert.DoesNotContain("'a'b", html, System.StringComparison.Ordinal);
+    /// <summary>
+    /// The content style goes first in the page's head, before the author's own CSS.
+    /// True: a page with no CSS reads in the web client's look, and the author's CSS still wins.
+    /// False: the style overrides the author, or never reaches the page.
+    /// </summary>
+    [Fact]
+    public void Render_PutsContentStyleBeforeAuthorCss()
+    {
+        var page = new CustomPage { Title = "t", Html = "<p>hi</p>", Css = "p{color:red}" };
+
+        var html = CreateService().Render(page, "<style id=\"web\">p{color:white}</style>");
+
+        var web = html.IndexOf("id=&quot;web&quot;", System.StringComparison.Ordinal);
+        var author = html.IndexOf("p{color:red}", System.StringComparison.Ordinal);
+        Assert.True(web > 0, "the content style is in the frame");
+        Assert.True(web < author, "the content style comes before the author's CSS");
     }
 
+    /// <summary>
+    /// The frame's page carries base-uri 'none' and object-src 'none' in its own policy.
+    /// True: the policy holds after the loading screen writes the page into its document.
+    /// False: a signed in page runs with a looser policy than an Anyone page.
+    /// </summary>
     [Fact]
-    public void GetShellHtml_FillsEveryStringInUsEnglish()
+    public void Render_CarriesItsOwnBaseAndObjectPolicy()
     {
-        var html = CreateService().GetShellHtml("mypage", PageVisibility.User, null);
+        var html = CreateService().Render(new CustomPage { Title = "t", Html = "<p>hi</p>" });
 
-        Assert.Contains("<h1>Sign in required</h1>", html, System.StringComparison.Ordinal);
-        Assert.Contains("Back to Jellyfin</a>", html, System.StringComparison.Ordinal);
-        Assert.Contains("<h1>Loading</h1>", html, System.StringComparison.Ordinal);
-        Assert.DoesNotContain("{{", html, System.StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void GetShellHtml_UsesTheVisitorsLanguage()
-    {
-        var html = CreateService().GetShellHtml("mypage", PageVisibility.User, "de-DE");
-
-        Assert.Contains(StolonTranslations.Get("ButtonSignIn", "de"), html, System.StringComparison.Ordinal);
-        Assert.DoesNotContain(">Sign In</a>", html, System.StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void NotFoundHtml_UnknownLanguage_FallsBackToUsEnglish()
-    {
-        var html = CreateService().NotFoundHtml("missing-page", "xx-yy");
-
-        Assert.Contains("Page not found", html, System.StringComparison.Ordinal);
-        Assert.Contains("Nothing is published at /pages/missing-page.", html, System.StringComparison.Ordinal);
+        Assert.Contains("<meta http-equiv=\"Content-Security-Policy\" content=\"object-src 'none'; base-uri 'none'\" />", html, System.StringComparison.Ordinal);
     }
 
     // MARK: Gated asset inlining
@@ -476,24 +477,6 @@ public class PageServiceTests
     [InlineData(PageVisibility.User, PageVisibility.Admin, false)]
     public void Covers_FollowsTierOrdering(PageVisibility tier, PageVisibility required, bool expected)
         => Assert.Equal(expected, tier.Covers(required));
-
-    // MARK: Not-found fallback
-
-    [Fact]
-    public void NotFoundHtml_ValidSlug_IsReflectedEncoded()
-    {
-        var html = CreateService().NotFoundHtml("missing-page", null);
-        Assert.Contains("/pages/missing-page", html, System.StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void NotFoundHtml_InvalidSlug_IsNotReflected()
-    {
-        var html = CreateService().NotFoundHtml("<script>bad</script>", null);
-
-        Assert.DoesNotContain("<script>bad</script>", html, System.StringComparison.Ordinal);
-        Assert.Contains("this address", html, System.StringComparison.Ordinal);
-    }
 
     // MARK: Resolution against configuration
 

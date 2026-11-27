@@ -3,7 +3,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { open, close } from './shoot.mjs';
+import { open, close, state } from './shoot.mjs';
 const OUT = fileURLToPath(new URL('../../docs/screenshots/', import.meta.url));
 const only = process.argv[2];
 const PAD = 8;
@@ -133,12 +133,24 @@ shots['Troubleshooting'] = { path: tool('troubleshooting'), vp: DESKTOP, act: as
 shots['Requests Page'] = { path: '/requests/', vp: { width: 1280, height: 900 }, user: 'jordan', act: (p) => userPage(p, 'Requests Page.png', 1000) };
 shots['Requests Page Phone'] = { path: '/requests/', vp: PHONE, user: 'jordan', act: (p) => userPage(p, 'Requests Page Phone.png', 1000) };
 
+// The hosted pages: an invite's sign-up page, a member's invites, and a custom page with no CSS of its own.
+async function inviteToken(label) {
+  const answer = await fetch(state.url + '/Invites/List', { headers: { Authorization: `MediaBrowser Token="${state.token}"` } });
+  const found = (await answer.json()).find((i) => i.Label === label);
+  if (!found) throw new Error('No invite ' + label);
+  return '/invites/' + found.Token;
+}
+shots['Sign-up Page'] = { path: () => inviteToken('Cousins'), vp: { width: 1280, height: 900 }, user: 'jordan', keepForm: true, act: (p) => userPage(p, 'Sign-up Page.png', 900) };
+shots['Sign-up Page Phone'] = { path: () => inviteToken('Cousins'), vp: PHONE, user: 'jordan', keepForm: true, act: (p) => userPage(p, 'Sign-up Page Phone.png', 900) };
+shots['Member Invites'] = { path: '/invites', vp: { width: 1280, height: 900 }, user: 'jordan', act: (p) => userPage(p, 'Member Invites.png', 1300) };
+shots['Custom Page'] = { path: '/pages/status', vp: { width: 1280, height: 500 }, user: 'jordan', direct: true, act: (p) => userPage(p, 'Custom Page.png', 500) };
+
 let failed = 0;
 for (const [name, s] of Object.entries(shots)) {
   if (only && !only.split(',').includes(name)) continue;
   let opened = null;
   try {
-    opened = await open(s.path, s.vp, s.user);
+    opened = await open(typeof s.path === 'function' ? await s.path() : s.path, s.vp, s.user, s.keepForm, s.direct);
     const { p, errors } = opened;
     await s.act(p);
     console.log(name, errors.length ? JSON.stringify(errors) : 'ok');

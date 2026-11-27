@@ -1,6 +1,7 @@
 // necto_pages.test.mjs
 // Tests for Pages: the rows, counts, notices, and checks the tool draws, its page and store editors, saving
-// through the server's check, its Settings and Troubleshooting sections, and the pages field of the group editor.
+// through the server's check, its Settings and Troubleshooting sections, the pages field of the group editor, and
+// the loading screen of a signed in page.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -359,4 +360,25 @@ test('the group editor offers only Signed in pages, and keeps a page the group a
 
     assert.deepEqual(groups.grantablePages(pages, ['moved']).map(function (p) { return p.Id; }), ['members', 'numbered', 'moved']);
     assert.deepEqual(groups.grantablePages(null, []), []);
+});
+
+test('the loading screen sends only this server\'s sign-ins, each once, and reads each answer', async function () {
+    installPage({});
+    var loader = await loadScript('necto_pages_loader.js');
+    var servers = [
+        { Id: 'abc-123', AccessToken: 'one' },
+        { Id: 'other', AccessToken: 'two', ManualAddress: 'https://elsewhere.example.com' },
+        { Id: 'other2', AccessToken: 'three', LocalAddress: 'https://media.example.com:443/jf' },
+        { Id: 'ABC123', AccessToken: 'one' },
+        { Id: 'abc123' },
+        null
+    ];
+
+    assert.deepEqual(loader.tokensFor(servers, 'abc123', 'https://media.example.com'), ['one', 'three']);
+    assert.deepEqual(loader.tokensFor(servers, '', 'https://nowhere.example.com'), []);
+    assert.deepEqual(loader.tokensFor('broken', 'abc123', 'https://media.example.com'), []);
+    assert.equal(loader.screenFor(401), 'next');
+    assert.equal(loader.screenFor(403), 'denied');
+    assert.equal(loader.screenFor(404), 'missing');
+    assert.equal(loader.screenFor(200), 'page');
 });

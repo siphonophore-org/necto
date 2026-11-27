@@ -58,7 +58,8 @@ export {
     showUserPageView, setUserPageMessage, loadTranslations, createTranslations, COUNTRY_CODES, createMediaCard,
     createBanner, createWorldMap, linkWorldMap, createStatusCardGrid, h, bindTileToSwitch, createResetRow,
     createResetGroup, createSaveBars, createInputField, createSelectField, createTextareaField, createCheckboxField,
-    createSecretField, readNumber, readLines, createWebPushToggle
+    createSecretField, readNumber, readLines, createWebPushToggle, WEB_SPINNER, webSelectOptions, webSettingsCheckbox,
+    copyToClipboard, createSignIn, createUnauthorized, createNotFound, showScreen
 } from './configurationpage?name=necto_stolon.js';
 
 var PLUGIN_ID = 'a8b5ecb0-fc00-428b-85e8-74b85820166d';

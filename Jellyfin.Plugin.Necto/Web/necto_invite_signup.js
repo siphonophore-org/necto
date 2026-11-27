@@ -1,7 +1,7 @@
 // necto_invite_signup.js
-// The script of the signup page an invite link opens. It reads the invite, shows the form, and makes the account.
+// The script of the sign-up page an invite link opens. It reads the invite, shows the form, and makes the account.
 
-import { startUserPage, showUserPageView, setUserPageMessage, loadTranslations, createTranslations } from './configurationpage?name=necto_shared.js';
+import { startWebClientShell, showUserPageView, loadTranslations, createTranslations, WEB_SPINNER } from './configurationpage?name=necto_shared.js';
 
 // tokenOf
 // Reads the invite's token from the page's address, the part after /invites/.
@@ -20,12 +20,28 @@ export function tokenOf(path) {
 // Keeps only the links a button may open, the absolute http and https ones.
 //
 // Inputs
-// resources [object[]]: The links from the signup's answer.
+// resources [object[]]: The links from the sign-up's answer.
 //
 // Output
 // [object[]]: The links to show.
 export function safeLinks(resources) {
     return (resources || []).filter(function (r) { return r && r.Url && /^https?:\/\//i.test(r.Url); });
+}
+
+// formProblem
+// Finds the first thing the sign-up form lacks before it is sent, so the page says what to fix without a round trip.
+//
+// Inputs
+// form [object]: requiresPin, pin, username, password, and confirm as the form holds them.
+//
+// Output
+// [object|null]: The message's key and the field to focus, or null when the form can be sent.
+export function formProblem(form) {
+    if (form.requiresPin && !/^\d{6}$/.test(String(form.pin || ''))) return { key: 'InvitesErrorPin', field: 'pin' };
+    if (!String(form.username || '').trim()) return { key: 'InvitesErrorChooseUsername', field: 'username' };
+    if (!form.password) return { key: 'InvitesErrorChoosePassword', field: 'password' };
+    if (form.password !== form.confirm) return { key: 'InvitesErrorPasswordsDiffer', field: 'confirm' };
+    return null;
 }
 
 // start
@@ -40,7 +56,8 @@ export function safeLinks(resources) {
 export async function start(doc, loc) {
     var t = await loadTranslations('Necto/Translations').catch(function () { return createTranslations({}); });
     t.apply(doc.body);
-    await startUserPage({ translations: 'Necto/Translations' });
+    doc.getElementById('signupLoading').innerHTML = WEB_SPINNER;
+    await startWebClientShell({ translations: 'Necto/Translations' });
     var token = tokenOf(loc.pathname);
     var base = 'invites/' + encodeURIComponent(token);
     var query = '?language=' + encodeURIComponent(t.language || 'en-us');
@@ -59,19 +76,24 @@ export async function start(doc, loc) {
         return;
     }
 
-    if (info.Message) byId('welcome').textContent = info.Message;
+    if (info.Message) {
+        byId('welcome').textContent = info.Message;
+        byId('welcome').hidden = false;
+    }
     byId('pinField').hidden = !info.RequiresPin;
     showUserPageView('form', doc);
 
     byId('signupForm').addEventListener('submit', function (e) {
         e.preventDefault();
         var message = byId('formMessage');
-        setUserPageMessage(message, 'info', '');
-        var password = byId('password').value;
-        if (password !== byId('confirm').value) {
-            setUserPageMessage(message, 'error', t.tr('InvitesErrorPasswordsDiffer'));
+        var problem = formProblem({ requiresPin: info.RequiresPin, pin: byId('pin').value, username: byId('username').value, password: byId('password').value, confirm: byId('confirm').value });
+        message.textContent = problem ? t.tr(problem.key) : '';
+        if (problem) {
+            byId(problem.field).focus();
             return;
         }
+
+        var password = byId('password').value;
 
         byId('submit').disabled = true;
         fetch(base + '/Redeem' + query, {
@@ -86,7 +108,7 @@ export async function start(doc, loc) {
                 links.textContent = '';
                 safeLinks(answer.Resources).forEach(function (r) {
                     var a = doc.createElement('a');
-                    a.className = 'raised stolon-button stolon-secondary stolon-large stolon-fill';
+                    a.className = 'raised block emby-button';
                     a.href = r.Url;
                     a.target = '_blank';
                     a.rel = 'noopener noreferrer';
@@ -97,10 +119,10 @@ export async function start(doc, loc) {
                 showUserPageView('done', doc);
                 return;
             }
-            setUserPageMessage(message, 'error', (answer && answer.Message) || t.tr('InvitesErrorSignup'));
+            message.textContent = (answer && answer.Message) || t.tr('InvitesErrorSignup');
             byId('submit').disabled = false;
         }).catch(function () {
-            setUserPageMessage(message, 'error', t.tr('InvitesErrorNetwork'));
+            message.textContent = t.tr('InvitesErrorNetwork');
             byId('submit').disabled = false;
         });
     });

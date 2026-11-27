@@ -115,7 +115,7 @@ public class PluginTests
         var registered = TestPlugin.Create().GetPages().Select(p => p.EmbeddedResourcePath).ToHashSet(StringComparer.Ordinal);
         var files = Directory.EnumerateFiles(Path.Combine(ProjectFolder(), "Web")).Select(f => "Jellyfin.Plugin.Necto.Web." + Path.GetFileName(f)).ToList();
 
-        var hosted = new[] { "Jellyfin.Plugin.Necto.Web.necto_invite_signup.html", "Jellyfin.Plugin.Necto.Web.necto_invites_member.html" };
+        var hosted = new[] { "Jellyfin.Plugin.Necto.Web.necto_invite_signup.html", "Jellyfin.Plugin.Necto.Web.necto_invites_member.html", "Jellyfin.Plugin.Necto.Web.necto_pages_loader.html" };
 
         // The request page and its files are served by the Requests controller at /requests and /issues, not as dashboard pages.
         var userPage = new[] { "necto_requests_page.", "necto_requests_webclient.", "necto_requests_manifest.", "necto_requests_tmdb.", "necto_requests_icon_" };

@@ -38,9 +38,9 @@ public class CustomPagesController : ControllerBase, IActionFilter
 
     private const string HtmlContentType = "text/html; charset=utf-8";
 
-    // ONE policy for every served page. The anonymous path and the auth shell must not diverge: a
-    // srcdoc frame inherits its embedder's policy, so whatever is withheld here is withheld from author
-    // content, and two policies would make the same page behave differently depending on its tier.
+    // ONE policy for author content on every path. The anonymous path and the loading screen must not
+    // diverge: a srcdoc frame inherits its embedder's policy, so whatever is withheld here is withheld from
+    // author content, and two policies would make the same page behave differently depending on its tier.
     //
     // The boundary that actually protects the viewer is the sandboxed, opaque-origin iframe in
     // PageService.Render, not this header. Content that escaped that sandbox could exfiltrate by simply
@@ -59,6 +59,13 @@ public class CustomPagesController : ControllerBase, IActionFilter
         "default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; "
         + "object-src 'none'; base-uri 'none'; frame-ancestors 'self'";
 
+    // The page policy less base-uri, for the web client screens, whose frame sets its own base address. The page the
+    // loading screen writes in brings base-uri 'none' and object-src 'none' in its own meta policy, which the document
+    // keeps, so author content runs under the same policy on both paths.
+    private const string ScreenCsp =
+        "default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; "
+        + "object-src 'none'; frame-ancestors 'self'";
+
     // The largest store request body. The record cap governs the payload; the rest of the allowance
     // covers the envelope around it.
     private const int StoreBodyLimit = StoreService.MaxRecordBytes + 4096;
@@ -70,6 +77,9 @@ public class CustomPagesController : ControllerBase, IActionFilter
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
+
+    // The loading screen's content, read once.
+    private static readonly HostedPageContent LoaderContent = HostedPageContent.Resource(typeof(Plugin).Assembly, "Web.necto_pages_loader.html");
 
     private readonly IPageService _pages;
     private readonly IStoreService _stores;
@@ -126,11 +136,12 @@ public class CustomPagesController : ControllerBase, IActionFilter
     }
 
     /// <summary>
-    /// Entry point for a page. Anonymous pages render directly; protected pages render an auth shell
-    /// that re-fetches the content with the signed-in user's token.
+    /// Entry point for a page. An Anyone page renders directly. A page that needs a signed in viewer starts on the web
+    /// client's loading screen, whose script asks for the content with the viewer's sign-in. A missing page gets the web
+    /// client's not found screen.
     /// </summary>
     /// <param name="slug">The page slug.</param>
-    /// <returns>The page or shell HTML.</returns>
+    /// <returns>The page, its loading screen, or the not found screen.</returns>
     [HttpGet("{slug}")]
     [AllowAnonymous]
     [Produces("text/html")]
@@ -138,22 +149,35 @@ public class CustomPagesController : ControllerBase, IActionFilter
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ContentResult Get(string slug)
     {
-        Harden();
-
         var page = _pages.Find(slug);
         if (page is null)
         {
-            Response.StatusCode = StatusCodes.Status404NotFound;
-            return Content(_pages.NotFoundHtml(slug, StolonTranslations.RequestLanguage(Request)), HtmlContentType);
+            return HardenScreen(StatusPage.ServeWebClient(this, "necto", StatusPageScreen.NotFound));
         }
 
         if (!page.Visibility.RequiresAuth())
         {
-            return Content(_pages.Render(page), HtmlContentType);
+            Harden();
+            return Content(_pages.Render(page, WebClientContentStyle.Style(this)), HtmlContentType);
         }
 
-        return Content(_pages.GetShellHtml(page.Slug, page.Visibility, StolonTranslations.RequestLanguage(Request)), HtmlContentType);
+        var loading = LoadingPage(page.Title);
+        return HardenScreen(loading.Serve(this, _pages.LoaderValues(page.Slug, page.Visibility, StolonTranslations.RequestLanguage(Request))));
     }
+
+    /// <summary>
+    /// Builds the loading screen of a page that needs a signed in viewer, named after the page so the tab shows its
+    /// title from the start. It is the web client's signed out frame, which never follows a sign-in, so nothing of the
+    /// frame is still at work when the page is written over it.
+    /// </summary>
+    /// <param name="title">The page's title.</param>
+    /// <returns>The screen.</returns>
+    internal static HostedPage LoadingPage(string? title) => new("necto", HostedPageAccess.Anyone, LoaderContent)
+    {
+        Frame = HostedPageFrame.WebClientSignedOut,
+        Title = string.IsNullOrWhiteSpace(title) ? null : title,
+        Translations = "Necto/Translations"
+    };
 
     /// <summary>
     /// Serves the web client's favicon so pages can reuse the server's real icon at a stable path.
@@ -235,7 +259,7 @@ public class CustomPagesController : ControllerBase, IActionFilter
         }
 
         Harden();
-        return Content(_pages.Render(page), HtmlContentType);
+        return Content(_pages.Render(page, WebClientContentStyle.Style(this)), HtmlContentType);
     }
 
     /// <summary>
@@ -258,7 +282,7 @@ public class CustomPagesController : ControllerBase, IActionFilter
         }
 
         Harden();
-        return Content(_pages.Render(page), HtmlContentType);
+        return Content(_pages.Render(page, WebClientContentStyle.Style(this)), HtmlContentType);
     }
 
     /// <summary>
@@ -760,6 +784,19 @@ public class CustomPagesController : ControllerBase, IActionFilter
         return PageAccess.MayOpen(page, _permissions.For(info.User))
             ? StatusCodes.Status200OK
             : StatusCodes.Status403Forbidden;
+    }
+
+    /// <summary>
+    /// Applies the page headers to a web client screen. Its frame sets its base address, so base-uri stays open here, and
+    /// the page it writes in carries base-uri 'none' itself, so author content gets the one page policy either way.
+    /// </summary>
+    /// <param name="screen">The screen.</param>
+    /// <returns>The same screen.</returns>
+    private ContentResult HardenScreen(ContentResult screen)
+    {
+        Harden();
+        Response.Headers["Content-Security-Policy"] = ScreenCsp;
+        return screen;
     }
 
     /// <summary>

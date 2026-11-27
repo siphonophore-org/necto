@@ -90,7 +90,6 @@
     <JellyfinString Include="ButtonSignIn" />
     <JellyfinString Include="Custom" />
     <JellyfinString Include="Disabled" />
-    <JellyfinString Include="HeaderPageNotFound" />
     <JellyfinString Include="Images" />
     <JellyfinString Include="LabelPath" />
     <JellyfinString Include="LabelSource" />

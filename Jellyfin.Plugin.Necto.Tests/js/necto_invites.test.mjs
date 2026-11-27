@@ -173,6 +173,28 @@ test('the signup page reads the token from its address and keeps only web links'
     assert.deepEqual(member.memberRequest({ label: 'x', group: FAMILY, uses: '2', expiry: '' }), { Label: 'x', GroupId: FAMILY, MaxUses: 2, ExpiresAt: null, Resources: [] });
 });
 
+test('the sign-up form names the first field to fix before it sends anything', async function () {
+    installPage({});
+    var signup = await loadScript('necto_invite_signup.js');
+    var good = { requiresPin: false, pin: '', username: 'newcomer', password: 'pw-1', confirm: 'pw-1' };
+
+    assert.equal(signup.formProblem(good), null);
+    assert.deepEqual(signup.formProblem(Object.assign({}, good, { requiresPin: true, pin: '12a' })), { key: 'InvitesErrorPin', field: 'pin' });
+    assert.equal(signup.formProblem(Object.assign({}, good, { requiresPin: true, pin: '123456' })), null);
+    assert.deepEqual(signup.formProblem(Object.assign({}, good, { username: '  ' })), { key: 'InvitesErrorChooseUsername', field: 'username' });
+    assert.deepEqual(signup.formProblem(Object.assign({}, good, { password: '', confirm: '' })), { key: 'InvitesErrorChoosePassword', field: 'password' });
+    assert.deepEqual(signup.formProblem(Object.assign({}, good, { confirm: 'other' })), { key: 'InvitesErrorPasswordsDiffer', field: 'confirm' });
+});
+
+test('a member invite row reads its state, its group, and its uses', async function () {
+    installPage({});
+    var member = await loadScript('necto_invites_member.js');
+    var t = { tr: function (k) { return k; }, format: function (k, a, b) { return k + ':' + a + (b === undefined ? '' : '/' + b); } };
+
+    assert.equal(member.inviteLine({ State: 0, GroupName: 'Family', MaxUses: 5, UsedCount: 2 }, t), 'StateActive · Family · InvitesUsesOf:2/5');
+    assert.equal(member.inviteLine({ State: 'UsedUp', GroupName: '', MaxUses: 0, UsedCount: 3 }, t), 'StateUsedUp · InvitesUses:3');
+});
+
 test('the counts, the expired group warning, and the http warning follow the invites and the settings', async function () {
     installPage({});
     var mod = await loadScript('necto_invites.js');
