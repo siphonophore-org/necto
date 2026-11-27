@@ -21,7 +21,7 @@ var KIDS = '11111111-2222-3333-4444-666666666666';
 // openPage
 // Shows the Groups tool with Family and Kids, and the events Notifications lists.
 async function openPage(answers) {
-    var page = installPage({});
+    var page = installPage({ config: { InviteSettings: { Enabled: true } } });
     var dom = page.dom;
     var view = pageView(dom, [dom.el('div', { id: 'groupList' }), dom.el('button', { id: 'btnAddGroup' }), dom.el('button', { id: 'btnOrderGroups' }), dom.el('span', { id: 'groupsStatus' })]);
     dom.document.documentElement.appendChild(view);

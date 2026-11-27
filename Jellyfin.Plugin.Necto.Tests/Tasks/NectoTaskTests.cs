@@ -54,7 +54,7 @@ public sealed class NectoTaskTests : IDisposable
         var task = new PolicyTemplatesTask(_h.Templates, FakeServerConfig.Create());
 
         Assert.Equal("NectoPolicyTemplates", task.Key);
-        Assert.Equal("Apply group templates", task.Name);
+        Assert.Equal("Apply group Jellyfin settings", task.Name);
         Assert.Equal(TaskTriggerInfoType.StartupTrigger, Assert.Single(task.GetDefaultTriggers()).Type);
     }
 

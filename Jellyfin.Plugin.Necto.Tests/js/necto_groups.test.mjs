@@ -1,6 +1,6 @@
 // necto_groups.test.mjs
 // Tests for the Groups tool: the list with Everyone first, the editor sidecar and its sections, saving, and the
-// confirm before a delete.
+// confirm before a group is removed.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -85,12 +85,14 @@ test('the page lists Everyone and every group from the Groups route', async func
     assert.equal(opened.view.querySelectorAll('.stolon-record-list-row').length, 2);
 });
 
-test('a group opens in a sidecar named for it, with its sections, and Delete, Cancel, and Save on the shelf', async function () {
+test('a group opens in a sidecar named for it, with its sections, and Remove, Cancel, and Save on the shelf', async function () {
     var opened = await openPage();
     var sidecar = await openRow(opened, 1);
 
     assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'Family');
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Delete', 'Cancel', 'Save']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Cancel', 'Save']);
+    assert.equal((sidecar.textContent.match(/gets every allow/g) || []).length, 1);
+    assert.match(sidecar.querySelector('[data-section="members"]').textContent, /gets every allow/);
     assert.deepEqual(texts(sidecar, '.stolon-collapsible-title'), ['Members', 'Account rules', 'Access and features', 'Preferences', 'Requests', 'Issues', 'Invites', 'VPN', 'Scripts', 'Pages', 'Notifications']);
     assert.deepEqual(texts(sidecar, '[data-section="accounts"] .stolon-subsection-title'), ['Password requirements', 'Expiry', 'Inactivity', 'Session management']);
     assert.equal(sidecar.querySelectorAll('[data-role="coming"]').length, 0);
@@ -98,7 +100,7 @@ test('a group opens in a sidecar named for it, with its sections, and Delete, Ca
     assert.equal(sidecar.querySelector('[data-field="Name"]').value, 'Family');
 });
 
-test('Everyone opens with no name field, no members to pick, and no Delete', async function () {
+test('Everyone opens with no name field, no members to pick, no Remove, and no word on several groups', async function () {
     var opened = await openPage();
     var sidecar = await openRow(opened, 0);
 
@@ -106,6 +108,82 @@ test('Everyone opens with no name field, no members to pick, and no Delete', asy
     assert.equal(sidecar.querySelector('[data-field="Name"]'), null);
     assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Cancel', 'Save']);
     assert.match(sidecar.querySelector('[data-section="members"]').textContent, /every user who is in no other group/);
+    assert.doesNotMatch(sidecar.textContent, /gets every allow/);
+});
+
+// tile
+// Reads the color class of a section's icon tile.
+function tile(sidecar, key) {
+    var el = sidecar.querySelector('[data-section="' + key + '"] .stolon-collapsible-tile');
+    return ['green', 'gray', 'red', 'blue'].filter(function (c) { return el.classList.contains('stolon-' + c); })[0] || 'accent';
+}
+
+test('each tool section tile is green while the group gives members the tool and gray while it gives nothing', async function () {
+    var opened = await openPage();
+    var sidecar = await openRow(opened, 1);
+
+    assert.equal(tile(sidecar, 'members'), 'accent');
+    assert.equal(tile(sidecar, 'accounts'), 'accent');
+    assert.equal(tile(sidecar, 'requests'), 'green');
+    assert.equal(tile(sidecar, 'issues'), 'gray');
+    assert.equal(tile(sidecar, 'scripts'), 'gray');
+    var report = sidecar.querySelector('[data-field="Issues.MayReport"]');
+    report.checked = true;
+    report.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    assert.equal(tile(sidecar, 'issues'), 'green');
+    var request = sidecar.querySelector('[data-field="Requests.MayRequest"]');
+    request.checked = false;
+    request.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    assert.equal(tile(sidecar, 'requests'), 'gray');
+});
+
+test('the Jellyfin settings tiles follow their switch, and Preferences hides while the group sets nothing', async function () {
+    var opened = await openPage();
+    var sidecar = await openRow(opened, 1);
+    var prefs = sidecar.querySelector('[data-section="template-preferences"]');
+
+    assert.equal(tile(sidecar, 'template-access'), 'gray');
+    assert.ok(prefs.classList.contains('stolon-hidden'));
+    var on = sidecar.querySelector('[data-field="Template.Enabled"]');
+    on.checked = true;
+    on.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    assert.equal(tile(sidecar, 'template-access'), 'green');
+    assert.equal(prefs.classList.contains('stolon-hidden'), false);
+    assert.equal(tile(sidecar, 'template-preferences'), 'green');
+});
+
+test('grantsAny holds while a switch is on or a list holds an entry, and eventGroups sorts events by tool without the tools that are off', async function () {
+    installPage({ config: allToolsOn() });
+    var mod = await loadScript('necto_groups.js');
+
+    assert.equal(mod.grantsAny({ Scripts: { AllScripts: false, ScriptIds: [] } }, ['Scripts.AllScripts', 'Scripts.ScriptIds']), false);
+    assert.equal(mod.grantsAny({ Scripts: { AllScripts: false, ScriptIds: ['a'] } }, ['Scripts.AllScripts', 'Scripts.ScriptIds']), true);
+    assert.equal(mod.grantsAny({}, ['Invites.MayCreate']), false);
+    var events = [
+        { Key: 'storage.disk_missing', Name: 'Disk missing', Tool: 'storage' },
+        { Key: 'requests.created', Name: 'New request', Tool: 'requests' },
+        { Key: 'proxy.banned', Name: 'Address banned', Tool: 'proxy' }
+    ];
+    var all = mod.eventGroups(events, null);
+    assert.deepEqual(all.map(function (g) { return g.name; }), ['Requests', 'Proxy', 'Storage']);
+    assert.deepEqual(mod.eventGroups(events, { Requests: { Enabled: true } }).map(function (g) { return g.key; }), ['requests']);
+});
+
+test('the Notifications section lists events under their tool by name only, and hides them while every event goes', async function () {
+    var opened = await openPage({ 'GET Notifications/Events': [
+        { Key: 'requests.created', Name: 'New request', Tool: 'requests' },
+        { Key: 'storage.disk_missing', Name: 'Disk missing', Tool: 'storage' }
+    ] });
+    var sidecar = await openRow(opened, 1);
+    var section = sidecar.querySelector('[data-section="notifications"]');
+    var events = section.querySelector('[data-field="Notifications.EventKeys"]');
+
+    assert.deepEqual(texts(events, '.stolon-subsection-title'), ['Requests', 'Storage']);
+    assert.doesNotMatch(events.textContent, /requests\.created|storage\.disk_missing/);
+    var every = section.querySelector('[data-field="Notifications.AllEvents"]');
+    every.checked = true;
+    every.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    assert.ok(events.classList.contains('stolon-hidden'));
 });
 
 test('Save puts the edited group to its own route with the fields the editor shows', async function () {
@@ -166,27 +244,25 @@ test('an expiry turned on with no date is refused before anything is sent', asyn
     assert.match(sidecar.querySelector('[data-role="status"]').textContent, /Select an expiry date/);
 });
 
-test('userCounts counts administrators, active, inactive, disabled, and soon expiring users', async function () {
+test('groupCounts counts the groups, the users in one, the users only Everyone holds, and those expiring soon', async function () {
     installPage({ config: allToolsOn() });
     var mod = await loadScript('necto_groups.js');
     var now = new Date(2026, 10, 26, 12, 0, 0);
 
-    var counts = mod.userCounts([
-        { IsAdministrator: true, ExpiresOn: '2026-11-27T00:00:00' },
-        { InactiveDays: 30, LastActivityDate: new Date(2026, 10, 20).toISOString() },
-        { InactiveDays: 30, LastActivityDate: new Date(2026, 9, 1).toISOString(), ExpiresOn: '2026-12-03T00:00:00' },
-        { IsDisabled: true, ExpiresOn: '2026-11-26T00:00:00' },
-        { ExpiresOn: '2026-12-04T00:00:00' },
-        { ExpiresOn: '2026-11-25T00:00:00' }
+    var counts = mod.groupCounts(groups(), [
+        { IsAdministrator: true, GroupIds: [], ExpiresOn: '2026-11-27T00:00:00' },
+        { GroupIds: [FAMILY], ExpiresOn: '2026-12-03T00:00:00' },
+        { GroupIds: [EVERYONE], ExpiresOn: '2026-12-04T00:00:00' },
+        { GroupIds: [EVERYONE.replace(/-/g, '')] }
     ], now);
 
-    assert.deepEqual(counts, { admins: 1, active: 3, inactive: 1, disabled: 1, expiring: 2 });
+    assert.deepEqual(counts, { groups: 1, members: 1, loose: 2, expiring: 1 });
 });
 
-test('the page shows the user count cards over the list', async function () {
+test('the page shows the group count cards over the list', async function () {
     var page = installPage({ config: allToolsOn() });
     var dom = page.dom;
-    var view = pageView(dom, [dom.el('div', { id: 'groupUserCards' }), dom.el('div', { id: 'groupList' }), dom.el('button', { id: 'btnAddGroup' }), dom.el('span', { id: 'groupsStatus' })]);
+    var view = pageView(dom, [dom.el('div', { id: 'groupCards' }), dom.el('div', { id: 'groupList' }), dom.el('button', { id: 'btnAddGroup' }), dom.el('span', { id: 'groupsStatus' })]);
     dom.document.documentElement.appendChild(view);
     routeApi(page, { 'GET Groups': groups(), 'GET Groups/Users': users(), 'GET Devices': { Items: [] } });
     var mod = await loadScript('necto_groups.js');
@@ -194,11 +270,11 @@ test('the page shows the user count cards over the list', async function () {
     view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
     await settle();
 
-    var text = view.querySelector('#groupUserCards').textContent;
-    assert.match(text, /1\s*Administrators/);
-    assert.match(text, /2\s*Active/);
-    assert.match(text, /Inactive/);
-    assert.match(text, /Expiring/);
+    var text = view.querySelector('#groupCards').textContent;
+    assert.match(text, /1\s*Groups/);
+    assert.match(text, /1\s*Members/);
+    assert.match(text, /1\s*No group/);
+    assert.match(text, /0\s*Expiring/);
 });
 
 test('deletesOnExpiry holds only for a group with an expiry date and Delete as its method', async function () {
@@ -235,33 +311,33 @@ test('saving a group that deletes its members on expiry asks first, and Cancel s
     assert.equal(sent(opened)[0].type, 'PUT');
 });
 
-test('Delete asks first with a title naming the group and says what follows, and Cancel sends nothing', async function () {
+test('Remove asks first with a title naming the group and says what follows, and Cancel sends nothing', async function () {
     var opened = await openPage();
     var sidecar = await openRow(opened, 1);
-    clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Delete');
+    clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Remove');
     await settle(50);
 
     var dialog = dialogText(opened.dom);
-    assert.equal(dialog.title, 'Delete Family');
-    assert.equal(dialog.body, 'Its members keep their other groups. A member in no other group takes Everyone.');
+    assert.equal(dialog.title, 'Remove Family');
+    assert.equal(dialog.body, 'Its members keep their accounts and their other groups. A member in no other group takes Everyone.');
     assert.doesNotMatch(dialog.body, /\?/);
     clickDialogButton(opened.dom, 'Cancel');
     await settle(50);
     assert.equal(sent(opened).length, 0);
 });
 
-test('Delete confirmed sends the delete to the group\'s route and reports it', async function () {
+test('Remove confirmed sends the delete to the group\'s route and reports it', async function () {
     var opened = await openPage();
     var sidecar = await openRow(opened, 1);
-    clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Delete');
+    clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Remove');
     await settle(50);
-    clickDialogButton(opened.dom, 'Delete');
+    clickDialogButton(opened.dom, 'Remove');
     await settle(50);
 
     var del = sent(opened)[0];
     assert.equal(del.type, 'DELETE');
     assert.equal(del.url, 'Groups/' + FAMILY);
-    assert.match(opened.view.querySelector('#groupsStatus').textContent, /Group deleted\./);
+    assert.match(opened.view.querySelector('#groupsStatus').textContent, /Group removed\./);
 });
 
 test('the Requests and Issues sections hold every permission, built, with the profiles of each type to pick from', async function () {

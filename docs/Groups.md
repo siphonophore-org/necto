@@ -4,7 +4,7 @@ Groups set what their members may do in every Necto tool, and hold the account r
 
 ## The Groups Tool
 
-Cards at the top count the server's users: **Administrators**, **Active**, **Inactive** for members past their groups' inactivity window, **Disabled**, and **Expiring** for members whose groups expire them within 7 days.
+Cards at the top count the **Groups** besides **Everyone**, the **Members** in one, the users in **No group**, whom **Everyone** holds, and the members **Expiring** within 7 days. Administrators are left out, since no group holds them. The cards show a dash until the groups are read.
 
 | Groups | Groups on a phone |
 | :---: | :---: |
@@ -14,17 +14,17 @@ Cards at the top count the server's users: **Administrators**, **Active**, **Ina
 
 **Groups** lists every group, **Everyone** first, then the others in group order. Each row shows how many members the group has and which account rules it has on. Select a row to open the group in a sidecar, select **Add group** to start a new one, or select **Group order** to reorder them.
 
-The sidecar holds the group's name, its members, **Account rules**, **Access and features**, **Preferences**, and one collapsible section per tool. Its shelf holds **Delete**, **Cancel**, and **Save**. **Save** asks first while the group has an expiry date and **Delete the account** as its method, since those members cannot come back. **Delete** asks first, with the group's name in the title, such as "Delete Family". Its members keep their other groups, and a member in no other group takes **Everyone**.
+The sidecar holds the group's name, its members, **Account rules**, **Access and features**, **Preferences**, and one collapsible section per tool that is on. Its shelf holds **Remove**, **Cancel**, and **Save**. **Save** asks first while the group has an expiry date and **Delete the account** as its method, since those members cannot come back. **Remove** asks first, with the group's name in the title, such as "Remove Family". Its members keep their accounts and their other groups, and a member in no other group takes **Everyone**.
 
-Every tool fills its own section.
+Every tool fills its own section. A section's tile is green while the group gives members anything in that tool, such as **Allow requests** or a picked script, and gray while it gives nothing. **Access and features** and **Preferences** follow **Set Jellyfin settings**, and **Preferences** shows only while it is on.
 
 ## Group Order
 
-**Group order** opens the groups in a sidecar, each with **Move up** and **Move down**, and **Save** keeps the order. The order decides whose template a member of several groups takes. **Everyone** always comes first, and only applies to users in no group.
+**Group order** opens the groups in a sidecar, each with **Move up** and **Move down**, and **Save** keeps the order. The order decides whose Jellyfin settings a member of several groups takes. **Everyone** always comes first, and only applies to users in no group.
 
 ## Everyone
 
-**Everyone** always exists and cannot be deleted or renamed. It holds every user who is in no other group, so its permissions and rules apply only to those users. A user in a group never takes **Everyone**. On a fresh install it gives nothing but the updates about a user's own requests and issues, in **Notifications**.
+**Everyone** always exists and cannot be removed or renamed. It holds every user who is in no other group, so its permissions and rules apply only to those users. A user in a group never takes **Everyone**. On a fresh install it gives nothing but the updates about a user's own requests and issues, in **Notifications**.
 
 ## Members
 
@@ -48,7 +48,7 @@ The account rules combine the other way, since any one group may keep a member's
 
 Administrators are never held to an account rule.
 
-A template writes whole Jellyfin settings, so it does not combine. A member takes the template of the first of their groups, in group order, that has **Set Jellyfin settings** on. A user in no group takes Everyone's.
+Jellyfin settings are written whole, so they do not combine. A member takes the Jellyfin settings of the first of their groups, in group order, that has **Set Jellyfin settings** on. A user in no group takes Everyone's.
 
 ## Account Rules
 
@@ -88,18 +88,18 @@ A refused change shows the reason on the password form, and writes "Password cha
 * Each rule sets **Applies to**, its **Clients**, and **Days before logout**. **All clients** covers every client, **Only these clients** covers the listed ones, and **All except these clients** covers the rest.
 * Where several rules of one group cover a client, the shortest window wins, and the editor names the clients that overlap.
 
-## Templates
+## Jellyfin Settings
 
 **Access and features** and **Preferences** write Jellyfin's own user settings onto members.
 
-* **Set Jellyfin settings** turns the group's template on. It is written onto members when a group is saved or reordered, when a user is created or joins through an invite, and when the server starts.
+* **Set Jellyfin settings** turns them on for the group. They are written onto members when a group is saved or reordered, when a user is created or joins through an invite, and when the server starts.
 * Each setting shows **Member** or **Group**. **Member** leaves the setting as each member has it. **Group** sets it to the value under it.
 * **Access and features** holds Jellyfin's library, channel, and device access, media deletion, playback, Live TV, remote control, parental control with the access schedule, and the profile's switches, such as **Disable this user** and **Hide this user from login screens**.
 * **Maximum allowed parental rating** lists each rating once per score and sub score, and keeps both, as Jellyfin does.
 * **Preferences** holds the subtitle and audio languages and modes, **Google cast version**, missing episodes, the Collections view, the ten home screen sections, the library order, and the libraries on the home screen, in home sections, and grouped into views. **Subtitle mode** explains the picked mode under it.
-* While the template sets **Library access** to some libraries, the library order and the library lists leave out the libraries members cannot see. A library left out keeps its place and its choices.
-* A template that sets **Disable this user** off never turns on an account its groups' expiry or inactivity turned off.
-* Administrators are never changed by a template.
+* While the group sets **Library access** to some libraries, the library order and the library lists leave out the libraries members cannot see. A library left out keeps its place and its choices.
+* A group that sets **Disable this user** off never turns on an account its groups' expiry or inactivity turned off.
+* Administrators are never changed by a group's Jellyfin settings.
 
 ## Tool Permissions
 
@@ -111,7 +111,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 | **VPN** | **Allow peers**, **Peers per member**, **Data per member (GB)**, **Period**. See [VPN](VPN.md#permissions) |
 | **Scripts** | **Run every script**, **Scripts that run**. See [Scripts](Scripts.md#groups) |
 | **Pages** | **Open every page**, **Pages members may open** |
-| **Notifications** | **Receive every event**, **Events**, **Browser notifications**, **Jellyfin messages**. See [Notifications](Notifications.md#who-gets-an-event) |
+| **Notifications** | **Receive every event**, **Events** under the tool that sends each, hidden while **Receive every event** is on, **Browser notifications**, **Jellyfin messages**. See [Notifications](Notifications.md#who-gets-an-event) |
 
 ## Scheduled Tasks
 
@@ -120,7 +120,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 | **Process expired and inactive users** | Disables or deletes users whose groups have expired, and disables inactive users | Daily at midnight |
 | **Clean expired sessions** | Logs out devices past their groups' session windows | Daily at midnight |
 | **Apply password rules** | Drops administrators and deleted users from the groups, and moves users onto or off password rules | When the server starts |
-| **Apply group templates** | Writes each user's group template onto their Jellyfin policy and preferences | When the server starts |
+| **Apply group Jellyfin settings** | Writes each user's group Jellyfin settings onto their account | When the server starts |
 
 ## Settings
 
@@ -138,7 +138,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 ![Groups troubleshooting](screenshots/troubleshooting/Groups.png)
 
 * **Apply rules** moves users onto or off password rules by their groups, and drops administrators from every group.
-* **Apply templates** writes each user's group template onto them, and reports how many took one.
+* **Apply settings** under **Jellyfin settings** writes each user's group Jellyfin settings onto them, and reports how many took them.
 * **Run now** beside **Process expired and inactive users** asks first, then runs the task. A deleted user cannot come back.
 * **Run now** beside **Clean expired sessions** runs the task.
 * **Password resets** counts the pending resets that are **Active**, **Expiring** within 5 minutes, and **Expired**, warns to use HTTPS, and lists each with its user, its state, and its code, expired ones last, while **Show reset codes** is on.
@@ -152,7 +152,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 
 | Entry | When |
 | :--- | :--- |
-| "Group created", "Group deleted" | A group is created or deleted |
+| "Group created", "Group removed" | A group is created or removed |
 | "Users enrolled in password rules", "Users removed from password rules" | Users move onto or off password rules |
 | "Password change blocked", "Password change rejected" | A member's own change is refused |
 | "Users disabled", "Users deleted" | Expiry or inactivity changed accounts in a run |
@@ -170,12 +170,12 @@ Every route is for administrators.
 | `GET /Groups/{id}` | Gives one group |
 | `POST /Groups` | Creates a group |
 | `PUT /Groups/{id}` | Saves a group's name, members, and permissions |
-| `DELETE /Groups/{id}` | Deletes a group |
+| `DELETE /Groups/{id}` | Removes a group |
 | `GET /Groups/Users` | Lists the users with the groups that apply to each, and the expiry date and inactivity window those groups give |
 | `GET /Groups/Users/{userId}/Permissions` | Gives what a user may do in every tool |
 | `POST /Groups/PasswordRules/Apply` | Moves users onto or off password rules |
 | `GET /Groups/ResetCodes` | Lists the pending password resets while **Show reset codes** is on |
-| `PUT /Groups/Order` | Puts the groups in a new order from every group's id, then writes the templates |
-| `POST /Groups/Templates/Apply` | Writes each user's group template, and gives how many took one |
+| `PUT /Groups/Order` | Puts the groups in a new order from every group's id, then writes the Jellyfin settings |
+| `POST /Groups/Templates/Apply` | Writes each user's group Jellyfin settings, and gives how many took them |
 
 A refused change answers `400` with `{ "Error": "..." }`, and a missing group or user answers `404`.

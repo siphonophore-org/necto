@@ -133,7 +133,7 @@ public class GroupStoreTests
     }
 
     /// <summary>
-    /// Deleting a group removes it, writes an entry, and clears the settings that name it.
+    /// Removing a group takes it out, writes a Group removed entry, and clears the settings that name it.
     /// True: its members fall back to their other groups or Everyone.
     /// False: a deleted group would keep applying, or linger as the group for new users.
     /// </summary>
@@ -148,7 +148,7 @@ public class GroupStoreTests
         Assert.True(change.Succeeded);
         Assert.Empty(_config.Configuration.Groups);
         Assert.Null(_config.Configuration.GroupSettings.NewUserGroupId);
-        Assert.Contains("Group deleted", _activity.Names);
+        Assert.Contains("Group removed", _activity.Names);
     }
 
     /// <summary>
