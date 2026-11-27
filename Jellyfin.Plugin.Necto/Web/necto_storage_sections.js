@@ -146,18 +146,17 @@ export function alertOrderError(t, value) {
 }
 
 // panelOf
-// Builds an alert's panel: its icon in its color and its name, a slider, and what the point means.
+// Builds an alert's panel: its icon in its color and its name, over the sliders that set its point.
 //
 // Inputs
 // icon [string]: The Material icon.
 // tone [string]: warning or error, the icon's color.
 // label [string]: The alert's name.
-// point [string]: What passing the point means.
 //
 // Output
-// [object]: { element, body }, where body takes the sliders before the description.
-function panelOf(icon, tone, label, point) {
-    var body = h('div', { class: 'stolon-panel-body' }, [h('div', { class: 'fieldDescription', text: point })]);
+// [object]: { element, body }, where body takes the sliders.
+function panelOf(icon, tone, label) {
+    var body = h('div', { class: 'stolon-panel-body' });
     var panel = h('div', { class: 'stolon-panel necto-storage-alert-panel' }, [
         h('div', { class: 'stolon-panel-header necto-storage-alert-header' }, [
             h('span', { class: 'material-icons necto-storage-alert-' + tone, 'aria-hidden': 'true', text: icon }),
@@ -208,8 +207,8 @@ export function createAlertEditor(t, options) {
 
     var alerts = {};
     [
-        { stop: 'warning', icon: 'warning', label: t.tr('StorageAlertLow'), help: t.tr('StorageHelpWarningAt'), point: t.tr('StorageHelpWarningPoint') },
-        { stop: 'error', icon: 'error', label: t.tr('StorageAlertFull'), help: t.tr('StorageHelpErrorAt'), point: t.tr('StorageHelpErrorPoint') }
+        { stop: 'warning', icon: 'warning', label: t.tr('StorageAlertLow'), help: t.tr('StorageHelpWarningAt') },
+        { stop: 'error', icon: 'error', label: t.tr('StorageAlertFull'), help: t.tr('StorageHelpErrorAt') }
     ].forEach(function (alert) {
         var check = nectoModule.createCheckbox({
             label: alert.label,
@@ -224,7 +223,7 @@ export function createAlertEditor(t, options) {
         });
         check.element.setAttribute('data-stop', alert.stop);
         checks.appendChild(check.element);
-        var panel = panelOf(alert.icon, alert.stop, alert.label, alert.point);
+        var panel = panelOf(alert.icon, alert.stop, alert.label);
 
         // One slider per unit, so switching units keeps where each one sits.
         var sliders = {};
@@ -242,7 +241,7 @@ export function createAlertEditor(t, options) {
                     changed();
                 }
             });
-            panel.body.insertBefore(sliders[name].element, panel.body.lastChild);
+            panel.body.appendChild(sliders[name].element);
         });
         panels.appendChild(panel.element);
         alerts[alert.stop] = { check: check, panel: panel.element, sliders: sliders };
@@ -362,8 +361,8 @@ export function createHealthEditor(t, onChange) {
 
     [
         { key: 'Failing', label: t.tr('StorageHealthFailing'), help: t.tr('StorageHelpAlertFailing') },
-        { key: 'Hot', label: t.tr('StorageAlertHot'), help: t.tr('StorageHelpAlertHot'), icon: 'thermostat', tone: 'error', point: t.tr('StorageHelpHotPoint'), min: 40, max: 80, start: 60, suffix: ' °C' },
-        { key: 'Worn', label: t.tr('StorageAlertWorn'), help: t.tr('StorageHelpAlertWorn'), icon: 'battery_alert', tone: 'warning', point: t.tr('StorageHelpWornPoint'), min: 50, max: 100, start: 90, suffix: t.tr('StorageUnitPercentUsed') }
+        { key: 'Hot', label: t.tr('StorageAlertHot'), help: t.tr('StorageHelpAlertHot'), icon: 'thermostat', tone: 'error', min: 40, max: 80, start: 60, suffix: ' °C' },
+        { key: 'Worn', label: t.tr('StorageAlertWorn'), help: t.tr('StorageHelpAlertWorn'), icon: 'battery_alert', tone: 'warning', min: 50, max: 100, start: 90, suffix: t.tr('StorageUnitPercentUsed') }
     ].forEach(function (alert) {
         checks[alert.key] = nectoModule.createCheckbox({
             label: alert.label,
@@ -379,9 +378,9 @@ export function createHealthEditor(t, onChange) {
         // Failing has no setting of its own, so it sits on its own row above the two alerts that do.
         (alert.min ? checksRow : failingRow).appendChild(checks[alert.key].element);
         if (!alert.min) return;
-        var panel = panelOf(alert.icon, alert.tone, alert.label, alert.point);
+        var panel = panelOf(alert.icon, alert.tone, alert.label);
         sliders[alert.key] = nectoModule.createSliderField({ min: alert.min, max: alert.max, step: 1, value: alert.start, suffix: alert.suffix, label: alert.label, onChange: changed });
-        panel.body.insertBefore(sliders[alert.key].element, panel.body.lastChild);
+        panel.body.appendChild(sliders[alert.key].element);
         panels.appendChild(panel.element);
         boxes[alert.key] = panel.element;
     });
