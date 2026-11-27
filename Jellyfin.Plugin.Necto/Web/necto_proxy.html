@@ -1,5 +1,5 @@
 <!-- necto_proxy.html -->
-<!-- The Proxy tool. It shows how the proxy stands, lists its routes, lets Jellyfin trust it, and shows its visitors. -->
+<!-- The Proxy tool. It counts the routes by state, and lists the routes and the visitors under their own tabs. -->
 
 <div id="NectoProxyPage" data-role="page" class="page type-interior pluginConfigurationPage"
      data-require="emby-input,emby-button,emby-select,emby-checkbox"
@@ -16,17 +16,11 @@
 
                 <div id="proxyStatus" class="stolon-status-text" role="status"></div>
 
-                <!-- Routes -->
-                <!-- Every route, with search, a state filter, Add route, and bulk actions on the rows picked, each opening its editor. -->
+                <!-- Tabs -->
+                <!-- Routes, every route in a table with search, a state filter, Add route, and bulk actions, each opening
+                     its editor, and Visitors, the visits, bans, and countries, each drawn the first time it opens. -->
+                <div id="proxyTabs"></div>
                 <div id="proxyRoutes"></div>
-
-                <!-- Jellyfin -->
-                <!-- Lets Jellyfin trust the proxy, so it sees each visitor's address, and puts it back. -->
-                <div id="proxyJellyfin"></div>
-
-                <!-- Visitors -->
-                <!-- Who reached the proxy from where, the bans, and the block list. -->
-                <div id="proxyVisitors"></div>
             </div>
         </div>
     </div>

@@ -937,7 +937,7 @@ export default function (view) {
             filters: [{
                 label: t.tr('StorageLabelShown'),
                
-                options: [{ value: 'InUse', label: t.tr('StorageFilterJellyfin') }],
+                options: [{ value: 'InUse', label: t.tr('LabelJellyfin') }],
                 initialValue: 'InUse',
                 test: function (disk) { return !!disk.InUse; }
             }],

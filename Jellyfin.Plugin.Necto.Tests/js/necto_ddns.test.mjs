@@ -39,7 +39,7 @@ test('a record row names it once, with its provider, and ends with its state, Of
     assert.equal(ddns.recordName(second.Record, PROVIDERS), 'Office');
     assert.equal(ddns.recordLine(second, PROVIDERS, bag.t), 'DynDNS v2 · Follows 2 proxy names');
     assert.deepEqual(ddns.recordBadge(second, bag.t), { label: 'Off', color: 'gray' });
-    assert.deepEqual(ddns.stateFilters(bag.t).map(function (f) { return f.label; }), ['Up to date', 'Needs attention', 'Not checked yet', 'Off']);
+    assert.deepEqual(ddns.stateFilters(bag.t).map(function (f) { return f.label; }), ['Up to date', 'Needs attention', 'Not checked', 'Off']);
 });
 
 test('resultTag says a record that never ran is not checked yet', async function () {
@@ -154,12 +154,9 @@ test('countCards counts the records, those up to date and those that need attent
     }, bag.t);
 
     assert.deepEqual(cards.map(function (c) { return [c.label, c.count]; }), [
-        ['Up to date', 1], ['Needs attention', 2], ['Not checked yet', 0], ['Off', 1]
+        ['Up to date', 1], ['Needs attention', 2], ['Not checked', 0], ['Off', 1], ['Public IPv4', '203.0.113.10'], ['Public IPv6', 'Not found']
     ]);
-    assert.deepEqual(cards.map(function (c) { return c.color; }), ['green', 'orange', 'gray', 'gray']);
-    var card = ddns.addressCard({ DetectedIPv4: '203.0.113.10', DetectedIPv6: '' }, bag.t);
-    assert.match(card.textContent, /Public IPv4203\.0\.113\.10/);
-    assert.match(card.textContent, /Public IPv6Not found/);
+    assert.deepEqual(cards.map(function (c) { return c.color; }), ['green', 'orange', 'gray', 'gray', 'blue', 'gray']);
 });
 
 test('the provider field links its setup guide on the docs site', async function () {
@@ -187,7 +184,7 @@ test('outcomeMessage counts the records updated and failed', async function () {
 async function openDdns(entries) {
     var page = installPage({});
     var dom = page.dom;
-    var view = pageView(dom, [dom.el('div', { id: 'ddnsNotices' }), dom.el('div', { id: 'ddnsCards' }), dom.el('div', { id: 'ddnsAddress' }), dom.el('div', { id: 'ddnsStatus' }), dom.el('div', { id: 'ddnsRecords' })]);
+    var view = pageView(dom, [dom.el('div', { id: 'ddnsNotices' }), dom.el('div', { id: 'ddnsCards' }), dom.el('div', { id: 'ddnsStatus' }), dom.el('div', { id: 'ddnsRecords' })]);
     dom.document.documentElement.appendChild(view);
     routeApiByPath(page, {
         'GET Ddns/Providers': PROVIDERS,
@@ -211,7 +208,7 @@ test('the page draws the cards with the public address and a table row per recor
     var opened = await openDdns(RECORDS);
     var view = opened.view;
 
-    assert.ok(view.querySelector('#ddnsAddress').textContent.indexOf('203.0.113.10') >= 0);
+    assert.ok(view.querySelector('#ddnsCards').textContent.indexOf('203.0.113.10') >= 0);
     var rows = view.querySelectorAll('#ddnsRecords .stolon-table-row');
     assert.equal(rows.length, 2);
     assert.match(rowHtml(rows[0]), /home\.example\.com[\s\S]*Cloudflare[\s\S]*Up to date/);
@@ -225,7 +222,7 @@ test('the toolbar has search, the state filter, Add record, and Update now, and 
     var controls = opened.view.querySelector('#ddnsRecords .stolon-table-controls');
 
     assert.equal(controls.querySelector('input').getAttribute('placeholder'), 'Search records');
-    assert.deepEqual(texts(controls, 'select option'), ['All', 'Up to date', 'Needs attention', 'Not checked yet', 'Off']);
+    assert.deepEqual(texts(controls, 'select option'), ['All', 'Up to date', 'Needs attention', 'Not checked', 'Off']);
     assert.deepEqual(texts(controls, 'button.stolon-button'), ['addAdd record', 'refreshUpdate now']);
     assert.deepEqual(texts(opened.view.querySelector('.stolon-table-bulk-actions'), '[data-bulk]'), ['Enable', 'Disable', 'Remove']);
 });

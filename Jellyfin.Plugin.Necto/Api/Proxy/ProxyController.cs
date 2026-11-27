@@ -121,8 +121,8 @@ public class ProxyController : ControllerBase
     /// <summary>
     /// Lists one page of routes for the Proxy tool's table, in their order, each with its certificate's status.
     /// </summary>
-    /// <param name="query">The page, the search over each host name and upstream, and a state in the filter, such as
-    /// Ready or Off, or All.</param>
+    /// <param name="query">The page, the search over each host name and upstream, and a state in the filter, Off,
+    /// Untrusted, Http, Incomplete, or Https, or All.</param>
     /// <returns>The page.</returns>
     [HttpGet("Routes/All")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -131,10 +131,11 @@ public class ProxyController : ControllerBase
         var settings = Read();
         var statuses = _proxy.RouteStatuses(settings);
         var now = DateTime.UtcNow;
+        var trust = _orchestrator.State.Phase;
         var rows = settings.Routes.Select(route =>
         {
             var status = statuses.FirstOrDefault(s => string.Equals(s.Id, route.Id, StringComparison.Ordinal));
-            return new RouteRow(Redact(route), status, RouteRow.StateOf(route, status, now));
+            return new RouteRow(Redact(route), status, RouteRow.StateOf(route, status, trust), RouteRow.DetailOf(route, status, trust, now));
         });
         return Ok(TablePage.Of(rows, query, r => r.State, r => new[] { r.Route.Host, r.Route.Upstream, r.Route.LocalHost }));
     }

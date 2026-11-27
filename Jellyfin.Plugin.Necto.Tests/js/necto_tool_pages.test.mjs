@@ -96,7 +96,7 @@ test('the Scripts tool draws a saved script from its own markup', async function
     assert.deepEqual(opened.errors, []);
     var rows = opened.view.querySelectorAll('#scriptsTable .stolon-table-row');
     assert.equal(rows.length, 1);
-    assert.match(rowHtml(rows[0]), /Notify[\s\S]*Item added · Restrictive \(1 group\)[\s\S]*Not run yet/);
+    assert.match(rowHtml(rows[0]), /Notify[\s\S]*Item added · Restrictive \(1 group\)[\s\S]*Not run/);
     assert.deepEqual(Array.prototype.map.call(opened.view.querySelectorAll('#scriptsTable .stolon-table-controls button.stolon-button'), function (b) { return b.id; }),
         ['btnNewScript', 'btnImportScripts', 'btnExportScripts']);
     assert.deepEqual(texts(opened.view.querySelector('#scriptsTable .stolon-table-bulk-actions'), '[data-bulk]'), ['Enable', 'Disable', 'Export', 'Remove']);

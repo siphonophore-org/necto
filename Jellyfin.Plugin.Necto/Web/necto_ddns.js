@@ -92,7 +92,7 @@ export function resultTag(record, t) {
 var STATES = {
     UpToDate: { key: 'DdnsResultUnchanged', color: 'green' },
     Attention: { key: 'DashboardStateAttention', color: 'orange' },
-    NotChecked: { key: 'DdnsResultNotChecked', color: 'purple' },
+    NotChecked: { key: 'DdnsStateNotChecked', color: 'purple' },
     Off: { key: 'Off', color: 'gray' }
 };
 
@@ -145,7 +145,8 @@ export function recordBadge(entry, t) {
 
 // countCards
 // Gives the cards at the top of the tool: how many records are in each state, in the words and colors of the rows'
-// badges. A state with none is gray.
+// badges, then the public addresses the last run found, which every record shares. A state with none, and an address
+// not found, is gray.
 //
 // Inputs
 // data [object]: The answer from Ddns/Records.
@@ -155,32 +156,11 @@ export function recordBadge(entry, t) {
 // [object[]]: The cards, each { count, label, color }.
 export function countCards(data, t) {
     var entries = (data && data.Records) || [];
+    var address = function (value, key) { return { count: value || t.tr('TextNotFound'), label: t.tr(key), color: value ? 'blue' : 'gray' }; };
     return Object.keys(STATES).map(function (state) {
         var count = entries.filter(function (e) { return e.State === state; }).length;
         return { count: count, label: t.tr(STATES[state].key), color: count ? STATES[state].color : 'gray' };
-    });
-}
-
-// addressCard
-// Builds the record card of the public addresses the last run found, which every record shares.
-//
-// Inputs
-// data [object]: The answer from Ddns/Records.
-// t [object]: The strings.
-//
-// Output
-// [HTMLElement]: The card.
-export function addressCard(data, t) {
-    var row = function (labelKey, value) {
-        return h('div', { class: 'stolon-record-row' }, [
-            h('span', { class: 'stolon-record-label', text: t.tr(labelKey) }),
-            h('span', { class: value ? 'stolon-mono' : 'stolon-muted', text: value || t.tr('TextNotFound') })
-        ]);
-    };
-    return h('div', { class: 'stolon-record-card', 'data-role': 'public-address' }, [
-        row('DdnsLabelPublicIpv4', data && data.DetectedIPv4),
-        row('DdnsLabelPublicIpv6', data && data.DetectedIPv6)
-    ]);
+    }).concat([address(data && data.DetectedIPv4, 'DdnsLabelPublicIpv4'), address(data && data.DetectedIPv6, 'DdnsLabelPublicIpv6')]);
 }
 
 // newRecord
@@ -410,7 +390,7 @@ export default function (view) {
     }
 
     // showSummary
-    // Shows the count cards, the public addresses the last run found, and why one is missing.
+    // Shows the count cards with the public addresses the last run found, and why one is missing.
     function showSummary(data) {
         var t = shared.t;
         var notices = view.querySelector('#ddnsNotices');
@@ -418,9 +398,6 @@ export default function (view) {
         if (data.SecretsPlaintext) notices.appendChild(nectoModule.createBanner({ kind: 'warn', text: t.tr('DdnsKeyStoreUnavailable'), dismissible: false }).element);
         if (data.DetectionMessage) notices.appendChild(nectoModule.createBanner({ kind: 'warn', text: data.DetectionMessage, dismissible: false }).element);
         shared.renderCards('ddnsCards', countCards(data, t));
-        var address = view.querySelector('#ddnsAddress');
-        address.textContent = '';
-        address.appendChild(nectoModule.createCollapsibleSection({ title: t.tr('WireGuardLabelPublicEndpoint'), icon: 'public', collapsible: false, content: addressCard(data, t) }).element);
     }
 
     // loadRecords

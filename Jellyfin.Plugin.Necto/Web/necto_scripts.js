@@ -1652,8 +1652,8 @@ export default function (view) {
             root: view,
             beforeClose: function () {
                 if (!(tracker && tracker.isDirty())) return true;
-                return confirmDialog(t.tr('Stolon.DiscardChanges', 'Closing now loses your edits.'), {
-                    title: t.tr('Stolon.UnsavedChanges', 'Unsaved changes'), confirmText: t.tr('Stolon.Discard', 'Discard'), cancelText: t.tr('Stolon.KeepEditing', 'Keep editing'), destructive: true
+                return confirmDialog(t.tr('ScriptsConfirmDiscard'), {
+                    title: t.tr('ScriptsTitleUnsaved'), confirmText: t.tr('ScriptsButtonDiscard'), cancelText: t.tr('ScriptsButtonKeepEditing'), destructive: true
                 });
             },
             onClose: function (value) { if (value !== 'saved' && value !== 'removed' && tracker && tracker.isDirty()) discard(); }

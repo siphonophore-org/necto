@@ -86,8 +86,8 @@ test('the state filter offers Open and every state, and the type filter every ty
     var mod = await loadScript('necto_issues.js');
 
     assert.deepEqual(mod.stateFilters(t).map(function (o) { return o.label; }), ['Open', 'Reported', 'Confirmed', 'Resolved', 'Declined', 'Rescinded']);
-    assert.deepEqual(mod.issueTypes(t).map(function (o) { return o.label; }), ['Video', 'Audio', 'Subtitles', 'Wrong item or metadata', 'Does not play', 'Other']);
-    assert.equal(mod.typeName('WontPlay', t), 'Does not play');
+    assert.deepEqual(mod.issueTypes(t).map(function (o) { return o.label; }), ['Video', 'Audio', 'Subtitles', 'Metadata', "Won't play", 'Other']);
+    assert.equal(mod.typeName('WontPlay', t), "Won't play");
     assert.equal(mod.typeName('Unknown', t), 'Unknown');
 });
 

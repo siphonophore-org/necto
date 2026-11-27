@@ -28,7 +28,7 @@ var ROUTES = [
 // routeRows
 // The rows Proxy/Routes/All answers with for the routes.
 function routeRows() {
-    return [{ Route: ROUTES[0], Status: null, State: 'Ready' }, { Route: ROUTES[1], Status: null, State: 'Off' }];
+    return [{ Route: ROUTES[0], Status: null, State: 'Https', Detail: 'ExpiresSoon' }, { Route: ROUTES[1], Status: null, State: 'Off', Detail: '' }];
 }
 
 test('a route row ends with its one state badge, and its line says where it forwards', async function () {
@@ -36,11 +36,13 @@ test('a route row ends with its one state badge, and its line says where it forw
     var proxy = await loadScript('necto_proxy.js');
     var rows = routeRows();
 
-    assert.deepEqual(proxy.routeBadge(rows[0], bag.t), { label: 'HTTPS ready', color: 'green' });
+    assert.deepEqual(proxy.routeBadge(rows[0], bag.t), { label: 'HTTPS', color: 'green' });
     assert.deepEqual(proxy.routeBadge(rows[1], bag.t), { label: 'Off', color: 'gray' });
-    assert.equal(proxy.upstreamText(ROUTES[0], bag.t), 'Jellyfin');
-    assert.equal(proxy.upstreamText(ROUTES[1], bag.t), 'http://192.168.1.20:8096');
-    assert.deepEqual(proxy.routeFilters(bag.t).map(function (f) { return f.label; }), ['HTTPS ready', 'Expires soon', 'Requesting', 'No certificate yet', 'Certificate failed', 'HTTP only', 'Off']);
+    assert.deepEqual(proxy.routeLine(rows[0], bag.t).filter(Boolean), ['Jellyfin', 'Expires soon']);
+    assert.deepEqual(proxy.routeLine(rows[1], bag.t).filter(Boolean), ['http://192.168.1.20:8096', 'Local only']);
+    assert.deepEqual(proxy.routeFilters(bag.t).map(function (f) { return f.label; }), ['Untrusted', 'HTTP', 'Incomplete', 'HTTPS', 'Off']);
+    var cards = proxy.routeCards(rows.concat([{ Route: ROUTES[0], State: 'Untrusted' }]), bag.t);
+    assert.deepEqual(cards.map(function (c) { return [c.label, c.count, c.color]; }), [['Untrusted', 1, 'orange'], ['HTTP', 0, 'gray'], ['Incomplete', 0, 'gray'], ['HTTPS', 1, 'green'], ['Off', 1, 'gray']]);
 });
 
 test('certificateTag tells a certificate expiring soon, one being requested, and one that failed', async function () {
@@ -155,12 +157,10 @@ test('a DDNS name locks the host, and a wildcard takes a subdomain in front of i
     assert.equal(proxy.hostFor('*.example.com', ''), '');
 });
 
-test('statusCards and notices sum how the proxy stands', async function () {
+test('notices say how the proxy stands', async function () {
     var bag = await strings();
     var proxy = await loadScript('necto_proxy.js');
     var status = { Enabled: true, Running: false, Error: 'Port 443 is in use.', TakeoverPhase: 'Managed', Routes: [{ Id: 'a', Active: true }], Name: { Hostname: 'media.example.com', Resolves: false, Error: 'It points elsewhere.' }, EveryoneLooksLocal: true };
-    var cards = proxy.statusCards(status, ROUTES, bag.t);
-    assert.deepEqual(cards.map(function (c) { return c.count; }), ['Stopped', '1 / 2', 'Trusted', 'Points elsewhere']);
     var list = proxy.notices(status, bag.t).map(function (n) { return n.text; });
     assert.ok(list.indexOf('Port 443 is in use.') >= 0);
     assert.ok(list.indexOf('It points elsewhere.') >= 0);
@@ -226,7 +226,7 @@ test('the route editor turns Request certificate off until the proxy can order o
 test('while the proxy is off the page shows its one off line and nothing else', async function () {
     var page = installPage({});
     var dom = page.dom;
-    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyStatus', 'proxyRoutes', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }));
+    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyStatus', 'proxyTabs', 'proxyRoutes'].map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApiByPath(page, {
         'GET Proxy/Routes': { Routes: ROUTES, Status: [] },
@@ -245,10 +245,10 @@ test('while the proxy is off the page shows its one off line and nothing else', 
     assert.match(view.querySelector('#proxyOff').innerHTML, /The proxy is off\. Turn it on in Settings to forward its routes\./);
     assert.equal(view.querySelector('#proxyOff').classList.contains('stolon-hidden'), false);
     assert.equal(view.querySelector('#proxyNotices').classList.contains('stolon-hidden'), true);
-    ['proxyCards', 'proxyRoutes', 'proxyJellyfin', 'proxyVisitors'].forEach(function (id) {
+    ['proxyCards', 'proxyStatus'].forEach(function (id) {
         assert.equal(view.querySelector('#' + id).classList.contains('stolon-hidden'), true, id);
     });
-    assert.deepEqual(texts(view, '.stolon-collapsible-title'), ['Jellyfin', 'Visitors']);
+    assert.equal(view.querySelector('#proxyTabs .stolon-subtabs, #proxyTabs > *').classList.contains('stolon-hidden'), true);
 });
 
 test('the Proxy Settings section saves a value equal to its default as unset', async function () {
@@ -344,7 +344,7 @@ async function openProxyPage(answers) {
     var timers = [];
     globalThis.setTimeout = function (fn, ms) { timers.push({ fn: fn, ms: ms }); return timers.length; };
     globalThis.setInterval = function (fn, ms) { timers.push({ fn: fn, ms: ms }); return timers.length; };
-    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyStatus', 'proxyRoutes', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }));
+    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyStatus', 'proxyTabs', 'proxyRoutes'].map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApiByPath(page, Object.assign({
         'GET Proxy/Routes': { Routes: ROUTES, Status: [] },
@@ -366,9 +366,18 @@ function posts(opened, url) {
     return opened.page.requests.filter(function (r) { return r.type === 'POST' && r.url === url; });
 }
 
-test('Trust the proxy asks first, and Cancel sends nothing', async function () {
+// openTrust
+// Opens the route to Jellyfin and gives its sidecar's Trust section.
+async function openTrust(opened) {
+    opened.view.querySelectorAll('#proxyRoutes .stolon-table-row')[0].click();
+    await settle(50);
+    return opened.dom.document.querySelector('.stolon-sidecar [data-role="trust"]');
+}
+
+test('Trust the proxy lives in the route to Jellyfin, asks first, and Cancel sends nothing', async function () {
     var opened = await openProxyPage();
-    opened.view.querySelector('[data-action="trust"]').click();
+    var trust = await openTrust(opened);
+    trust.querySelector('[data-action="trust"]').click();
     await settle(50);
 
     var dialog = dialogText(opened.dom);
@@ -378,26 +387,26 @@ test('Trust the proxy asks first, and Cancel sends nothing', async function () {
     await settle(50);
     assert.equal(posts(opened, 'Proxy/Trust').length, 0);
 
-    opened.view.querySelector('[data-action="trust"]').click();
+    trust.querySelector('[data-action="trust"]').click();
     await settle(50);
     clickDialogButton(opened.dom, 'Trust');
     await settle(50);
     assert.equal(posts(opened, 'Proxy/Trust').length, 1);
 });
 
-test('the page reads the status every 10 seconds and the visitors every 30, and keeps the Jellyfin section', async function () {
+test('the page reads the status every 10 seconds and the visitors every 30', async function () {
     var opened = await openProxyPage();
     var count = function (url) { return opened.page.requests.filter(function (r) { return r.url === url; }).length; };
     var tick = function (ms) { return opened.timers.filter(function (x) { return x.ms === ms; }).pop(); };
     var before = count('Proxy/Status');
-    var section = opened.view.querySelector('#proxyJellyfin').firstChild;
+    clickButton(opened.view, 'Visitors');
+    await settle(50);
 
     assert.ok(tick(10000), 'a 10 second poller');
     assert.ok(tick(30000), 'a 30 second poller');
     tick(10000).fn();
     await settle(50);
     assert.equal(count('Proxy/Status'), before + 1);
-    assert.equal(opened.view.querySelector('#proxyJellyfin').firstChild, section);
     var seen = count('Proxy/Visitors');
     tick(30000).fn();
     await settle(50);
@@ -425,6 +434,7 @@ test('the visitor tables show the city, when each ban began, and why a row canno
             PeopleByCountry: [{ CountryCode: 'FR', Country: 'France', Count: 1, LastUtc: '2026-11-20T10:00:00Z' }]
         }
     });
+    clickButton(opened.view, 'Visitors');
     await settle(50);
     var view = opened.view;
     var ban = rowHtml(view.querySelector('#proxyBanned .stolon-table-row'));
@@ -447,6 +457,7 @@ test('unblocking a country asks first and names it', async function () {
             Activity: [{ Type: 'Blocked', Ip: '203.0.113.8', Country: 'France', CountryCode: 'FR', CountryBlocked: true, LastUtc: '2026-11-20T10:00:00Z' }]
         }
     });
+    clickButton(opened.view, 'Visitors');
     await settle(50);
     var row = opened.view.querySelector('#proxyActivity .stolon-table-row');
     assert.match(rowHtml(row), /data-row-action="unblock-country"[^>]*title="Allow connections from France"/);
@@ -650,15 +661,18 @@ test('every text field of the Proxy settings is sent as text, never null', async
     texts.forEach(function (key) { assert.equal(typeof out[key], 'string', key); });
 });
 
-test('the Jellyfin section offers Trust, and Undo only once trusted, as rows with their tiles, and its badge says where trust stands', async function () {
+test('the route to Jellyfin offers Trust, and Undo only once trusted, as rows with their tiles, and its badge says where trust stands', async function () {
     var opened = await openProxyPage();
-    var section = opened.view.querySelector('#proxyJellyfin');
+    var section = await openTrust(opened);
 
     assert.deepEqual(Array.prototype.map.call(section.querySelectorAll('.stolon-reset-row .stolon-collapsible-tile'), function (n) { return n.textContent; }), ['verified_user', 'undo']);
-    assert.equal(section.querySelectorAll('.stolon-collapsible-content > div > .fieldDescription').length, 0);
-    assert.equal(section.querySelector('[data-role="trust-state"]'), null);
-    assert.equal(section.querySelector('[data-action="undo"]').disabled, true);
     assert.ok(section.querySelector('[data-action="undo"]').closest('.stolon-reset-row').classList.contains('stolon-hidden'));
+    assert.match(section.textContent, /Not trusted/);
+    opened.dom.document.querySelector('.stolon-sidecar .stolon-dialog-close').click();
+    await settle(50);
+    opened.view.querySelectorAll('#proxyRoutes .stolon-table-row')[1].click();
+    await settle(50);
+    assert.equal(opened.dom.document.querySelector('.stolon-sidecar:not(.stolon-hidden) [data-role="trust"]'), null);
 });
 
 test('the Proxy section of Settings folds each group of settings into its own part with a tile', async function () {

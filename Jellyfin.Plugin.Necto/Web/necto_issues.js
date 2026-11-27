@@ -44,7 +44,7 @@ var VERBS = {
 export function issueTypes(t) {
     return [
         { value: 'Video', label: t.tr('Video') }, { value: 'Audio', label: t.tr('Audio') }, { value: 'Subtitles', label: t.tr('Subtitles') },
-        { value: 'Metadata', label: t.tr('IssuesTypeMetadata') }, { value: 'WontPlay', label: t.tr('IssuesTypeWontPlay') }, { value: 'Other', label: t.tr('Other') }
+        { value: 'Metadata', label: t.tr('LabelMetadata') }, { value: 'WontPlay', label: t.tr('IssuesTypeWontPlayShort') }, { value: 'Other', label: t.tr('Other') }
     ];
 }
 

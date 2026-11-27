@@ -13,7 +13,7 @@ export var CERTIFICATE_MODES = ['None', 'Automatic', 'Pkcs12File', 'PemFiles', '
 export var CHALLENGES = ['Auto', 'Http', 'Dns'];
 var PHASES = ['Unmanaged', 'PendingRestart', 'Managed', 'Degraded'];
 var ACTIVITY_TYPES = ['User', 'Failure', 'Blocked', 'Seen'];
-var ACTIVITY_KEYS = { User: 'ProxyActivityUser', Failure: 'ProxyActivityFailure', Blocked: 'HeaderRefused', Seen: 'ProxyActivitySeen' };
+var ACTIVITY_KEYS = { User: 'ProxyActivityUser', Failure: 'LabelFailed', Blocked: 'HeaderRefused', Seen: 'ProxyActivitySeen' };
 var LOCATIONS = ['Country', 'City', 'Off'];
 
 // How often the page reads the proxy's status and the visitors again, in milliseconds.
@@ -80,30 +80,69 @@ export function routeState(route, status, t) {
 }
 
 // ROUTE_STATES
-// Each state of a route's row, as Proxy/Routes/All names it, with the key of its word and its color, in the order
-// the state filter lists them.
+// Each state of a route's row, as Proxy/Routes/All names it, with the key of its word and its color, in the order the
+// count cards and the state filter list them.
 var ROUTE_STATES = {
-    Ready: { key: 'ProxyTagCertificateReady', color: 'green' },
-    ExpiresSoon: { key: 'ProxyTagExpiresSoon', color: 'orange' },
-    Requesting: { key: 'ProxyTagRequesting', color: 'purple' },
-    Waiting: { key: 'ProxyTagCertificateWaiting', color: 'orange' },
-    Failed: { key: 'ProxyTagCertificateFailed', color: 'red' },
-    NoCertificate: { key: 'ProxyTagNoCertificate', color: 'gray' },
+    Untrusted: { key: 'ProxyStateUntrusted', color: 'orange' },
+    Http: { key: 'ProxyStateHttp', color: 'blue' },
+    Incomplete: { key: 'ProxyStateIncomplete', color: 'purple' },
+    Https: { key: 'ProxyStateHttps', color: 'green' },
     Off: { key: 'Off', color: 'gray' }
 };
 
+// ROUTE_DETAILS
+// The key of the word each detail of a route's row adds to its line.
+var ROUTE_DETAILS = {
+    ExpiresSoon: 'ProxyTagExpiresSoon',
+    Requesting: 'ProxyTagRequesting',
+    Waiting: 'ProxyTagCertificateWaiting',
+    Failed: 'ProxyTagCertificateFailed',
+    Restarting: 'ProxyTrustPending'
+};
+
 // routeBadge
-// Gives the state badge a route's row ends with.
+// Gives the state badge a route's row ends with: Untrusted, HTTP, Incomplete, HTTPS, or Off.
 //
 // Inputs
-// row [object]: One row from Proxy/Routes/All, as { Route, Status, State }.
+// row [object]: One row from Proxy/Routes/All, as { Route, Status, State, Detail }.
 // t [object]: The strings.
 //
 // Output
 // [object]: label and color.
 export function routeBadge(row, t) {
-    var state = ROUTE_STATES[row.State] || ROUTE_STATES.Waiting;
+    var state = ROUTE_STATES[row.State] || ROUTE_STATES.Incomplete;
     return { label: t.tr(state.key), color: state.color };
+}
+
+// routeLine
+// Writes the line under a route's host: where it forwards, Local only for a route only your network may reach, and
+// what is not finished or soon due, such as Expires soon.
+//
+// Inputs
+// row [object]: One row from Proxy/Routes/All.
+// t [object]: The strings.
+//
+// Output
+// [string[]]: The line's parts.
+export function routeLine(row, t) {
+    return [upstreamText(row.Route, t), row.Route.LocalOnly ? t.tr('ProxyTagLocalOnly') : '', ROUTE_DETAILS[row.Detail] ? t.tr(ROUTE_DETAILS[row.Detail]) : ''];
+}
+
+// routeCards
+// Counts the routes in each state for the cards at the top of the page, in the words and colors of the rows'
+// badges. A state with none is gray.
+//
+// Inputs
+// rows [object[]]: Every row from Proxy/Routes/All.
+// t [object]: The strings.
+//
+// Output
+// [object[]]: The cards.
+export function routeCards(rows, t) {
+    return Object.keys(ROUTE_STATES).map(function (state) {
+        var count = (rows || []).filter(function (r) { return r.State === state; }).length;
+        return { count: count, label: t.tr(ROUTE_STATES[state].key), color: count ? ROUTE_STATES[state].color : 'gray' };
+    });
 }
 
 // routeFilters
@@ -654,27 +693,6 @@ export function phaseText(status, t) {
     return { text: t.tr('ProxyTrustOff'), label: t.tr('ProxyBadgeNotTrusted'), color: 'gray' };
 }
 
-// statusCards
-// Sums the proxy's state for the cards at the top of the page.
-//
-// Inputs
-// status [object]: The proxy's status.
-// routes [object[]]: The routes.
-// t [object]: The strings.
-//
-// Output
-// [object[]]: The cards.
-export function statusCards(status, routes, t) {
-    var active = (status.Routes || []).filter(function (r) { return r.Active; }).length;
-    var name = status.Name || {};
-    return [
-        { count: t.tr(status.Running ? 'StateRunning' : 'StateStopped'), label: t.tr('TabProxy'), color: status.Running ? 'green' : (status.Enabled ? 'red' : 'gray') },
-        { count: active + ' / ' + (routes || []).length, label: t.tr('ProxyCardRoutes'), color: 'blue' },
-        { count: phaseText(status, t).label, label: t.tr('LabelJellyfin'), color: phaseText(status, t).color },
-        { count: name.Hostname ? t.tr(name.Resolves ? 'ProxyCardNameOk' : 'ProxyCardNameWrong') : t.tr('ProxyCardNameNone'), label: t.tr('ProxyCardPublicName'), color: name.Hostname ? (name.Resolves ? 'green' : 'orange') : 'gray' }
-    ];
-}
-
 // notices
 // Lists what the administrator must know about the proxy, one sentence each, with its kind.
 //
@@ -784,7 +802,7 @@ export default function (view) {
     var loadSeq = 0;
     var refreshSeq = 0;
     var acceptTerms = false;
-    var jellyfin = null;
+    var tabs = null;
     var openEditor = null;
 
     // report
@@ -794,7 +812,7 @@ export default function (view) {
     }
 
     // showStatus
-    // Draws the notices, the cards, and the Jellyfin section from the proxy's status.
+    // Draws the notices from the proxy's status, and the off state while it is off.
     function showStatus(status) {
         var t = shared.t;
         proxyStatus = status || {};
@@ -805,14 +823,12 @@ export default function (view) {
             box.appendChild(nectoModule.createBanner({ kind: n.cls.replace('stolon-', ''), text: n.text, dismissible: false }).element);
         });
         shared.setVisible(box, list.length > 0 && !!proxyStatus.Enabled);
-        shared.renderCards('proxyCards', statusCards(proxyStatus, routes, t));
-        drawJellyfin();
         showOff(!proxyStatus.Enabled);
     }
 
     // showOff
     // Shows the off state while the proxy is off: one line pointing to Settings in place of the notices, the cards,
-    // the routes, Jellyfin, and Visitors. The heading names the tool itself, since a tool that is off leaves the
+    // and the Routes and Visitors tabs. The heading names the tool itself, since a tool that is off leaves the
     // sidebar the heading takes its name from.
     function showOff(off) {
         var t = shared.t;
@@ -821,55 +837,41 @@ export default function (view) {
         box.innerHTML = off ? shared.emptySection(t.tr('ProxyOffNotice')) : '';
         shared.setVisible(box, off);
         shared.setVisible('proxyCards', !off);
-        shared.setVisible('proxyRoutes', !off);
         shared.setVisible('proxyStatus', !off);
-        if (jellyfin) shared.setVisible(jellyfin.section.element, !off);
-        if (visitors) shared.setVisible(visitors.element, !off);
+        if (tabs) shared.setVisible(tabs.element, !off);
     }
 
-    // drawJellyfin
-    // Draws whether Jellyfin trusts the proxy, as the section's badge, with Trust as an action row and Undo under it
-    // once Jellyfin trusts it. The section is built once and only its state changes after, so a refresh never folds it
-    // or clears its status line.
-    function drawJellyfin() {
+    // trustSection
+    // Builds the Trust section of a route to Jellyfin's sidecar: where trusting the proxy stands, as its badge and
+    // line, with Trust as an action row and Undo under it once Jellyfin trusts the proxy.
+    function trustSection() {
         var t = shared.t;
         var phase = phaseText(proxyStatus, t);
         var managed = phase.color !== 'gray';
-        if (!jellyfin) {
-            var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'trust-status' });
-            var trustRow = nectoModule.createResetRow({ icon: 'verified_user', label: t.tr('ProxyButtonTrust'), help: t.tr('ProxyTrustHelp'), button: t.tr('ProxyButtonTrustShort'), action: 'trust' });
-            var undoRow = nectoModule.createResetRow({ icon: 'undo', label: t.tr('ProxyUndoTrust'), help: t.tr('ProxyUndoTrustHelp'), button: t.tr('ButtonUndo'), action: 'undo', destructive: true });
-            var trust = trustRow.button;
-            var undo = undoRow.button;
-            var content = h('div', { class: 'stolon-stack' }, [status, nectoModule.createResetGroup([trustRow, undoRow]).element]);
-            var section = nectoModule.createCollapsibleSection({ title: t.tr('LabelJellyfin'), icon: 'shield', collapsible: false, content: content });
-            // The section takes its holder's place, so the page's column spaces it like its neighbors.
-            section.element.id = 'proxyJellyfin';
-            var holderJellyfin = view.querySelector('#proxyJellyfin');
-            holderJellyfin.parentNode.replaceChild(section.element, holderJellyfin);
-            jellyfin = { section: section, trust: trust, undo: undo, undoRow: undoRow, status: status, busy: false };
-            trust.addEventListener('click', function () {
-                nectoModule.confirmDialog(t.tr('ProxyConfirmTrust'), { title: t.tr('ProxyButtonTrust'), confirmText: t.tr('ProxyButtonTrustShort') }).then(function (ok) {
-                    if (ok) runTrust('Proxy/Trust', trust, status);
-                });
+        var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'trust-status' });
+        var trustRow = nectoModule.createResetRow({ icon: 'verified_user', label: t.tr('ProxyButtonTrust'), help: t.tr('ProxyTrustHelp'), button: t.tr(managed ? 'ProxyButtonTrustAgain' : 'ProxyButtonTrustShort'), action: 'trust' });
+        var undoRow = nectoModule.createResetRow({ icon: 'undo', label: t.tr('ProxyUndoTrust'), help: t.tr('ProxyUndoTrustHelp'), button: t.tr('ButtonUndo'), action: 'undo', destructive: true });
+        shared.setVisible(undoRow.element, managed);
+        var content = h('div', { class: 'stolon-stack' }, [h('div', { class: 'fieldDescription', text: phase.text }), status, nectoModule.createResetGroup([trustRow, undoRow]).element]);
+        var section = nectoModule.createCollapsibleSection({ title: t.tr('ProxyButtonTrustShort'), icon: 'shield', collapsible: false, content: content });
+        section.setBadge({ label: phase.label, color: phase.color });
+        section.element.setAttribute('data-role', 'trust');
+        trustRow.button.addEventListener('click', function () {
+            nectoModule.confirmDialog(t.tr('ProxyConfirmTrust'), { title: t.tr('ProxyButtonTrust'), confirmText: t.tr('ProxyButtonTrustShort') }).then(function (ok) {
+                if (ok) runTrust('Proxy/Trust', trustRow.button, status);
             });
-            undo.addEventListener('click', function () {
-                nectoModule.confirmDialog(t.tr('ProxyConfirmUndoTrust'), { title: t.tr('ProxyUndoTrust'), confirmText: t.tr('ButtonUndo'), destructive: true }).then(function (ok) {
-                    if (ok) runTrust('Proxy/Trust/Undo', undo, status);
-                });
+        });
+        undoRow.button.addEventListener('click', function () {
+            nectoModule.confirmDialog(t.tr('ProxyConfirmUndoTrust'), { title: t.tr('ProxyUndoTrust'), confirmText: t.tr('ButtonUndo'), destructive: true }).then(function (ok) {
+                if (ok) runTrust('Proxy/Trust/Undo', undoRow.button, status);
             });
-        }
-        jellyfin.section.setBadge({ label: phase.label, color: phase.color });
-        (jellyfin.trust.querySelector('span') || jellyfin.trust).textContent = t.tr(managed ? 'ProxyButtonTrustAgain' : 'ProxyButtonTrustShort');
-        // Undo only means something once Jellyfin trusts the proxy, so its row shows only then.
-        shared.setVisible(jellyfin.undoRow.element, managed);
-        if (!jellyfin.busy) jellyfin.undo.disabled = !managed;
+        });
+        return section.element;
     }
 
     // runTrust
-    // Trusts the proxy in Jellyfin, or undoes it, and says what happened.
+    // Trusts the proxy in Jellyfin, or undoes it, and says what happened in the sidecar.
     function runTrust(route, btn, status) {
-        jellyfin.busy = true;
         btn.disabled = true;
         shared.setStatus(status, shared.t.tr('TextWorking'), false);
         return shared.request(route, 'POST').then(function (result) {
@@ -878,9 +880,7 @@ export default function (view) {
         }).catch(function (err) {
             return shared.errorText(err, shared.t.tr('ProxyErrorTrust')).then(function (text) { shared.setStatus(status, text, true); });
         }).then(function () {
-            jellyfin.busy = false;
             btn.disabled = false;
-            drawJellyfin();
         });
     }
 
@@ -898,6 +898,9 @@ export default function (view) {
         statuses = (answer && answer.Status) || [];
         if (!table) createTable();
         table.refresh();
+        shared.request('Proxy/Routes/All?skip=0&take=1000').then(function (page) {
+            shared.renderCards('proxyCards', routeCards((page && page.Items) || [], shared.t));
+        }).catch(function () { /* the cards keep their last counts */ });
         if (openEditor && openEditor.id) {
             var mine = statuses.find(function (s) { return s.Id === openEditor.id; });
             if (mine) openEditor.editor.setRouteStatus(mine);
@@ -917,7 +920,7 @@ export default function (view) {
             empty: { message: t.tr('ProxyEmptyRoutes'), filteredMessage: t.tr('ProxyEmptyRoutesMatch') },
             title: function (row) { return row.Route.Host || t.tr('ProxyNoHost'); },
             icon: function () { return 'public'; },
-            lines: function (row) { return [upstreamText(row.Route, t), row.Route.LocalOnly ? t.tr('ProxyTagLocalOnly') : '']; },
+            lines: function (row) { return routeLine(row, t); },
             status: function (row) { return routeBadge(row, t); },
             add: [{ id: 'btnAddRoute', icon: 'add', text: t.tr('ButtonAddRoute'), onClick: pickTemplate }],
             bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
@@ -1124,6 +1127,8 @@ export default function (view) {
         var editor = createRouteEditor(route || newRoute(), { shared: shared, status: status, records: records, hostnames: hostnames, requestable: requestable(), onAction: onEditorAction });
         var mine = { id: isNew ? '' : route.Id, editor: editor };
         openEditor = mine;
+        // A route to Jellyfin holds Trust, which lets Jellyfin see each visitor's address through the proxy.
+        if (!isNew && !route.Upstream) editor.element.appendChild(trustSection());
         if (!isNew && fields.enumName(route.Certificate && route.Certificate.Mode, CERTIFICATE_MODES) === 'SelfSigned') {
             shared.request('Proxy/Certificate/Root').then(function (root) {
                 if (openEditor === mine) editor.setRoot(root);
@@ -1188,8 +1193,8 @@ export default function (view) {
     }
 
     // createVisitors
-    // Builds the Visitors section: the bans, what each address did, and the countries.
-    function createVisitors() {
+    // Builds the Visitors tab in its panel: what each address did, the bans, and the countries, each a table.
+    function createVisitors(panel) {
         var t = shared.t;
         var content = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr('ProxyVisitorsHelp') })]);
         var off = h('div', { class: 'stolon-info stolon-hidden', text: t.tr('ProxyVisitorsOff') });
@@ -1204,10 +1209,7 @@ export default function (view) {
             h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderActivity') }), activityHost,
             h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderCountries') }), countryHost,
             location, attribution].forEach(function (n) { content.appendChild(n); });
-        var section = nectoModule.createCollapsibleSection({ title: t.tr('HeaderVisitors'), icon: 'travel_explore', collapsible: false, content: content });
-        section.element.id = 'proxyVisitors';
-        var holderVisitors = view.querySelector('#proxyVisitors');
-        holderVisitors.parentNode.replaceChild(section.element, holderVisitors);
+        panel.appendChild(content);
 
         var data = { Banned: [], Activity: [], Countries: [] };
         var place = function (r) { return r.IsLocal ? t.tr('LabelLocal') : (r.Country || t.tr('Unknown')); };
@@ -1344,15 +1346,26 @@ export default function (view) {
             });
         }
 
-        return { element: section.element, load: load, destroy: function () { banned.destroy(); activity.destroy(); countries.destroy(); section.destroy && section.destroy(); } };
+        return { load: load, destroy: function () { banned.destroy(); activity.destroy(); countries.destroy(); } };
     }
 
     var made = nectoModule.createNectoPage(view, {
         page: 'necto_proxy',
         bind: function (bag, pg) {
-            visitors = createVisitors();
+            var t = bag.t;
+            tabs = nectoModule.createSubTabs({
+                label: t.tr('TabProxy'),
+                tabs: [{ id: 'routes', label: t.tr('ProxyHeaderRoutes') }, { id: 'visitors', label: t.tr('HeaderVisitors') }],
+                render: function (tab, panel) {
+                    panel.classList.add('stolon-stack');
+                    if (tab.id === 'routes') panel.appendChild(view.querySelector('#proxyRoutes'));
+                    else { visitors = createVisitors(panel); visitors.load(); }
+                }
+            });
+            view.querySelector('#proxyTabs').appendChild(tabs.element);
             pg.addCleanup(function () {
                 if (visitors) visitors.destroy();
+                visitors = null;
             });
         },
         load: function (bag, pg) {
