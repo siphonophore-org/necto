@@ -20,6 +20,6 @@ public class IssueSettings
     /// <summary>Gets or sets the name the Issues link is added with, as set in Menu links. Empty is Issues.</summary>
     public string MenuLinkName { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the Material icon the Issues link is added with, as set in Menu links. Empty is bug_report.</summary>
+    /// <summary>Gets or sets the Material icon the Issues link is added with, as set in Menu links. Empty is report_problem.</summary>
     public string MenuLinkIcon { get; set; } = string.Empty;
 }
