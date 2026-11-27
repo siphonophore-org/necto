@@ -59,8 +59,8 @@ test('the counts take peers, connections, connected ends, and the ones left out'
 });
 
 // openPage
-// Shows the WireGuard tool over a view with its markup.
-async function openPage(answers, wireguard) {
+// Shows the WireGuard tool over a view with its markup. onView hears the view before the tool shows. [optional]
+async function openPage(answers, wireguard, onView) {
     var page = installPage({ config: { WireGuard: wireguard || settings() } });
     var dom = page.dom;
     var ids = ['wireguardStatus', 'wireguardOff', 'wireguardNoSidecar', 'wireguardBody', 'wireguardCards', 'hostError', 'wireguardBothOff', 'addButtons', 'peerSection', 'connectionSection'];
@@ -80,6 +80,7 @@ async function openPage(answers, wireguard) {
         'GET WireGuard/Usage': { Bytes: {}, Blocked: [], Refused: {} },
         'GET WireGuard/Sidecar': { Installed: true, Version: '1.0.0', Platform: 'linux-amd64', ReleaseVersion: '1.0.0' }
     }, answers || {}));
+    if (onView) onView(view);
     var mod = await loadScript('necto_wireguard.js');
     mod.default(view);
     view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
@@ -139,6 +140,26 @@ test('the Connections card counts connected connections, red while one failed an
     assert.deepEqual(mod.connectionsCard(on, [{ Key: 'host', State: 'Failed' }], counts, t), { count: '1 / 2', label: 'HeaderConnections', color: 'green' });
     assert.equal(mod.connectionsCard(on, [{ Key: 'abc', State: 'Failed' }], counts, t).color, 'red');
     assert.equal(mod.connectionsCard({ ConnectEnabled: false }, [{ Key: 'abc', State: 'Failed' }], counts, t).color, 'gray');
+});
+
+test('a peer opens in a sidecar of tiled sections, and a peer with no config leaves out its file', async function () {
+    var opened = await openPage({ ['GET WireGuard/Peers/' + PHONE + '/Config']: function () { return Promise.reject(new Error('none')); } });
+    opened.view.querySelector('#peerSection .stolon-record-list-row').click();
+    await settle(50);
+    var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
+
+    assert.deepEqual(texts(sidecar, '.stolon-collapsible-title'), ['Details', 'QR code', 'Config file']);
+    assert.deepEqual(texts(sidecar, '.stolon-collapsible-tile'), ['info', 'qr_code_2', 'description']);
+    assert.equal(sidecar.querySelector('.stolon-subsection-title'), null);
+});
+
+test('with WireGuard off, the heading names VPN, since the tool leaves the sidebar', async function () {
+    var off = settings();
+    off.Enabled = false;
+    var titles = [];
+    await openPage({}, off, function (view) { view.addEventListener('stolontooltitle', function (e) { titles.push(e.detail); }); });
+
+    assert.equal(titles[titles.length - 1], 'VPN');
 });
 
 test('Add peer opens an editor sidecar that posts the peer to its route', async function () {
