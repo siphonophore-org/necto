@@ -6,6 +6,10 @@
 
 The page opens with notices that need a look, such as a port another program holds, a name that points elsewhere, or visitors that all look local. The cards under them show whether the proxy runs, how many routes it answers for, whether Jellyfin trusts it, and whether the first internet route's name points at this server.
 
+| Proxy | Proxy on a phone |
+| :---: | :---: |
+| ![Proxy](screenshots/Proxy.png) | ![Proxy on a phone](screenshots/Proxy%20Phone.png) |
+
 The proxy is off until **Settings > Proxy > Enable proxy** is on. While it is off the page says so.
 
 The page reads the proxy's status and routes again every 10 seconds, and the visitors every 30 seconds, so a certificate being issued, Jellyfin restarting, and new visitors or bans show without a reload.
@@ -13,6 +17,8 @@ The page reads the proxy's status and routes again every 10 seconds, and the vis
 ## Routes
 
 Each row shows the route's host name, where it forwards, and its certificate, such as **HTTPS ready**, **Expires soon**, or **Certificate failed**, with **Local only** and **Off** where they apply. Select a row to open the route in a sidecar. **Add route** starts from a template: **Jellyfin**, **Jellyfin LAN**, or **Blank**.
+
+![Route editor](screenshots/Route%20Editor.png)
 
 * **Host name** is the name visitors use, such as `media.example.com`, or a one label wildcard such as `*.example.com`. An exact name beats a wildcard. **Use a DDNS name** fills in a name a DDNS record keeps.
 * **Answer for this route** turns the route on or off.
@@ -70,6 +76,8 @@ The [Dashboard](Dashboard.md) map shows the same totals by country, through `GET
 
 **Settings > Proxy** holds every setting that is not a route. A field left at its default follows the default, and a field marked **Auto** follows the server's memory.
 
+![Proxy settings](screenshots/settings/Proxy.png)
+
 * **Enable proxy** starts the proxy on its ports.
 * **Accept the Let's Encrypt terms** lets Necto ask Let's Encrypt for certificates.
 * **Record visitors**, **Keep history (days)**, and **Locations** set the visitor history.
@@ -83,6 +91,8 @@ Under **Locations**, a note says what the picked country rule does and, for **Th
 ## Troubleshooting
 
 **Troubleshooting > Proxy** shows the proxy's state, the addresses it listens on, the Jellyfin it forwards to, the LAN address, the location database, the server's country, and which defaults the server's memory picks. With a public name, it also shows the name, the addresses it points to, and this server's public address.
+
+![Proxy troubleshooting](screenshots/troubleshooting/Proxy.png)
 
 * **Test from outside** sends the first internet route's name to [check-host.net](https://check-host.net), which tries to connect to its HTTPS port from a few countries. Only the name and port are sent.
 * **Check from the internet**, **Renew certificates**, and **Update the location database** run their tasks now.

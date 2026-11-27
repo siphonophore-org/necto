@@ -6,6 +6,12 @@ Groups set what their members may do in every Necto tool, and hold the account r
 
 Cards at the top count the server's users: **Administrators**, **Active**, **Inactive** for members past their groups' inactivity window, **Disabled**, and **Expiring** for members whose groups expire them within 7 days.
 
+| Groups | Groups on a phone |
+| :---: | :---: |
+| ![Groups](screenshots/Groups.png) | ![Groups on a phone](screenshots/Groups%20Phone.png) |
+
+![Group editor](screenshots/Group%20Editor.png)
+
 **Groups** lists every group, **Everyone** first, then the others in group order. Each row shows how many members the group has and which account rules it has on. Select a row to open the group in a sidecar, select **Add group** to start a new one, or select **Group order** to reorder them.
 
 The sidecar holds the group's name, its members, **Account rules**, **Access and features**, **Preferences**, and one collapsible section per tool. Its shelf holds **Delete**, **Cancel**, and **Save**. **Save** asks first while the group has an expiry date and **Delete the account** as its method, since those members cannot come back. **Delete** asks first, with the group's name in the title, such as "Delete Family". Its members keep their other groups, and a member in no other group takes **Everyone**.
@@ -120,12 +126,16 @@ A refused change shows the reason on the password form, and writes "Password cha
 
 **Settings > Groups** holds the settings that are not permissions.
 
+![Groups settings](screenshots/settings/Groups.png)
+
 * **Group for new users** sets the group a new user joins.
 * **Show reset codes** lists the codes of pending password resets in **Troubleshooting**. Use HTTPS so they cannot be read in transit.
 
 ## Troubleshooting
 
 **Troubleshooting > Groups** holds the repairs.
+
+![Groups troubleshooting](screenshots/troubleshooting/Groups.png)
 
 * **Apply rules** moves users onto or off password rules by their groups, and drops administrators from every group.
 * **Apply templates** writes each user's group template onto them, and reports how many took one.

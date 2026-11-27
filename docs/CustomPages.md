@@ -16,9 +16,15 @@
 
 **Custom pages** has three tabs: **Pages**, **Images**, and **Stores**. Each list opens a record in a sidecar, whose shelf holds **Delete**, **Cancel**, and **Save**. A save asks the server first whether it would take the change, so a refused save shows its reason, such as "Two pages use the slug rules.". The tool holds no settings, which are in **Settings > Custom pages**.
 
+| Pages | Pages on a phone |
+| :---: | :---: |
+| ![Pages](screenshots/Pages.png) | ![Pages on a phone](screenshots/Pages%20Phone.png) |
+
 ## Pages
 
 **Pages** counts the pages by tier and lists each by its address, with its title, its tier, and tags for **Unpublished** and **System access**. Select **Add page** for a new one.
+
+![Page editor](screenshots/Page%20Editor.png)
 
 The page sidecar holds:
 
@@ -54,6 +60,8 @@ A group gives pages in **Groups > Custom pages**, with **Open every page** or **
 ## Images
 
 **Images** hosts images for the pages. Drop or select images to upload them, up to 5 MB each. An upload with the name of an image already there replaces it and keeps its tier. The cards count **Images**, **Other** files, and their total **Size**.
+
+![Pages images](screenshots/Pages%20Images.png)
 
 Use an image by the path on its row, `asset/{name}`, from the page's HTML or CSS:
 
@@ -96,6 +104,8 @@ The call reaches `/pages/{slug}/api/{name}`, and the server forwards it to the t
 ## Stores
 
 A store keeps records that pages with system access read and write:
+
+![Pages stores](screenshots/Pages%20Stores.png)
 
 ```js
 pageStore.write('queue', { url: value }, { label: value });
@@ -141,6 +151,8 @@ An API key reads and writes a store as an administrator with no user, so it owns
 
 **Settings > Custom pages** sets what a new store starts with.
 
+![Pages settings](screenshots/settings/Pages.png)
+
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
 | **Record limit** | Sets the record limit a new store starts with | 1000 |
@@ -150,6 +162,8 @@ An API key reads and writes a store as an administrator with no user, so it owns
 ## Troubleshooting
 
 **Troubleshooting > Custom pages** holds:
+
+![Pages troubleshooting](screenshots/troubleshooting/Pages.png)
 
 * **Stores** lists each store with its records and limit. **Clear** asks first, then deletes every record in the store. A settings backup cannot bring them back.
 * **Run now** beside **Apply custom page store retention** runs the retention task.

@@ -6,11 +6,17 @@
 
 The page shows the **Public IPv4** and **Public IPv6** the last run found, then one row per record with its provider, its name, and its last result, such as **Updated**, **Up to date**, **Paused**, or **Failed**. Select a row to open the record in a sidecar, or select **Add record**. **Update now** checks every enabled record at once, whatever its interval, and says how many were updated and how many failed.
 
+| DDNS | DDNS on a phone |
+| :---: | :---: |
+| ![DDNS](screenshots/DDNS.png) | ![DDNS on a phone](screenshots/DDNS%20Phone.png) |
+
 A warning shows above the list when a detection service returned only an internal address, and when the server cannot encrypt credentials, in which case no credential can be saved.
 
 ## Records
 
 The record sidecar holds the fields its provider uses, with the provider's own labels, a hint under **Provider**, and a link to the provider's [setup guide](providers/index.md).
+
+![Record editor](screenshots/Record%20Editor.png)
 
 * **Name** is the record's name in the list. Left blank, the list shows the hostname.
 * **Update this record** turns updates on or off. The name stays as it is at the provider while off.
@@ -44,6 +50,8 @@ Cloudflare and Duck DNS can also publish the TXT record Let's Encrypt checks, so
 
 **Settings > DDNS** holds the settings every record shares.
 
+![DDNS settings](screenshots/settings/DDNS.png)
+
 | Setting | Default | What it does |
 | :--- | :--- | :--- |
 | **IPv4 detection URLs** | ipify, icanhazip, Amazon, ident.me | Services that reply with the IPv4 address, one per line. Two must agree before an address is used, and plain http is refused. |
@@ -57,6 +65,8 @@ Cloudflare and Duck DNS can also publish the TXT record Let's Encrypt checks, so
 ## Troubleshooting
 
 **Troubleshooting > DDNS** shows the addresses the last run found and any detection warning.
+
+![DDNS troubleshooting](screenshots/troubleshooting/DDNS.png)
 
 * **Update DDNS records** runs the scheduled task, which checks each record that is due.
 * **Check every record** checks every enabled record now and lists what each provider said.

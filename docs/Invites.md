@@ -6,6 +6,12 @@ Invites are links anyone may use to make their own account on the server, in the
 
 **Invites** counts the invites in each state at the top, then lists every invite, oldest first, with its group, its uses, its expiry, its state, and its link with **Copy** and a QR button. A PIN tag marks an invite that asks for a PIN, and a person tag names the member who made it. Select **Add invite** to make one, or select a row to open it in a sidecar.
 
+| Invites | Invites on a phone |
+| :---: | :---: |
+| ![Invites](screenshots/Invites.png) | ![Invites on a phone](screenshots/Invites%20Phone.png) |
+
+![Invite editor](screenshots/Invite%20Editor.png)
+
 | State | Means |
 | :--- | :--- |
 | **Active** | The link works |
@@ -56,6 +62,8 @@ A member deletes only their own invites. The page also holds **Turn on notificat
 
 **Settings > Invites** holds the settings.
 
+![Invites settings](screenshots/settings/Invites.png)
+
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
 | **Invite link address** | Starts every invite link, such as your reverse proxy's address. Blank uses the address the page is open at. A warning shows while links would use plain http | Blank |
@@ -66,6 +74,8 @@ A member deletes only their own invites. The page also holds **Turn on notificat
 ## Troubleshooting
 
 **Troubleshooting > Invites** holds **Run now** beside **Turn off expired invites**.
+
+![Invites troubleshooting](screenshots/troubleshooting/Invites.png)
 
 | Reason | What to do |
 | :--- | :--- |

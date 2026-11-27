@@ -81,6 +81,10 @@ Run Jellyfin as a service under LocalSystem, as the installer does, or as an adm
 
 The top of **Storage** names what needs a look, one line each. It is red when any disk is missing, unresponsive, failing, or full, or when Jellyfin cannot write to one of its own folders. It is orange for a disk that is low on space, too hot, or worn out, and for library folders that are gone or that Jellyfin cannot write to. When nothing needs a look, it says every disk is healthy.
 
+| Storage | Storage on a phone |
+| :---: | :---: |
+| ![Storage](screenshots/Storage.png) | ![Storage on a phone](screenshots/Storage%20Phone.png) |
+
 The cards add up the size, used space, and free space of every disk Jellyfin uses that could be read. **Free** takes the color of the fullest disk's alert.
 
 Each row is one disk or share, with its name, its mount point, its type, its status, and a bar of its used space. The bar turns orange and red at the disk's **Storage low** and **Storage full** alerts. **Jellyfin** lists the disks that hold a library folder or one of Jellyfin's own folders. **All** also lists mounted disks Jellyfin does not use, disks with no file system, and on Linux, disks that hold data but are not mounted. **Refresh** checks every disk again. Hover over it to see when the disks were last checked. On a phone, the notice, the cards, and the rows stack to fit. On Windows, disks show by drive letter and volume label, and shares by their `\\server\share` path.
@@ -110,6 +114,8 @@ Each row is one disk or share, with its name, its mount point, its type, its sta
 ## Disk Details
 
 Select a row to open the disk in a sidecar. It lists the disk's status, type, file system, mount point, device, and model. A disk that reports SMART data also shows its health, temperature, power-on time, and, for an SSD, its wear.
+
+![Disk details](screenshots/Disk%20Detail.png)
 
 The chart shows the share of the disk in use, beside the **Size**, **Used**, and **Free** cards. **Storage low** and **Storage full** show how much space is in use when each alert fires on this disk. A card is left out when its alert is off.
 
@@ -178,6 +184,8 @@ Storage never formats the system disk, a disk with something mounted or in use a
 
 **Settings > Storage** holds the alerts every disk uses, and what Storage does while a disk is missing.
 
+![Storage settings](screenshots/settings/Storage.png)
+
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
 | **Storage low** | Writes a warning and sends an alert when a disk passes its point, and marks it **Low** | On, 90% used |
@@ -239,6 +247,8 @@ Storage also writes to Jellyfin's server log. Information lines record a disk re
 ## Troubleshooting
 
 **Troubleshooting > Storage** holds the checks and resets.
+
+![Storage troubleshooting](screenshots/troubleshooting/Storage.png)
 
 * **Run now** beside **Check storage** checks every disk at once.
 * **Reset** beside **Reset the Storage settings** asks first, then puts every Storage setting back to its default. Each disk's own alerts and every share address set by hand go with it.
