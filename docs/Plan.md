@@ -171,6 +171,11 @@ One service every tool sends events to, and one set of channels.
 * Email is sent with .NET's SMTP client and STARTTLS. A server that takes only TLS from the start, on port 465, cannot be used. **Review**
 * The send log keeps the latest 200 sends in memory. **Review**
 * The Notifications section of Settings saves through `/Notifications/Settings`, so stored addresses, headers, and the SMTP password never reach the page. **Review**
+* The SMTP password, the VAPID private key, and each channel's address, headers, and email addresses live in their own encrypted file, `Jellyfin.Plugin.Necto.Notifications.Secrets.json`, owner only, so Jellyfin's `GET /Plugins/{id}/Configuration` hands out none of them. The email addresses go there too, since they are the administrators' own. **Review**
+* Every other secret stays in the configuration, encrypted, and any JSON the server sends writes it as the kept marker, through `KeptSecretConverter`. That covers the WireGuard keys, DDNS credentials, certificate passwords, the Radarr, Sonarr, and TMDb keys, route passwords, script secrets, and invite PINs. Copies kept on the server use `ConfigurationCopy`, which alone writes the stored value, and a whole configuration save resolves each marker against what is stored. Moving every tool's secrets into stores was weighed and left, since each tool reads them in many places and pages save them with the whole configuration. **Review**
+* Invite links and the script webhook tokens stay readable in the configuration, since the Invites and Scripts pages show them to administrators to copy. **Review**
+* Each request and issue event keeps the Discord color it had, such as amber for a new request and green for an available one. Every other event takes its level's color. **Review**
+* The Requests database has no held messages or browsers table, and schema version 19 drops them from an older file, since Notifications keeps both in its own files. The cleanup task drops the held messages of the requests it removes. **Review**
 * A tool writes its own event's words, and every channel's **Use a custom body** covers a custom format. Requests' per update wording is dropped. Its post fields are switches on each Discord, webhook, and email channel, **Requester or reporter** off by default as before. **Review**
 * See [Notifications](Notifications.md) for what is built.
 
