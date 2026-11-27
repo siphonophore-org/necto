@@ -228,8 +228,9 @@ export function proxyCard(t, shared, status, now) {
     var soonest = soonestCertificate(status);
     var days = soonest ? (soonest - now) / 86400000 : null;
     if (soonest === null) card.detail = t.tr('DashboardNoCertificates');
-    else if (days < 0) card.detail = t.format('DashboardCertificateExpired', shared.formatDate(soonest));
-    else card.detail = t.format('DashboardCertificateExpires', shared.formatDate(soonest));
+    // The day is enough for a certificate, and keeps the line inside the card.
+    else if (days < 0) card.detail = t.format('DashboardCertificateExpired', new Date(soonest).toLocaleDateString());
+    else card.detail = t.format('DashboardCertificateExpires', new Date(soonest).toLocaleDateString());
     if (status.Error) return Object.assign(card, { status: t.tr('LabelFailed'), statusColor: 'red', detail: status.Error });
     if (!status.Running) return Object.assign(card, { status: t.tr('StateStopped'), statusColor: 'gray' });
     if (days !== null && days < 0) return Object.assign(card, { status: t.tr('StateExpired'), statusColor: 'red' });

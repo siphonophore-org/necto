@@ -38,7 +38,7 @@
 /* The line above the disk list: the Jellyfin and All filter on the left, Refresh on the right. */
 /* Example: <div class="necto-storage-toolbar"><div class="stolon-pill-group"></div><button class="necto-storage-refresh">Refresh</button></div> */
 .necto-storage-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--stolon-gap-narrow); margin-bottom: var(--stolon-gap-narrow); }
-.necto-storage-refresh { margin-inline-start: auto; }
+.necto-storage-refresh { margin-inline-start: auto; margin-top: 0; margin-bottom: 0; }
 
 /* necto-storage-disk */
 /* A disk sidecar's body: the facts, then each section, a field gap apart. */
@@ -123,4 +123,12 @@
 .necto-stack { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
 .necto-stack > .fieldDescription,
 .necto-stack > .stolon-info,
-.necto-stack > .stolon-cards { margin-top: 0; margin-bottom: 0; }
+.necto-stack > .stolon-cards,
+.necto-stack > .stolon-button-row { margin-top: 0; margin-bottom: 0; }
+
+/* necto-card-fit */
+/* A balanced card row keeps every card inside its column, and a card whose value is a word, such as Running, ends it
+   with an ellipsis instead of running past the edge. Stolon's card minimum otherwise outweighs the balanced grid. */
+/* Example: <div class="stolon-cards stolon-balanced"><div class="stolon-card"><span class="stolon-card-count">Running</span></div></div> */
+.stolon-cards.stolon-balanced > .stolon-card { min-width: 0; }
+.stolon-cards .stolon-card-count { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

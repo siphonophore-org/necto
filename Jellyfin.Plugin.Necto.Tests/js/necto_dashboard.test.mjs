@@ -120,7 +120,7 @@ test('the Proxy card shows whether it runs and asks for attention as its first c
     var card = dashboard.proxyCard(t, shared, { Running: true, Routes: [route('a.example.com', true, days(60)), route('b.example.com', false, days(30))] }, NOW);
     assert.equal(card.value, 1);
     assert.equal(card.status, 'Running');
-    assert.equal(card.detail, 'Next certificate expires on ' + days(30).slice(0, 10));
+    assert.equal(card.detail, 'Next certificate expires ' + new Date(days(30)).toLocaleDateString());
     assert.deepEqual(card.dots, [{ label: 'a.example.com', color: 'green' }, { label: 'b.example.com', color: 'gray' }]);
 
     var soon = dashboard.proxyCard(t, shared, { Running: true, Routes: [route('a.example.com', true, days(5))] }, NOW);
