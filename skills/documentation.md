@@ -170,11 +170,11 @@ Use `##` for README headings. Keep the README under 40 lines.
 
 ### How to Take Them
 
-Take every screenshot on a test server running the build, and save each PNG to `docs/screenshots/`.
+Take every screenshot with the kit in [tools/screenshots](../tools/screenshots/README.md). It runs a throwaway Jellyfin in Docker with the build and demo data, and writes each PNG to `docs/screenshots/`. Its README says how to run it, how to retake every shot, and how to retake only some.
 
 * Capture every page, dialog, and sidecar a docs page describes.
 * Capture the dark theme only, which is Jellyfin's default.
-* Keep every name generic, with `example.com` addresses.
+* Keep every name generic, with `example.com` addresses. New sample data goes in the kit's `seed.py`.
 * Fill lists, counts, and badges so each shot shows what the text around it describes.
 * Hide nothing with editing. When a value is private, change the sample data instead.
 * Look at every PNG before committing it.
@@ -191,7 +191,7 @@ Crop out the Jellyfin header.
 
 ### Names and Placement
 
-* Save to `docs/screenshots/`, with the sections of the Settings tool in `docs/screenshots/settings/`.
+* Save to `docs/screenshots/`, with the sections of the Settings tool in `docs/screenshots/settings/` and of the Troubleshooting tool in `docs/screenshots/troubleshooting/`.
 * Name the file in Title Case after what it shows, with spaces. Add ` Phone` to the name of a phone shot.
 * Link with `%20` for spaces and alt text that names the subject. `![Page Name](screenshots/Page%20Name.png)`.
 * Place two related shots side by side in a table whose header row holds the captions.
