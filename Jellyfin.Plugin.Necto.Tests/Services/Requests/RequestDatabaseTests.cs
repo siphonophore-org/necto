@@ -528,6 +528,22 @@ public sealed class RequestDatabaseTests : IDisposable
     }
 
     /// <summary>
+    /// The creation times of the requests made since a time are listed oldest first, without older ones.
+    /// True: the Dashboard's chart counts each recent request on its day.
+    /// False: old requests would fill the chart, or recent ones would be missing.
+    /// </summary>
+    [Fact]
+    public void CreatedSince_ListsOnlyRecentRequests()
+    {
+        var now = new DateTime(2026, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+        _db.Insert(Make("Old", created: now.AddDays(-30)));
+        _db.Insert(Make("Recent", created: now.AddDays(-2)));
+        _db.Insert(Make("Today", created: now));
+
+        Assert.Equal(new[] { now.AddDays(-2), now }, _db.CreatedSince(now.AddDays(-14)));
+    }
+
+    /// <summary>
     /// The requests a library item fulfilled are found, without those an administrator marked available.
     /// True: a removed item rechecks only the requests it fulfilled.
     /// False: a removal would reopen requests it never fulfilled.

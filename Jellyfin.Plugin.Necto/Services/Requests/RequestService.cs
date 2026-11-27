@@ -1753,8 +1753,8 @@ public sealed partial class RequestService : IDisposable
     public RequestStats Stats() => Stats(null);
 
     /// <summary>
-    /// Counts requests by status and type: everyone's, with each requester's, or one user's (those they made), with
-    /// their quotas and open requests.
+    /// Counts requests by status and type: everyone's, with each requester's and the requests of each of the last 14
+    /// days, or one user's (those they made), with their quotas and open requests.
     /// </summary>
     /// <param name="user">The user, or null for everyone.</param>
     /// <returns>The counts.</returns>
@@ -1774,6 +1774,8 @@ public sealed partial class RequestService : IDisposable
         }
 
         var all = Count(counts);
+        var today = DateTime.Now;
+        all.Days = RequestDays.Count(_db.CreatedSince(today.Date.AddDays(-14).ToUniversalTime()), today, 14);
         all.Users = counts.GroupBy(c => c.UserId)
             .Select(g =>
             {

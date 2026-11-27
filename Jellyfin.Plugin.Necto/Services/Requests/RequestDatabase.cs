@@ -448,6 +448,26 @@ public sealed partial class RequestDatabase : IDisposable
         return counts;
     });
 
+    /// <summary>Lists when each request made since a time was made.</summary>
+    /// <param name="sinceUtc">The start of the window.</param>
+    /// <returns>Each request's creation time in UTC, oldest first.</returns>
+    public List<DateTime> CreatedSince(DateTime sinceUtc) => Query((connection, transaction) =>
+    {
+        using var cmd = Command(connection, transaction, "SELECT CreatedUtc FROM Requests WHERE CreatedUtc >= @since ORDER BY CreatedUtc");
+        cmd.Parameters.AddWithValue("@since", UtcTime.Format(sinceUtc));
+        using var reader = cmd.ExecuteReader();
+        var times = new List<DateTime>();
+        while (reader.Read())
+        {
+            if (UtcTime.TryParse(reader.GetString(0), out var created))
+            {
+                times.Add(created);
+            }
+        }
+
+        return times;
+    });
+
     /// <summary>Counts requests by status.</summary>
     /// <returns>The counts.</returns>
     public Dictionary<RequestStatus, int> CountByStatus() => Query((connection, transaction) =>

@@ -40,6 +40,9 @@ public class RequestStats
     /// <summary>Gets or sets the most requests one user may have open; 0 for no limit.</summary>
     public int? MaxOpenRequests { get; set; }
 
+    /// <summary>Gets or sets the requests made on each of the last 14 days, in everyone's; null for one user's.</summary>
+    public RequestDays? Days { get; set; }
+
     /// <summary>Gets or sets each requester's counts, in everyone's; null for one user's.</summary>
     public List<RequestStats>? Users { get; set; }
 

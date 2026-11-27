@@ -9,7 +9,6 @@ import { statCards as requestCards } from './configurationpage?name=necto_reques
 import { statCards as issueCards } from './configurationpage?name=necto_issues.js';
 import { stateCards as inviteCards } from './configurationpage?name=necto_invites.js';
 import { stateTag as tunnelTag } from './configurationpage?name=necto_wireguard_common.js';
-import { sendCounts } from './configurationpage?name=necto_notifications.js';
 import { EVERYONE_ID, sameId } from './configurationpage?name=necto_groups.js';
 
 // DASH
@@ -209,7 +208,8 @@ function sum(values) {
 }
 
 // requestsCard
-// Sums up the requests: those waiting for approval as the number, and a part per status as the Requests tool counts it.
+// Sums up the requests: those waiting for approval as the number, and a column per day of the last 14 as tall as the
+// requests made on it. The line under the title counts the failed requests.
 //
 // Inputs
 // t [object]: The strings.
@@ -222,9 +222,14 @@ export function requestsCard(t, stats) {
     if (!stats) return failedCard(t, card);
     var by = stats.ByStatus || {};
     var pending = by.Pending || 0;
+    var days = stats.Days || {};
     card.value = pending;
     card.valueLabel = t.tr('StatePending').toLowerCase();
-    withBar(card, t, fromCountCards(requestCards(stats, t)), 'DashboardEmptyRequests');
+    card.bars = dayBars(days.Days, days.Made, null, function (day, made) { return t.format('DashboardRequestsOnDay', day, made); });
+    card.segments = null;
+    card.legend = false;
+    var total = Object.keys(by).reduce(function (n, k) { return n + (Number(by[k]) || 0); }, 0);
+    card.detail = by.Failed > 0 ? t.format('ScheduledTaskFailedWithName', by.Failed) : (total > 0 ? '' : t.tr('DashboardEmptyRequests'));
     if (by.Failed > 0) return setState(card, t, 'failed');
     if (pending > 0) return setState(card, t, 'pending');
     if ((by.Approved || 0) + (by.PartiallyAvailable || 0) > 0) return setState(card, t, 'active');
@@ -447,7 +452,7 @@ export function scriptsCard(t, days) {
     var failed = sum(days.Failed);
     card.value = ok + failed;
     card.valueLabel = t.tr('DashboardValueRuns');
-    card.bars = dayBars(t, days);
+    card.bars = dayBars(days.Days, days.Succeeded, days.Failed, function (day, runs, failed) { return t.format('DashboardRunsOnDay', day, runs, failed); });
     card.segments = null;
     card.legend = false;
     card.detail = failed > 0 ? t.format('ScheduledTaskFailedWithName', failed) : (ok > 0 ? '' : t.tr('DashboardEmptyRuns'));
@@ -456,32 +461,65 @@ export function scriptsCard(t, days) {
 }
 
 // RUN_DAYS
-// How many days the Scripts card charts.
+// How many days the Scripts, Requests, and Notifications cards chart.
 var RUN_DAYS = 14;
 
 // dayBars
-// Turns the runs per day into the Scripts card's columns, oldest first, always 14 of them so an idle fortnight still
-// shows its baseline.
+// Turns counts per day into a card's columns, oldest first, always 14 of them so an idle fortnight still shows its
+// baseline. A day with a failure is red and any other green.
 //
 // Inputs
-// t [object]: The strings.
-// days [object]: Days, Succeeded, and Failed, one entry per day, oldest first.
+// labels [string[]]: Each day as yyyy-MM-dd, oldest first.
+// good [number[]]: What went well on each day.
+// bad [number[]]: What failed on each day, or null when nothing can fail.
+// label [function]: Names a column from its day, its total, and its failures.
 //
 // Output
 // [object[]]: One { label, value, color } per day.
-export function dayBars(t, days) {
-    var labels = (days.Days || []).slice(-RUN_DAYS);
-    var ok = (days.Succeeded || []).slice(-RUN_DAYS);
-    var bad = (days.Failed || []).slice(-RUN_DAYS);
-    var count = Math.max(labels.length, ok.length, bad.length);
+export function dayBars(labels, good, bad, label) {
+    labels = (labels || []).slice(-RUN_DAYS);
+    good = (good || []).slice(-RUN_DAYS);
+    bad = (bad || []).slice(-RUN_DAYS);
+    var count = Math.max(labels.length, good.length, bad.length);
     var bars = [];
     for (var i = 0; i < count; i++) {
         var failed = Number(bad[i]) || 0;
-        var runs = (Number(ok[i]) || 0) + failed;
-        bars.push({ label: t.format('DashboardRunsOnDay', labels[i] || '', runs, failed), value: runs, color: failed > 0 ? 'red' : 'green' });
+        var total = (Number(good[i]) || 0) + failed;
+        bars.push({ label: label(labels[i] || '', total, failed), value: total, color: failed > 0 ? 'red' : 'green' });
     }
     while (bars.length < RUN_DAYS) bars.unshift({ label: '', value: 0, color: 'green' });
     return bars;
+}
+
+// sendDays
+// Counts the send log by the viewer's local day over the last 14 days, the sends that went and those that failed.
+//
+// Inputs
+// log [object[]]: The send log entries, each with Time in UTC and Ok.
+// now [Date]: The time now.
+//
+// Output
+// [object]: Days as yyyy-MM-dd, Sent, and Failed, oldest first, 14 entries each.
+export function sendDays(log, now) {
+    var out = { Days: [], Sent: [], Failed: [] };
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (RUN_DAYS - 1));
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    for (var i = 0; i < RUN_DAYS; i++) {
+        var day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+        out.Days.push(day.getFullYear() + '-' + pad(day.getMonth() + 1) + '-' + pad(day.getDate()));
+        out.Sent.push(0);
+        out.Failed.push(0);
+    }
+    (log || []).forEach(function (entry) {
+        var time = new Date(entry.Time);
+        if (isNaN(time.getTime())) return;
+        var local = new Date(time.getFullYear(), time.getMonth(), time.getDate());
+        var index = Math.round((local - start) / 86400000);
+        if (index < 0 || index >= RUN_DAYS) return;
+        if (entry.Ok) out.Sent[index]++;
+        else out.Failed[index]++;
+    });
+    return out;
 }
 
 // pagesCard
@@ -535,26 +573,30 @@ export function storageCard(t, disks) {
 }
 
 // notificationsCard
-// Sums up the send log: the sends that went as the number, beside those that failed.
+// Sums up the send log: the sends that went as the number, and a column per day of the last 14 as tall as its sends,
+// red on a day with a failed send. The line under the title counts the failed sends.
 //
 // Inputs
 // t [object]: The strings.
 // log [object[]]: What Notifications/Log answered, newest first, or null when it could not be read.
+// now [Date]: The time now. [optional]
 //
 // Output
 // [object]: The status card's options, with tool for the tool it opens.
-export function notificationsCard(t, log) {
+export function notificationsCard(t, log, now) {
     var card = toolCard('notifications');
     if (!Array.isArray(log)) return failedCard(t, card);
-    var counts = sendCounts(log);
-    card.value = counts.sent;
+    var failed = log.filter(function (e) { return !e.Ok; }).length;
+    var sent = log.length - failed;
+    var days = sendDays(log, now || new Date());
+    card.value = sent;
     card.valueLabel = t.tr('StateSent').toLowerCase();
-    withBar(card, t, [
-        { label: t.tr('StateSent'), value: counts.sent, color: 'green' },
-        { label: t.tr('LabelFailed'), value: counts.failed, color: 'red' }
-    ], 'DashboardEmptySends');
+    card.bars = dayBars(days.Days, days.Sent, days.Failed, function (day, total, bad) { return t.format('DashboardSendsOnDay', day, total - bad, bad); });
+    card.segments = null;
+    card.legend = false;
+    card.detail = failed > 0 ? t.format('ScheduledTaskFailedWithName', failed) : (log.length ? '' : t.tr('DashboardEmptySends'));
     if (log.length && !log[0].Ok) return setState(card, t, 'failed');
-    if (counts.failed > 0) return setState(card, t, 'attention');
+    if (failed > 0) return setState(card, t, 'attention');
     return setState(card, t, log.length ? 'active' : 'idle');
 }
 
@@ -650,7 +692,7 @@ function buildCard(key, t, shared, config, answer, map, now) {
         case 'scripts': return scriptsCard(t, answer);
         case 'pages': return pagesCard(t, config);
         case 'storage': return storageCard(t, answer);
-        default: return notificationsCard(t, answer);
+        default: return notificationsCard(t, answer, now);
     }
 }
 

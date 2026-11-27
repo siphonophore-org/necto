@@ -95,19 +95,20 @@ test('every card states its pill in a Stolon badge word and color, and its line 
         [{ label: 'A', value: 2, color: 'green' }, { label: 'B', value: 1, color: 'gray' }]);
 });
 
-test('the Requests card counts those waiting for approval with a part per status as the Requests tool colors it', async function () {
+test('the Requests card counts those waiting for approval with a column per day of the last 14', async function () {
     installPage({});
     var dashboard = await loadScript('necto_dashboard.js');
 
-    var card = dashboard.requestsCard(t, { ByStatus: { Pending: 3, Approved: 2, Available: 5, Failed: 1 } });
+    var card = dashboard.requestsCard(t, { ByStatus: { Pending: 3, Approved: 2, Available: 5, Failed: 1 }, Days: { Days: ['2026-11-26', '2026-11-27'], Made: [4, 2] } });
     assert.equal(card.value, 3);
     assert.equal(card.status, 'Failed');
     assert.equal(card.statusColor, 'red');
     assert.equal(card.tool, 'requests');
-    assert.deepEqual([card.detail, shown(card)], ['', 'Pending 3, Approved 2, Failed 1, Available 5']);
-    assert.equal(card.segments[0].color, 'purple');
+    assert.deepEqual([card.detail, card.segments, card.bars.length], [t.format('ScheduledTaskFailedWithName', 1), null, 14]);
+    assert.deepEqual(card.bars.slice(-2).map(function (b) { return [b.value, b.color]; }), [[4, 'green'], [2, 'green']]);
+    assert.equal(card.bars[13].label, '2026-11-27: 2 requests');
     var pending = dashboard.requestsCard(t, { ByStatus: { Pending: 1 } });
-    assert.deepEqual([pending.status, pending.statusColor], ['Pending', 'purple']);
+    assert.deepEqual([pending.status, pending.statusColor, pending.detail, pending.bars.length], ['Pending', 'purple', '', 14]);
     assert.equal(dashboard.requestsCard(t, { ByStatus: { Approved: 1 } }).status, 'Active');
     var none = dashboard.requestsCard(t, { ByStatus: {} });
     assert.deepEqual([none.status, none.detail], ['Idle', 'No requests yet']);
@@ -277,10 +278,13 @@ test('the Scripts, Storage, and Notifications cards show failures first', async 
     assert.equal(dashboard.storageCard(t, [{ Name: 'media', State: 'Available', InUse: true }]).status, 'Active');
     assert.equal(dashboard.storageCard(t, [{ Name: 'spare', State: 'Available', InUse: false }]).detail, 'No disks in use');
 
-    var sends = dashboard.notificationsCard(t, [{ Ok: true }, { Ok: false }, { Ok: true }]);
-    assert.deepEqual([sends.value, sends.valueLabel], [2, 'sent']);
-    assert.equal(dashboard.notificationsCard(t, [{ Ok: true }]).legend, false);
-    assert.deepEqual([sends.detail, shown(sends)], ['', 'Sent 2, Failed 1']);
+    var at = function (daysAgo) { return new Date(NOW.getTime() - daysAgo * 86400000).toISOString(); };
+    var sends = dashboard.notificationsCard(t, [{ Ok: true, Time: at(0) }, { Ok: false, Time: at(0) }, { Ok: true, Time: at(3) }, { Ok: true, Time: at(30) }], NOW);
+    assert.deepEqual([sends.value, sends.valueLabel, sends.segments, sends.legend], [3, 'sent', null, false]);
+    assert.equal(sends.bars.length, 14);
+    assert.deepEqual([sends.bars[13].value, sends.bars[13].color, sends.bars[10].value, sends.bars[10].color], [2, 'red', 1, 'green']);
+    assert.match(sends.bars[13].label, /: 1 sent, 1 failed$/);
+    assert.equal(sends.detail, t.format('ScheduledTaskFailedWithName', 1));
     assert.equal(sends.statusColor, 'orange');
     assert.equal(dashboard.notificationsCard(t, [{ Ok: false }]).status, 'Failed');
     assert.equal(dashboard.notificationsCard(t, []).detail, 'No sends yet');
