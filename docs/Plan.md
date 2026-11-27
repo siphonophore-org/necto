@@ -48,7 +48,7 @@ The page is one Stolon tool app, as Zooid's is: a sidebar of the tools that are 
 | **Dashboard** | Remote Access, WireGuard, Requests | One map of proxy visitors and WireGuard peers, hidden when Proxy and WireGuard are both off. A status card per tool that is on. The share card. Recent activity. See [Dashboard](#dashboard). |
 | **Requests** | Requests | The request list and its detail sidecar, Radarr and Sonarr, discovery and imports. Who may request, the limits, and auto approval live on groups. |
 | **Issues** | Requests | Issue reports and their states and notes. Who may report lives on groups. |
-| **Invites** | User Management | Invite links and their signup page, the group a new user joins, limits, expiry. |
+| **Invites** | User Management | Invite links and their sign-up page, the group a new user joins, limits, expiry. |
 | **Groups** | User Management | Groups and members, and every permission in Necto. See [Groups](#groups). |
 | **Proxy** | Remote Access | A general reverse proxy with routes, certificates, and protection. See [Proxy](#proxy). |
 | **DDNS** | Remote Access | Several DDNS records, each with its provider and credentials. |
@@ -200,11 +200,11 @@ One service every tool sends events to, and one set of channels.
 
 ### Invites
 
-* Invites keep User Management's links, PINs, limits, expiry, and signup page, at `/invites/{token}`. See [Invites](Invites.md).
+* Invites keep User Management's links, PINs, limits, expiry, and sign-up page, at `/invites/{token}`. See [Invites](Invites.md).
 * A member whose groups allow invites makes their own at `/invites`, the user page the Plan names, so **Allow invites**, **Open invites**, and the invite groups take effect. **Review**
 * The Invites tool lists invites at `GET /Invites/List`, since `/invites` is the member page and routes do not tell case apart. **Review**
 * An invite's group of **Group for new users** follows **Settings > Groups** when the link is used, as User Management's default group did. **Review**
-* A signup holds the account disabled until its password is set, leaves it out of the group for new users, and counts its first password as a creation, not a member's own change.
+* A sign-up holds the account disabled until its password is set, leaves it out of the group for new users, and counts its first password as a creation, not a member's own change.
 
 ### Requests and Issues
 

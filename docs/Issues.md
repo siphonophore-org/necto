@@ -51,11 +51,13 @@ Each issue keeps the item's file as it was reported, with its path, size, and th
 
 ![Issue details](screenshots/Issue%20Detail.png)
 
-* Cards count the **Open**, **Reported**, **Confirmed**, **Resolved**, and **Declined** issues.
+* Cards count the **Reported**, **Confirmed**, **Resolved**, **Declined**, and **Rescinded** issues.
 * Each row shows the item and its poster, what the reporters say is wrong, who reported it and when it last changed, its state, and **File changed** when the file changed.
-* **Search** matches the item, its show, and the reporters' names. The state filter and the type filter are kept for the next visit.
+* **Search** matches the item, its show, and the reporters' names. The state, type, and reporter filters are kept for the next visit.
+* Select rows to **Resolve**, **Confirm**, or **Decline** them together, with one note. Rows in a state that does not take the choice are skipped.
+* With no issues at all, the page says "No issues yet."
 
-Select a row to open the issue in a sidecar, with its reporters, its file, and every note in order. It offers **Confirm** a reported issue, **Resolve** or **Decline** an open one, **Reopen** a closed one, **Open in library**, and **Open in Sonarr** or **Open in Radarr**. Each action asks for an optional note, shown to the reporters.
+Select a row to open the issue in a sidecar, with its reporters, its file, and every note in order. It offers **Confirm** a reported issue, **Resolve** or **Decline** an open one, **Reopen** a closed one, **Open in library**, and **Open in Sonarr** or **Open in Radarr**. Each action asks for a note, shown to the reporters, which may be left blank.
 
 While **Enable issues** is off, **Issues** leaves the sidebar, and opened by its address it says "Issues is off. Turn it on in Settings to take reports."
 

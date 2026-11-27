@@ -1872,7 +1872,7 @@
         }
         function setHtml(node, html) { prune(node); node.innerHTML = html; }
 
-        // Cards are jellyfin-web's own (cardBuilder.js and indicators.js), built by WebClient.buildCard; the card functions
+        // Cards are jellyfin-web's own (cardBuilder.js and indicators.js), built by Stolon's webCard; the card functions
         // below feed it this page's titles and people instead of library items.
         var cardSeq = 0;
         // Rows of cards scroll (overflowPortrait); list pages lay them out in a grid (portrait), as the web client's do.
@@ -2565,10 +2565,10 @@
             cards[key] = { type: 'list', list: list };
             var aired = s.AirDate ? new Date(s.AirDate).getFullYear() : null;
             var count = s.EpisodeCount === 1 ? str('ValueOneEpisode') : s.EpisodeCount ? str('ValueEpisodeCount', s.EpisodeCount) : '';
-            return buildCard({
+            return S.webCard({
                 key: key, shape: shape, href: list.listHash, type: 'Season', image: s.PosterUrl || r.PosterUrl, title: s.Name || str('NameSeasonNumber', s.Number),
                 secondary: [aired, count].filter(Boolean).join(' \u00b7 '),
-                indicator: s.InLibrary ? getIndicatorHtml({ cls: 'library', icon: 'check', tag: str('RequestsRequestStatusInLibrary') }) : null
+                indicator: s.InLibrary ? indicatorOf({ cls: 'library', icon: 'check', tag: str('RequestsRequestStatusInLibrary') }) : null
             });
         }
         // A season's episodes (#/search?season=2&name=…&tmdb=…), from TMDb, with their air dates and which the library has.
@@ -2595,10 +2595,10 @@
             cards[key] = { type: 'episode' };
             var when = e.AirDate ? new Date(e.AirDate) : null;
             var date = when ? longDate(e.AirDate) : '';
-            return buildCard({
+            return S.webCard({
                 key: key, shape: 'backdrop', type: 'Episode', image: e.StillUrl, title: e.Number + '. ' + (e.Name || str('RequestsEpisodeNumber', e.Number)),
                 secondary: !when ? str('RequestsEpisodeAirDateUnknown') : when > new Date() ? str('RequestsEpisodeAirs', date) : date,
-                indicator: e.InLibrary ? getIndicatorHtml({ cls: 'library', icon: 'check', tag: str('RequestsRequestStatusInLibrary') }) : null
+                indicator: e.InLibrary ? indicatorOf({ cls: 'library', icon: 'check', tag: str('RequestsRequestStatusInLibrary') }) : null
             });
         }
 
@@ -3049,7 +3049,7 @@
             cards[key] = { type: 'issue', item: item };
             var image = item.ImageTag ? itemImage(item.Id, item.ImageTag, 360) : episode && item.SeriesImageTag ? itemImage(item.SeriesId, item.SeriesImageTag, 360) : null;
             var secondary = episode ? episodeLine(item) : item.Type === 'Movie' ? (item.Year ? String(item.Year) : '') : (item.ParentName || '');
-            return buildCard({ key: key, shape: shape, href: issueHash(item.Id), type: item.Type, image: image, title: episode ? (item.ParentName || item.Name) : item.Name, secondary: secondary });
+            return S.webCard({ key: key, shape: shape, href: issueHash(item.Id), type: item.Type, image: image, title: episode ? (item.ParentName || item.Name) : item.Name, secondary: secondary });
         }
 
         // The empty search's suggestions: what the viewer played last, newest first, as the web client's Suggestions.
