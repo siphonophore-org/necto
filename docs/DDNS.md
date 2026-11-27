@@ -10,13 +10,14 @@ A warning shows above the list when a detection service returned only an interna
 
 ## Records
 
-The record sidecar holds the fields its provider uses, with the provider's own labels and a hint under **Provider**.
+The record sidecar holds the fields its provider uses, with the provider's own labels, a hint under **Provider**, and a link to the provider's [setup guide](providers/index.md).
 
 * **Name** is the record's name in the list. Left blank, the list shows the hostname.
 * **Update this record** turns updates on or off. The name stays as it is at the provider while off.
 * **Provider** picks one of the providers below.
-* **Follow the proxy's host names** pushes every enabled internet route's host name under the record's **Zone**, with the record's credentials, instead of one hostname. A record with no zone follows every internet route. Wildcards and **Local network only** routes are left out. Each followed name keeps its own status, which the sidecar lists under **Last run**.
-* **Hostname**, **Login**, **Password**, and **Zone** hold what the provider asks for. A stored credential never reaches the browser. The field shows dots, a blank field keeps the stored value, and **Clear saved value** removes it. A credential sent to another provider or server is dropped, so an edit never sends a saved password somewhere new.
+* **Follow the proxy's host names** pushes every enabled internet route's host name under the record's **Zone**, with the record's credentials, instead of one hostname. A record with no zone follows every internet route. Wildcards and **Local network only** routes are left out. Each followed name keeps its own status, which the sidecar lists under **Last run**. It shows only for a provider whose hostname field holds a name. ClouDNS, Directnic, and INWX have no hostname field, and DNS Made Easy and Sitelutions take a record ID, so a record with them cannot follow the proxy.
+* **Hostname** is the DNS name the record keeps pointed at this server. For DNS Made Easy and Sitelutions it holds the record ID, so type the name yourself as a [Proxy](Proxy.md) route's host name.
+* **Login**, **Password**, and **Zone** hold what the provider asks for. A stored credential never reaches the browser. The field shows dots, a blank field keeps the stored value, and **Clear saved value** removes it. A credential sent to another provider or server is dropped, so an edit never sends a saved password somewhere new.
 * **Update IPv4** and **Update IPv6** pick the A and AAAA records. Providers that carry one address hide **Update IPv6**.
 * **Update every (minutes)** sets how often the record is checked. The update task runs every 5 minutes, which is the shortest interval.
 * **More settings** holds **Server override**, **TTL (seconds)**, **Treat as proxied**, and, for the dyndns family, **Wildcard**, **Static DNS**, **MX host**, and **Backup MX**.
@@ -32,6 +33,8 @@ A record that fails **Pause after failures** times in a row pauses for **Pause f
 Provider replies are shown with every credential masked. A request to a provider never follows a redirect to another server.
 
 ### Providers
+
+Each provider has a [setup guide](providers/index.md) that lists its fields and where to find each value.
 
 1984 Hosting, ChangeIP, Cloudflare, ClouDNS, DDNS.fm, DDNSS.de, DigitalOcean, Dinahosting, Directnic, DNS Made Easy, DNSExit, Domeneshop, DonDominio, DSLReports, Duck DNS, Dynadot, DynDNS v1, DynDNS v2, Dynu, easyDNS, eNom, FreeDNS, freemyip.com, Gandi LiveDNS, GoDaddy, Hetzner DNS, Hurricane Electric, Infomaniak, INWX, IONOS, Key-Systems, Mythic Beasts, Namecheap, NearlyFreeSpeech.NET, Njalla, No-IP, NS1, OVH, Porkbun, regfish.de, Simply.com, Sitelutions, Spaceship, Yandex PDD, and ZoneEdit.
 
@@ -65,7 +68,7 @@ Cloudflare and Duck DNS can also publish the TXT record Let's Encrypt checks, so
 
 ## Notifications
 
-DDNS sends these events to [Notifications](Plan.md#notifications).
+DDNS sends these events to [Notifications](Notifications.md).
 
 | Event | When |
 | :--- | :--- |
@@ -86,7 +89,7 @@ Every route needs an administrator.
 
 | Route | What it does |
 | :--- | :--- |
-| `GET /Ddns/Providers` | Lists the providers with their fields and hint. |
+| `GET /Ddns/Providers` | Lists the providers with their fields and hint, whether each can publish a TXT record, and whether each can follow the proxy. |
 | `GET /Ddns/Records` | Lists the records with their status and the detected addresses. Credentials come back as a marker. |
 | `POST /Ddns/Records` | Adds a record. |
 | `PUT /Ddns/Records/{id}` | Saves a record. |

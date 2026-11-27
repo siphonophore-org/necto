@@ -1,0 +1,9 @@
+# Njalla
+
+Open a record on the **DDNS** page, or select **Add record**, set **Provider** to **Njalla**, then fill in:
+
+- **Host**: the record.
+- **DDNS key**: the dynamic DNS key Njalla shows for that record.
+- **Server override**: leave blank to use Njalla's own server.
+
+_Ported from ddclient's `nic_njalla_update`._

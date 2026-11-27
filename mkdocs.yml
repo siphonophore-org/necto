@@ -51,6 +51,7 @@ nav:
       - Groups: Groups.md
       - Proxy: Proxy.md
       - DDNS: DDNS.md
+      - DDNS providers: providers/index.md
       - WireGuard: WireGuard.md
       - Scripts: Scripts.md
       - Custom Pages: CustomPages.md

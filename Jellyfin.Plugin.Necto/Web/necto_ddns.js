@@ -16,6 +16,21 @@ var ACTIONS = {
     'Failed': { key: 'LabelFailed', state: 'error' }
 };
 
+// The providers whose Hostname field holds a numeric record id rather than a name.
+var HOLDS_RECORD_ID = ['DnsMadeEasy', 'Sitelutions'];
+
+// guideUrl
+// Gives the address of a provider's setup guide on the docs site.
+//
+// Inputs
+// kind [string]: The provider's kind, such as Cloudflare.
+//
+// Output
+// [string]: The guide's address.
+export function guideUrl(kind) {
+    return 'https://necto.siphonophore.org/providers/' + encodeURIComponent(kind) + '/';
+}
+
 // providerLabel
 // Names a record's provider as the provider list does.
 //
@@ -179,7 +194,9 @@ export function createRecordEditor(record, ctx) {
         value: draft.Provider
     });
     var follow = fields.checkField({ label: t.tr('DdnsLabelFollowProxy'), field: 'FollowProxyHosts', checked: !!draft.FollowProxyHosts, help: t.tr('DdnsFollowProxyHelp') });
-    var hostname = fields.inputField({ label: t.tr('DdnsLabelHostname'), field: 'Hostname', value: draft.Hostname, placeholder: 'home.example.com' });
+    var hostname = fields.inputField({ label: t.tr('DdnsLabelHostname'), field: 'Hostname', value: draft.Hostname, placeholder: 'home.example.com', help: t.tr('DdnsHostnameHelp') });
+    var guide = el('a', { class: 'button-link', target: '_blank', rel: 'noopener noreferrer', 'data-role': 'provider-guide' });
+    provider.element.appendChild(el('div', { class: 'fieldDescription' }, [guide]));
     var login = fields.secretField({ label: t.tr('GuideProviderLogin'), field: 'Login', clearText: t.tr('ButtonClearSaved') });
     var password = fields.secretField({ label: t.tr('LabelPassword'), field: 'Password', help: t.tr('DdnsLimitedTokenHelp'), clearText: t.tr('ButtonClearSaved') });
     var zone = fields.inputField({ label: t.tr('DdnsLabelZone'), field: 'Zone', value: draft.Zone, placeholder: 'example.com' });
@@ -228,11 +245,16 @@ export function createRecordEditor(record, ctx) {
         var spec = fields_of(provider.input.value);
         var f = spec.Fields || {};
         provider.help.textContent = spec.Hint || '';
+        guide.setAttribute('href', guideUrl(provider.input.value));
+        guide.textContent = t.format('DdnsProviderGuide', spec.Label || provider.input.value);
         var set = function (field, label) {
             field.element.classList.toggle('stolon-hidden', !label);
             if (label) field.element.querySelector('label').textContent = label;
         };
-        set(hostname, follow.input.checked ? null : f.Hostname);
+        var following = !!spec.Follow && follow.input.checked;
+        follow.element.classList.toggle('stolon-hidden', !spec.Follow);
+        set(hostname, following ? null : f.Hostname);
+        hostname.element.querySelector('.fieldDescription').textContent = t.tr(HOLDS_RECORD_ID.indexOf(provider.input.value) >= 0 ? 'DdnsHostnameIdHelp' : 'DdnsHostnameHelp');
         set(login, f.Login);
         set(password, f.Password);
         set(zone, f.Zone);
@@ -265,7 +287,7 @@ export function createRecordEditor(record, ctx) {
             out.Name = name.input.value.trim();
             out.Enabled = !!enabled.input.checked;
             out.Provider = provider.input.value;
-            out.FollowProxyHosts = !!follow.input.checked;
+            out.FollowProxyHosts = !!fields_of(provider.input.value).Follow && !!follow.input.checked;
             out.Hostname = spec.Hostname ? hostname.input.value.trim() : '';
             out.Login = spec.Login ? shared.readSecretField(login.input) : '';
             out.Password = spec.Password ? shared.readSecretField(password.input) : '';

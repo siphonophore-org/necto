@@ -14,6 +14,11 @@ export var CHALLENGES = ['Auto', 'Http', 'Dns'];
 var PHASES = ['Unmanaged', 'PendingRestart', 'Managed', 'Degraded'];
 var ACTIVITY_TYPES = ['User', 'Failure', 'Blocked', 'Seen'];
 var ACTIVITY_KEYS = { User: 'ProxyActivityUser', Failure: 'ProxyActivityFailure', Blocked: 'HeaderRefused', Seen: 'ProxyActivitySeen' };
+var LOCATIONS = ['Country', 'City', 'Off'];
+
+// How often the page reads the proxy's status and the visitors again, in milliseconds.
+export var STATUS_POLL_MS = 10000;
+export var VISITORS_POLL_MS = 30000;
 
 // The keys of the route templates, in the order the picker shows them.
 export var TEMPLATES = [
@@ -84,15 +89,16 @@ export function routeItems(routes, statuses, t) {
 }
 
 // certificateItems
-// Describes a route's certificate as label and value pairs.
+// Describes a route's certificate as label and value pairs, with the self-signed root's expiry and fingerprint.
 //
 // Inputs
 // status [object]: The route's status.
 // shared [object]: The Necto helper bag.
+// root [object]: The self-signed root from Proxy/Certificate/Root, or null for any other source.
 //
 // Output
 // [object[]]: The pairs.
-export function certificateItems(status, shared) {
+export function certificateItems(status, shared, root) {
     var t = shared.t;
     var cert = (status && status.Certificate) || {};
     var acme = (status && status.Acme) || {};
@@ -107,6 +113,8 @@ export function certificateItems(status, shared) {
     if (acme.LastError) items.push({ label: t.tr('ProxyLabelLastAttempt'), value: acme.LastError });
     if (acme.NextAttemptUtc) items.push({ label: t.tr('ProxyLabelNextAttempt'), value: shared.formatDate(acme.NextAttemptUtc) });
     if ((acme.DnsProviders || []).length) items.push({ label: t.tr('ProxyLabelDnsProvider'), value: acme.DnsProviders.join(', ') });
+    if (root && root.NotAfterUtc) items.push({ label: t.tr('ProxyLabelRootExpires'), value: shared.formatDate(root.NotAfterUtc) });
+    if (root && root.Fingerprint) items.push({ label: t.tr('ProxyLabelRootFingerprint'), value: root.Fingerprint });
     return items;
 }
 
@@ -126,11 +134,12 @@ export function newRoute() {
 // Inputs
 // route [object]: The route to edit, or a new one.
 // ctx [object]: shared is the Necto helper bag, status the route's status, records the DDNS records that can publish
-//   TXT records, hostnames the names the DDNS records keep, and onAction(action, route) runs Request certificate, Test
-//   route, Upload and Download root.
+//   TXT records, hostnames the names the DDNS records keep, requestable whether the proxy runs with the Let's Encrypt
+//   terms accepted, root the self-signed root, and onAction(action, route) runs Request certificate, Test route, Upload
+//   and Download root.
 //
 // Output
-// [object]: A handle with element, getValue, validate, setStatus, setRouteStatus, and destroy.
+// [object]: A handle with element, getValue, validate, setStatus, setRouteStatus, setRoot, setRequestable, and destroy.
 export function createRouteEditor(route, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
@@ -215,6 +224,8 @@ export function createRouteEditor(route, ctx) {
     };
     var uploadBtn = actionButton('upload', t.tr('Upload'));
     var requestBtn = actionButton('request', t.tr('ProxyButtonRequestCertificate'));
+    var rootCert = ctx.root || null;
+    var lastStatus = ctx.status;
     var rootBtn = actionButton('root', t.tr('ProxyButtonDownloadRoot'));
     var testBtn = actionButton('test', t.tr('ProxyButtonTestRoute'));
     upload.appendChild(el('div', { class: 'stolon-button-row' }, [uploadBtn]));
@@ -248,6 +259,7 @@ export function createRouteEditor(route, ctx) {
 
     ddnsNames.input.addEventListener('change', function () { if (ddnsNames.input.value) host.input.value = ddnsNames.input.value; });
     [mode, challenge, target].forEach(function (f) { f.input.addEventListener('change', reflect); });
+    mode.input.addEventListener('change', function () { if (handle) handle.setRouteStatus(lastStatus); });
     reflect();
 
     var handle = {
@@ -281,14 +293,27 @@ export function createRouteEditor(route, ctx) {
             shared.setStatus(status, message, !!isError);
         },
         setRouteStatus: function (next) {
-            certList.setItems(certificateItems(next, shared));
-            certStatus.classList.toggle('stolon-hidden', !certificateItems(next, shared).length);
+            lastStatus = next;
+            var shownRoot = mode.input.value === 'SelfSigned' ? rootCert : null;
+            var items = certificateItems(next, shared, shownRoot);
+            certList.setItems(items);
+            certStatus.classList.toggle('stolon-hidden', !items.length);
+        },
+        setRoot: function (next) {
+            rootCert = next || null;
+            this.setRouteStatus(lastStatus);
+        },
+        setRequestable: function (on) {
+            requestBtn.disabled = !on;
+            if (on) requestBtn.removeAttribute('title');
+            else requestBtn.setAttribute('title', t.tr('ProxyRequestNeedsProxy'));
         },
         destroy: function () {
             handles.splice(0).forEach(function (h) { if (h && h.destroy) h.destroy(); });
         }
     };
     handle.setRouteStatus(ctx.status);
+    handle.setRequestable(ctx.requestable !== false);
     return handle;
 }
 
@@ -354,20 +379,75 @@ export function notices(status, t) {
 
 // rowAction
 // Picks the one action an activity row offers: unban a banned address, unblock a listed one, let a country through,
-// or block it. Your network is never blocked, so it offers none, and an address blocked by a range says so.
+// or block it. Your network is never blocked, so its Block is off, and an address blocked by a range has its Unblock
+// off, each with the reason.
 //
 // Inputs
 // row [object]: The activity row.
 //
 // Output
-// [object|null]: action and value, or null for none. reason names why the row has none.
+// [object]: action and value, disabled when the button is off, and reason, the key of the button's tooltip.
 export function rowAction(row) {
     if (row.Banned) return { action: 'unban', value: row.Ip };
-    if (row.Exempt) return null;
+    if (row.Exempt) return { action: 'block', value: row.Ip, disabled: true, reason: 'ProxyTextNeverBlocked' };
     if (row.Listed) return { action: 'unblock', value: row.Ip };
-    if (row.Covered) return null;
-    if (row.CountryBlocked) return { action: 'unblock-country', value: row.CountryCode, country: row.Country };
+    if (row.Covered) return { action: 'unblock', value: row.Ip, disabled: true, reason: 'ProxyBlockedByRange' };
+    if (row.CountryBlocked) return { action: 'unblock-country', value: row.CountryCode, country: row.Country || row.CountryCode, reason: 'ProxyAllowCountry' };
     return { action: 'block', value: row.Ip };
+}
+
+// countryRows
+// Joins the totals by country into one row per country, with the latest visit any of them saw.
+//
+// Inputs
+// data [object]: The answer from Proxy/Visitors.
+//
+// Output
+// [object[]]: One row per country.
+export function countryRows(data) {
+    var rows = {};
+    var add = function (list, field) {
+        (list || []).forEach(function (c) {
+            var row = rows[c.CountryCode] || (rows[c.CountryCode] = { Code: c.CountryCode, Country: c.Country || c.CountryCode, People: 0, Failed: 0, Blocked: 0, LastUtc: null });
+            row[field] += c.Count || 0;
+            if (c.LastUtc && (!row.LastUtc || new Date(c.LastUtc) > new Date(row.LastUtc))) row.LastUtc = c.LastUtc;
+        });
+    };
+    add(data.PeopleByCountry, 'People');
+    add(data.FailedByCountry, 'Failed');
+    add(data.BlockedByCountry, 'Blocked');
+    return Object.keys(rows).map(function (k) { return rows[k]; });
+}
+
+// locationText
+// Says how the location database stands, or that lookups are off.
+//
+// Inputs
+// loc [object]: The location database status from Proxy/Visitors, or null.
+// shared [object]: The Necto helper bag.
+//
+// Output
+// [string]: The sentence, or empty when there is no status.
+export function locationText(loc, shared) {
+    var t = shared.t;
+    if (!loc) return '';
+    if (fields.enumName(loc.Detail, LOCATIONS) === 'Off') return t.tr('ProxyLocationOff');
+    if (loc.Downloading) return t.tr('ProxyLocationDownloading');
+    if (loc.Error) return loc.Error;
+    if (loc.Loaded) return loc.BuiltUtc ? t.format('ProxyLocationLoadedOn', shared.formatDate(loc.BuiltUtc)) : t.tr('ProxyLoaded');
+    return t.tr('ProxyNotLoaded');
+}
+
+// showsCity
+// Tells whether the visitor history looks up cities, so the activity table shows them.
+//
+// Inputs
+// data [object]: The answer from Proxy/Visitors.
+//
+// Output
+// [boolean]: Whether Locations is set to City.
+export function showsCity(data) {
+    return fields.enumName(data && data.Settings && data.Settings.Location, LOCATIONS) === 'City';
 }
 
 export default function (view) {
@@ -383,7 +463,10 @@ export default function (view) {
     var proxyStatus = {};
     var visitors = null;
     var loadSeq = 0;
-    var pollers = [];
+    var refreshSeq = 0;
+    var acceptTerms = false;
+    var jellyfin = null;
+    var openEditor = null;
 
     // report
     // Shows a result on the page's status line.
@@ -404,38 +487,49 @@ export default function (view) {
     }
 
     // drawJellyfin
-    // Draws whether Jellyfin trusts the proxy, with Trust and Undo.
+    // Draws whether Jellyfin trusts the proxy, with Trust and Undo. The section is built once and only its state
+    // changes after, so a refresh never folds it or clears its status line.
     function drawJellyfin() {
         var t = shared.t;
-        var host = view.querySelector('#proxyJellyfin');
-        host.textContent = '';
         var phase = phaseText(proxyStatus, t);
         var managed = phase.color !== 'gray';
-        var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'trust-status' });
-        var trust = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'trust' }, [el('span', { text: t.tr(managed ? 'ProxyButtonTrustAgain' : 'ProxyButtonTrust') })]);
-        var undo = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'undo' }, [el('span', { text: t.tr('ButtonUndo') })]);
-        undo.disabled = !managed;
-        var content = el('div', {}, [
-            el('div', { class: 'fieldDescription', text: t.tr('ProxyTrustHelp') }),
-            el('div', { class: phase.color === 'green' ? 'stolon-success' : 'stolon-neutral', text: phase.text }),
-            el('div', { class: 'fieldDescription', text: t.tr('ProxyTrustRestartsOnce') }),
-            el('div', { class: 'stolon-button-row' }, [trust, undo]),
-            status
-        ]);
-        var section = nectoModule.createCollapsibleSection({ title: t.tr('LabelJellyfin'), icon: 'shield', collapsed: managed, content: content });
-        section.setBadge({ label: phase.label, color: phase.color });
-        host.appendChild(section.element);
-        trust.addEventListener('click', function () { runTrust('Proxy/Trust', trust, status); });
-        undo.addEventListener('click', function () {
-            nectoModule.confirmDialog(t.tr('ProxyConfirmUndoTrust'), { title: t.tr('ProxyUndoTrust'), confirmText: t.tr('ButtonUndo'), destructive: true }).then(function (ok) {
-                if (ok) runTrust('Proxy/Trust/Undo', undo, status);
+        if (!jellyfin) {
+            var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'trust-status' });
+            var trust = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'trust' }, [el('span', {})]);
+            var undo = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'undo' }, [el('span', { text: t.tr('ButtonUndo') })]);
+            var state = el('div', { 'data-role': 'trust-state' });
+            var content = el('div', {}, [
+                el('div', { class: 'fieldDescription', text: t.tr('ProxyTrustHelp') }),
+                state,
+                el('div', { class: 'fieldDescription', text: t.tr('ProxyTrustRestartsOnce') }),
+                el('div', { class: 'stolon-button-row' }, [trust, undo]),
+                status
+            ]);
+            var section = nectoModule.createCollapsibleSection({ title: t.tr('LabelJellyfin'), icon: 'shield', collapsed: managed, content: content });
+            view.querySelector('#proxyJellyfin').appendChild(section.element);
+            jellyfin = { section: section, state: state, trust: trust, undo: undo, status: status, busy: false };
+            trust.addEventListener('click', function () {
+                nectoModule.confirmDialog(t.tr('ProxyConfirmTrust'), { title: t.tr('ProxyButtonTrust'), confirmText: t.tr('ProxyButtonTrustShort') }).then(function (ok) {
+                    if (ok) runTrust('Proxy/Trust', trust, status);
+                });
             });
-        });
+            undo.addEventListener('click', function () {
+                nectoModule.confirmDialog(t.tr('ProxyConfirmUndoTrust'), { title: t.tr('ProxyUndoTrust'), confirmText: t.tr('ButtonUndo'), destructive: true }).then(function (ok) {
+                    if (ok) runTrust('Proxy/Trust/Undo', undo, status);
+                });
+            });
+        }
+        jellyfin.section.setBadge({ label: phase.label, color: phase.color });
+        jellyfin.state.className = phase.color === 'green' ? 'stolon-success' : 'stolon-neutral';
+        jellyfin.state.textContent = phase.text;
+        jellyfin.trust.querySelector('span').textContent = t.tr(managed ? 'ProxyButtonTrustAgain' : 'ProxyButtonTrust');
+        if (!jellyfin.busy) jellyfin.undo.disabled = !managed;
     }
 
     // runTrust
     // Trusts the proxy in Jellyfin, or undoes it, and says what happened.
     function runTrust(route, btn, status) {
+        jellyfin.busy = true;
         btn.disabled = true;
         shared.setStatus(status, shared.t.tr('TextWorking'), false);
         return shared.request(route, 'POST').then(function (result) {
@@ -443,7 +537,53 @@ export default function (view) {
             loadAll();
         }).catch(function (err) {
             return shared.errorText(err, shared.t.tr('ProxyErrorTrust')).then(function (text) { shared.setStatus(status, text, true); });
-        }).then(function () { btn.disabled = false; });
+        }).then(function () {
+            jellyfin.busy = false;
+            btn.disabled = false;
+            drawJellyfin();
+        });
+    }
+
+    // requestable
+    // Tells whether a certificate can be requested now: the proxy runs and the Let's Encrypt terms are accepted.
+    function requestable() {
+        return !!proxyStatus.Running && acceptTerms;
+    }
+
+    // showRoutes
+    // Draws the route rows, and the open editor's certificate status when its route is among them.
+    function showRoutes(answer) {
+        routes = (answer && answer.Routes) || [];
+        statuses = (answer && answer.Status) || [];
+        var items = routeItems(routes, statuses, shared.t);
+        if (list) list.setItems(items);
+        else {
+            list = nectoModule.createRecordList({
+                items: items,
+                label: shared.t.tr('ProxyHeaderRoutes'),
+                emptyText: shared.t.tr('ProxyEmptyRoutes'),
+                onOpen: function (item) { openRoute(item.route, item.status); }
+            });
+            view.querySelector('#proxyRoutes').appendChild(list.element);
+        }
+        if (openEditor && openEditor.id) {
+            var mine = statuses.find(function (s) { return s.Id === openEditor.id; });
+            if (mine) openEditor.editor.setRouteStatus(mine);
+        }
+    }
+
+    // refresh
+    // Reads the routes and the status again, so a certificate being issued or Jellyfin restarting shows on its own.
+    // An answer that lands after a later read began is dropped.
+    function refresh() {
+        var mine = ++refreshSeq;
+        var loading = loadSeq;
+        return Promise.all([shared.request('Proxy/Routes'), shared.request('Proxy/Status')]).then(function (answers) {
+            if (mine !== refreshSeq || loading !== loadSeq) return;
+            showRoutes(answers[0]);
+            showStatus(answers[1] || {});
+            if (openEditor) openEditor.editor.setRequestable(requestable());
+        }).catch(function () { /* the next tick tries again */ });
     }
 
     // loadAll
@@ -455,27 +595,18 @@ export default function (view) {
             shared.request('Proxy/Status'),
             shared.request('Ddns/Records').catch(function () { return { Records: [] }; }),
             shared.request('Ddns/Providers').catch(function () { return []; }),
-            shared.request('Proxy/DdnsHostnames').catch(function () { return []; })
+            shared.request('Proxy/DdnsHostnames').catch(function () { return []; }),
+            shared.request('Proxy/Settings').catch(function () { return {}; })
         ]).then(function (answers) {
             if (mine !== loadSeq) return;
-            routes = (answers[0] && answers[0].Routes) || [];
-            statuses = (answers[0] && answers[0].Status) || [];
+            acceptTerms = !!(answers[5] && answers[5].AcceptTerms);
             var txt = {};
             (Array.isArray(answers[3]) ? answers[3] : []).forEach(function (p) { if (p.Txt) txt[p.Value] = true; });
             records = ((answers[2] && answers[2].Records) || []).map(function (e) { return e.Record; }).filter(function (r) { return txt[r.Provider]; });
             hostnames = Array.isArray(answers[4]) ? answers[4] : [];
-            var items = routeItems(routes, statuses, shared.t);
-            if (list) list.setItems(items);
-            else {
-                list = nectoModule.createRecordList({
-                    items: items,
-                    label: shared.t.tr('ProxyHeaderRoutes'),
-                    emptyText: shared.t.tr('ProxyEmptyRoutes'),
-                    onOpen: function (item) { openRoute(item.route, item.status); }
-                });
-                view.querySelector('#proxyRoutes').appendChild(list.element);
-            }
+            showRoutes(answers[0]);
             showStatus(answers[1] || {});
+            if (openEditor) openEditor.editor.setRequestable(requestable());
             if (visitors) visitors.load();
         }).catch(function (err) {
             if (mine !== loadSeq) return;
@@ -567,8 +698,26 @@ export default function (view) {
             link.download = 'necto-root.crt';
             link.click();
             editor.setStatus(shared.t.format('ProxyRootFingerprint', root.Fingerprint), false);
+            editor.setRoot(root);
         }).catch(function (err) {
             return shared.errorText(err, shared.t.tr('ProxyErrorRoot')).then(function (text) { editor.setStatus(text, true); });
+        });
+    }
+
+    // requestCertificate
+    // Asks first, since Let's Encrypt limits how often it issues, then orders a new certificate for the route.
+    function requestCertificate(route, editor) {
+        var t = shared.t;
+        if (!requestable()) return Promise.resolve();
+        return nectoModule.confirmDialog(t.tr('ProxyConfirmRequestCertificate'), { title: t.format('ProxyTitleRequestCertificate', route.Host || t.tr('ProxyNoHost')), confirmText: t.tr('ProxyButtonRequestCertificate') }).then(function (ok) {
+            if (!ok) return;
+            editor.setStatus(t.tr('ProxyRequesting'), false);
+            return shared.request('Proxy/Routes/' + encodeURIComponent(route.Id) + '/Certificate/Request', 'POST').then(function (result) {
+                editor.setStatus(result.Message, !result.Ok);
+                editor.setRouteStatus((result.Status || []).find(function (s) { return s.Id === route.Id; }));
+            }).catch(function (err) {
+                return shared.errorText(err, t.tr('ProxyErrorRequest')).then(function (text) { editor.setStatus(text, true); });
+            });
         });
     }
 
@@ -580,15 +729,7 @@ export default function (view) {
         var done = function () { btn.disabled = false; };
         if (action === 'upload') return uploadCertificate(route, editor).then(done);
         if (action === 'root') return downloadRoot(editor).then(done);
-        if (action === 'request') {
-            editor.setStatus(t.tr('ProxyRequesting'), false);
-            return shared.request('Proxy/Routes/' + encodeURIComponent(route.Id) + '/Certificate/Request', 'POST').then(function (result) {
-                editor.setStatus(result.Message, !result.Ok);
-                editor.setRouteStatus((result.Status || []).find(function (s) { return s.Id === route.Id; }));
-            }).catch(function (err) {
-                return shared.errorText(err, t.tr('ProxyErrorRequest')).then(function (text) { editor.setStatus(text, true); });
-            }).then(done);
-        }
+        if (action === 'request') return requestCertificate(route, editor).then(function () { editor.setRequestable(requestable()); });
         editor.setStatus(t.tr('ProxyTesting'), false);
         return shared.request('Proxy/Routes/' + encodeURIComponent(route.Id) + '/Test', 'POST').then(function (result) {
             editor.setStatus(result.Ok ? t.tr('ProxyRouteAnswered') : result.Message, !result.Ok);
@@ -602,7 +743,14 @@ export default function (view) {
     function openRoute(route, status) {
         var t = shared.t;
         var isNew = !route || !route.Id;
-        var editor = createRouteEditor(route || newRoute(), { shared: shared, status: status, records: records, hostnames: hostnames, onAction: onEditorAction });
+        var editor = createRouteEditor(route || newRoute(), { shared: shared, status: status, records: records, hostnames: hostnames, requestable: requestable(), onAction: onEditorAction });
+        var mine = { id: isNew ? '' : route.Id, editor: editor };
+        openEditor = mine;
+        if (!isNew && fields.enumName(route.Certificate && route.Certificate.Mode, CERTIFICATE_MODES) === 'SelfSigned') {
+            shared.request('Proxy/Certificate/Root').then(function (root) {
+                if (openEditor === mine) editor.setRoot(root);
+            }).catch(function () { /* the root is made once the proxy starts */ });
+        }
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('ProxyTitleNewRoute') : (route.Host || t.tr('ProxyNoHost')),
             body: editor.element,
@@ -613,7 +761,10 @@ export default function (view) {
             deleteText: t.tr('ButtonRemove'),
             onSave: function () { return saveRoute(editor, isNew); },
             onDelete: function (close) { removeRoute(route, close); },
-            onClose: function () { editor.destroy(); }
+            onClose: function () {
+                if (openEditor === mine) openEditor = null;
+                editor.destroy();
+            }
         });
     }
 
@@ -682,7 +833,8 @@ export default function (view) {
 
         var button = function (label, variant, act, name) {
             var b = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-small ' + variant, 'aria-label': name }, [el('span', { text: label })]);
-            if (act) b.addEventListener('click', function () { visitorAction(act); });
+            if (act && act.reason) b.setAttribute('title', act.action === 'unblock-country' ? t.format(act.reason, act.country) : t.tr(act.reason));
+            if (act && !act.disabled) b.addEventListener('click', function () { visitorAction(act); });
             else b.disabled = true;
             return b;
         };
@@ -692,6 +844,7 @@ export default function (view) {
                 { key: 'Ip', label: t.tr('LabelAddress') },
                 { key: 'Country', label: t.tr('HeaderCountry'), value: function (b) { return b.Country || t.tr('Unknown'); } },
                 { key: 'Failures', label: t.tr('ProxyColumnFailures'), align: 'end' },
+                { key: 'BannedUtc', label: t.tr('ProxyHeaderBanned'), value: function (b) { return b.BannedUtc ? shared.formatDate(b.BannedUtc) : ''; } },
                 { key: 'UntilUtc', label: t.tr('ProxyColumnEnds'), value: function (b) { return b.UntilUtc ? shared.formatDate(b.UntilUtc) : t.tr('ProxyUntilLifted'); } },
                 { key: 'action', label: t.tr('HeaderAction'), sortable: false, render: function (b) { return button(t.tr('ProxyButtonUnban'), 'stolon-secondary', { action: 'unban', value: b.Ip }, t.format('ProxyButtonUnbanAddress', b.Ip)); } }
             ],
@@ -709,11 +862,11 @@ export default function (view) {
                 { key: 'Device', label: t.tr('LabelDevice') },
                 { key: 'Host', label: t.tr('ProxyLabelHost'), value: function (r) { return (r.Host || '').replace(/^https?:\/\//, ''); } },
                 { key: 'place', label: t.tr('HeaderCountry'), value: place },
+                { key: 'city', label: t.tr('ProxyColumnCity'), hidden: true, value: function (r) { return r.IsLocal ? '' : (r.City || ''); } },
                 { key: 'LastUtc', label: t.tr('ProxyColumnLastSeen'), value: function (r) { return shared.formatDate(r.LastUtc); } },
                 {
                     key: 'action', label: t.tr('HeaderAction'), sortable: false, render: function (r) {
                         var act = rowAction(r);
-                        if (!act) return button(t.tr('ButtonBlock'), 'stolon-destructive', null, t.format('ProxyTitleBlock', r.Ip));
                         var labels = { unban: 'ProxyButtonUnban', unblock: 'ButtonUnblock', 'unblock-country': 'ButtonUnblock', block: 'ButtonBlock' };
                         return button(t.tr(labels[act.action]), act.action === 'block' ? 'stolon-destructive' : 'stolon-secondary', act, t.format('ProxyButtonActOn', r.Ip));
                     }
@@ -736,7 +889,8 @@ export default function (view) {
                 { key: 'Country', label: t.tr('HeaderCountry') },
                 { key: 'People', label: t.tr('People'), align: 'end' },
                 { key: 'Failed', label: t.tr('HeaderFailedSignIns'), align: 'end' },
-                { key: 'Blocked', label: t.tr('HeaderRefused'), align: 'end' }
+                { key: 'Blocked', label: t.tr('HeaderRefused'), align: 'end' },
+                { key: 'LastUtc', label: t.tr('ProxyColumnLastSeen'), value: function (c) { return c.LastUtc ? shared.formatDate(c.LastUtc) : ''; } }
             ],
             rows: [],
             rowKey: 'Code',
@@ -744,9 +898,11 @@ export default function (view) {
             emptyText: t.tr('ProxyEmptyCountries')
         });
         countryHost.appendChild(countries.element);
+        var loads = 0;
 
         // visitorAction
-        // Asks before blocking, then runs a row's action and reloads the tables.
+        // Asks before blocking an address or letting a whole country through, then runs a row's action and reloads
+        // the tables.
         function visitorAction(act) {
             var routes = { unban: 'Proxy/Visitors/Unban', unblock: 'Proxy/Visitors/Unblock', 'unblock-country': 'Proxy/Visitors/UnblockCountry', block: 'Proxy/Visitors/Block' };
             var go = function () {
@@ -757,8 +913,13 @@ export default function (view) {
                     return shared.errorText(err, t.tr('ProxyErrorVisitorAction')).then(function (text) { shared.setStatus(status, text, true); });
                 });
             };
-            if (act.action !== 'block') return go();
-            return nectoModule.confirmDialog(t.tr('ProxyConfirmBlock'), { title: t.format('ProxyTitleBlock', act.value), confirmText: t.tr('ButtonBlock'), destructive: true }).then(function (ok) { if (ok) return go(); });
+            if (act.action === 'block') {
+                return nectoModule.confirmDialog(t.tr('ProxyConfirmBlock'), { title: t.format('ProxyTitleBlock', act.value), confirmText: t.tr('ButtonBlock'), destructive: true }).then(function (ok) { if (ok) return go(); });
+            }
+            if (act.action === 'unblock-country') {
+                return nectoModule.confirmDialog(t.tr('ProxyConfirmUnblockCountry'), { title: t.format('ProxyTitleUnblockCountry', act.country), confirmText: t.tr('ButtonUnblock') }).then(function (ok) { if (ok) return go(); });
+            }
+            return go();
         }
 
         // placeOptions
@@ -774,47 +935,25 @@ export default function (view) {
             return out.sort(function (a, b) { return (a.value === 'local' ? -1 : 0) - (b.value === 'local' ? -1 : 0) || a.label.localeCompare(b.label); });
         }
 
-        // locationText
-        // Says how the location database stands.
-        function locationText(loc) {
-            if (!loc) return '';
-            if (loc.Downloading) return t.tr('ProxyLocationDownloading');
-            if (loc.Error) return loc.Error;
-            if (loc.Loaded) return loc.BuiltUtc ? t.format('ProxyLocationLoadedOn', shared.formatDate(loc.BuiltUtc)) : t.tr('ProxyLoaded');
-            return t.tr('ProxyNotLoaded');
-        }
-
-        // countryRows
-        // Joins the totals by country into one row per country.
-        function countryRows(data) {
-            var rows = {};
-            var add = function (list, field) {
-                (list || []).forEach(function (c) {
-                    var row = rows[c.CountryCode] || (rows[c.CountryCode] = { Code: c.CountryCode, Country: c.Country || c.CountryCode, People: 0, Failed: 0, Blocked: 0 });
-                    row[field] += c.Count || 0;
-                });
-            };
-            add(data.PeopleByCountry, 'People');
-            add(data.FailedByCountry, 'Failed');
-            add(data.BlockedByCountry, 'Blocked');
-            return Object.keys(rows).map(function (k) { return rows[k]; });
-        }
-
         // load
-        // Reads the visitors and draws the tables.
+        // Reads the visitors and draws the tables. An answer that lands after a later read began is dropped.
         function load() {
+            var mine = ++loads;
             return shared.request('Proxy/Visitors').then(function (data) {
+                if (mine !== loads) return;
                 off.classList.toggle('stolon-hidden', !!data.Recording);
                 banned.setRows(data.Banned || []);
                 var rows = (data.Activity || []).map(function (r) {
                     return Object.assign({ kind: fields.enumName(r.Type, ACTIVITY_TYPES), placeCode: r.IsLocal ? 'local' : (r.CountryCode || '') }, r);
                 });
+                activity.setColumnHidden('city', !showsCity(data));
                 activity.setRows(rows);
                 activity.setFilterOptions('place', placeOptions(rows));
-                location.textContent = locationText(data.Location);
+                location.textContent = locationText(data.Location, shared);
                 countries.setRows(countryRows(data));
                 attribution.textContent = data.Attribution || '';
             }).catch(function (err) {
+                if (mine !== loads) return;
                 return shared.errorText(err, t.tr('ProxyErrorLoadVisitors')).then(function (text) { shared.setStatus(status, text, true); });
             });
         }
@@ -828,11 +967,14 @@ export default function (view) {
             view.querySelector('#btnAddRoute').addEventListener('click', pickTemplate);
             visitors = createVisitors();
             pg.addCleanup(function () {
-                pollers.splice(0).forEach(function (p) { if (p && p.stop) p.stop(); });
                 if (visitors) visitors.destroy();
             });
         },
-        load: function () { loadAll(); }
+        load: function (bag, pg) {
+            loadAll();
+            pg.createPoller(refresh, STATUS_POLL_MS).start(false);
+            pg.createPoller(function () { return visitors ? visitors.load() : null; }, VISITORS_POLL_MS).start(false);
+        }
     });
     shared = made.shared;
     page = made.page;

@@ -13,6 +13,7 @@ Each guide in [skills](skills/) covers one kind of work. Read the guide that mat
 | [skills/testing.md](skills/testing.md) | Write or run tests. |
 | [skills/documentation.md](skills/documentation.md) | Write or change the README, the docs site, screenshots, or release notes. |
 | [skills/review.md](skills/review.md) | Call any change done. |
+| [skills/providers.md](skills/providers.md) | Add or change a DDNS provider. |
 | [skills/release.md](skills/release.md) | Cut a release. |
 | [skills/branches.md](skills/branches.md) | Pick a branch, sync the two, and promote unstable. |
 
