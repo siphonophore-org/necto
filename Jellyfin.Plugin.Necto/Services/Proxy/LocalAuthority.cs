@@ -7,19 +7,16 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Configuration.Ddns;
 using Jellyfin.Plugin.Necto.Configuration.Proxy;
 using Jellyfin.Plugin.Necto.Services.Ddns;
 using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
 using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
 using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
-using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
 using Jellyfin.Plugin.Necto.Services.Proxy.Network;
 using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
 using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
 using Jellyfin.Plugin.Necto.Api.Ddns;
-using Jellyfin.Plugin.Necto.Api.Proxy;
 
 namespace Jellyfin.Plugin.Necto.Services.Proxy;
 
@@ -105,7 +102,7 @@ internal static class LocalAuthority
         }
 
         using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        var name = "CN=Jellyfin Necto root (" + Environment.MachineName + "), O=Jellyfin Remote Access";
+        var name = "CN=Jellyfin Necto root (" + Environment.MachineName + "), O=Jellyfin Necto";
         var request = new CertificateRequest(name, key, HashAlgorithmName.SHA256);
         request.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, true, 0, true));
         request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, true));

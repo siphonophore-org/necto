@@ -9,7 +9,6 @@ using MediaBrowser.Common.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Configuration.Ddns;
 using Jellyfin.Plugin.Necto.Configuration.Proxy;
 using Jellyfin.Plugin.Necto.Services.Ddns;
@@ -17,7 +16,6 @@ using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
 using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
 using Jellyfin.Plugin.Necto.Services.Proxy;
 using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
-using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
 using Jellyfin.Plugin.Necto.Services.Proxy.Network;
 using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
 using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
@@ -26,7 +24,7 @@ using Jellyfin.Plugin.Necto.Api.Ddns;
 namespace Jellyfin.Plugin.Necto.Api.Proxy;
 
 /// <summary>
-/// Administrative endpoints backing the history on the Dashboard tab and its settings on the Advanced tab. This
+/// Administrative endpoints behind the Proxy page's visitors, the Dashboard map, and the history settings. This
 /// is personal data, so every endpoint requires an administrator.
 /// </summary>
 [ApiController]
@@ -236,7 +234,7 @@ public class VisitorsController : ControllerBase
     }
 
     /// <summary>
-    /// Saves the People settings and loads or downloads the location database they need.
+    /// Saves the visitor history settings and loads or downloads the location database they need.
     /// </summary>
     /// <param name="incoming">The settings.</param>
     /// <returns>The saved settings.</returns>
@@ -264,7 +262,7 @@ public class VisitorsController : ControllerBase
             return true;
         });
 
-        // The Advanced page saves these with every save, so only an actual change is an event.
+        // The Settings section saves these with every save, so only an actual change is an event.
         if (before is null || before.Enabled != incoming.Enabled || before.HistoryDays != incoming.HistoryDays || before.Location != incoming.Location)
         {
             var overview = incoming.Enabled

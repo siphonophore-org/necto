@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using Microsoft.Extensions.Logging;
-using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Configuration.Ddns;
 using Jellyfin.Plugin.Necto.Configuration.Proxy;
 using Jellyfin.Plugin.Necto.Services.Ddns;
@@ -17,13 +16,12 @@ using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
 using Jellyfin.Plugin.Necto.Services.Proxy.Network;
 using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
 using Jellyfin.Plugin.Necto.Api.Ddns;
-using Jellyfin.Plugin.Necto.Api.Proxy;
 
 namespace Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
 
 /// <summary>
 /// Refuses internet connections from blocked and banned addresses and by country, before TLS starts. Local and trusted
-/// networks never reach it. What it refuses is buffered here and written to the People history once a minute,
+/// networks never reach it. What it refuses is buffered here and written to the visitor history once a minute,
 /// so a scan costs memory for a bounded set of addresses rather than a database write per connection.
 /// </summary>
 public sealed class BlockFilter : IConnectionFilter

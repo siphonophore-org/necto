@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using Microsoft.AspNetCore.Http;
 using Xunit;
-using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Configuration.Ddns;
 using Jellyfin.Plugin.Necto.Configuration.Proxy;
 using Jellyfin.Plugin.Necto.Services.Ddns;
@@ -18,7 +17,6 @@ using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
 using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
 using Jellyfin.Plugin.Necto.Services.Notifications;
 using Jellyfin.Plugin.Necto.Api.Ddns;
-using Jellyfin.Plugin.Necto.Api.Proxy;
 using Jellyfin.Plugin.Necto.Tests.Fakes;
 
 namespace Jellyfin.Plugin.Necto.Tests.Services.Proxy;

@@ -10,7 +10,6 @@ using Certes.Acme;
 using Certes.Acme.Resource;
 using Siphonophore.Stolon;
 using Microsoft.Extensions.Logging;
-using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Configuration.Ddns;
 using Jellyfin.Plugin.Necto.Configuration.Proxy;
 using Jellyfin.Plugin.Necto.Services.Ddns;
@@ -18,12 +17,10 @@ using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
 using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
 using Jellyfin.Plugin.Necto.Services.Notifications;
 using Jellyfin.Plugin.Necto.Services.Proxy;
-using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
 using Jellyfin.Plugin.Necto.Services.Proxy.Network;
 using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
 using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
 using Jellyfin.Plugin.Necto.Api.Ddns;
-using Jellyfin.Plugin.Necto.Api.Proxy;
 
 namespace Jellyfin.Plugin.Necto.Services.Proxy.Acme;
 
@@ -358,7 +355,7 @@ public sealed class AcmeCertificateService : IDisposable
             // Let's Encrypt refuses a common name over 64 characters; the names stay in the certificate either way.
             var chain = await order.Generate(new CsrInfo { CommonName = names.FirstOrDefault(n => n.Length <= 64) }, key).ConfigureAwait(false);
             // The key also goes into the chain file, which is replaced in one rename, so a crash or a read between
-            // two writes never pairs a new chain with the old key. The separate key file stays for older versions.
+            // two writes never pairs a new chain with the old key. The separate key file is written too, for tools that read it.
             var keyPem = key.ToPem();
             System.IO.Directory.CreateDirectory(slot.Directory);
             WriteSecret(slot.AcmeKeyFile, keyPem);

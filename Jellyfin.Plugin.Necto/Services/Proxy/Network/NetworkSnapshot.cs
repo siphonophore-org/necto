@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Configuration.Ddns;
 using Jellyfin.Plugin.Necto.Configuration.Proxy;
 using Jellyfin.Plugin.Necto.Services.Ddns;
@@ -8,11 +7,8 @@ using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
 using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
 using Jellyfin.Plugin.Necto.Services.Proxy;
 using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
-using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
-using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
 using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
 using Jellyfin.Plugin.Necto.Api.Ddns;
-using Jellyfin.Plugin.Necto.Api.Proxy;
 
 namespace Jellyfin.Plugin.Necto.Services.Proxy.Network;
 
@@ -47,8 +43,8 @@ public sealed class NetworkSnapshot
     public bool BoundToLoopback { get; set; }
 
     /// <summary>
-    /// Gets or sets the URL entry older versions wrote for local clients while Jellyfin was bound to this machine
-    /// only, so Undo still removes it. Empty when none was written.
+    /// Gets or sets a URL entry for local clients while Jellyfin is bound to this machine only, which Undo also
+    /// removes. Empty when none was written.
     /// </summary>
     public string WrittenInternal { get; set; } = string.Empty;
 
@@ -58,7 +54,7 @@ public sealed class NetworkSnapshot
     /// </summary>
     public List<string> WrittenLocal { get; set; } = new();
 
-    /// <summary>Gets every local entry an apply wrote, older versions' included.</summary>
+    /// <summary>Gets every local entry an apply wrote.</summary>
     public IEnumerable<string> AllWrittenLocal
         => string.IsNullOrEmpty(WrittenInternal) ? WrittenLocal : WrittenLocal.Append(WrittenInternal);
 }

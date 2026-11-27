@@ -262,7 +262,7 @@ public class DdnsControllerTests
         var controller = Controller(h, broken);
 
         var refused = Assert.IsType<BadRequestObjectResult>(controller.UpdateRecord("rec1", Posted(controller, "rec1", r => r.Password = "typed-in-the-clear")).Result);
-        Assert.Contains("Reinstall the plugin", System.Text.Json.JsonSerializer.Serialize(refused.Value), StringComparison.Ordinal);
+        Assert.Contains("Reinstall Necto", System.Text.Json.JsonSerializer.Serialize(refused.Value), StringComparison.Ordinal);
         Assert.Equal(before, h.Plugin.ReadConfiguration(c => c.Ddns.Records.Single().Password));
 
         Assert.IsType<OkObjectResult>(controller.UpdateRecord("rec1", Posted(controller, "rec1", r => r.Name = "renamed")).Result);

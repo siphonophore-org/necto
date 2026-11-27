@@ -8,19 +8,16 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Siphonophore.Stolon;
 using Microsoft.Extensions.Logging;
-using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Configuration.Ddns;
 using Jellyfin.Plugin.Necto.Configuration.Proxy;
 using Jellyfin.Plugin.Necto.Services.Ddns;
 using Jellyfin.Plugin.Necto.Services.Ddns.Providers;
 using Jellyfin.Plugin.Necto.Services.Ddns.Providers.Implementations;
 using Jellyfin.Plugin.Necto.Services.Proxy.Acme;
-using Jellyfin.Plugin.Necto.Services.Proxy.Hosting;
 using Jellyfin.Plugin.Necto.Services.Proxy.Network;
 using Jellyfin.Plugin.Necto.Services.Proxy.Reachability;
 using Jellyfin.Plugin.Necto.Services.Proxy.Visitors;
 using Jellyfin.Plugin.Necto.Api.Ddns;
-using Jellyfin.Plugin.Necto.Api.Proxy;
 
 namespace Jellyfin.Plugin.Necto.Services.Proxy;
 
@@ -355,8 +352,8 @@ public sealed class CertificateStore : IDisposable
         return File.Exists(_slot.AcmeKeyFile) ? LoadPem(_slot.AcmeChainFile, _slot.AcmeKeyFile, string.Empty, stamp) : null;
     }
 
-    // Since the key is written into the chain file, the two can never be caught out of step; a chain file from
-    // an older version holds certificates only, and its key is in the separate file.
+    // The key is written into the chain file, so the two can never be caught out of step. A chain file that holds
+    // certificates only, such as one put there by hand, takes its key from the separate file.
     private bool ChainHoldsKey()
         => File.ReadAllText(_slot.AcmeChainFile).Contains("PRIVATE KEY-----", StringComparison.Ordinal);
 
