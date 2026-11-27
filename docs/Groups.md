@@ -79,7 +79,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 
 ### Password Resets
 
-* **Show reset codes** lists the codes of members' pending password resets in **Troubleshooting**. Use HTTPS so they cannot be read in transit.
+* **Show reset codes** lists members' pending password resets on the **Password resets** tab of the Groups page. Use HTTPS so they cannot be read in transit.
 * An administrator is in no group, so an administrator's reset code never shows.
 
 ## Jellyfin Settings
@@ -129,6 +129,10 @@ A new group starts with **Pages** and **Invite groups** on **Permissive**. Which
 
 * **Group for new users** sets the group a new user joins.
 
+## Password Resets
+
+The Groups page has two tabs, **Groups** with the counts and the list, and **Password resets**. While no group has **Show reset codes** on, **Password resets** says how to turn it on. Otherwise it warns to use HTTPS, and lists each member's pending reset with its user, when it expires, and **Active**, **Expiring** within 5 minutes, or **Expired**, expired ones last. Select a reset to see its code and copy it.
+
 ## Troubleshooting
 
 **Troubleshooting > Groups** holds the repairs.
@@ -139,7 +143,6 @@ A new group starts with **Pages** and **Invite groups** on **Permissive**. Which
 * **Apply** beside **Apply group Jellyfin settings** writes each user's group Jellyfin settings onto them, and reports how many took them.
 * **Run now** beside **Process expired and inactive users** asks first, then runs the task. A deleted user cannot come back.
 * **Run now** beside **Clean expired sessions** runs the task.
-* **Password resets** counts the pending resets that are **Active**, **Expiring** within 5 minutes, and **Expired**, warns to use HTTPS, and lists each with its user, its state, and its code, expired ones last. It lists the resets of members whose group has **Show reset codes** on.
 
 | Reason | What to do |
 | :--- | :--- |

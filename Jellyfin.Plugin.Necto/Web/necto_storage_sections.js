@@ -6,9 +6,6 @@ import * as nectoModule from './configurationpage?name=necto_shared.js';
 
 var h = nectoModule.h;
 
-// The key of the scheduled task that checks every disk.
-export var CHECK_TASK = 'NectoStorageCheck';
-
 // The range of each unit's sliders, and where a new alert starts. GB free goes to 2 TB in steps of 10, enough for
 // any alert worth setting.
 export var RANGES = {
@@ -507,8 +504,8 @@ function buildSettings(content, ctx) {
 }
 
 // buildTroubleshooting
-// Fills the Storage section of Troubleshooting: checking every disk now, and putting the Storage settings back to
-// their defaults.
+// Fills the Storage section of Troubleshooting: putting the Storage settings back to their defaults. Refresh on the
+// Storage page checks every disk now.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -519,14 +516,11 @@ function buildSettings(content, ctx) {
 function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
-    var pollers = [];
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
 
     [
         status,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
-        nectoModule.createResetGroup([nectoModule.createResetRow({ icon: 'health_and_safety', label: t.tr('StorageTaskCheckStorage'), help: t.tr('StorageTaskCheckStorageDescription'), button: t.tr('ButtonRunTask'), action: 'run-check' })]).element,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('Settings') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
         nectoModule.createResetGroup([nectoModule.createResetRow({ icon: 'restore', label: t.tr('StorageTaskResetSettings'), help: t.tr('StorageHelpResetSettings'), button: t.tr('Reset'), action: 'reset-settings', destructive: true })]).element
     ].forEach(function (node) { content.appendChild(node); });
 
@@ -540,16 +534,6 @@ function buildTroubleshooting(content, ctx) {
     // Finds one of the section's buttons by its action.
     function button(action) {
         return content.querySelector('[data-action="' + action + '"]');
-    }
-
-    // runCheck
-    // Starts the Check storage task and follows it on its button.
-    function runCheck() {
-        return shared.runScheduledTask(button('run-check'), CHECK_TASK, t.tr('ButtonRunTask')).then(function (poller) {
-            pollers.push(poller);
-        }).catch(function (err) {
-            return shared.errorText(err, t.tr('ErrorRunTask')).then(function (text) { report(text, true); });
-        });
     }
 
     // resetSettings
@@ -571,14 +555,10 @@ function buildTroubleshooting(content, ctx) {
         });
     }
 
-    button('run-check').addEventListener('click', runCheck);
     button('reset-settings').addEventListener('click', resetSettings);
 
     return {
-        load: function () {},
-        destroy: function () {
-            pollers.splice(0).forEach(function (p) { if (p && p.cancel) p.cancel(); });
-        }
+        load: function () {}
     };
 }
 

@@ -246,6 +246,8 @@ Every page is built from the same parts in the same order. A page never invents 
     * The empty text sits inside the table frame: "No X yet." with nothing at all, "No X match." while a search or filter finds nothing.
 5. Anything else the tool shows sits below the table as a fixed section led by its tile.
 
+A tool with more than one kind of record or view uses sub-tabs at the top of its content, like Pages (Pages, Images, Stores), built with `createToolTabs` over Stolon's `createSubTabs`. The first tab holds the tool's main list, and each other tab holds its own table, such as Scripts and History, Tunnels and Usage, Groups and Password resets, or Routes, Visitors, and Checks. A list in a tab is a table, built with `createRowsTable` when the page holds the rows itself.
+
 While the tool is off, the page shows its intro and one line, "X is off. Turn it on in Settings to ...", and nothing else.
 
 **Sidecar**: the title, then sections led by tiles, one help line per field. The shelf holds the destructive action at its start and Save at its end. The X in the header closes it, asking first when there are edits. There is no Cancel.
@@ -288,6 +290,22 @@ Every tool page uses Jellyfin's page shell. The tool app takes the page's view o
 * **Dashboard**, **Groups**, **Notifications**, **Settings**, and **Troubleshooting** are always on. Every other tool has an **Enabled** switch, the first checkbox of its section in **Settings**, listed once in `ToolSwitches.All` in C# and as each tool's `visibleWhen` in `nectoTools` in `necto_shared.js`, which a test keeps in step. Stolon's `bindTileToSwitch` colors the section's tile by the switch.
 * A tool turned off in **Settings** leaves the sidebar, the Dashboard, the group editor, and Troubleshooting.
 * A tool page holds no settings and no permissions. Settings go in the tool's section of **Settings**, and permissions go on groups.
+
+### Where Things Live
+
+Each control, status, action, list, and setting lives in exactly one place. This is the user's decision, and it holds for every tool.
+
+| Place | Holds |
+| :--- | :--- |
+| A tool's own page | The tool's day-to-day work and its status: its lists, its editors, the actions taken on its records, and its own state and health. |
+| **Settings** | Configuration. |
+| **Troubleshooting** | Only reset rows a user reaches for when something is wrong: running a scheduled task now, repairs and re-applies, and clearing or resetting data. No information, no lists, and no pickers. A tool's diagnostics, such as what the proxy runs with, sit on a sub-tab of its own page. |
+
+* Nothing in Troubleshooting repeats what the tool page or Settings already shows or does. A tool page's **Refresh** or **Update now** leaves no matching Troubleshooting row, and a state the page shows in a card, badge, or banner leaves no matching line in Troubleshooting.
+* Notifications has no tool page, so its send log and browsers sit as tables at the end of **Settings > Notifications**.
+* A test sits beside the channel or record it tests, so it lives where that is set, never again in Troubleshooting.
+* The Dashboard sums up each tool with its card, and a table it shows, such as **Locations**, is not repeated on a tool page.
+* When something turns up in two places, keep it where this table puts it and remove the other copy with its strings, code, docs, and tests. A Troubleshooting section left with nothing leaves the page.
 
 ### Sections
 
@@ -532,6 +550,7 @@ Run every new or changed string through this list.
 * [ ] Stolon's typings were searched before any markup was built by hand.
 * [ ] The component comes from Stolon, unchanged.
 * [ ] Each Settings or Troubleshooting section, and each reset row, leads with its icon tile.
+* [ ] Nothing is shown or done in two places, per [Where Things Live](#where-things-live).
 * [ ] Colors come from Stolon tokens and mean what [Meaning](#meaning) says.
 * [ ] The string comes from a key, per [Translations](#translations).
 * [ ] The docs use the same label.

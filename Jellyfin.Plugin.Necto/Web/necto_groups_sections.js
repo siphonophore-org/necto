@@ -1,5 +1,6 @@
 // necto_groups_sections.js
-// The Groups sections of Settings and Troubleshooting, which this module adds to the registry when it loads.
+// The Groups sections of Settings and Troubleshooting, which this module adds to the registry when it loads, and the
+// Password resets section of the Groups page.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
@@ -100,8 +101,8 @@ export function resetState(code, now) {
 }
 
 // resetItems
-// Turns the pending password resets into rows for a record list, each with its state tag and the code in a masked
-// copy field. Expired codes come last.
+// Turns the pending password resets into rows for a table, each with its state badge and its code. Expired codes
+// come last.
 //
 // Inputs
 // codes [object[]]: The resets from Groups/ResetCodes.
@@ -119,41 +120,77 @@ export function resetItems(codes, shared, now) {
     };
     var items = (codes || []).map(function (code, index) {
         var state = resetState(code, now);
-        var field = nectoModule.createCopyField({ value: code.Pin, secret: true, allowExpose: true, inline: true, label: t.format('ResetCodeFor', code.UserName) });
         return {
             id: String(index),
             title: code.UserName,
             secondary: t.format(state === 'expired' ? 'ExpiredOnDate' : 'ExpiresOnDate', shared.formatDate(code.ExpirationDate)),
             tags: [tags[state]],
             state: state,
-            aside: field.element
+            pin: code.Pin
         };
     });
     return items.filter(function (i) { return i.state !== 'expired'; }).concat(items.filter(function (i) { return i.state === 'expired'; }));
 }
 
-// resetCards
-// Counts the password resets by state for the cards over their list.
+// createPendingResets
+// Builds the Password resets tab of the Groups page: each member's pending reset in a table, opening its code in a
+// sidecar to copy. While no group shows reset codes, it says how to turn them on.
 //
 // Inputs
-// items [object[]]: The rows resetItems gives.
-// t [object]: The strings.
+// shared [object]: The Necto helper bag.
+// page [object]: The page handle, for the sidecar.
 //
 // Output
-// [object[]]: The Active, Expiring, and Expired cards.
-export function resetCards(items, t) {
-    var counts = { active: 0, expiring: 0, expired: 0 };
-    (items || []).forEach(function (i) { counts[i.state]++; });
-    return [
-        { count: counts.active, label: t.tr('StateActive'), color: 'green' },
-        { count: counts.expiring, label: t.tr('GroupsCardExpiring'), color: 'orange' },
-        { count: counts.expired, label: t.tr('StateExpired'), color: 'red' }
-    ];
+// [object]: element, load(), and destroy().
+export function createPendingResets(shared, page) {
+    var t = shared.t;
+    var esc = nectoModule.escapeHtml;
+    var status = h('div', { class: 'stolon-status-text', role: 'status' });
+    var table = nectoModule.createRowsTable(shared, {
+        search: { enabled: false },
+        text: function (row) { return row.title; },
+        emptyState: { message: t.tr('EmptyPendingResets') },
+        columns: [
+            {
+                key: 'title', type: 'custom', label: t.tr('LabelUser'),
+                render: function (row) {
+                    return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + esc(row.title) + '</div>'
+                        + '<div class="stolon-table-item-sub">' + esc(row.secondary) + '</div></div>';
+                }
+            },
+            { key: 'state', type: 'custom', label: t.tr('LabelStatus'), className: 'stolon-table-cell-status', render: function (row) { return shared.badge(row.tags[0].color, row.tags[0].label); } }
+        ],
+        actions: {
+            onRowClick: function (row) {
+                var field = nectoModule.createCopyField({ value: row.pin, secret: true, allowExpose: true, label: t.format('ResetCodeFor', row.title) });
+                nectoModule.openSidecar({ title: row.title, body: h('div', { class: 'stolon-stack' }, [field.element, h('div', { class: 'fieldDescription', text: row.secondary })]), page: page });
+            }
+        }
+    });
+    var off = h('div', { class: 'stolon-info stolon-hidden', 'data-role': 'resets-off', text: t.tr('ResetsDisabled') });
+    var warning = h('div', { class: 'stolon-warn', text: t.tr('ResetsHttpsWarning') });
+    var element = h('div', { class: 'stolon-stack', 'data-role': 'password-resets' }, [off, warning, status, table.element]);
+
+    return {
+        element: element,
+        load: function () {
+            return shared.request('Groups/ResetCodes').then(function (result) {
+                var on = !!(result && result.Enabled);
+                shared.setVisible(off, !on);
+                shared.setVisible(warning, on);
+                shared.setVisible(table.element, on);
+                if (on) return table.setRows(resetItems(result.Codes, shared, new Date()));
+            }).catch(function (err) {
+                return shared.errorText(err, t.tr('ErrorLoadResets')).then(function (text) { shared.setStatus(status, text, true); });
+            });
+        },
+        destroy: function () { table.destroy(); }
+    };
 }
 
 // buildTroubleshooting
-// Fills the Groups section of Troubleshooting: applying the password rules, running the account tasks now, and the
-// pending password resets.
+// Fills the Groups section of Troubleshooting: applying the password rules and the group Jellyfin settings, and
+// running the account tasks now. The pending password resets show on the Groups page.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -164,13 +201,11 @@ export function resetCards(items, t) {
 function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
-    var resetList = null;
     var pollers = [];
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var resets = h('div', { 'data-role': 'resets' });
     var apply = nectoModule.createResetRow({ icon: 'password', label: t.tr('TaskApplyPasswordRules'), help: t.tr('HelpApplyPasswordRules'), button: t.tr('ButtonApply'), action: 'apply-rules' }).element;
     var templates = nectoModule.createResetRow({ icon: 'library_add_check', label: t.tr('GroupsTaskApplyTemplates'), help: t.tr('GroupsTaskApplyTemplatesDescription'), button: t.tr('ButtonApply'), action: 'apply-templates' }).element;
-    var expired = nectoModule.createResetRow({ icon: 'event_busy', label: t.tr('TaskProcessExpired'), help: t.tr('HelpProcessExpiredTask'), button: t.tr('ButtonRunTask'), action: 'run-account-rules' }).element;
+    var expired = nectoModule.createResetRow({ icon: 'event_busy', label: t.tr('TaskProcessExpired'), help: t.tr('HelpProcessExpiredTask'), button: t.tr('ButtonRunTask'), action: 'run-account-rules', destructive: true }).element;
     var sessions = nectoModule.createResetRow({ icon: 'devices', label: t.tr('TaskCleanSessions'), help: t.tr('HelpCleanSessionsTask'), button: t.tr('ButtonRunTask'), action: 'run-session-cleanup' }).element;
 
     [
@@ -180,9 +215,7 @@ function buildTroubleshooting(content, ctx) {
         h('h3', { class: 'stolon-subsection-title', text: t.tr('GroupsHeaderTemplates') }),
         h('div', { class: 'stolon-reset-group' }, [templates]),
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
-        h('div', { class: 'stolon-reset-group' }, [expired, sessions]),
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderPasswordResets') }),
-        resets
+        h('div', { class: 'stolon-reset-group' }, [expired, sessions])
     ].forEach(function (node) { content.appendChild(node); });
 
     // report
@@ -230,38 +263,6 @@ function buildTroubleshooting(content, ctx) {
         });
     }
 
-    // showResets
-    // Draws the pending password resets, or why none show.
-    function showResets(result) {
-        if (resetList) { resetList.destroy(); resetList = null; }
-        resets.textContent = '';
-        if (!result || !result.Enabled) {
-            resets.appendChild(h('div', { class: 'stolon-info', text: t.tr('ResetsDisabled') }));
-            return;
-        }
-        var warning = h('div', { class: 'stolon-warn', text: t.tr('ResetsHttpsWarning') });
-        if (!(result.Codes || []).length) {
-            resets.innerHTML = shared.emptySection(t.tr('EmptyPendingResets'), { inline: true });
-            resets.insertBefore(warning, resets.firstChild);
-            return;
-        }
-        var items = resetItems(result.Codes, shared, new Date());
-        var cards = h('div', { class: 'stolon-cards', 'data-role': 'reset-cards' });
-        resets.appendChild(cards);
-        resets.appendChild(warning);
-        shared.renderCards(cards, resetCards(items, t));
-        resetList = nectoModule.createRecordList({ items: items, label: t.tr('HeaderPasswordResets') });
-        resets.appendChild(resetList.element);
-    }
-
-    // loadResets
-    // Reads the pending password resets and draws them.
-    function loadResets() {
-        return shared.request('Groups/ResetCodes').then(showResets).catch(function (err) {
-            return shared.errorText(err, t.tr('ErrorLoadResets')).then(function (text) { report(text, true); });
-        });
-    }
-
     button('apply-rules').addEventListener('click', applyRules);
     button('apply-templates').addEventListener('click', function () {
         shared.request('Groups/Templates/Apply', 'POST').then(function (result) {
@@ -274,10 +275,9 @@ function buildTroubleshooting(content, ctx) {
     button('run-session-cleanup').addEventListener('click', function () { runTask('run-session-cleanup', SESSION_CLEANUP_TASK); });
 
     return {
-        load: loadResets,
+        load: function () {},
         destroy: function () {
             pollers.splice(0).forEach(function (p) { if (p && p.cancel) p.cancel(); });
-            if (resetList) { resetList.destroy(); resetList = null; }
         }
     };
 }

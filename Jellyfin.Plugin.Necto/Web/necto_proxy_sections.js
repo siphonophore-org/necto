@@ -281,6 +281,25 @@ export function nameItems(name, t) {
     ];
 }
 
+// locationText
+// Says how the location database stands, or that lookups are off.
+//
+// Inputs
+// loc [object]: The location database status from Proxy/Visitors, or null.
+// shared [object]: The Necto helper bag.
+//
+// Output
+// [string]: The sentence, or empty when there is no status.
+export function locationText(loc, shared) {
+    var t = shared.t;
+    if (!loc) return '';
+    if (fields.enumName(loc.Detail, LOCATIONS) === 'Off') return t.tr('ProxyLocationOff');
+    if (loc.Downloading) return t.tr('ProxyLocationDownloading');
+    if (loc.Error) return loc.Error;
+    if (loc.Loaded) return loc.BuiltUtc ? t.format('ProxyLocationLoadedOn', shared.formatDate(loc.BuiltUtc)) : t.tr('ProxyLoaded');
+    return t.tr('ProxyNotLoaded');
+}
+
 // buildSettings
 // Fills the Proxy section of Settings: turning the proxy on, the Let's Encrypt terms, the visitor history, and the
 // listener and protection values. It saves through Proxy/Settings, which leaves the routes alone.
@@ -438,9 +457,96 @@ function buildSettings(content, ctx) {
     };
 }
 
+// detailRows
+// Lists what the proxy runs with, as the rows of the Details table: where it listens, the Jellyfin it forwards to,
+// the LAN address, the location database, the server's country, the memory defaults, who the country rules refused,
+// the public name's addresses, and the last check from outside.
+//
+// Inputs
+// s [object]: The answer from Proxy/Status.
+// d [object]: The answer from Proxy/Defaults.
+// visitors [object]: The answer from Proxy/Visitors, or null.
+// shared [object]: The Necto helper bag.
+//
+// Output
+// [object[]]: Each row's id, label, and value.
+export function detailRows(s, d, visitors, shared) {
+    var t = shared.t;
+    s = s || {};
+    d = d || {};
+    var items = [
+        { label: t.tr('ProxyLabelListening'), value: (s.Addresses || []).join(', ') || t.tr('None') },
+        { label: t.tr('LabelJellyfin'), value: s.Backend || t.tr('Unknown') },
+        { label: t.tr('ProxyLabelLan'), value: s.LanAddress || s.DetectedLanAddress || t.tr('Unknown') },
+        { label: t.tr('ProxyLabelLocationDatabase'), value: visitors && visitors.Location ? locationText(visitors.Location, shared) : t.tr(s.CountryDatabaseLoaded ? 'ProxyLoaded' : 'ProxyNotLoaded') },
+        { label: t.tr('ProxyLabelServerCountry'), value: s.ServerCountry || t.tr('Unknown') },
+        { label: t.tr('ProxyLabelMemory'), value: t.format(d.IsLowMemory ? 'ProxyMemoryLow' : 'ProxyMemoryStandard', d.MemoryMb) }
+    ];
+    if (s.CountryRefused && Object.keys(s.CountryRefused).length) items.push({ label: t.tr('ProxyLabelRefusedByCountry'), value: refusedText(s.CountryRefused, t) });
+    items = items.concat(nameItems(s.Name, t));
+    var r = s.Reachability;
+    if (r && r.CheckedUtc) {
+        items.push({ label: t.tr('ProxyLabelChecked'), value: shared.formatDate(r.CheckedUtc) });
+        items.push({ label: t.tr('ProxyLabelReachable'), value: r.Reachable === true ? t.tr('Yes') : r.Reachable === false ? t.tr('No') : t.tr('Unknown') });
+        if (r.Error) items.push({ label: t.tr('LabelProblem'), value: r.Error });
+        (r.Nodes || []).forEach(function (n) { items.push({ label: n.Location || t.tr('Unknown'), value: n.Ok ? t.tr('StateConnected') : n.Error }); });
+    }
+    return items.map(function (item, i) { return Object.assign({ id: String(i) }, item); });
+}
+
+// createProxyDetails
+// Builds the Checks tab of the Proxy page: what the proxy runs with and the last check from outside in a table, and
+// how to turn the proxy off without the dashboard.
+//
+// Inputs
+// shared [object]: The Necto helper bag.
+//
+// Output
+// [object]: element, load(), and destroy().
+export function createProxyDetails(shared) {
+    var t = shared.t;
+    var esc = nectoModule.escapeHtml;
+    var status = h('div', { class: 'stolon-status-text', role: 'status' });
+    var recoveryPath = h('pre', { class: 'stolon-code stolon-code-block', 'data-role': 'recovery-path' });
+    var table = nectoModule.createRowsTable(shared, {
+        search: { enabled: false },
+        emptyState: { message: t.tr('ProxyErrorLoad') },
+        columns: [{
+            key: 'label', type: 'custom', label: t.tr('LabelName'),
+            render: function (row) {
+                return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + esc(row.label) + '</div>'
+                    + '<div class="stolon-table-item-sub">' + esc(row.value) + '</div></div>';
+            }
+        }]
+    });
+    var element = h('div', { class: 'stolon-stack', 'data-role': 'proxy-details' }, [
+        status,
+        table.element,
+        h('div', { class: 'fieldDescription', text: t.tr('ProxyRecoveryHelp') }),
+        recoveryPath
+    ]);
+
+    return {
+        element: element,
+        load: function () {
+            return Promise.all([
+                shared.request('Proxy/Status'),
+                shared.request('Proxy/Defaults'),
+                shared.request('Proxy/Visitors').catch(function () { return null; })
+            ]).then(function (answers) {
+                recoveryPath.textContent = (answers[0] && answers[0].DisableFlagPath) || 'DISABLE';
+                return table.setRows(detailRows(answers[0], answers[1], answers[2], shared));
+            }).catch(function (err) {
+                return shared.errorText(err, t.tr('ProxyErrorLoad')).then(function (text) { shared.setStatus(status, text, true); });
+            });
+        },
+        destroy: function () { table.destroy(); }
+    };
+}
+
 // buildTroubleshooting
-// Fills the Proxy section of Troubleshooting: the proxy's checks and restart, the tasks, the repairs, and how to
-// turn the proxy off without the dashboard.
+// Fills the Proxy section of Troubleshooting: the check from outside, the tasks, and the repairs. What the proxy runs
+// with shows in Details on the Proxy page.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -453,14 +559,8 @@ function buildTroubleshooting(content, ctx) {
     var t = shared.t;
     var pollers = [];
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var state = nectoModule.createDefinitionList({ items: [] });
-    var reach = nectoModule.createDefinitionList({ items: [] });
-    var undoRow = nectoModule.createResetRow({ icon: 'undo', label: t.tr('ProxyUndoTrust'), help: t.tr('ProxyUndoTrustHelp'), button: t.tr('ButtonUndo'), action: 'undo', destructive: true });
-    var recoveryPath = h('pre', { class: 'stolon-code stolon-code-block', 'data-role': 'recovery-path' });
     [
         status,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderState') }),
-        state.element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderChecks') }),
         nectoModule.createResetGroup([
             nectoModule.createResetRow({ icon: 'travel_explore', label: t.tr('ProxyTestOutside'), help: t.tr('ProxyTestOutsideHelp'), button: t.tr('ProxyButtonTest'), action: 'reach' }),
@@ -468,17 +568,12 @@ function buildTroubleshooting(content, ctx) {
             nectoModule.createResetRow({ icon: 'verified_user', label: t.tr('ProxyTaskCertificates'), help: t.tr('ProxyTaskCertificatesHelp'), button: t.tr('ButtonRunTask'), action: 'task-certificates' }),
             nectoModule.createResetRow({ icon: 'map', label: t.tr('ProxyTaskLocations'), help: t.tr('ProxyTaskLocationsHelp'), button: t.tr('ButtonRunTask'), action: 'task-locations' })
         ]).element,
-        reach.element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
         nectoModule.createResetGroup([
             nectoModule.createResetRow({ icon: 'restart_alt', label: t.tr('ProxyRestart'), help: t.tr('ProxyRestartHelp'), button: t.tr('Restart'), action: 'restart' }),
-            undoRow,
             nectoModule.createResetRow({ icon: 'settings_backup_restore', label: t.tr('ProxyResetDefaults'), help: t.tr('ProxyResetDefaultsHelp'), button: t.tr('Reset'), action: 'reset', destructive: true }),
             nectoModule.createResetRow({ icon: 'delete_sweep', label: t.tr('ProxyClearHistory'), help: t.tr('ProxyClearHistoryHelp'), button: t.tr('ButtonClear'), action: 'clear', destructive: true })
-        ]).element,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderRecovery') }),
-        h('div', { class: 'fieldDescription', text: t.tr('ProxyRecoveryHelp') }),
-        recoveryPath
+        ]).element
     ].forEach(function (n) { content.appendChild(n); });
 
     // report
@@ -501,51 +596,10 @@ function buildTroubleshooting(content, ctx) {
         };
     }
 
-    // showReach
-    // Shows the last check from outside.
-    function showReach(result) {
-        var items = [];
-        if (result && result.CheckedUtc) {
-            items.push({ label: t.tr('ProxyLabelChecked'), value: shared.formatDate(result.CheckedUtc) });
-            items.push({ label: t.tr('ProxyLabelReachable'), value: result.Reachable === true ? t.tr('Yes') : result.Reachable === false ? t.tr('No') : t.tr('Unknown') });
-            if (result.Error) items.push({ label: t.tr('LabelProblem'), value: result.Error });
-            (result.Nodes || []).forEach(function (n) { items.push({ label: n.Location || t.tr('Unknown'), value: n.Ok ? t.tr('StateConnected') : n.Error }); });
-        }
-        reach.setItems(items);
-        reach.element.classList.toggle('stolon-hidden', !items.length);
-    }
-
-    // load
-    // Reads the proxy's status and the defaults.
-    function load() {
-        return Promise.all([shared.request('Proxy/Status'), shared.request('Proxy/Defaults')]).then(function (answers) {
-            var s = answers[0] || {};
-            var d = answers[1] || {};
-            var items = [
-                { label: t.tr('TabProxy'), value: t.tr(s.Running ? 'StateRunning' : 'StateStopped') },
-                { label: t.tr('ProxyLabelListening'), value: (s.Addresses || []).join(', ') || t.tr('None') },
-                { label: t.tr('LabelJellyfin'), value: s.Backend },
-                { label: t.tr('ProxyLabelJellyfinTrusts'), value: t.tr(s.JellyfinTrustsProxy ? 'Yes' : 'No') },
-                { label: t.tr('ProxyLabelLan'), value: s.LanAddress || s.DetectedLanAddress || t.tr('Unknown') },
-                { label: t.tr('ProxyLabelLocationDatabase'), value: t.tr(s.CountryDatabaseLoaded ? 'ProxyLoaded' : 'ProxyNotLoaded') },
-                { label: t.tr('ProxyLabelServerCountry'), value: s.ServerCountry || t.tr('Unknown') },
-                { label: t.tr('ProxyLabelMemory'), value: t.format(d.IsLowMemory ? 'ProxyMemoryLow' : 'ProxyMemoryStandard', d.MemoryMb) }
-            ];
-            if (s.CountryRefused && Object.keys(s.CountryRefused).length) items.push({ label: t.tr('ProxyLabelRefusedByCountry'), value: refusedText(s.CountryRefused, t) });
-            items = items.concat(nameItems(s.Name, t));
-            if (s.Error) items.push({ label: t.tr('LabelProblem'), value: s.Error });
-            state.setItems(items);
-            showReach(s.Reachability);
-            recoveryPath.textContent = s.DisableFlagPath || 'DISABLE';
-            // Undo turns gray while Jellyfin has nothing of the proxy's to undo.
-            undoRow.setEmpty(fields.enumName(s.TakeoverPhase, ['Unmanaged', 'PendingRestart', 'Managed', 'Degraded']) === 'Unmanaged');
-        }).catch(fail('ProxyErrorLoad'));
-    }
-
     // runTask
     // Starts a scheduled task and follows it on its button.
     function runTask(action, key) {
-        shared.runScheduledTask(button(action), key, t.tr('ButtonRunTask'), load).then(function (p) { pollers.push(p); }).catch(fail('ErrorRunTask'));
+        shared.runScheduledTask(button(action), key, t.tr('ButtonRunTask')).then(function (p) { pollers.push(p); }).catch(fail('ErrorRunTask'));
     }
 
     // confirmThen
@@ -557,7 +611,6 @@ function buildTroubleshooting(content, ctx) {
     button('reach').addEventListener('click', function () {
         report(t.tr('ProxyTesting'), false);
         shared.request('Proxy/Reachability', 'POST').then(function (result) {
-            showReach(result);
             report(result.Reachable ? t.tr('ProxyReachable') : (result.Error || t.tr('ProxyUnreachable')), !result.Reachable);
         }).catch(fail('ProxyErrorReach'));
     });
@@ -567,13 +620,7 @@ function buildTroubleshooting(content, ctx) {
     button('restart').addEventListener('click', function () {
         shared.request('Proxy/Restart', 'POST').then(function (s) {
             report(s.Running ? t.tr('ProxyRestarted') : (s.Error || t.tr('StateStopped')), !s.Running);
-            load();
         }).catch(fail('ProxyErrorRestart'));
-    });
-    button('undo').addEventListener('click', function () {
-        confirmThen('ProxyConfirmUndoTrust', 'ProxyUndoTrust', 'ButtonUndo', function () {
-            shared.request('Proxy/Trust/Undo', 'POST').then(function (r) { report(r.Message || t.tr('ProxyDone'), !r.Success); load(); }).catch(fail('ProxyErrorTrust'));
-        });
     });
     button('reset').addEventListener('click', function () {
         shared.request('Proxy/Settings').then(function (s) {
@@ -590,7 +637,7 @@ function buildTroubleshooting(content, ctx) {
                 if (!ok) return null;
                 s.Advanced = resetAdvanced(s.Advanced);
                 s.Routes = [];
-                return shared.request('Proxy/Settings', 'POST', s).then(function () { report(t.tr('ProxyToastDefaultsReset'), false); load(); });
+                return shared.request('Proxy/Settings', 'POST', s).then(function () { report(t.tr('ProxyToastDefaultsReset'), false); });
             });
         }).catch(fail('ProxyErrorSaveSettings'));
     });
@@ -601,11 +648,9 @@ function buildTroubleshooting(content, ctx) {
     });
 
     return {
-        load: load,
+        load: function () {},
         destroy: function () {
             pollers.splice(0).forEach(function (p) { if (p && p.cancel) p.cancel(); });
-            state.destroy();
-            reach.destroy();
         }
     };
 }

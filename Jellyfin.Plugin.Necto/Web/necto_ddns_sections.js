@@ -129,8 +129,8 @@ function buildSettings(content, ctx) {
 }
 
 // buildTroubleshooting
-// Fills the DDNS section of Troubleshooting: why the last run could not find the public IP, running the update now,
-// and resetting a record.
+// Fills the DDNS section of Troubleshooting: running the update task now and a Reset row for each record. Update now and why
+// the last run could not find the public IP show on the DDNS page.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -143,21 +143,15 @@ function buildTroubleshooting(content, ctx) {
     var t = shared.t;
     var pollers = [];
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var detection = h('div', { class: 'stolon-error stolon-hidden', role: 'status', 'data-role': 'detection' });
-    var record = nectoModule.createSelectField({ label: t.tr('DdnsLabelRecord'), field: 'ResetRecord', help: t.tr('DdnsResetRecordHelp') });
-    var rows = nectoModule.createResetGroup([
-        nectoModule.createResetRow({ icon: 'schedule', label: t.tr('DdnsTaskUpdate'), help: t.tr('DdnsTaskUpdateHelp'), button: t.tr('ButtonRunTask'), action: 'run-update' }),
-        nectoModule.createResetRow({ icon: 'published_with_changes', label: t.tr('DdnsButtonCheckAll'), help: t.tr('DdnsCheckAllHelp'), button: t.tr('ButtonRunTask'), action: 'update-now' })
-    ]).element;
-    var resetRow = nectoModule.createResetRow({ icon: 'replay', label: t.tr('DdnsResetRecord'), help: t.tr('DdnsResetRecordRowHelp'), button: t.tr('Reset'), action: 'reset-record' }).element;
+    var run = nectoModule.createResetRow({ icon: 'schedule', label: t.tr('DdnsTaskUpdate'), help: t.tr('DdnsTaskUpdateHelp'), button: t.tr('ButtonRunTask'), action: 'run-update' });
+    var resets = h('div', { class: 'stolon-reset-group', 'data-role': 'record-resets' });
+    var repairs = h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') });
     [
         status,
-        detection,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderChecks') }),
-        rows,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
-        record.element,
-        h('div', { class: 'stolon-reset-group' }, [resetRow])
+        nectoModule.createResetGroup([run]).element,
+        repairs,
+        resets
     ].forEach(function (node) { content.appendChild(node); });
 
     // report
@@ -166,50 +160,11 @@ function buildTroubleshooting(content, ctx) {
         shared.setStatus(status, message, !!isError, { timeout: 10000 });
     }
 
-    // button
-    // Finds one of the section's buttons by its action.
-    function button(action) {
-        return content.querySelector('[data-action="' + action + '"]');
-    }
-
-    // load
-    // Reads the records, and why the last run could not find the public IP.
-    function load() {
-        return shared.request('Ddns/Records').then(function (data) {
-            detection.textContent = data.DetectionMessage || '';
-            detection.classList.toggle('stolon-hidden', !data.DetectionMessage);
-            record.setOptions((data.Records || []).map(function (entry) {
-                var r = entry.Record;
-                return { value: r.Id, text: (r.Name || r.Hostname || r.Id) };
-            }));
-            button('reset-record').disabled = !(data.Records || []).length;
-        }).catch(function (err) {
-            return shared.errorText(err, t.tr('DdnsErrorLoadRecords')).then(function (text) { report(text, true); });
-        });
-    }
-
-    button('run-update').addEventListener('click', function () {
-        shared.runScheduledTask(button('run-update'), DDNS_UPDATE_TASK, t.tr('ButtonRunTask'), load).then(function (p) { pollers.push(p); }).catch(function (err) {
-            return shared.errorText(err, t.tr('DdnsErrorRunTask')).then(function (text) { report(text, true); });
-        });
-    });
-    button('update-now').addEventListener('click', function () {
-        report(t.tr('DdnsUpdating'), false);
-        shared.request('Ddns/Update', 'POST').then(function (outcome) {
-            var records = (outcome && outcome.Records) || [];
-            var failed = records.filter(function (r) { return !r.Success && !r.Skipped; });
-            var lines = records.map(function (r) { return r.Hostname + ': ' + (r.Message || r.Action); });
-            report(lines.length ? lines.join(' ') : t.tr('DdnsNoRecordsToUpdate'), failed.length > 0);
-            load();
-        }).catch(function (err) {
-            return shared.errorText(err, t.tr('DdnsErrorUpdate')).then(function (text) { report(text, true); });
-        });
-    });
-    button('reset-record').addEventListener('click', function () {
-        var id = record.input.value;
-        if (!id) return;
+    // resetRecord
+    // Asks first, then clears a record's pause, failure count, and last pushed address.
+    function resetRecord(id, name) {
         nectoModule.confirmDialog(t.tr('DdnsConfirmResetRecord'), {
-            title: t.format('DdnsTitleResetRecord', record.input.options[record.input.selectedIndex].textContent),
+            title: t.format('DdnsTitleResetRecord', name),
             confirmText: t.tr('Reset'),
             destructive: true
         }).then(function (confirmed) {
@@ -219,6 +174,33 @@ function buildTroubleshooting(content, ctx) {
             }).catch(function (err) {
                 return shared.errorText(err, t.tr('DdnsErrorResetRecord')).then(function (text) { report(text, true); });
             });
+        });
+    }
+
+    // load
+    // Reads the records and draws one Reset row for each.
+    function load() {
+        return shared.request('Ddns/Records').then(function (data) {
+            resets.textContent = '';
+            var records = (data.Records || []).map(function (entry) { return entry.Record; });
+            // With no record there is nothing to reset, so Repairs hides.
+            shared.setVisible(repairs, records.length > 0);
+            shared.setVisible(resets, records.length > 0);
+            records.forEach(function (r) {
+                var name = r.Name || r.Hostname || r.Id;
+                var row = nectoModule.createResetRow({ icon: 'replay', label: name, help: t.tr('DdnsResetRecordRowHelp'), button: t.tr('Reset'), action: 'reset-record', destructive: true });
+                row.element.setAttribute('data-record', r.Id);
+                row.button.addEventListener('click', function () { resetRecord(r.Id, name); });
+                resets.appendChild(row.element);
+            });
+        }).catch(function (err) {
+            return shared.errorText(err, t.tr('DdnsErrorLoadRecords')).then(function (text) { report(text, true); });
+        });
+    }
+
+    run.button.addEventListener('click', function () {
+        shared.runScheduledTask(run.button, DDNS_UPDATE_TASK, t.tr('ButtonRunTask')).then(function (p) { pollers.push(p); }).catch(function (err) {
+            return shared.errorText(err, t.tr('DdnsErrorRunTask')).then(function (text) { report(text, true); });
         });
     });
 

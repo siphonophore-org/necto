@@ -247,11 +247,10 @@ Storage also writes to Jellyfin's server log. Information lines record a disk re
 
 ## Troubleshooting
 
-**Troubleshooting > Storage** holds the checks and resets.
+**Troubleshooting > Storage** holds the settings reset. **Refresh** on the Storage page checks every disk at once.
 
 ![Storage troubleshooting](screenshots/troubleshooting/Storage.png)
 
-* **Run now** beside **Check storage** checks every disk at once.
 * **Reset** beside **Reset the Storage settings** asks first, then puts every Storage setting back to its default. Each disk's own alerts and every share address set by hand go with it.
 
 | Reason | What to do |

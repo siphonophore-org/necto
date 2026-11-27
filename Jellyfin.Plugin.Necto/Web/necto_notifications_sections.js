@@ -151,7 +151,8 @@ export function testButton(shared, text, channelId, name, report) {
 // buildSettings
 // Fills the Notifications section of Settings: the sends that went and failed, the user channels with a test for
 // each, the server's address and push contact, the email server, and the administrators' channels, each edited in a
-// sidecar and tested from its row. It saves through Notifications/Settings, so no secret reaches the page.
+// sidecar and tested from its row, then the send log and the browsers. It saves through Notifications/Settings, so no
+// secret reaches the page.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -168,6 +169,7 @@ function buildSettings(content, ctx) {
     var status = h('div', { class: 'stolon-status-text', role: 'status' });
     var cards = h('div', { class: 'stolon-cards stolon-even', 'data-role': 'send-cards' });
     var builtIn = {};
+    var sendLog = createSendLog(shared);
     // report
     // Shows a test's result on the section's status line.
     var report = function (message, isError) { shared.setStatus(status, message, !!isError, { timeout: 10000 }); };
@@ -215,7 +217,7 @@ function buildSettings(content, ctx) {
         h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderChannels') }),
         h('div', { class: 'fieldDescription', text: t.tr('NotificationsChannelsHelp') }),
         listBox, addRow
-    ].forEach(function (node) { content.appendChild(node); });
+    ].concat(sendLog.elements).forEach(function (node) { content.appendChild(node); });
 
     // changed
     // Tells the section's Save Bar that something changed outside its fields.
@@ -321,6 +323,7 @@ function buildSettings(content, ctx) {
             shared.request('Notifications/Log').then(function (log) {
                 shared.renderCards(cards, sendCards(Array.isArray(log) ? log : [], t));
             }).catch(function () { /* the dashes stay */ });
+            sendLog.load();
             shared.request('Notifications/Channels').then(function (channels) {
                 (Array.isArray(channels) ? channels : []).forEach(function (c) { if (c.Kind === 'Browsers' || c.Kind === 'Apps') builtIn[c.Kind] = c.Id; });
             }).catch(function () { /* the user tests say the channel is not saved */ });
@@ -344,7 +347,10 @@ function buildSettings(content, ctx) {
                 return shared.errorText(err, t.tr('NotificationsErrorSaveSettings')).then(function (text) { throw new Error(text); });
             });
         },
-        destroy: function () { if (list) { list.destroy(); list = null; } }
+        destroy: function () {
+            if (list) { list.destroy(); list = null; }
+            sendLog.destroy();
+        }
     };
 }
 
@@ -548,8 +554,9 @@ export function logItems(entries, shared) {
         return {
             id: String(i),
             title: e.Title || e.EventKey,
-            secondary: [shared.formatDate ? shared.formatDate(e.Time) : e.Time, e.Channel, e.Message].filter(Boolean).join(' · '),
-            tags: tags
+            secondary: [shared.formatDate ? shared.formatDate(e.Time) : e.Time, e.Channel, e.Test ? t.tr('ButtonTest') : '', e.Message].filter(Boolean).join(' · '),
+            tags: tags,
+            state: e.Ok ? 'sent' : 'failed'
         };
     });
 }
@@ -569,48 +576,101 @@ export function browserItems(browsers, shared) {
     });
 }
 
+// createSendLog
+// Builds the Send log and Browsers sections at the end of Settings > Notifications: the latest sends in a table with
+// a Sent or Failed badge each, the browsers with notifications on, and how many Jellyfin messages wait for an app.
+//
+// Inputs
+// shared [object]: The Necto helper bag.
+//
+// Output
+// [object]: elements, load(), and destroy().
+export function createSendLog(shared) {
+    var t = shared.t;
+    var esc = nectoModule.escapeHtml;
+    var status = h('div', { class: 'stolon-status-text', role: 'status' });
+    var held = h('div', { class: 'fieldDescription stolon-hidden', 'data-role': 'held' });
+    var info = function (row) {
+        return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + esc(row.title) + '</div>'
+            + '<div class="stolon-table-item-sub">' + esc(row.secondary) + '</div></div>';
+    };
+    var log = nectoModule.createRowsTable(shared, {
+        search: { enabled: true, placeholder: t.tr('NotificationsSearchLog') },
+        text: function (row) { return row.title + ' ' + row.secondary; },
+        keep: function (row, query) { return !query.filter || query.filter === row.state; },
+        filters: { name: 'filter', label: t.tr('LabelStatus'), options: [{ value: 'sent', label: t.tr('StateSent') }, { value: 'failed', label: t.tr('LabelFailed') }] },
+        emptyState: { message: t.tr('NotificationsEmptyLog'), filteredMessage: t.tr('NotificationsEmptyLogMatch') },
+        columns: [
+            { key: 'title', type: 'custom', label: t.tr('LabelName'), render: info },
+            { key: 'state', type: 'custom', label: t.tr('LabelStatus'), className: 'stolon-table-cell-status', render: function (row) { return shared.badge(row.tags[0].color, row.tags[0].label); } }
+        ]
+    });
+    var browsers = nectoModule.createRowsTable(shared, {
+        search: { enabled: false },
+        emptyState: { message: t.tr('NotificationsEmptyBrowsers') },
+        columns: [{ key: 'title', type: 'custom', label: t.tr('LabelUser'), render: info }]
+    });
+    var logSection = nectoModule.createCollapsibleSection({
+        title: t.tr('NotificationsHeaderLog'), icon: 'receipt_long', collapsible: false,
+        content: h('div', { class: 'stolon-stack' }, [h('div', { class: 'fieldDescription', text: t.tr('NotificationsLogHelp') }), status, log.element])
+    });
+    logSection.element.setAttribute('data-role', 'log');
+    var browserSection = nectoModule.createCollapsibleSection({
+        title: t.tr('NotificationsHeaderBrowsers'), icon: 'notifications_active', collapsible: false,
+        content: h('div', { class: 'stolon-stack' }, [browsers.element, held])
+    });
+    browserSection.element.setAttribute('data-role', 'browsers');
+
+    // fail
+    // Shows why a read failed on the Send log's line.
+    function fail(key) {
+        return function (err) { return shared.errorText(err, t.tr(key)).then(function (text) { shared.setStatus(status, text, true); }); };
+    }
+
+    return {
+        elements: [logSection.element, browserSection.element],
+        load: function () {
+            return Promise.all([
+                shared.request('Notifications/Log').then(function (entries) {
+                    return log.setRows(logItems(Array.isArray(entries) ? entries : [], shared));
+                }).catch(fail('NotificationsErrorLoadLog')),
+                shared.request('Notifications/Push').then(function (push) {
+                    var count = (push && push.Held) || 0;
+                    held.textContent = count ? t.plural(count, 'NotificationsHeldOne', 'NotificationsHeldMany') : '';
+                    shared.setVisible(held, count > 0);
+                    return browsers.setRows(browserItems(push && Array.isArray(push.Browsers) ? push.Browsers : [], shared));
+                }).catch(fail('NotificationsErrorLoadPush'))
+            ]);
+        },
+        destroy: function () {
+            log.destroy();
+            browsers.destroy();
+        }
+    };
+}
+
 // buildTroubleshooting
-// Fills the Notifications section of Troubleshooting: a test to the administrator, the send log, the browsers with
-// notifications on, the held messages, and new push keys.
+// Fills the Notifications section of Troubleshooting: clearing the send log and the waiting messages, and new push
+// keys. The send log and the browsers show in Settings, and the tests beside their channels there.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
 // ctx [object]: shared is the Necto helper bag.
 //
 // Output
-// [object]: A handle with load and destroy.
+// [object]: A handle with load.
 function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
-    var logList = null;
-    var browserList = null;
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var logBox = h('div', { 'data-role': 'log' });
-    var browserBox = h('div', { 'data-role': 'browsers' });
-    var heldLine = h('div', { class: 'fieldDescription stolon-hidden', 'data-role': 'held' });
     var clearLogRow = nectoModule.createResetRow({ icon: 'clear_all', label: t.tr('NotificationsClearLog'), help: t.tr('NotificationsClearLogHelp'), button: t.tr('ButtonClear'), action: 'clear-log', destructive: true });
     var clearHeldRow = nectoModule.createResetRow({ icon: 'speaker_notes_off', label: t.tr('NotificationsClearHeld'), help: t.tr('NotificationsClearHeldHelp'), button: t.tr('ButtonClear'), action: 'clear-held', destructive: true });
+    var keysRow = nectoModule.createResetRow({ icon: 'vpn_key', label: t.tr('NotificationsResetKeys'), help: t.tr('NotificationsResetKeysHelp'), button: t.tr('WireGuardButtonReplace'), action: 'reset-keys', destructive: true });
 
     [
         status,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderTests') }),
-        nectoModule.createResetGroup([
-            nectoModule.createResetRow({ icon: 'send', label: t.tr('NotificationsTestMe'), help: t.tr('NotificationsTestMeHelp'), button: t.tr('ButtonSendTest'), action: 'test-me' })
-        ]).element,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderLog') }),
-        h('div', { class: 'fieldDescription', text: t.tr('NotificationsLogHelp') }),
-        logBox,
-        h('div', { class: 'stolon-card-list-actions' }, [
-            h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'refresh-log' }, [h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'refresh' }), h('span', { text: t.tr('Refresh') })])
-        ]),
-        nectoModule.createResetGroup([clearLogRow]).element,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderBrowsers') }),
-        browserBox,
-        heldLine,
-        nectoModule.createResetGroup([
-            clearHeldRow,
-            nectoModule.createResetRow({ icon: 'vpn_key', label: t.tr('NotificationsResetKeys'), help: t.tr('NotificationsResetKeysHelp'), button: t.tr('WireGuardButtonReplace'), action: 'reset-keys', destructive: true })
-        ]).element
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
+        nectoModule.createResetGroup([clearLogRow, clearHeldRow, keysRow]).element
     ].forEach(function (node) { content.appendChild(node); });
 
     // report
@@ -619,94 +679,49 @@ function buildTroubleshooting(content, ctx) {
         shared.setStatus(status, message, !!isError, { timeout: 10000 });
     }
 
-    // button
-    // Finds one of the section's buttons by its action.
-    function button(action) {
-        return content.querySelector('[data-action="' + action + '"]');
-    }
-
     // fail
     // Reports a failed call with the server's reason.
     function fail(key) {
         return function (err) { return shared.errorText(err, t.tr(key)).then(function (text) { report(text, true); }); };
     }
 
-    // loadLog
-    // Reads the send log and draws it.
-    function loadLog() {
-        return shared.request('Notifications/Log').then(function (entries) {
-            var items = logItems(Array.isArray(entries) ? entries : [], shared);
-            if (logList) logList.setItems(items);
-            else {
-                logList = nectoModule.createRecordList({ items: items, label: t.tr('NotificationsHeaderLog'), emptyText: t.tr('NotificationsEmptyLog'), maxHeight: 420 });
-                logBox.appendChild(logList.element);
-            }
-            clearLogRow.setEmpty(!items.length);
-        }).catch(fail('NotificationsErrorLoadLog'));
-    }
-
-    // loadPush
-    // Reads the browsers and the held count and draws them.
-    function loadPush() {
-        return shared.request('Notifications/Push').then(function (push) {
-            var items = browserItems(push && Array.isArray(push.Browsers) ? push.Browsers : [], shared);
-            if (browserList) browserList.setItems(items);
-            else {
-                browserList = nectoModule.createRecordList({ items: items, label: t.tr('NotificationsHeaderBrowsers'), emptyText: t.tr('NotificationsEmptyBrowsers') });
-                browserBox.appendChild(browserList.element);
-            }
-            // The count shows only while messages wait, and Clear waiting messages turns gray while none do.
-            var held = (push && push.Held) || 0;
-            heldLine.textContent = held ? shared.t.plural(held, 'NotificationsHeldOne', 'NotificationsHeldMany') : '';
-            shared.setVisible(heldLine, held > 0);
-            clearHeldRow.setEmpty(!held);
-        }).catch(fail('NotificationsErrorLoadPush'));
+    // load
+    // Reads whether the log and the waiting messages hold anything, so their rows turn gray while they are empty.
+    function load() {
+        return Promise.all([
+            shared.request('Notifications/Log').then(function (entries) { clearLogRow.setEmpty(!(Array.isArray(entries) && entries.length)); }).catch(fail('NotificationsErrorLoadLog')),
+            shared.request('Notifications/Push').then(function (push) { clearHeldRow.setEmpty(!((push && push.Held) || 0)); }).catch(fail('NotificationsErrorLoadPush'))
+        ]);
     }
 
     // confirmThen
-    // Asks first, then runs a call and reports its count.
+    // Asks first, then runs a call.
     function confirmThen(message, title, confirmText, run) {
         return nectoModule.confirmDialog(message, { title: title, confirmText: confirmText, destructive: true }).then(function (ok) {
             if (ok) return run();
         });
     }
 
-    button('test-me').addEventListener('click', function () {
-        Promise.all(['browsers', 'apps'].map(function (id) {
-            return shared.request('Notifications/Channels/' + id + '/Test', 'POST').catch(function () { return { Ok: false, Message: t.tr('NotificationsErrorTest') }; });
-        })).then(function (results) {
-            report(t.tr('LabelBrowserNotifications') + ': ' + results[0].Message + ' ' + t.tr('NotificationsChannelApps') + ': ' + results[1].Message, !(results[0].Ok || results[1].Ok));
-            loadLog();
-        });
+    clearLogRow.button.addEventListener('click', function () {
+        shared.request('Notifications/Log', 'DELETE').then(function () { report(t.tr('NotificationsLogCleared'), false); load(); }).catch(fail('NotificationsErrorClear'));
     });
-    button('refresh-log').addEventListener('click', loadLog);
-    button('clear-log').addEventListener('click', function () {
-        shared.request('Notifications/Log', 'DELETE').then(function () { report(t.tr('NotificationsLogCleared'), false); loadLog(); }).catch(fail('NotificationsErrorClear'));
-    });
-    button('clear-held').addEventListener('click', function () {
+    clearHeldRow.button.addEventListener('click', function () {
         confirmThen(t.tr('NotificationsConfirmClearHeld'), t.tr('NotificationsClearHeld'), t.tr('ButtonClear'), function () {
             return shared.request('Notifications/Held', 'DELETE').then(function (r) {
-                report(shared.t.plural((r && r.Count) || 0, 'NotificationsHeldClearedOne', 'NotificationsHeldClearedMany'), false);
-                loadPush();
+                report(t.plural((r && r.Count) || 0, 'NotificationsHeldClearedOne', 'NotificationsHeldClearedMany'), false);
+                load();
             }).catch(fail('NotificationsErrorClear'));
         });
     });
-    button('reset-keys').addEventListener('click', function () {
+    keysRow.button.addEventListener('click', function () {
         confirmThen(t.tr('NotificationsConfirmResetKeys'), t.tr('NotificationsResetKeys'), t.tr('WireGuardButtonReplace'), function () {
             return shared.request('Notifications/Push/Keys', 'POST').then(function () {
                 report(t.tr('NotificationsKeysReset'), false);
-                loadPush();
             }).catch(fail('NotificationsErrorResetKeys'));
         });
     });
 
-    return {
-        load: function () { return Promise.all([loadLog(), loadPush()]); },
-        destroy: function () {
-            if (logList) { logList.destroy(); logList = null; }
-            if (browserList) { browserList.destroy(); browserList = null; }
-        }
-    };
+    return { load: load };
 }
 
 var section = { name: function () { return nectoModule.toolName('TabNotifications', 'Notifications'); }, icon: 'notifications' };

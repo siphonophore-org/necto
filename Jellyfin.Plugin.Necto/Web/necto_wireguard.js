@@ -8,6 +8,7 @@ import {
     compact, readLimit, createDataLimitField, normalizePeriod, dataText, limitText, speedText,
     parseWgConfig, parseForwards, safeFileName, stateTag, tunnelStateLabel
 } from './configurationpage?name=necto_wireguard_common.js';
+import { createPeersByUser } from './configurationpage?name=necto_wireguard_sections.js';
 
 var h = nectoModule.h;
 
@@ -146,6 +147,7 @@ export default function (view) {
     var usage = { Bytes: {}, Blocked: [], Refused: {} };
     var sidecar = null;
     var table = null;
+    var peersByUser = null;
     var rows = [];
     var loadSeq = 0;
     var serverName = '';
@@ -708,12 +710,29 @@ export default function (view) {
         page: 'necto_wireguard',
         bind: function (s, p) {
             t = s.t;
+            // Tunnels holds the cards and the table, and Usage each user's peers against their groups.
+            peersByUser = createPeersByUser(s);
+            var body = $('wireguardBody');
+            if (body) {
+                nectoModule.createToolTabs(body, {
+                    label: t.tr('TabWireGuard'),
+                    tabs: [
+                        { id: 'tunnels', label: t.tr('WireGuardTabTunnels') },
+                        { id: 'usage', label: t.tr('LabelUsage'), element: peersByUser.element, open: peersByUser.load }
+                    ]
+                });
+            }
             p.addCleanup(function () {
                 if (table) table.destroy();
                 table = null;
+                if (peersByUser) peersByUser.destroy();
+                peersByUser = null;
             });
         },
-        load: function () { load(); }
+        load: function () {
+            load();
+            if (peersByUser) peersByUser.load();
+        }
     });
     shared = made.shared;
     page = made.page;

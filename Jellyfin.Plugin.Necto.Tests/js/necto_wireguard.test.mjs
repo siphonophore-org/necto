@@ -216,13 +216,18 @@ async function openTool(name, answers) {
     return { page: page, view: view, dom: dom, saved: saved, section: view.querySelector('[data-tool="wireguard"]') };
 }
 
-test('the WireGuard section of Settings shows the download and saves its fields into the config', async function () {
-    var opened = await openTool('settings', { 'GET WireGuard/Sidecar': { Installed: true, Version: '1.0.0', Platform: 'linux-amd64', DownloadedUtc: '2026-11-20T00:00:00Z', ReleaseVersion: '1.0.0' } });
+test('the WireGuard section of Settings saves its fields into the config, and Replace wireguard-go is in Troubleshooting', async function () {
+    var sidecar = { 'GET WireGuard/Sidecar': { Installed: true, Version: '1.0.0', Platform: 'linux-amd64', DownloadedUtc: '2026-11-20T00:00:00Z', ReleaseVersion: '1.0.0' } };
+    var trouble = await openTool('troubleshooting', sidecar);
+    var row = trouble.section.querySelector('[data-action="replace-sidecar"]').closest('.stolon-reset-row');
+    assert.match(row.textContent, /Version 1\.0\.0 for linux-amd64/);
+    assert.equal(row.querySelector('[data-action="replace-sidecar"]').textContent, 'Replace');
+
+    var opened = await openTool('settings', sidecar);
     var section = opened.section;
 
-    assert.deepEqual(texts(section, '[data-part] > .stolon-collapsible-header .stolon-collapsible-title'), ['wireguard-go', 'Host', 'Security', 'DNS', 'Peer limits', 'Advanced', 'Connections']);
-    assert.match(section.textContent, /Version 1\.0\.0 for linux-amd64/);
-    assert.ok(Array.prototype.some.call(section.querySelectorAll('button'), function (b) { return b.textContent === 'Replace'; }));
+    assert.deepEqual(texts(section, '[data-part] > .stolon-collapsible-header .stolon-collapsible-title'), ['Host', 'Security', 'DNS', 'Peer limits', 'Advanced', 'Connections']);
+    assert.equal(section.querySelector('[data-action="replace-sidecar"]'), null);
     var port = Array.prototype.find.call(section.querySelectorAll('input[type="number"]'), function (i) { return i.value === '51820'; });
     port.value = '51900';
     clickButton(section, 'Save');
@@ -247,19 +252,28 @@ test('turning WireGuard on without wireguard-go asks to download it, and Cancel 
     assert.equal(opened.page.requests.some(function (r) { return r.url === 'WireGuard/Sidecar/Download'; }), false);
 });
 
-test('the WireGuard section of Troubleshooting lists the tunnels, Restart, and each user against their groups', async function () {
+test('the WireGuard section of Troubleshooting holds only Restart, and the VPN page lists each user against their groups', async function () {
     var opened = await openTool('troubleshooting', {
-        'GET WireGuard/Status': [{ Key: 'host', Name: 'Host', State: 'Failed', Error: 'address already in use', Peers: [] }],
         'GET WireGuard/Users': [{ UserId: VIEWER, Name: 'viewer', Used: 2, MayHavePeers: true, MaxPeers: 1, DataLimit: 0 }]
     });
     var section = opened.section;
 
-    assert.deepEqual(texts(section, '.stolon-subsection-title'), ['Tunnels', 'Peers by user']);
-    assert.match(section.textContent, /address already in use/);
-    assert.match(section.textContent, /2 of 1 peers/);
+    assert.deepEqual(texts(section, '.stolon-subsection-title'), ['Repairs']);
+    assert.equal(opened.page.requests.some(function (r) { return r.url === 'WireGuard/Users'; }), false);
     clickButton(section, 'Restart');
     await settle(50);
     assert.ok(opened.page.requests.some(function (r) { return r.type === 'POST' && r.url === 'WireGuard/Restart'; }));
+
+    var bag = (await loadScript('necto_shared.js')).createNectoShared(pageView(opened.dom, []));
+    await bag.translations;
+    var mod = await loadScript('necto_wireguard_sections.js');
+    var peers = mod.createPeersByUser(bag);
+    opened.dom.document.documentElement.appendChild(peers.element);
+    await peers.load();
+    await settle(50);
+    var cells = Array.prototype.map.call(peers.element.querySelectorAll('.stolon-table-cell'), function (c) { return c.innerHTML; }).join(' ');
+    assert.equal(peers.element.getAttribute('data-role'), 'peers-by-user');
+    assert.match(cells, /viewer[\s\S]*2 of 1 peers[\s\S]*Over peer count/);
 });
 
 test('downloading wireguard-go gives the button back its own children, so its label can change after', async function () {

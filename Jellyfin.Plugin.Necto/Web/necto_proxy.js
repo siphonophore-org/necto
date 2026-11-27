@@ -5,6 +5,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import * as fields from './configurationpage?name=necto_netfields.js';
+import { createProxyDetails } from './configurationpage?name=necto_proxy_sections.js';
 
 var h = nectoModule.h;
 
@@ -733,48 +734,6 @@ export function rowAction(row) {
     return { action: 'block', value: row.Ip };
 }
 
-// countryRows
-// Joins the totals by country into one row per country, with the latest visit any of them saw.
-//
-// Inputs
-// data [object]: The answer from Proxy/Visitors.
-//
-// Output
-// [object[]]: One row per country.
-export function countryRows(data) {
-    var rows = {};
-    var add = function (list, field) {
-        (list || []).forEach(function (c) {
-            var row = rows[c.CountryCode] || (rows[c.CountryCode] = { Code: c.CountryCode, Country: c.Country || c.CountryCode, People: 0, Failed: 0, Blocked: 0, LastUtc: null });
-            row[field] += c.Count || 0;
-            if (c.LastUtc && (!row.LastUtc || new Date(c.LastUtc) > new Date(row.LastUtc))) row.LastUtc = c.LastUtc;
-        });
-    };
-    add(data.PeopleByCountry, 'People');
-    add(data.FailedByCountry, 'Failed');
-    add(data.BlockedByCountry, 'Blocked');
-    return Object.keys(rows).map(function (k) { return rows[k]; });
-}
-
-// locationText
-// Says how the location database stands, or that lookups are off.
-//
-// Inputs
-// loc [object]: The location database status from Proxy/Visitors, or null.
-// shared [object]: The Necto helper bag.
-//
-// Output
-// [string]: The sentence, or empty when there is no status.
-export function locationText(loc, shared) {
-    var t = shared.t;
-    if (!loc) return '';
-    if (fields.enumName(loc.Detail, LOCATIONS) === 'Off') return t.tr('ProxyLocationOff');
-    if (loc.Downloading) return t.tr('ProxyLocationDownloading');
-    if (loc.Error) return loc.Error;
-    if (loc.Loaded) return loc.BuiltUtc ? t.format('ProxyLocationLoadedOn', shared.formatDate(loc.BuiltUtc)) : t.tr('ProxyLoaded');
-    return t.tr('ProxyNotLoaded');
-}
-
 // showsCity
 // Tells whether the visitor history looks up cities, so the activity table shows them.
 //
@@ -799,6 +758,7 @@ export default function (view) {
     var hostnames = [];
     var proxyStatus = {};
     var visitors = null;
+    var details = null;
     var loadSeq = 0;
     var refreshSeq = 0;
     var acceptTerms = false;
@@ -989,6 +949,7 @@ export default function (view) {
             showStatus(answers[1] || {});
             if (openEditor) openEditor.editor.setRequestable(requestable());
             if (visitors) visitors.load();
+            if (details) details.load();
         }).catch(function (err) {
             if (mine !== loadSeq) return;
             shared.errorText(err, shared.t.tr('ProxyErrorLoad')).then(function (text) { report(text, true); });
@@ -1193,7 +1154,8 @@ export default function (view) {
     }
 
     // createVisitors
-    // Builds the Visitors tab in its panel: what each address did, the bans, and the countries, each a table.
+    // Builds the Visitors tab in its panel: the bans and what each address did, each a table. The countries show on the
+    // Dashboard's Locations, and how the location database stands on the Checks tab.
     function createVisitors(panel) {
         var t = shared.t;
         var content = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr('ProxyVisitorsHelp') })]);
@@ -1201,17 +1163,14 @@ export default function (view) {
         var status = h('div', { class: 'stolon-status-text', role: 'status' });
         var bannedHost = h('div', { id: 'proxyBanned' });
         var activityHost = h('div', { id: 'proxyActivity' });
-        var countryHost = h('div', { id: 'proxyCountries' });
         var attribution = h('div', { class: 'fieldDescription' });
-        var location = h('div', { class: 'fieldDescription', 'data-role': 'location' });
         [off, status,
             h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderBanned') }), bannedHost,
             h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderActivity') }), activityHost,
-            h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderCountries') }), countryHost,
-            location, attribution].forEach(function (n) { content.appendChild(n); });
+            attribution].forEach(function (n) { content.appendChild(n); });
         panel.appendChild(content);
 
-        var data = { Banned: [], Activity: [], Countries: [] };
+        var data = { Banned: [], Activity: [] };
         var place = function (r) { return r.IsLocal ? t.tr('LabelLocal') : (r.Country || t.tr('Unknown')); };
         var ACTION_ICONS = { unban: 'lock_open', unblock: 'lock_open', 'unblock-country': 'public', block: 'block' };
         var ACTION_LABELS = { unban: 'ProxyButtonUnban', unblock: 'ButtonUnblock', 'unblock-country': 'ButtonUnblock', block: 'ButtonBlock' };
@@ -1272,22 +1231,6 @@ export default function (view) {
             onButton: function (action, r) { var act = rowAction(r); if (!act.disabled) visitorAction(act); },
             onReload: function () { load(); }
         });
-        var countries = nectoModule.createToolTable(view, shared, {
-            containerId: 'proxyCountries',
-            rows: function () { return data.Countries; },
-            idKey: 'Code',
-            search: t.tr('ProxySearchCountries'),
-            empty: { message: t.tr('ProxyEmptyCountries'), filteredMessage: t.tr('ProxyEmptyCountriesMatch') },
-            icon: function () { return 'flag'; },
-            title: function (c) { return c.Country; },
-            lines: function (c) {
-                return [
-                    [t.plural(c.People || 0, 'RequestsJoinersCountOne', 'RequestsJoinersCount'), t.format('ScheduledTaskFailedWithName', c.Failed || 0), t.format('ProxyCountryRefused', c.Blocked || 0)].join(' · '),
-                    c.LastUtc ? t.format('ProxySeenAt', shared.formatDate(c.LastUtc)) : ''
-                ];
-            },
-            onReload: function () { load(); }
-        });
         var loads = 0;
 
         // visitorAction
@@ -1335,10 +1278,9 @@ export default function (view) {
                 var rows = (answer.Activity || []).map(function (r) {
                     return Object.assign({ kind: fields.enumName(r.Type, ACTIVITY_TYPES), placeCode: r.IsLocal ? 'local' : (r.CountryCode || '') }, r);
                 });
-                data = { Banned: answer.Banned || [], Activity: rows, Countries: countryRows(answer), ShowsCity: showsCity(answer) };
+                data = { Banned: answer.Banned || [], Activity: rows, ShowsCity: showsCity(answer) };
                 activity.setFilterOptions(placeOptions(rows), 'place');
-                [banned, activity, countries].forEach(function (table) { table.refresh(); });
-                location.textContent = locationText(answer.Location, shared);
+                [banned, activity].forEach(function (table) { table.refresh(); });
                 attribution.textContent = answer.Attribution || '';
             }).catch(function (err) {
                 if (mine !== loads) return;
@@ -1346,7 +1288,7 @@ export default function (view) {
             });
         }
 
-        return { load: load, destroy: function () { banned.destroy(); activity.destroy(); countries.destroy(); } };
+        return { load: load, destroy: function () { banned.destroy(); activity.destroy(); } };
     }
 
     var made = nectoModule.createNectoPage(view, {
@@ -1355,17 +1297,20 @@ export default function (view) {
             var t = bag.t;
             tabs = nectoModule.createSubTabs({
                 label: t.tr('TabProxy'),
-                tabs: [{ id: 'routes', label: t.tr('ProxyHeaderRoutes') }, { id: 'visitors', label: t.tr('HeaderVisitors') }],
+                tabs: [{ id: 'routes', label: t.tr('ProxyHeaderRoutes') }, { id: 'visitors', label: t.tr('HeaderVisitors') }, { id: 'checks', label: t.tr('HeaderChecks') }],
                 render: function (tab, panel) {
                     panel.classList.add('stolon-stack');
                     if (tab.id === 'routes') panel.appendChild(view.querySelector('#proxyRoutes'));
-                    else { visitors = createVisitors(panel); visitors.load(); }
+                    else if (tab.id === 'visitors') { visitors = createVisitors(panel); visitors.load(); }
+                    else { details = createProxyDetails(shared); panel.appendChild(details.element); details.load(); }
                 }
             });
             view.querySelector('#proxyTabs').appendChild(tabs.element);
             pg.addCleanup(function () {
                 if (visitors) visitors.destroy();
                 visitors = null;
+                if (details) details.destroy();
+                details = null;
             });
         },
         load: function (bag, pg) {

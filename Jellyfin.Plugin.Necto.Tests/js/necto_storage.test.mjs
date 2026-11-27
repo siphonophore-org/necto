@@ -200,7 +200,9 @@ test('the Storage section of Troubleshooting asks before it resets the settings,
     var opened = await openTool('troubleshooting', { Storage: { Remount: false, DiskOverrides: [{ MountPoint: '/mnt/media' }] } });
     var section = opened.section;
 
-    assert.deepEqual(texts(section, '.stolon-subsection-title'), ['Scheduled checks', 'Settings']);
+    // Refresh on the Storage page checks every disk, so Troubleshooting holds only the reset.
+    assert.deepEqual(texts(section, '.stolon-subsection-title'), ['Repairs']);
+    assert.equal(section.querySelector('[data-action="run-check"]'), null);
     section.querySelector('[data-action="reset-settings"]').click();
     await settle(50);
     assert.equal(dialogText(opened.dom).title, 'Reset the Storage settings');

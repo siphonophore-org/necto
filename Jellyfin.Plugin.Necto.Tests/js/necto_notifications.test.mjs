@@ -1,6 +1,7 @@
 // necto_notifications.test.mjs
-// Tests for Notifications: the Settings section with its send counts and a test for each channel, which saves through
-// its own route, the Troubleshooting section's log and repairs, and the browser notification helper for user pages.
+// Tests for Notifications: the Settings section with its send counts, a test for each channel, the send log, and the
+// browsers, which saves through its own route, the Troubleshooting section's repairs, and the browser notification
+// helper for user pages.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -168,13 +169,24 @@ test('the channel editor offers what posts carry, the requester off on a new cha
     assert.deepEqual(mod.postFields('Administrators'), []);
 });
 
-test('the Troubleshooting section lists the send log and the browsers, and asks before new push keys', async function () {
+test('Settings ends with the send log and the browsers in tables, and Troubleshooting holds only its repairs', async function () {
+    var settings = await openTool('settings');
+    var cells = function (role) {
+        return Array.prototype.map.call(settings.section.querySelectorAll('[data-role="' + role + '"] .stolon-table-cell'), function (c) { return c.innerHTML; }).join(' ');
+    };
+    assert.match(cells('log'), /Invite used[\s\S]*Could not send\.[\s\S]*Failed/);
+    assert.match(cells('browsers'), /viewer[\s\S]*Safari/);
+    assert.equal(settings.section.querySelector('[data-role="held"]').textContent, '2 Jellyfin messages wait for an app to come online.');
+    var titles = texts(settings.section, '.stolon-collapsible-section .stolon-collapsible-title');
+    assert.deepEqual(titles.slice(-2), ['Send log', 'Browsers']);
+
     var opened = await openTool('troubleshooting', { 'POST Notifications/Push/Keys': { Count: 1 } });
     var section = opened.section;
-
-    assert.match(section.querySelector('[data-role="log"]').textContent, /Invite used[\s\S]*Could not send\./);
-    assert.match(section.querySelector('[data-role="browsers"]').textContent, /viewer[\s\S]*Safari/);
-    assert.equal(section.querySelector('[data-role="held"]').textContent, '2 Jellyfin messages wait for an app to come online.');
+    // The tests live beside their channels in Settings, and the log and browsers show there too.
+    assert.equal(section.querySelector('[data-action="test-me"]'), null);
+    assert.equal(section.querySelector('[data-role="log"]'), null);
+    assert.deepEqual(texts(section, '.stolon-subsection-title'), ['Repairs']);
+    assert.deepEqual(Array.prototype.map.call(section.querySelectorAll('[data-action]'), function (b) { return b.getAttribute('data-action'); }), ['clear-log', 'clear-held', 'reset-keys']);
 
     section.querySelector('[data-action="reset-keys"]').click();
     await settle(50);

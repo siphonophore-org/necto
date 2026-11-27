@@ -90,17 +90,29 @@ test('the Scripts section of Settings saves its three settings into the Scripts 
     assert.equal(scripts.Scripts.length, 1);
 });
 
-test('the Scripts section of Troubleshooting reads the run history and its chart', async function () {
+test('the Scripts section of Troubleshooting holds only Clear history, and the Scripts page reads the run history and its chart', async function () {
     var opened = await openTool('troubleshooting', {
         'GET Scripts/History/Days': { Days: ['2026-11-19', '2026-11-20'], Succeeded: [1, 2], Failed: [0, 1] },
         'GET Scripts/Catalog': { Triggers: [{ Key: 'ItemAdded', Label: 'Item added' }] }
     });
 
-    assert.deepEqual(texts(opened.section, '.stolon-subsection-title'), ['History', 'Repairs']);
+    assert.deepEqual(texts(opened.section, '.stolon-subsection-title'), ['Repairs']);
     var clear = opened.section.querySelector('[data-action="clear-history"]').closest('.stolon-reset-row');
     assert.equal(clear.querySelector('.stolon-collapsible-tile').textContent, 'history_toggle_off');
+    assert.equal(opened.page.requests.some(function (r) { return r.url === 'Scripts/History/Days'; }), false);
+
+    var shared = await loadScript('necto_shared.js');
+    var bag = shared.createNectoShared(pageView(opened.dom, []));
+    await bag.translations;
+    var sections = await loadScript('necto_scripts_sections.js');
+    var history = sections.createRunHistory(bag, null);
+    opened.dom.document.documentElement.appendChild(history.element);
+    await history.load();
+    await settle(50);
     assert.ok(opened.page.requests.some(function (r) { return r.url === 'Scripts/History/Days'; }));
-    assert.ok(opened.page.requests.some(function (r) { return r.url === 'Scripts/Catalog'; }));
+    assert.ok(opened.page.requests.some(function (r) { return String(r.url).indexOf('Scripts/History?') >= 0; }));
+    assert.equal(history.element.getAttribute('data-role'), 'run-history');
+    history.destroy();
 });
 
 test('the group editor has no Scripts section, since each script picks its own groups', async function () {

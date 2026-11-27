@@ -57,7 +57,7 @@ The page is one Stolon tool app, as Zooid's is: a sidebar of the tools that are 
 | **Storage** | Storage Manager | Disks, space, SMART health, missing disks and remounting, formatting, shares, libraries per disk. |
 | **Notifications** | Every tool | Channels, and which events go to whom. See [Notifications](#notifications). |
 | **Settings** | Every tool | A collapsible section per tool, each with its own subsections. |
-| **Troubleshooting** | Every tool | A collapsible section per tool: resets, tests, logs, repairs. |
+| **Troubleshooting** | Every tool | A collapsible section per tool: tasks, repairs, resets, logs. |
 
 ### Dashboard
 
@@ -107,14 +107,14 @@ The proxy forwards to any service, not only Jellyfin. A route is a host name, an
 * Dropped: automatic port forwarding (UPnP and NAT-PMP), router steps, and the step by step setup. The docs carry a Getting Started page for the templates instead.
 * Protection is set once for the proxy, and a route chooses only **Local network only**. The Jellyfin side checks, trusting the proxy, sign-in bans, and refusing the startup wizard and API docs, apply to the routes that forward to this Jellyfin. **Review**
 * A local client that asks by this server's address, or by a name no route has, reaches the first Jellyfin route, as it reached Jellyfin before. **Review**
-* **Trust the proxy** and **Undo** stay on the Proxy page, since they are actions rather than settings, and **Undo** is also a Troubleshooting repair. **Review**
+* **Trust the proxy** and **Undo** stay on the Proxy page only, since they are actions on the proxy's own state. **Review**
 * The check from outside (check-host.net) is not a router step, so it stays as a Troubleshooting test and its hourly task. The router's shared address (CGNAT) check went with the router steps. **Review**
-* The visitor tables (bans, activity, countries) stay on the Proxy page. The world map and the share card are the Dashboard's, which reads `GET /Dashboard/Map` and `GET /Proxy/PublicAddress`. **Review**
+* The visitor tables (bans and activity) stay on the Proxy page. The countries, the world map, and the share card are the Dashboard's, which reads `GET /Dashboard/Map` and `GET /Proxy/PublicAddress`. **Review**
 * Proxy carries no group permission, since only administrators use it. Groups choose who receives its events. **Review**
 * Routes and certificate passwords change only through the `/Proxy` routes. A save of the whole configuration, such as from another tool's Settings section, keeps them as stored. **Review**
 * Every tool's secrets share one key ring, `Jellyfin.Plugin.Necto.Keys`, through Stolon's `AddPluginSecretProtector`. On Windows its keys are wrapped with DPAPI, as Remote Access wrapped its own. **Review**
 * **Reset to defaults** is a Troubleshooting repair, which has no form to review before saving, so it lists the settings it puts back in its confirm and saves once confirmed. It keeps the trusted networks, the block list, and the country rule with its countries, as Remote Access's reset did. **Review**
-* The public name's details (the name, the addresses it points to, and this server's public address) sit in **Troubleshooting > Proxy**, since the setup wizard that showed them is dropped. The Proxy page keeps its **Public name** card. **Review**
+* The public name's details (the name, the addresses it points to, and this server's public address) sit on the Proxy page's **Checks** tab, since the setup wizard that showed them is dropped. The Proxy page keeps its **Public name** card. **Review**
 
 ### DDNS
 
@@ -143,7 +143,7 @@ Turning WireGuard on asks to download `wireguard-go`, which is the only way Wire
 
 ### Scripts
 
-Everything the Scripts plugin does, with its history in **Troubleshooting** and its settings in **Settings**.
+Everything the Scripts plugin does, with its history on the Scripts page, **Clear history** in **Troubleshooting**, and its settings in **Settings**.
 
 * A script runs for every user while its editor is **Permissive**, and only for the groups picked while it is **Restrictive**, as the Scripts plugin's empty users list ran a script for everyone. Groups hold no script picks. A stored script takes the groups that ran it, or runs for everyone when no group or every group did. **Review**
 * A failed sign in for a name with no account takes **Everyone**. **Review**
@@ -222,7 +222,7 @@ Every route says what it does, as Zooid's do: `/Dashboard`, `/Requests`, `/Issue
 
 ## Settings and Troubleshooting
 
-**Settings** holds every setting that is not a permission, in one collapsible section per tool and subsections inside it. **Troubleshooting** holds the resets, tests, and repairs in the same sections. No tool page carries its own settings tab.
+**Settings** holds every setting that is not a permission, in one collapsible section per tool and subsections inside it. **Troubleshooting** holds only reset rows: running a scheduled task now, repairs, and clearing or resetting data. Each thing lives in one place. Nothing in Troubleshooting repeats what a tool page or Settings shows or does, and no tool page carries its own settings tab.
 
 ## Strings
 

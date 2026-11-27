@@ -28,7 +28,7 @@ Necto adds a **Requests** link while [Requests](Requests.md) is on, and an **Iss
 
 A save reads `config.json`, replaces only `menuLinks`, and swaps the whole file in, so the web client never reads half a file. Every other key keeps its value and its place. A key the editor does not show, such as one added to a link by hand, stays on the link to the same address.
 
-When `config.json` cannot be found, read, or written, the section says why and **Add menu link** is turned off. **Troubleshooting > Menu links** shows where the file is and whether it can be saved.
+When `config.json` cannot be found, read, or written, the section says why and **Add menu link** is turned off.
 
 | Problem | Fix |
 | :--- | :--- |

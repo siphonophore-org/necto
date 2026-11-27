@@ -22,11 +22,7 @@ The sidecar is not part of the plugin. Turning on **Enable VPN** in **Settings >
 
 * **Enable VPN** runs WireGuard. Turning it on asks to download wireguard-go when the server has none, and stays off when the download is declined or fails. It is off on a fresh install, and while it is off **VPN** leaves the sidebar, the Dashboard, and the group editor.
 
-The settings below show while **Enable VPN** is on. Each group, from **wireguard-go** to **Connections**, is a part of its own that opens from its heading.
-
-### wireguard-go
-
-The line at the top of the part says which wireguard-go the server has, such as "Version 1.0.0 for linux-amd64, downloaded Nov 20, 2026.", or that it is not downloaded yet. **Replace** asks first, then downloads it again and restarts every tunnel with it. Before the first download the button reads **Download**.
+The settings below show while **Enable VPN** is on. Each group, from **Host** to **Connections**, is a part of its own that opens from its heading.
 
 ### Host
 
@@ -84,6 +80,8 @@ While VPN is off, the tool reads "VPN is off. Turn it on in Settings to add peer
 | :---: | :---: |
 | ![VPN](screenshots/WireGuard.png) | ![VPN on a phone](screenshots/WireGuard%20Phone.png) |
 
+The page has two tabs, **Tunnels** and **Usage**. **Usage** lists each user's peers against what their groups give, such as "2 of 3 peers", with **Allowed**, **Not allowed**, or **Over peer count**. **Tunnels** holds the rest of this section.
+
 The cards at the top show the host's state, how many **Peers** and **Connections** are connected out of all of them, and how many are over their data limit. **Connections** turns red while any connection failed and gray while **Connect to hosts** is off. **Left out** counts the peers their owners' groups leave out, while there are any. When the host cannot start, the reason shows under the cards.
 
 One table lists this server, the peers, and the connections, each with a **Type** badge, **Host**, **Peer**, or **Connection**, and its state. Search it by name, owner, or address, and filter it to **Peers** or **Connections**. **Add peer** in its toolbar shows while the host is on, and **Add connection** while connecting is on. With nothing to list it reads "No peers or connections yet."
@@ -133,17 +131,16 @@ Saving or deleting a group applies its peers to the tunnel at once, and any othe
 
 ## Troubleshooting
 
-**Troubleshooting > VPN** holds the tunnels and the peers by user.
+**Troubleshooting > VPN** holds the repairs. Each tunnel's state and error show on the VPN page's **Tunnels** tab, and each user's peers on its **Usage** tab.
 
 ![WireGuard troubleshooting](screenshots/troubleshooting/WireGuard.png)
 
-* **Tunnels** lists the host and each connection that runs, with its state and its last error or how many peers are connected.
+* **Replace wireguard-go** says which wireguard-go the server has, such as "Version 1.0.0 for linux-amd64, downloaded Nov 20, 2026.", or that it is not downloaded yet. **Replace** asks first, then downloads it again and restarts every tunnel with it. Before the first download the button reads **Download**.
 * **Restart tunnels** stops every tunnel and starts them again. Peers reconnect on their own.
-* **Peers by user** lists each user's peers against what their groups give, such as "2 of 3 peers".
 
 | Reason | What to do |
 | :--- | :--- |
-| "wireguard-go is not downloaded. Download it in Settings to run WireGuard." | Select **Download** in **Settings > VPN** |
+| "wireguard-go is not downloaded. Download it in Troubleshooting to run WireGuard." | Select **Download** in **Troubleshooting > VPN** |
 | "Could not reach the sidecar release. Check the server's internet connection." | Let the server reach `github.com`, then select **Download** again |
 | "The downloaded sidecar does not match its release hash, so it was not kept." | Select **Download** again. A file changed on its way is never kept |
 | "The tunnel is not running. Check the tunnel subnet and the server log." | Check **Tunnel subnet** and that **Listen port** is free, then select **Restart** |

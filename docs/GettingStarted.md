@@ -50,7 +50,7 @@ Open **Proxy**, then the **Jellyfin** section, and select **Trust the proxy**. N
 
 ## 5. Check From Outside
 
-Open **Troubleshooting**, then **Proxy**, and select **Test from outside**. A few places on the internet try the first internet route's HTTPS port, and the section lists which connected. The **Check from the internet** task runs the same check every hour, and logs when access is lost.
+Open **Troubleshooting**, then **Proxy**, and select **Test from outside**. A few places on the internet try the first internet route's HTTPS port, and the Proxy page's **Checks** tab lists which connected. The **Check from the internet** task runs the same check every hour, and logs when access is lost.
 
 ## Next Steps
 

@@ -180,22 +180,15 @@ test('rowAction unbans a ban, never blocks your network, and lets a country thro
     assert.equal(proxy.rowAction({ Ip: '198.51.100.9' }).action, 'block');
 });
 
-test('countryRows joins the totals and keeps the latest visit, and locationText says when lookups are off', async function () {
+test('locationText says how the location database stands, and showsCity whether visits carry a city', async function () {
     var bag = await strings();
     var proxy = await loadScript('necto_proxy.js');
-    var rows = proxy.countryRows({
-        PeopleByCountry: [{ CountryCode: 'FR', Country: 'France', Count: 2, LastUtc: '2026-11-01T00:00:00Z' }],
-        FailedByCountry: [{ CountryCode: 'FR', Country: 'France', Count: 1, LastUtc: '2026-11-20T00:00:00Z' }],
-        BlockedByCountry: [{ CountryCode: 'CN', Country: 'China', Count: 4, LastUtc: '2026-11-05T00:00:00Z' }]
-    });
+    var sections = await loadScript('necto_proxy_sections.js');
 
-    assert.deepEqual(rows.map(function (r) { return [r.Code, r.People, r.Failed, r.Blocked, r.LastUtc]; }), [
-        ['FR', 2, 1, 0, '2026-11-20T00:00:00Z'],
-        ['CN', 0, 0, 4, '2026-11-05T00:00:00Z']
-    ]);
-    assert.equal(proxy.locationText({ Detail: 'Off', Loaded: false }, bag), 'Location lookups are off.');
-    assert.equal(proxy.locationText({ Detail: 2 }, bag), 'Location lookups are off.');
-    assert.equal(proxy.locationText({ Detail: 'Country', Loaded: false }, bag), 'Not loaded');
+    assert.equal(sections.locationText({ Detail: 'Off', Loaded: false }, bag), 'Location lookups are off.');
+    assert.equal(sections.locationText({ Detail: 2 }, bag), 'Location lookups are off.');
+    assert.equal(sections.locationText({ Detail: 'Country', Loaded: false }, bag), 'Not loaded');
+    assert.equal(sections.locationText({ Detail: 'Country', Downloading: true }, bag), 'The location database is downloading.');
     assert.equal(proxy.showsCity({ Settings: { Location: 'City' } }), true);
     assert.equal(proxy.showsCity({ Settings: { Location: 'Country' } }), false);
 });
@@ -309,15 +302,14 @@ test('Settings and Troubleshooting draw the Proxy and DDNS sections, filled from
     assert.ok(page.requests.find(function (r) { return r.type === 'POST' && r.url === 'Proxy/Visitors/Settings'; }));
 });
 
-test('the Proxy Troubleshooting section shows the state and the recovery file', async function () {
+test('Troubleshooting holds only the Proxy and DDNS rows, one Reset per DDNS record', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
     var view = pageView(dom, [dom.el('div', { id: 'troubleshootingSections' })]);
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
         'GET Proxy/Status': { Running: true, Addresses: ['http://[::]:80'], Backend: 'http://127.0.0.1:8096/', DisableFlagPath: '/config/Jellyfin.Plugin.Necto.Proxy/DISABLE', Reachability: {} },
-        'GET Proxy/Defaults': { IsLowMemory: false, MemoryMb: 8192 },
-        'GET Ddns/Records': { Records: [] }
+        'GET Ddns/Records': { Records: [{ Record: { Id: 'r1', Name: 'home.example.com' } }, { Record: { Id: 'r2', Hostname: 'media.example.com' } }] }
     });
     var mod = await loadScript('necto_troubleshooting.js');
     mod.default(view);
@@ -325,9 +317,41 @@ test('the Proxy Troubleshooting section shows the state and the recovery file', 
     await settle();
 
     var section = view.querySelector('[data-tool="proxy"]');
-    assert.ok(section.textContent.indexOf('/config/Jellyfin.Plugin.Necto.Proxy/DISABLE') >= 0);
-    assert.ok(section.textContent.indexOf('Running') >= 0);
-    assert.ok(view.querySelector('[data-tool="ddns"]').textContent.indexOf('Public IPv4') < 0);
+    // What the proxy runs with shows in Details on the Proxy page, and Trust and Undo there too.
+    assert.equal(section.textContent.indexOf('http://[::]:80'), -1);
+    assert.equal(section.textContent.indexOf('DISABLE'), -1);
+    assert.equal(section.querySelector('.stolon-definition-list, pre'), null);
+    assert.equal(section.querySelector('[data-action="undo"]'), null);
+    assert.deepEqual(Array.prototype.map.call(section.querySelectorAll('[data-action]'), function (b) { return b.getAttribute('data-action'); }),
+        ['reach', 'task-external', 'task-certificates', 'task-locations', 'restart', 'reset', 'clear']);
+    var ddns = view.querySelector('[data-tool="ddns"]');
+    // Update now and why the public IP was not found live on the DDNS page.
+    assert.equal(ddns.querySelector('[data-action="update-now"]'), null);
+    assert.equal(ddns.querySelector('select'), null);
+    assert.deepEqual(texts(ddns, '[data-record] .stolon-reset-info > div:first-child'), ['home.example.com', 'media.example.com']);
+});
+
+test('the Checks tab of the Proxy page lists what the proxy runs with in a table, and the recovery file', async function () {
+    var page = installPage({});
+    routeApi(page, {
+        'GET Proxy/Status': { Addresses: ['http://[::]:80'], Backend: 'http://127.0.0.1:8096/', DisableFlagPath: '/config/Jellyfin.Plugin.Necto.Proxy/DISABLE', Reachability: { CheckedUtc: '2026-11-26T12:00:00Z', Reachable: true, Nodes: [] } },
+        'GET Proxy/Defaults': { IsLowMemory: false, MemoryMb: 8192 },
+        'GET Proxy/Visitors': { Location: { Detail: 'Country', Loaded: false, Downloading: true } }
+    });
+    var bag = (await loadScript('necto_shared.js')).createNectoShared(pageView(page.dom, []));
+    await bag.translations;
+    var sections = await loadScript('necto_proxy_sections.js');
+    var details = sections.createProxyDetails(bag);
+    page.dom.document.documentElement.appendChild(details.element);
+    await details.load();
+    await settle(50);
+
+    var cells = Array.prototype.map.call(details.element.querySelectorAll('.stolon-table-cell'), function (c) { return c.innerHTML; }).join(' ');
+    assert.equal(details.element.getAttribute('data-role'), 'proxy-details');
+    assert.match(cells, /Listening on[\s\S]*http:\/\/\[::\]:80/);
+    assert.match(cells, /The location database is downloading\./);
+    assert.match(cells, /Reachable[\s\S]*Yes/);
+    assert.equal(details.element.querySelector('[data-role="recovery-path"]').textContent, '/config/Jellyfin.Plugin.Necto.Proxy/DISABLE');
 });
 
 // openProxyPage
@@ -445,7 +469,7 @@ test('the visitor tables show the city, when each ban began, and why a row canno
     assert.match(activity[0], /title="Your network and trusted networks are never blocked\."[^>]*disabled/);
     assert.match(activity[1], /title="Blocked by a range in the block list in Settings\."[^>]*disabled/);
     assert.deepEqual(texts(view.querySelector('#proxyBanned .stolon-table-bulk-actions'), '[data-bulk]'), ['Unban']);
-    assert.match(rowHtml(view.querySelector('#proxyCountries .stolon-table-row')), /France[\s\S]*1 person/);
+    assert.equal(view.querySelector('#proxyCountries'), null, 'the countries show on the Dashboard only');
 });
 
 test('unblocking a country asks first and names it', async function () {
