@@ -5,20 +5,24 @@ using Jellyfin.Plugin.Necto.Api;
 using Jellyfin.Plugin.Necto.Api.CustomPages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Xunit;
 
 namespace Jellyfin.Plugin.Necto.Tests.Api;
 
 /// <summary>
-/// Every controller asks for an administrator, apart from the one that serves custom pages at their own addresses,
-/// and the pages' strings and those addresses are the only routes open to anyone.
+/// Every controller asks for an administrator, apart from the ones behind user pages. Custom pages decide access per
+/// route, and the request and issue pages sign every data call in and serve only their own files to anyone.
 /// </summary>
 public class AuthorizationTests
 {
     private static readonly Type[] Controllers = typeof(Plugin).Assembly.GetTypes().Where(t => typeof(ControllerBase).IsAssignableFrom(t) && !t.IsAbstract).ToArray();
 
     // The controller that serves custom pages to their visitors, which decides access per route.
-    private static readonly Type[] UserPageControllers = { typeof(CustomPagesController) };
+    private static readonly Type[] UserPageControllers = { typeof(CustomPagesController), typeof(Jellyfin.Plugin.Necto.Api.Requests.RequestsController) };
+
+    // The controller behind the request and issue pages, which signed in users who are not administrators call.
+    private static readonly Type RequestPages = typeof(Jellyfin.Plugin.Necto.Api.Requests.RequestsController);
 
     // The custom page routes a visitor reaches before signing in. Each checks the page's or the store's own tier.
     private static readonly string[] OpenPageRoutes =
@@ -52,7 +56,7 @@ public class AuthorizationTests
     [Fact]
     public void OnlyPublicRoutes_AllowAnonymous()
     {
-        var open = Controllers
+        var open = Controllers.Where(c => c != RequestPages)
             .SelectMany(c => c.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             .Where(m => m.GetCustomAttribute<AllowAnonymousAttribute>() is not null)
             .ToList();
@@ -87,8 +91,13 @@ public class AuthorizationTests
 
         foreach (var controller in Controllers)
         {
-            var first = controller.GetCustomAttribute<RouteAttribute>()!.Template.Split('/')[0];
-            Assert.DoesNotContain(first, jellyfin, StringComparer.OrdinalIgnoreCase);
+            // A route that starts with a slash leaves the controller's own, so its first segment counts as well.
+            var templates = controller.GetCustomAttributes<RouteAttribute>().Select(r => r.Template)
+                .Concat(controller.GetMethods().SelectMany(m => m.GetCustomAttributes<HttpMethodAttribute>()).Select(a => a.Template ?? string.Empty).Where(t => t.StartsWith('/')));
+            foreach (var template in templates)
+            {
+                Assert.DoesNotContain(template.TrimStart('/').Split('/')[0], jellyfin, StringComparer.OrdinalIgnoreCase);
+            }
         }
     }
 
@@ -102,11 +111,41 @@ public class AuthorizationTests
     {
         var actions = UserPageControllers
             .SelectMany(c => c.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            .Where(m => m.GetCustomAttributes<HttpMethodAttribute>().Any())
             .ToList();
 
         Assert.NotEmpty(actions);
         Assert.All(actions, m => Assert.True(
-            m.GetCustomAttribute<AllowAnonymousAttribute>() is not null || m.GetCustomAttribute<AuthorizeAttribute>() is not null,
+            m.GetCustomAttribute<AllowAnonymousAttribute>() is not null || m.GetCustomAttribute<AuthorizeAttribute>() is not null
+                || m.DeclaringType!.GetCustomAttribute<AuthorizeAttribute>() is not null,
             m.Name));
+    }
+
+    /// <summary>
+    /// Every route of the request and issue pages signs the caller in, except the page's own files, which carry no data.
+    /// True: every call that reads or changes data needs a Jellyfin sign in.
+    /// False: a route would hand out requests or issues to anyone.
+    /// </summary>
+    [Fact]
+    public void RequestPageRoutes_SignInEveryDataCall()
+    {
+        var actions = RequestPages.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(m => m.GetCustomAttributes<HttpMethodAttribute>().Any())
+            .ToList();
+        Assert.NotEmpty(actions);
+        foreach (var action in actions)
+        {
+            var template = action.GetCustomAttributes<HttpMethodAttribute>().First().Template ?? string.Empty;
+            if (action.GetCustomAttribute<AllowAnonymousAttribute>() is not null)
+            {
+                // Anonymous routes are the page and its files under /requests and /issues, never an API route.
+                Assert.False(template.StartsWith('/'), action.Name + " is an API route open to anyone.");
+                Assert.All(action.GetCustomAttributes<HttpMethodAttribute>(), a => Assert.Contains("GET", a.HttpMethods));
+            }
+            else
+            {
+                Assert.True(action.GetCustomAttribute<AuthorizeAttribute>() is not null || RequestPages.GetCustomAttribute<AuthorizeAttribute>() is not null, action.Name);
+            }
+        }
     }
 }

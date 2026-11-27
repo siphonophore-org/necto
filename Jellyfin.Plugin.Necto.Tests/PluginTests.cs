@@ -117,9 +117,13 @@ public class PluginTests
 
         var hosted = new[] { "Jellyfin.Plugin.Necto.Web.necto_invite_signup.html", "Jellyfin.Plugin.Necto.Web.necto_invites_member.html" };
 
-        Assert.NotEmpty(files);
+        // The request page and its files are served by the Requests controller at /requests and /issues, not as dashboard pages.
+        var userPage = new[] { "necto_requests_page.", "necto_requests_webclient.", "necto_requests_manifest.", "necto_requests_tmdb.", "necto_requests_icon_" };
+        var dashboard = files.Except(hosted).Where(f => !userPage.Any(u => f.StartsWith("Jellyfin.Plugin.Necto.Web." + u, StringComparison.Ordinal))).ToList();
+
+        Assert.NotEmpty(dashboard);
         Assert.All(files, f => Assert.Contains(f, embedded));
-        Assert.All(files.Except(hosted), f => Assert.Contains(f, registered));
+        Assert.All(dashboard, f => Assert.Contains(f, registered));
     }
 
     /// <summary>

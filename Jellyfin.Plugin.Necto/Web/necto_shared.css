@@ -92,3 +92,8 @@
 /* Example: <div class="necto-storage-actions"><div class="stolon-error stolon-hidden"></div><button class="raised stolon-button primary">Save</button></div> */
 .necto-storage-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--stolon-gap-narrow); }
 .necto-storage-actions > .stolon-error { flex: 1 1 auto; }
+/* necto-detail */
+/* The body of a request's or an issue's sidecar, its media card, notices, details, and notes spaced apart. */
+/* Example: <div class="necto-detail"><div class="stolon-media-card">...</div><dl class="stolon-defs">...</dl></div> */
+.necto-detail { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
+.necto-detail > .fieldDescription { margin: 0; }

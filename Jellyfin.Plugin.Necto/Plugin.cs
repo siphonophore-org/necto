@@ -4,6 +4,7 @@ using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Services.Groups;
 using Jellyfin.Plugin.Necto.Services.Scripts;
 using Jellyfin.Plugin.Necto.Services.WireGuard;
+using Jellyfin.Plugin.Necto.Services.Requests;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
@@ -58,7 +59,7 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
 
     /// <summary>
     /// Normalizes the groups of a configuration before it is saved, so a save from any page keeps Everyone, every
-    /// section, and only groups that exist in the settings that name one.
+    /// section, and only groups that exist in the settings that name one. The Requests and Issues settings are cleaned too.
     /// </summary>
     /// <param name="incoming">The configuration about to be saved.</param>
     /// <param name="stored">The configuration in effect.</param>
@@ -70,6 +71,8 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
         incoming.Scripts = ScriptSettingsSaving.Saving(incoming.Scripts, stored?.Scripts ?? new(), ApplicationPaths);
         Services.Storage.AlertOrder.Normalize(incoming.Storage ??= new Configuration.Storage.StorageConfiguration());
         Services.CustomPages.CustomPagesSaving.Apply(incoming, stored, ApplicationPaths);
+
+        RequestSettingsNormalizer.Normalize(incoming, stored ?? new PluginConfiguration(), RequestSecrets.Current);
 
         // DDNS and Proxy change only through their own routes, which encrypt credentials and check every change.
         incoming.Ddns = stored?.Ddns ?? new();
@@ -151,7 +154,8 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
             "necto_storage_sections.js", "necto_pages_sections.js",
             "necto_notifications_sections.js", "necto_invites_sections.js", "necto_groups_templates.js",
             "necto_invite_signup.js", "necto_invites_member.js", "necto_push.js",
-            "necto_netfields.js", "necto_ddns_sections.js", "necto_proxy_sections.js"
+            "necto_netfields.js", "necto_ddns_sections.js", "necto_proxy_sections.js",
+            "necto_requests_sections.js"
         })
         {
             yield return new PluginPageInfo { Name = name, EmbeddedResourcePath = $"{ns}.Web.{name}" };

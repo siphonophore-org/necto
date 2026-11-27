@@ -57,7 +57,7 @@ test('Settings draws a collapsible section per tool, Groups filled and every oth
     assert.equal(groups.querySelector('[data-field="NewUserGroupId"]').value, FAMILY);
     assert.deepEqual(texts(groups.querySelector('[data-field="NewUserGroupId"]'), 'option'), ['Everyone', 'Family']);
     assert.equal(groups.querySelector('[data-field="ShowResetCodes"]').checked, true);
-    ['requests'].forEach(function (key) {
+    [].forEach(function (key) {
         assert.match(opened.section(key).querySelector('[data-role="section-content"]').innerHTML, /This tool is coming\./, key);
         assert.equal(opened.section(key).querySelector('button.stolon-button'), null, key);
     });
@@ -78,7 +78,7 @@ test('the Groups section of Settings saves its own fields into the config', asyn
     assert.equal(config.Other, 'kept');
 });
 
-test('Troubleshooting draws a section per tool, Groups with its repairs and every other tool coming', async function () {
+test('Troubleshooting draws a section per tool, Groups with its repairs', async function () {
     var opened = await openTool('troubleshooting', { answers: { 'GET Groups/ResetCodes': { Enabled: false, Codes: [] } } });
 
     assert.deepEqual(texts(opened.view, '.stolon-collapsible-title').filter(function (t) { return TOOLS.indexOf(t) >= 0; }), TOOLS);
@@ -86,7 +86,6 @@ test('Troubleshooting draws a section per tool, Groups with its repairs and ever
     assert.deepEqual(texts(groups, '.stolon-subsection-title'), ['Password requirements', 'Templates', 'Scheduled checks', 'Password resets']);
     assert.deepEqual(texts(groups, '[data-action]'), ['Apply rules', 'Apply templates', 'Run now', 'Run now']);
     assert.match(groups.textContent, /Reset codes are off\. Turn on Show reset codes in Settings to list them\./);
-    assert.match(opened.section('requests').querySelector('[data-role="section-content"]').innerHTML, /This tool is coming\./);
 });
 
 test('Apply rules posts to the password rules route and reports how many users moved', async function () {

@@ -12,6 +12,7 @@ import './configurationpage?name=necto_notifications_sections.js';
 import './configurationpage?name=necto_invites_sections.js';
 import './configurationpage?name=necto_ddns_sections.js';
 import './configurationpage?name=necto_proxy_sections.js';
+import './configurationpage?name=necto_requests_sections.js';
 
 export default function (view) {
     'use strict';
@@ -30,8 +31,15 @@ export default function (view) {
     // Output
     // [Promise]: Resolves once the save landed.
     function saveSection(shared, handle) {
-        if (handle.save) return handle.save();
-        return shared.saveConfigWith(function (config) { handle.apply(config); });
+        var saving = handle.save ? handle.save() : shared.saveConfigWith(function (config) { handle.apply(config); });
+        return saving.then(function (saved) {
+            // A tool turned on or off joins or leaves the sidebar at once.
+            return shared.getConfig().then(function (config) {
+                nectoModule.setToolsOff(config);
+                if (shared.onTabsChanged) shared.onTabsChanged();
+                return saved;
+            }, function () { return saved; });
+        });
     }
 
     // bindPage

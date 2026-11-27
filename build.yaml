@@ -33,6 +33,8 @@ changelog:
   - "Group templates from User Management, which write Access and features and Preferences onto members, taking the first group's in group order"
   - "DDNS, with several records, each with its own provider, credentials, name and update interval, and records that follow the proxy's host names"
   - "Proxy, a reverse proxy to any service, with routes from the Jellyfin, Jellyfin LAN and Blank templates, a certificate per route by HTTP or DNS challenge or upload, and bans, rate limits, locations and trusted networks"
+  - "Requests, with the request page at /requests, Radarr and Sonarr, discovery from TMDb, the blocklist, and imports"
+  - "Issues, with the issue page at /issues, states, notes, and a check for changed files"
   developer:
   - "Routes under /Groups list, create, save, and delete groups, list users with their groups, and give a user's permissions"
   - "Routes under /WireGuard give the tunnels' state and usage, the tunnel ends for the Dashboard map, change peers and connections, and download wireguard-go"
@@ -47,3 +49,4 @@ changelog:
   - "Each tool lists its events in a static <Tool>Events class that Notifications finds by reflection"
   - "Routes under /Ddns and /Proxy, and /Proxy/Visitors for the Dashboard map"
   - "Events ddns.failed, ddns.paused, ddns.recovered, ddns.detection_failed, proxy.banned, proxy.certificate_expiring, proxy.certificate_failed, proxy.certificate_issued, proxy.start_failed, proxy.unreachable and proxy.visitors_hidden, listed in DdnsEvents and ProxyEvents"
+  - "Routes under /Requests and /Issues serve the request and issue pages and their data, and the Requests and Issues events are listed in RequestEvents and IssueEvents"

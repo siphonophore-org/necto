@@ -154,27 +154,39 @@ export function groupItems(groups, users, shared) {
 
 // sectionSpecs
 // Describes the permission sections of the editor after Account rules, one per tool, in sidebar order. Each field
-// names its path in the group's permissions. A field with reveals shows them while it is on.
+// names its path in the group's permissions. A field with reveals shows them while it is on, and fallback is its
+// value while the group has none. A section marked built belongs to a tool that is built, so it says nothing is coming.
 //
 // Output
-// [object[]]: Each section's tool key, title key, icon, and fields.
+// [object[]]: Each section's tool key, title key, icon, whether it is built, and fields.
 export function sectionSpecs() {
     return [
         {
-            key: 'requests', title: 'TabRequests', icon: 'movie_filter', fields: [
+            key: 'requests', title: 'TabRequests', icon: 'movie_filter', built: true, fields: [
                 { path: 'Requests.MayRequest', kind: 'check', label: 'LabelMayRequest', reveals: [
-                    { path: 'Requests.MovieQuota', kind: 'number', label: 'LabelMovieQuota', help: 'MovieQuotaHelp', min: 0 },
-                    { path: 'Requests.SeriesQuota', kind: 'number', label: 'LabelSeriesQuota', help: 'SeriesQuotaHelp', min: 0 }
+                    { path: 'Requests.Movies', kind: 'check', label: 'Movies', fallback: true },
+                    { path: 'Requests.Series', kind: 'check', label: 'Series', fallback: true },
+                    { path: 'Requests.Unreleased', kind: 'check', label: 'RequestsLabelUnreleasedTitles', help: 'RequestsHelpUnreleasedTitles', fallback: true },
+                    { path: 'Requests.AutoApproveMovies', kind: 'check', label: 'RequestsLabelAutoApproveMovies' },
+                    { path: 'Requests.AutoApproveSeries', kind: 'check', label: 'RequestsLabelAutoApproveSeries' },
+                    { path: 'Requests.MaxOpenRequests', kind: 'number', label: 'RequestsLabelOpenRequestsAtOnce', help: 'RequestsHelpOpenAtOnce', min: 0, fallback: 10 },
+                    { path: 'Requests.MovieQuota', kind: 'number', label: 'LabelMovieQuota', help: 'RequestsHelpMovieQuota', min: 0 },
+                    { path: 'Requests.SeriesQuota', kind: 'number', label: 'LabelSeriesQuota', help: 'RequestsHelpSeriesQuota', min: 0 },
+                    { path: 'Requests.MaxSeasons', kind: 'number', label: 'RequestsLabelSeasonsPerSeries', help: 'RequestsHelpSeasonsPerSeries', min: 0 },
+                    { path: 'Requests.MovieProfiles', kind: 'profiles', type: 'Movie', label: 'RequestsLabelMovieProfiles', help: 'RequestsHelpProfileList' },
+                    { path: 'Requests.SeriesProfiles', kind: 'profiles', type: 'Series', label: 'RequestsLabelSeriesProfiles', help: 'RequestsHelpProfileList' },
+                    { path: 'Requests.MaySeeOthers', kind: 'check', label: 'RequestsLabelSeeAll', help: 'RequestsHelpSeeAll' },
+                    { path: 'Requests.MaySeeRequesters', kind: 'check', label: 'RequestsTagSeeRequesters', help: 'RequestsHelpSeeRequesters' }
                 ] },
-                { path: 'Requests.AutoApprove', kind: 'check', label: 'LabelAutoApprove' },
-                { path: 'Requests.MaySeeOthers', kind: 'check', label: 'LabelMaySeeOthers' },
-                { path: 'Requests.MayManage', kind: 'check', label: 'LabelMayManageRequests' }
+                { path: 'Requests.MayManage', kind: 'check', label: 'LabelMayManageRequests', help: 'RequestsHelpManage' }
             ]
         },
         {
-            key: 'issues', title: 'TabIssues', icon: 'report_problem', fields: [
-                { path: 'Issues.MayReport', kind: 'check', label: 'LabelMayReport' },
-                { path: 'Issues.MayManage', kind: 'check', label: 'LabelMayManageIssues' }
+            key: 'issues', title: 'TabIssues', icon: 'report_problem', built: true, fields: [
+                { path: 'Issues.MayReport', kind: 'check', label: 'IssuesLabelMayReport', reveals: [
+                    { path: 'Issues.Limit', kind: 'number', label: 'RequestsLabelIssueQuota', help: 'IssuesHelpLimit', min: 0, fallback: 10 }
+                ] },
+                { path: 'Issues.MayManage', kind: 'check', label: 'LabelMayManageIssues', help: 'IssuesHelpManage' }
             ]
         },
         {
@@ -304,8 +316,8 @@ export function overlappingClients(clients, rules) {
 //
 // Inputs
 // group [object]: The group to edit, or a new one.
-// ctx [object]: shared is the Necto helper bag, users the server's users, groups every group, and devices the
-//   server's devices, for the session rules' clients.
+// ctx [object]: shared is the Necto helper bag, users the server's users, groups every group, devices the
+//   server's devices, for the session rules' clients, and profiles the Radarr and Sonarr profiles, read when left out.
 //
 // Output
 // [object]: A handle with element, getValue, validate, setStatus, ready, and destroy. getValue returns the group
@@ -320,6 +332,8 @@ export function createGroupEditor(group, ctx) {
     var readers = [];
     var expiryBox = null;
     var ready = Promise.resolve();
+    var waits = [];
+    var profileList = null;
     var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var root = el('div', { 'data-role': 'group-editor' }, [status]);
 
@@ -387,7 +401,7 @@ export function createGroupEditor(group, ctx) {
 
         if (spec.kind === 'check' || spec.kind === 'expiry') {
             input = el('input', { type: 'checkbox', is: 'emby-checkbox', id: id, 'data-field': spec.path });
-            input.checked = !!value;
+            input.checked = value == null ? !!spec.fallback : !!value;
             into.appendChild(el('div', { class: 'checkboxContainer' + (spec.help ? ' checkboxContainer-withDescription' : '') }, [
                 el('label', {}, [input, el('span', { text: t.tr(spec.label) })]),
                 describe(spec, 'fieldDescription checkboxFieldDescription')
@@ -456,6 +470,8 @@ export function createGroupEditor(group, ctx) {
             into.appendChild(el('div', { 'data-field': spec.path }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), records.element, describe(spec)]));
             handles.push(records);
             readers.push(function (out) { setPath(out.Permissions, spec.path, records.getValue()); });
+        } else if (spec.kind === 'profiles') {
+            drawProfiles(into, value || [], spec);
         } else if (spec.kind === 'sessions') {
             drawSessions(into, value || [], spec);
         } else if (spec.kind === 'events') {
@@ -509,6 +525,39 @@ export function createGroupEditor(group, ctx) {
             input.addEventListener('change', reflect);
             reflect();
         }
+    }
+
+    // drawProfiles
+    // Draws the Radarr or Sonarr profiles of one type as a checkbox list, where none picked is every profile.
+    function drawProfiles(into, value, spec) {
+        var list = nectoModule.createCheckboxList({
+            fetchItems: function () {
+                return profiles().then(function (all) { return all.filter(function (p) { return p.Type === spec.type; }); });
+            },
+            idKey: 'Id',
+            value: value,
+            search: false,
+            emptyMessage: t.tr('RequestsEmptyProfiles'),
+            renderRow: function (p) { return { label: p.Name, sublabel: p.Server }; }
+        });
+        into.appendChild(el('div', { 'data-field': spec.path }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), list.element, describe(spec)]));
+        handles.push(list);
+        waits.push(list.ready);
+        readers.push(function (out) { setPath(out.Permissions, spec.path, list.getValue()); });
+    }
+
+    // profiles
+    // Reads the Radarr and Sonarr profiles once for the editor, or takes the ones the page read.
+    //
+    // Output
+    // [Promise]: Resolves with every profile, or none when they could not be read.
+    function profiles() {
+        if (!profileList) {
+            profileList = Promise.resolve(ctx.profiles || shared.request('Requests/Profiles')).then(function (all) {
+                return Array.isArray(all) ? all : [];
+            }, function () { return []; });
+        }
+        return profileList;
     }
 
     // drawSessions
@@ -586,6 +635,7 @@ export function createGroupEditor(group, ctx) {
         spec.fields.forEach(function (field) { drawField(field, content); });
         section(t.tr(spec.title), spec.icon, content, spec.built ? {} : { badge: { label: t.tr('BadgeComing'), color: 'gray' } }).element.setAttribute('data-section', spec.key);
     });
+    ready = Promise.all([ready].concat(waits)).then(function () {});
 
     return {
         element: root,
@@ -633,6 +683,7 @@ export default function (view) {
     var users = [];
     var devices = [];
     var events = [];
+    var profiles = [];
     var loadSeq = 0;
 
     // report
@@ -642,20 +693,22 @@ export default function (view) {
     }
 
     // loadGroups
-    // Reads the groups, the users, and the devices, then draws the list. An answer that lands after a newer load is dropped.
+    // Reads the groups, the users, the devices, and the Radarr and Sonarr profiles, then draws the list. An answer that lands after a newer load is dropped.
     function loadGroups() {
         var mine = ++loadSeq;
         return Promise.all([
             shared.request('Groups'),
             shared.request('Groups/Users'),
             shared.request('Devices').catch(function () { return { Items: [] }; }),
-            shared.request('Notifications/Events').catch(function () { return []; })
+            shared.request('Notifications/Events').catch(function () { return []; }),
+            shared.request('Requests/Profiles').catch(function () { return []; })
         ]).then(function (answers) {
             if (mine !== loadSeq) return;
             groups = answers[0] || [];
             users = answers[1] || [];
             devices = (answers[2] && answers[2].Items) || [];
             events = Array.isArray(answers[3]) ? answers[3] : [];
+            profiles = Array.isArray(answers[4]) ? answers[4] : [];
             var items = groupItems(groups, users, shared);
             if (list) list.setItems(items);
             else {
@@ -720,7 +773,7 @@ export default function (view) {
     function openGroup(group) {
         var t = shared.t;
         var isNew = !group;
-        var editor = createGroupEditor(group || { Name: '', MemberIds: [], Permissions: {} }, { shared: shared, users: users, groups: groups, devices: devices, events: events });
+        var editor = createGroupEditor(group || { Name: '', MemberIds: [], Permissions: {} }, { shared: shared, users: users, groups: groups, devices: devices, events: events, profiles: profiles });
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('TitleNewGroup') : groupName(group, t),
             body: editor.element,

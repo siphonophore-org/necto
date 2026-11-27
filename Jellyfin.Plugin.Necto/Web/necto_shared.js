@@ -28,7 +28,17 @@ import {
     createChipSelect,
     createCheckboxList,
     createSaveBar,
-    createCopyField
+    createCopyField,
+    createPaginatedTable,
+    openSidecar,
+    promptSidecar,
+    createMediaCard,
+    createDefinitionList,
+    createBanner,
+    createSortableCardList,
+    createTimeline,
+    escapeHtml,
+    SECRET_KEPT
 } from './configurationpage?name=necto_stolon.js';
 
 // Re-exports
@@ -44,7 +54,8 @@ export {
     setFieldState, createTranslations as createToolTranslations, createAccessSchedule, createOrderedList,
     createNotifyPreview, bindSecretField, readSecretField, clearSecretField, placeholderHint, bindPlaceholders,
     subscribeWebPush, unsubscribeWebPush, webPushState, webPushLabel, startUserPage, startWebClientShell,
-    showUserPageView, setUserPageMessage, loadTranslations, createTranslations, COUNTRY_CODES
+    showUserPageView, setUserPageMessage, loadTranslations, createTranslations, COUNTRY_CODES, createMediaCard,
+    createBanner
 } from './configurationpage?name=necto_stolon.js';
 
 var PLUGIN_ID = 'a8b5ecb0-fc00-428b-85e8-74b85820166d';
@@ -117,6 +128,31 @@ export function el(tag, attrs, children) {
     });
     (children || []).forEach(function (child) { if (child) node.appendChild(child); });
     return node;
+}
+
+// The tools turned off in Settings, by key, which leave the sidebar.
+var toolsOff = {};
+
+// setToolsOff
+// Reads which tools are turned off in a config, so the sidebar leaves them out. Issues is off until Enable issues is on.
+//
+// Inputs
+// config [object]: The plugin configuration.
+//
+// Output
+// [object]: The tools turned off, by key.
+export function setToolsOff(config) {
+    toolsOff = { issues: !(config && config.Issues && config.Issues.Enabled) };
+    return toolsOff;
+}
+
+// sidebarTools
+// Lists the tools the sidebar shows, which are the tools not turned off in Settings.
+//
+// Output
+// [object[]]: The tools, as nectoTools lists them.
+export function sidebarTools() {
+    return nectoTools().filter(function (tool) { return !toolsOff[tool.key]; });
 }
 
 // The sections each tool added, by kind and then by tool key.
@@ -198,7 +234,13 @@ export function drawSections(container, kind, shared, page, addFooter) {
 // Output
 // [object]: The tool app's handle.
 export function createNectoApp(view) {
-    var app = createToolApp(view, { storageKey: 'necto', name: 'Necto', tools: nectoTools });
+    var app = createToolApp(view, { storageKey: 'necto', name: 'Necto', tools: sidebarTools });
+    if (typeof ApiClient !== 'undefined' && ApiClient.getPluginConfiguration) {
+        ApiClient.getPluginConfiguration(PLUGIN_ID).then(function (config) {
+            setToolsOff(config);
+            app.refreshTools();
+        }, function () { /* every tool stays */ });
+    }
     loadTranslations(TRANSLATIONS_URL).then(function (t) {
         tabStrings = t;
         app.refreshTools();

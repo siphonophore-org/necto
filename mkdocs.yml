@@ -44,6 +44,8 @@ nav:
   - Overview: index.md
   - Getting Started: GettingStarted.md
   - Tools:
+      - Requests: Requests.md
+      - Issues: Issues.md
       - Invites: Invites.md
       - Groups: Groups.md
       - WireGuard: WireGuard.md

@@ -263,7 +263,7 @@ public sealed class StorageActivity
             return hours == 1 ? StolonTranslations.Get(TranslationKeys.StorageDurationHour, language) : StolonTranslations.Format(TranslationKeys.DdnsHoursMany, language, hours);
         }
 
-        return StolonTranslations.Format(TranslationKeys.StorageDurationDays, language, (int)Math.Round(away.TotalDays));
+        return StolonTranslations.Format(TranslationKeys.RequestsDayCount, language, (int)Math.Round(away.TotalDays));
     }
 
     private static string Overview(DiskEventKind kind, List<DiskEvent> events, string? language)

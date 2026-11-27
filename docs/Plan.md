@@ -160,6 +160,19 @@ One service every tool sends events to, and one set of channels.
 * An invite's group of **Group for new users** follows **Settings > Groups** when the link is used, as User Management's default group did. **Review**
 * A signup holds the account disabled until its password is set, leaves it out of the group for new users, and counts its first password as a creation, not a member's own change.
 
+### Requests and Issues
+
+Everything the Requests plugin did, on groups and Notifications. See [Requests](Requests.md) and [Issues](Issues.md) for what is built.
+
+* The request page at `/requests` and `/issues` keeps its own copy of the web client's markup, ported as it was, rather than moving onto Stolon's Web Client Shell, since the move needs a side by side check on a real server. **Review**
+* A member of a group with **Manage requests** acts as an administrator within Requests, so their own requests skip approval and limits, and they see every library item a request names. **Manage issues** does the same within Issues. **Review**
+* The old Default group and per user group are gone. A new group gives **Movies**, **Series**, and **Unreleased titles** once **Allow requests** is on, 10 open requests, and an issue limit of 10, as the old defaults did. **Review**
+* The quota windows are **Movie quota window (days)** and **Series quota window (days)** in **Settings > Requests**, and **Issue limit window (days)** in **Settings > Issues**, since a window is a setting and the quota a permission. **Review**
+* The old destinations, Discord and webhook bodies, Jellyfin messages, message wording, reminders' targets, the test and preview, and web push move to Notifications. Each event is one `NectoEvent` about the requester or first reporter, with the joiners' or reporters' ids in its data, and a relative `Url`. The server and request page addresses the old plugin kept for links are dropped. **Review**
+* The request page's browser notifications call `GET /Notifications/Push/Key`, `POST /Notifications/Push/Subscribe`, and `POST /Notifications/Push/Unsubscribe`, which Notifications answers. **Review**
+* Settings save through the plugin configuration, with the old server side checks of Radarr and Sonarr run in the page and the keys kept by `RequestSettingsNormalizer`. `GET/POST /Requests/Configuration` are dropped. **Review**
+* The issue routes are under `/Issues`, and the managers' issue list is `GET /Issues/All`, since `GET /Issues` would meet the `/issues` page. **Review**
+
 ## Routes
 
 Every route says what it does, as Zooid's do: `/Requests`, `/Issues`, `/Invites`, `/Groups`, `/Proxy`, `/Ddns`, `/WireGuard`, `/Scripts`, `/Pages`, `/Storage`, `/Notifications`, and `/Necto` only for the page's own strings. None of them is a route of Jellyfin 12.4 itself. The user pages are `/requests`, `/issues`, `/invites`, and the custom pages' own addresses.

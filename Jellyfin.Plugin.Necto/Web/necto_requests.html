@@ -1,12 +1,27 @@
 <!-- necto_requests.html -->
-<!-- The Requests tool. It shows an empty state that says the tool is coming. -->
+<!-- The Requests tool. It counts the requests by status and lists them, and each opens a sidecar with its actions. -->
 
 <div id="NectoRequestsPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox"
      data-controller="__plugin/necto_requests.js">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+                <div class="fieldDescription" data-str="RequestsHelpTool">Lists every request users made. Open one to approve, reject, or remove it.</div>
+
+                <!-- Counts -->
+                <!-- How many requests are in each status. -->
+                <div id="requestStats" class="stolon-cards compact"></div>
+
+                <!-- Changed notice -->
+                <!-- Shows while the requests moved since the list loaded, with Show latest. -->
+                <div id="requestsChanged" class="stolon-hidden"></div>
+
+                <div id="requestsStatus" class="stolon-status-text" role="status"></div>
+
+                <!-- Requests -->
+                <!-- Every request, with search, status, and requester filters, and bulk actions on the rows picked. -->
+                <div id="requestsTable"></div>
             </div>
         </div>
     </div>

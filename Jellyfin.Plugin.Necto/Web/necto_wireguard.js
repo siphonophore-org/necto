@@ -396,7 +396,7 @@ export default function (view) {
     function saveRecord(route, isNew, id, values, status) {
         var request = isNew ? shared.request(route, 'POST', values) : shared.request(route + '/' + id, 'PUT', values);
         return request.then(function () {
-            report(t.tr('WireGuardToastSaved'), false);
+            report(t.tr('RequestsToastSaved'), false);
             load();
             return true;
         }).catch(function (err) {
@@ -418,7 +418,7 @@ export default function (view) {
             if (!yes) return;
             shared.request(route + '/' + id, 'DELETE').then(function () {
                 close('removed');
-                report(t.format('WireGuardToastRemoved', name), false);
+                report(t.format('RequestsBulkRemoved', name), false);
                 load();
             }).catch(function (err) {
                 shared.errorText(err, t.tr('WireGuardErrorSave')).then(function (text) { report(text, true); });

@@ -39,20 +39,8 @@ public static class PermissionMerger
                 InactiveDays = AccountRuleMerger.InactiveDays(groups),
                 CleansSessions = AccountRuleMerger.CleansSessions(groups)
             },
-            Requests = new RequestPermissions
-            {
-                MayRequest = requesters.Count > 0,
-                AutoApprove = p.Any(x => x.Requests.AutoApprove),
-                MovieQuota = Largest(requesters.Select(x => x.Requests.MovieQuota)),
-                SeriesQuota = Largest(requesters.Select(x => x.Requests.SeriesQuota)),
-                MaySeeOthers = p.Any(x => x.Requests.MaySeeOthers),
-                MayManage = p.Any(x => x.Requests.MayManage)
-            },
-            Issues = new IssuePermissions
-            {
-                MayReport = p.Any(x => x.Issues.MayReport),
-                MayManage = p.Any(x => x.Issues.MayManage)
-            },
+            Requests = RequestMerge(requesters, p),
+            Issues = IssueMerge(p.Where(x => x.Issues.MayReport).ToList(), p),
             Invites = new InvitePermissions
             {
                 MayCreate = inviters.Count > 0,
@@ -94,8 +82,11 @@ public static class PermissionMerger
     {
         UserId = userId,
         IsAdministrator = true,
-        Requests = new RequestPermissions { MayRequest = true, AutoApprove = true, MaySeeOthers = true, MayManage = true },
-        Issues = new IssuePermissions { MayReport = true, MayManage = true },
+        Requests = new RequestPermissions
+        {
+            MayRequest = true, AutoApproveMovies = true, AutoApproveSeries = true, MaxOpenRequests = 0, MaySeeOthers = true, MaySeeRequesters = true, MayManage = true
+        },
+        Issues = new IssuePermissions { MayReport = true, Limit = 0, MayManage = true },
         Invites = new InvitePermissions { MayCreate = true, MaxInvites = 0, AnyGroup = true },
         WireGuard = new WireGuardPermissions { MayHavePeers = true, MaxPeers = 0 },
         Scripts = new ScriptPermissions { AllScripts = true },
@@ -112,6 +103,8 @@ public static class PermissionMerger
     {
         UserId = userId,
         Exists = false,
+        Requests = new RequestPermissions { Movies = false, Series = false, Unreleased = false, MaxOpenRequests = 0 },
+        Issues = new IssuePermissions { Limit = 0 },
         Invites = new InvitePermissions { MaxInvites = 0 },
         WireGuard = new WireGuardPermissions { MaxPeers = 0 }
     };
@@ -140,6 +133,64 @@ public static class PermissionMerger
         return list.Count == 0 || list.Any(l => l.DataLimit <= 0)
             ? new WireGuardPermissions { DataLimit = 0 }
             : list.OrderByDescending(l => l.DataLimit).First();
+    }
+
+    /// <summary>
+    /// Merges what the groups that allow requesting give. A type or unreleased titles count when any of them allows it,
+    /// a profile list holds every profile when any of them lists none, and seeing others' requests needs a group
+    /// that allows requesting. Managing requests needs no request of one's own.
+    /// </summary>
+    /// <param name="requesters">The sections of the groups that allow requesting.</param>
+    /// <param name="all">Every group's sections.</param>
+    /// <returns>The merged Requests section.</returns>
+    public static RequestPermissions RequestMerge(IReadOnlyList<GroupPermissions> requesters, IReadOnlyList<GroupPermissions> all)
+    {
+        ArgumentNullException.ThrowIfNull(requesters);
+        ArgumentNullException.ThrowIfNull(all);
+        var r = requesters.Select(x => x.Requests).ToList();
+        return new RequestPermissions
+        {
+            MayRequest = r.Count > 0,
+            Movies = r.Any(x => x.Movies),
+            Series = r.Any(x => x.Series),
+            Unreleased = r.Any(x => x.Unreleased),
+            AutoApproveMovies = r.Any(x => x.AutoApproveMovies),
+            AutoApproveSeries = r.Any(x => x.AutoApproveSeries),
+            MaxOpenRequests = Largest(r.Select(x => x.MaxOpenRequests)),
+            MovieQuota = Largest(r.Select(x => x.MovieQuota)),
+            SeriesQuota = Largest(r.Select(x => x.SeriesQuota)),
+            MaxSeasons = Largest(r.Select(x => x.MaxSeasons)),
+            MovieProfiles = Profiles(r.Select(x => x.MovieProfiles)),
+            SeriesProfiles = Profiles(r.Select(x => x.SeriesProfiles)),
+            MaySeeOthers = r.Any(x => x.MaySeeOthers),
+            MaySeeRequesters = r.Any(x => x.MaySeeRequesters),
+            MayManage = all.Any(x => x.Requests.MayManage)
+        };
+    }
+
+    /// <summary>
+    /// Merges what the groups give in Issues. The limit counts only from the groups that allow reporting.
+    /// </summary>
+    /// <param name="reporters">The sections of the groups that allow reporting.</param>
+    /// <param name="all">Every group's sections, since managing issues needs no report.</param>
+    /// <returns>The merged Issues section.</returns>
+    public static IssuePermissions IssueMerge(IReadOnlyList<GroupPermissions> reporters, IReadOnlyList<GroupPermissions> all)
+    {
+        ArgumentNullException.ThrowIfNull(reporters);
+        ArgumentNullException.ThrowIfNull(all);
+        return new IssuePermissions
+        {
+            MayReport = reporters.Count > 0,
+            Limit = Largest(reporters.Select(x => x.Issues.Limit)),
+            MayManage = all.Any(x => x.Issues.MayManage)
+        };
+    }
+
+    // Every profile when any group lists none, else each listed profile once.
+    private static List<string> Profiles(IEnumerable<IReadOnlyList<string>?> lists)
+    {
+        var all = lists.Select(l => l ?? new List<string>()).ToList();
+        return all.Count == 0 || all.Any(l => l.Count == 0) ? new List<string>() : Union(all.SelectMany(l => l));
     }
 
     private static List<string> Union(IEnumerable<string> values) => values.Distinct(StringComparer.Ordinal).ToList();

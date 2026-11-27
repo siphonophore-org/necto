@@ -8,7 +8,7 @@ Groups set what their members may do in every Necto tool, and hold the account r
 
 The sidecar holds the group's name, its members, **Account rules**, **Access and features**, **Preferences**, and one collapsible section per tool. Its shelf holds **Delete**, **Cancel**, and **Save**. **Delete** asks first, with the group's name in the title, such as "Delete Family". Its members keep their other groups, and a member in no other group takes **Everyone**.
 
-Sections for tools that are not built show their fields with the note "This tool is coming." Those permissions are saved, and take effect once the tool is built. **Invites** and **Notifications** are built.
+Every tool fills its own section.
 
 ## Group Order
 
@@ -95,8 +95,8 @@ A refused change shows the reason on the password form, and writes "Password cha
 
 | Section | Fields |
 | :--- | :--- |
-| **Requests** | **Allow requests**, **Movie quota**, **Series quota**, **Auto approve requests**, **Show others' requests**, **Manage requests** |
-| **Issues** | **Allow issue reports**, **Manage issues** |
+| **Requests** | **Allow requests**, **Movies**, **Series**, **Unreleased titles**, **Auto approve movies**, **Auto approve series**, **Open requests at once**, **Movie quota**, **Series quota**, **Seasons per series**, **Movie profiles**, **Series profiles**, **See all requests**, **See requesters**, **Manage requests**. See [Requests](Requests.md#permissions) |
+| **Issues** | **Allow reports**, **Issue limit**, **Manage issues**. See [Issues](Issues.md#permissions) |
 | **Invites** | **Allow invites**, **Open invites**, **Invite to any group**, **Invite groups**. See [Invites](Invites.md#members-invites) |
 | **WireGuard** | **Allow peers**, **Peers per member**, **Data per member (GB)**, **Period**. See [WireGuard](WireGuard.md#permissions) |
 | **Scripts** | **Run every script**, **Scripts that run**. See [Scripts](Scripts.md#groups) |

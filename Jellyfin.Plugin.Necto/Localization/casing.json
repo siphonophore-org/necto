@@ -50,5 +50,10 @@
   "KB",
   "URL",
   "Base64",
-  "API"
+  "API",
+  "Radarr",
+  "Sonarr",
+  
+  "POST",
+  "Quick Connect"
 ]
