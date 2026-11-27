@@ -6,15 +6,18 @@
      data-controller="__plugin/necto_scripts.js">
     <div data-role="content">
         <div class="content-primary">
+            <div class="verticalSection stolon-stack">
+                <div class="fieldDescription" data-str="ScriptsHelpScripts">Runs a script's steps when one of its triggers happens.</div>
+
+                <!-- Counts -->
+                <!-- Counts the scripts by state, above the tabs so both tabs keep them. -->
+                <div id="scriptCounts" class="stolon-cards stolon-even"></div>
+
             <!-- Tabs -->
             <!-- Scripts holds the form below, and History each recent day's runs, both built in script. -->
             <div id="scriptsTabs">
             <form id="ScriptsScriptsForm">
                 <div class="verticalSection verticalSection-extrabottompadding">
-
-                    <div class="fieldDescription" data-str="ScriptsHelpScripts">Runs a script's steps when one of its triggers happens.</div>
-
-                    <div id="scriptCounts" class="stolon-cards stolon-even"></div>
 
                     <span id="transferStatus" class="stolon-status-text" role="status"></span>
 
@@ -282,6 +285,7 @@
 
                 </div>
             </form>
+            </div>
             </div>
         </div>
     </div>
