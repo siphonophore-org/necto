@@ -28,7 +28,7 @@
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
-    <PackageReference Include="Siphonophore.Stolon" Version="12.4.9" />
+    <PackageReference Include="Siphonophore.Stolon" Version="12.4.10" />
     <PackageReference Include="Tmds.DBus.Protocol" Version="0.95.2" />
     <!-- Proxy: the reverse proxy, Let's Encrypt, and the location database. -->
     <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
