@@ -2886,7 +2886,7 @@
   "TabRequests": "Requests",
   "TabScripts": "Scripts",
   "TabStorage": "Storage",
-  "TabWireGuard": "WireGuard",
+  "TabWireGuard": "VPN",
   "TaskApplyPasswordRules": "Apply password rules",
   "TaskApplyPasswordRulesDescription": "Drops administrators and deleted users from the groups, and moves users onto or off password rules by their groups.",
   "TaskCleanSessions": "Clean expired sessions",

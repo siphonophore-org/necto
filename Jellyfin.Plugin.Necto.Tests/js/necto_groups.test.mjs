@@ -91,7 +91,7 @@ test('a group opens in a sidecar named for it, with its sections, and Delete, Ca
 
     assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'Family');
     assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Delete', 'Cancel', 'Save']);
-    assert.deepEqual(texts(sidecar, '.stolon-collapsible-title'), ['Members', 'Account rules', 'Access and features', 'Preferences', 'Requests', 'Issues', 'Invites', 'WireGuard', 'Scripts', 'Pages', 'Notifications']);
+    assert.deepEqual(texts(sidecar, '.stolon-collapsible-title'), ['Members', 'Account rules', 'Access and features', 'Preferences', 'Requests', 'Issues', 'Invites', 'VPN', 'Scripts', 'Pages', 'Notifications']);
     assert.deepEqual(texts(sidecar, '[data-section="accounts"] .stolon-subsection-title'), ['Password requirements', 'Expiry', 'Inactivity', 'Session management']);
     assert.equal(sidecar.querySelectorAll('[data-role="coming"]').length, 0);
     assert.equal(sidecar.querySelector('[data-section="accounts"] [data-role="coming"]'), null);

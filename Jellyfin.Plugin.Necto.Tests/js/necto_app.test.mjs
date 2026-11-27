@@ -9,7 +9,7 @@ globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
 
 var KEYS = ['dashboard', 'requests', 'issues', 'invites', 'groups', 'proxy', 'ddns', 'wireguard', 'scripts', 'pages', 'storage', 'notifications', 'settings', 'troubleshooting'];
-var NAMES = ['Dashboard', 'Requests', 'Issues', 'Invites', 'Groups', 'Proxy', 'DDNS', 'WireGuard', 'Scripts', 'Pages', 'Storage', 'Notifications', 'Settings', 'Troubleshooting'];
+var NAMES = ['Dashboard', 'Requests', 'Issues', 'Invites', 'Groups', 'Proxy', 'DDNS', 'VPN', 'Scripts', 'Pages', 'Storage', 'Notifications', 'Settings', 'Troubleshooting'];
 var ICONS = ['dashboard', 'movie_filter', 'report_problem', 'mail', 'groups', 'security', 'dns', 'vpn_lock', 'code', 'web', 'storage', 'notifications', 'settings', 'bug_report'];
 
 // openApp
@@ -49,7 +49,7 @@ test('the sidebar leaves Issues out while Enable issues is off', async function 
 test('the sidebar leaves out Proxy and WireGuard while each is off', async function () {
     var view = await openApp({ Issues: { Enabled: true }, Proxy: { Enabled: false }, WireGuard: { Enabled: false } });
     await settle();
-    assert.deepEqual(sidebar(view).names, NAMES.filter(function (n) { return n !== 'Proxy' && n !== 'WireGuard'; }));
+    assert.deepEqual(sidebar(view).names, NAMES.filter(function (n) { return n !== 'Proxy' && n !== 'VPN'; }));
 });
 
 test('setToolsOff turns each tool with an on switch off until it is on', async function () {

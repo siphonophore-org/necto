@@ -1,6 +1,6 @@
-# WireGuard
+# VPN
 
-**WireGuard** lets users reach Jellyfin over a WireGuard tunnel with their own peers, and connects this server to other WireGuard hosts. It runs WireGuard in userspace, so it needs no root, no network adapter, and no extra container permissions.
+**VPN** lets users reach Jellyfin over a WireGuard tunnel with their own peers, and connects this server to other WireGuard hosts. It runs WireGuard in userspace, so it needs no root, no network adapter, and no extra container permissions.
 
 ## How It Works
 
@@ -16,7 +16,7 @@ The sidecar is not part of the plugin. Turning on **Enable WireGuard** asks to d
 
 ## Settings
 
-**Settings > WireGuard** holds the settings, with **Save** at the end of the section.
+**Settings > VPN** holds the settings, with **Save** at the end of the section.
 
 ![WireGuard settings](screenshots/settings/WireGuard.png)
 
@@ -74,13 +74,13 @@ A period is an hour, day, week, month, or year, in UTC. A peer over its data lim
 
 A connection over its data limit stops until its period starts over.
 
-## The WireGuard Tool
+## The VPN Tool
 
 While WireGuard is off, the tool reads "WireGuard is off. Turn it on in Settings to add peers." While **Host peers** and **Connect to hosts** are both off and there is nothing to list, it reads "Turn on Host peers or Connect to hosts in Settings to add peers." While wireguard-go is not downloaded, a warning says so.
 
 | WireGuard | WireGuard on a phone |
 | :---: | :---: |
-| ![WireGuard](screenshots/WireGuard.png) | ![WireGuard on a phone](screenshots/WireGuard%20Phone.png) |
+| ![VPN](screenshots/WireGuard.png) | ![VPN on a phone](screenshots/WireGuard%20Phone.png) |
 
 The cards at the top show the host's state and whether **Connect to hosts** is active, or **Failed** while any connection failed, and count the peers, the connections, how many are connected, and how many are over their data limit. **Left out** counts the peers their owners' groups leave out, while there are any. When the host cannot start, the reason shows under the cards. **Add peer** shows while the host is on, and **Add connection** while connecting is on.
 
@@ -116,7 +116,7 @@ The connection editor has five sections.
 
 ## Permissions
 
-Who may have peers is set on groups, in the **WireGuard** section of each group in **Groups**. An administrator's peers always connect, and so does a peer with no owner.
+Who may have peers is set on groups, in the **VPN** section of each group in **Groups**. An administrator's peers always connect, and so does a peer with no owner.
 
 | Field | What it does |
 | :--- | :--- |
@@ -129,7 +129,7 @@ A member of several groups gets the most generous of the groups that allow peers
 
 ## Troubleshooting
 
-**Troubleshooting > WireGuard** holds the tunnels and the peers by user.
+**Troubleshooting > VPN** holds the tunnels and the peers by user.
 
 ![WireGuard troubleshooting](screenshots/troubleshooting/WireGuard.png)
 
@@ -139,7 +139,7 @@ A member of several groups gets the most generous of the groups that allow peers
 
 | Reason | What to do |
 | :--- | :--- |
-| "wireguard-go is not downloaded. Download it in Settings to run WireGuard." | Select **Download** in **Settings > WireGuard** |
+| "wireguard-go is not downloaded. Download it in Settings to run WireGuard." | Select **Download** in **Settings > VPN** |
 | "Could not reach the sidecar release. Check the server's internet connection." | Let the server reach `github.com`, then select **Download** again |
 | "The downloaded sidecar does not match its release hash, so it was not kept." | Select **Download** again. A file changed on its way is never kept |
 | "The tunnel is not running. Check the tunnel subnet and the server log." | Check **Tunnel subnet** and that **Listen port** is free, then select **Restart** |

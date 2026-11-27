@@ -8,7 +8,7 @@
 
 ## Cards
 
-A status card sums up each tool that is on, in sidebar order. Select a card to open its tool. **Issues** has a card only with **Enable issues** on, and **Proxy** and **WireGuard** only while each is on. A card whose tool could not be read shows "Error" and "Could not read this tool".
+A status card sums up each tool that is on, in sidebar order. Select a card to open its tool. **Issues** has a card only with **Enable issues** on, and **Proxy** and **VPN** only while each is on. A card whose tool could not be read shows "Error" and "Could not read this tool".
 
 | Card | Number | Chart | Status |
 | :--- | :--- | :--- | :--- |
@@ -18,7 +18,7 @@ A status card sums up each tool that is on, in sidebar order. Select a card to o
 | **Groups** | Groups, besides **Everyone** | None | None. The line says how many users are in a group |
 | **Proxy** | Active routes | A dot per route, red for a certificate error | **Running** or **Stopped**, **Failed** with the proxy's error, **Needs attention** when a certificate expires within 14 days, and **Expired** when one has |
 | **DDNS** | Records that are on | A dot per record, or per name for a record that follows the proxy, in the color of its last result | **Failed** for a failed record, **Needs attention** for a warning, else **Healthy** |
-| **WireGuard** | Connected peers and connections | A dot per peer and connection | **Failed** for a failed tunnel, **Connected** while any is, **Running** while only the host runs, else **Offline** |
+| **VPN** | Connected peers and connections | A dot per peer and connection | **Failed** for a failed tunnel, **Connected** while any is, **Running** while only the host runs, else **Offline** |
 | **Scripts** | Runs that failed in the last 14 days | The runs of each day | **Failed** while any failed, **Healthy** with runs, else **Idle** |
 | **Pages** | Pages that are on | None | None |
 | **Storage** | Disks | A dot per disk in the color the **Storage** tool gives it | **Needs attention** for a disk that is missing, unresponsive, failing, low, or full, else **Healthy** |
@@ -26,7 +26,7 @@ A status card sums up each tool that is on, in sidebar order. Select a card to o
 
 ## Locations
 
-**Locations** is one world map with a country table under it. It shows while **Proxy** or **WireGuard** is on, and is hidden while both are off.
+**Locations** is one world map with a country table under it. It shows while **Proxy** or **VPN** is on, and is hidden while both are off.
 
 | Layer | Shows | Tool |
 | :--- | :--- | :--- |

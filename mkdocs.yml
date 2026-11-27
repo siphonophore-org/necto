@@ -52,7 +52,7 @@ nav:
       - Proxy: Proxy.md
       - DDNS: DDNS.md
       - DDNS providers: providers/index.md
-      - WireGuard: WireGuard.md
+      - VPN: VPN.md
       - Scripts: Scripts.md
       - Pages: Pages.md
       - Storage: Storage.md
