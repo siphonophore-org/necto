@@ -47,12 +47,12 @@ While a request waits, its requester can change its seasons, profile, and note, 
 
 * Cards count the requests in each status.
 * Each row shows the poster, the title, its requester and when, how many joined it, and its status with any download progress.
-* With no requests at all, the page says "No requests yet."
+* With no requests at all, the page says "No requests yet." in place of the list. A search or a filter other than **All** that finds nothing says "No requests match."
 * **Search** matches titles, requesters, and notes. The status filter and the requester filter are kept for the next visit.
 * Select rows to **Approve**, **Reject**, or **Remove** them together.
 * When requests change while the list is open, a notice says so, and **Show latest** loads them.
 
-Select a row to open the request in a sidecar, its status in the header. Its shelf offers **Approve** to the profile picked in **Goes to**, **Edit**, or **Edit note** for a movie with one profile, **Cancel**, **Reject** with an optional reason, **Mark available**, **Retry** for a failed one, **Remove**, **Open in library**, and **Open in Radarr** or **Open in Sonarr**.
+Select a row to open the request in a sidecar, its status in the header. Its shelf offers **Approve** to the profile picked in **Goes to**, **Edit**, or **Edit note** for a movie with one profile, **Cancel**, **Reject** with an optional reason, **Mark available**, **Retry** for a failed one, and **Remove**. Its details link **Open in library** once the title is in Jellyfin, and **Open in Radarr** or **Open in Sonarr** once it is sent. On a phone the shelf wraps onto a second row.
 
 ## Settings
 

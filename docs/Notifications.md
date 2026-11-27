@@ -6,7 +6,7 @@ Notifications sends every event a Necto tool reports to the people and channels 
 
 Cards at the top count the sends in the send log that went, as **Sent**, and those that **Failed**. They show a dash until the log is read.
 
-**Notifications** lists every channel, each with **Test**, which sends the test event to that channel and shows what happened. A channel with a name of its own, such as a webhook, also shows its kind. **Channel settings** opens **Settings > Notifications**, where the channels are set.
+**Notifications** lists every channel, each with **Test**, which sends the test event to that channel and shows what happened. A badge beside **Test** marks a channel that is **Off** or **Not set up**. A channel with a name of its own, such as a webhook, also shows its kind. **Channel settings** opens **Settings > Notifications**, where the channels are set.
 
 | Notifications | Notifications on a phone |
 | :---: | :---: |

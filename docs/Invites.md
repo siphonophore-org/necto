@@ -4,7 +4,7 @@ Invites are links anyone may use to make their own account on the server, in the
 
 ## The Invites Tool
 
-**Invites** counts the invites in each state at the top, then lists every invite, oldest first, with its group, its uses, and its expiry, and at the row's end its state, **Copy link**, and **Show QR code**. A PIN tag marks an invite that asks for a PIN, and a person tag names the member who made it. Select **Add invite** to make one, or select a row to open it in a sidecar.
+**Invites** counts the invites in each state at the top, then lists every invite, oldest first, with its group, its uses, and its expiry, and at the row's end its state badge, **Copy link**, and **Show QR code**, which opens the code with **Copy image** and **Download** in a sidecar. A PIN tag marks an invite that asks for a PIN, and a person tag names the member who made it. Select **Add invite** to make one, or select a row to open it in a sidecar.
 
 | Invites | Invites on a phone |
 | :---: | :---: |
@@ -20,7 +20,7 @@ Invites are links anyone may use to make their own account on the server, in the
 | **Group expired** | The group a new account would join has expired |
 | **Used up** | The invite made as many accounts as it may |
 
-The sidecar of an invite sets it out in three steps, **Link**, **Invite**, and **Links for new users**, each led by its icon. **Link** shows the link with **Copy** and a QR button, which opens the QR code with **Copy image** and **Download**. Its shelf holds **Delete**, **Turn off** or **Turn on**, **Duplicate**, **Cancel**, and **Save**.
+The sidecar of an invite sets it out in three steps, **Link**, **Invite**, and **Links for new users**, each led by its icon. **Link** shows the link with **Copy** and a QR button, which opens the QR code with **Copy image** and **Download**. Its shelf holds **Remove**, **Turn off** or **Turn on**, **Duplicate**, **Cancel**, and **Save**.
 
 * **Name** names the invite in the Invites tool. The sign-up page never shows it.
 * **Welcome message** shows under the sign-up page's heading.
@@ -30,7 +30,7 @@ The sidecar of an invite sets it out in three steps, **Link**, **Invite**, and *
 * **PIN** asks for six digits on the sign-up page. A stored PIN stays hidden, and **Remove PIN** beside the field clears it on save.
 * **Links for new users** shows each link as a button once the account is made, such as a guide. Each needs button text and a full http or https address.
 
-**Turn on** clears an invite's wrong PINs. It is refused while the expiry date has passed or the group disallows password changes. Moving the expiry date ahead turns an invite back on. **Duplicate** makes a new link with the same settings and PIN. **Delete** asks first, and the accounts the invite made stay.
+**Turn on** clears an invite's wrong PINs. It is refused while the expiry date has passed or the group disallows password changes. Moving the expiry date ahead turns an invite back on. **Duplicate** makes a new link with the same settings and PIN. **Remove** asks first, with the invite's name in the title, such as "Remove Family", and the accounts the invite made stay.
 
 ## The Sign-up Page
 

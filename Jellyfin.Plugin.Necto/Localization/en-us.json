@@ -72,7 +72,7 @@
   "DashboardEmptyRoutes": "No routes yet",
   "DashboardEmptyRuns": "No runs in 14 days",
   "DashboardEmptySends": "No sends yet",
-  "DashboardEmptyTunnels": "No peers or connections yet",
+  "DashboardEmptyTunnels": "No peers yet",
   "DashboardEmptyUsers": "No users yet",
   "DashboardErrorLoad": "Could not load the dashboard. Reload the page.",
   "DashboardHeaderActivity": "Recent activity",

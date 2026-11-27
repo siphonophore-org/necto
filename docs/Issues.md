@@ -55,7 +55,7 @@ Each issue keeps the item's file as it was reported, with its path, size, and th
 * Each row shows the item and its poster, what the reporters say is wrong, who reported it and when it last changed, its state, and **File changed** when the file changed.
 * **Search** matches the item, its show, and the reporters' names. The state, type, and reporter filters are kept for the next visit.
 * Select rows to **Resolve**, **Confirm**, or **Decline** them together, with one note. Rows in a state that does not take the choice are skipped.
-* With no issues at all, the page says "No issues yet."
+* With no issues at all, the page says "No issues yet." in place of the list. A search or a filter other than **All** that finds nothing says "No issues match."
 
 Select a row to open the issue in a sidecar, with its reporters, its file, and every note in order. It offers **Confirm** a reported issue, **Resolve** or **Decline** an open one, **Reopen** a closed one, **Open in library**, and **Open in Sonarr** or **Open in Radarr**. Each action asks for a note, shown to the reporters, which may be left blank.
 

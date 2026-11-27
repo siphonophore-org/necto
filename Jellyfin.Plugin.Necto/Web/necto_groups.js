@@ -476,7 +476,7 @@ export function createGroupEditor(group, ctx) {
     }
 
     // Members
-    var membersContent = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr(everyone ? 'HelpEveryoneMembers' : 'HelpMembers') })]);
+    var membersContent = h('div', { class: 'stolon-stack' }, [h('div', { class: 'fieldDescription', text: t.tr(everyone ? 'HelpEveryoneMembers' : 'HelpMembers') })]);
     section(t.tr('HeaderMembers'), 'group', membersContent, { collapsed: false }).element.setAttribute('data-section', 'members');
     if (!everyone) {
         var members = shared.createUserMultiSelector({
