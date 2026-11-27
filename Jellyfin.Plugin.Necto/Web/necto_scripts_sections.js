@@ -205,7 +205,7 @@ export function buildTroubleshooting(content, ctx) {
     // clearHistory
     // Asks first, then deletes every recorded run.
     function clearHistory() {
-        confirmDialog(t.tr('ScriptsConfirmClearHistory'), { title: t.tr('ScriptsTitleClearHistory'), confirmText: t.tr('ScriptsButtonClear'), destructive: true }).then(function (ok) {
+        confirmDialog(t.tr('ScriptsConfirmClearHistory'), { title: t.tr('ScriptsTitleClearHistory'), confirmText: t.tr('PagesButtonClear'), destructive: true }).then(function (ok) {
             if (!ok) return;
             Shared.request('Scripts/History', 'DELETE').then(function () {
                 Shared.setStatus(status, t.tr('ScriptsStatusHistoryCleared'), false);

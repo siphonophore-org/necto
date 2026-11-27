@@ -1,0 +1,292 @@
+using System;
+using Jellyfin.Plugin.Necto.Configuration.CustomPages;
+using Jellyfin.Plugin.Necto.Services.CustomPages;
+using Xunit;
+
+namespace Jellyfin.Plugin.Necto.Tests.Services.CustomPages;
+
+/// <summary>
+/// Tests for the server side configuration validation applied before a save is persisted.
+/// </summary>
+public class ConfigurationValidatorTests
+{
+    private static CustomPagesSettings Config(params object[] items)
+    {
+        var config = new CustomPagesSettings();
+        foreach (var item in items)
+        {
+            if (item is CustomPage page)
+            {
+                config.Pages.Add(page);
+            }
+            else if (item is PageAsset asset)
+            {
+                config.Assets.Add(asset);
+            }
+            else if (item is PageStore store)
+            {
+                config.Stores.Add(store);
+            }
+        }
+
+        return config;
+    }
+
+    private static PageAsset Asset(string name, string? dataBase64 = null)
+        => new PageAsset
+        {
+            Name = name,
+            ContentType = "image/png",
+            DataBase64 = dataBase64 ?? Convert.ToBase64String(new byte[] { 1, 2, 3 })
+        };
+
+    // MARK: Pages
+
+    [Fact]
+    public void Validate_AcceptsDistinctSlugs()
+        => ConfigurationValidator.Validate(Config(
+            new CustomPage { Slug = "alpha" },
+            new CustomPage { Slug = "beta" }));
+
+    [Fact]
+    public void Validate_RejectsDuplicateSlugsCaseInsensitively()
+        => Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(
+            new CustomPage { Slug = "alpha" },
+            new CustomPage { Slug = "ALPHA" })));
+
+    [Fact]
+    public void Validate_AllowsUnreachableDraftPages()
+        => ConfigurationValidator.Validate(Config(
+            new CustomPage { Slug = string.Empty },
+            new CustomPage { Slug = string.Empty },
+            new CustomPage { Slug = "alpha" }));
+
+
+    // MARK: Assets
+
+    [Fact]
+    public void Validate_AcceptsValidAssets()
+        => ConfigurationValidator.Validate(Config(Asset("logo.png"), Asset("banner.jpg")));
+
+    [Fact]
+    public void Validate_RejectsInvalidAssetName()
+        => Assert.Throws<ArgumentException>(() =>
+            ConfigurationValidator.Validate(Config(Asset("../escape.png"))));
+
+    [Fact]
+    public void Validate_RejectsDuplicateAssetNamesCaseInsensitively()
+        => Assert.Throws<ArgumentException>(() =>
+            ConfigurationValidator.Validate(Config(Asset("logo.png"), Asset("LOGO.PNG"))));
+
+    [Fact]
+    public void Validate_RejectsInvalidBase64()
+        => Assert.Throws<ArgumentException>(() =>
+            ConfigurationValidator.Validate(Config(Asset("logo.png", dataBase64: "not base64!"))));
+
+    [Fact]
+    public void Validate_RejectsAssetOverSizeCap()
+    {
+        var oversized = Convert.ToBase64String(new byte[ConfigurationValidator.MaxAssetBytes + 1]);
+        Assert.Throws<ArgumentException>(() =>
+            ConfigurationValidator.Validate(Config(Asset("big.png", dataBase64: oversized))));
+    }
+
+    [Fact]
+    public void Validate_AcceptsAssetAtSizeCap()
+    {
+        var atCap = Convert.ToBase64String(new byte[ConfigurationValidator.MaxAssetBytes]);
+        ConfigurationValidator.Validate(Config(Asset("big.png", dataBase64: atCap)));
+    }
+
+    [Fact]
+    public void Validate_RejectsMissingAssetData()
+    {
+        var asset = Asset("logo.png");
+        asset.DataBase64 = null!;
+
+        Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(asset)));
+    }
+
+    // MARK: Visibility tiers
+    //
+    // An out of range tier is not equal to User or Admin, so the gated endpoints refuse it, yet it
+    // compares as outranking every tier when deciding which gated assets a page may embed.
+
+    [Fact]
+    public void Validate_RejectsUnknownPageVisibility()
+        => Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(
+            new CustomPage { Slug = "alpha", Visibility = (PageVisibility)7 })));
+
+    [Fact]
+    public void Validate_RejectsUnknownAssetVisibility()
+    {
+        var asset = Asset("logo.png");
+        asset.Visibility = (PageVisibility)7;
+
+        Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(asset)));
+    }
+
+    // MARK: Content types
+    //
+    // The content type reaches a response header and a data: URI, so it must not be able to carry
+    // header control characters or break out of an attribute in the dashboard's preview markup.
+
+    [Theory]
+    [InlineData("image/png")]
+    [InlineData("image/svg+xml")]
+    [InlineData("application/octet-stream")]
+    [InlineData("font/woff2")]
+    public void Validate_AcceptsOrdinaryContentTypes(string contentType)
+    {
+        var asset = Asset("logo.png");
+        asset.ContentType = contentType;
+
+        ConfigurationValidator.Validate(Config(asset));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("image")]
+    [InlineData("image/png\r\nX-Injected: 1")]
+    [InlineData("image/png; charset=\"x\"")]
+    [InlineData("x\" onerror=\"alert(1)")]
+    [InlineData("image/png, text/html")]
+    public void Validate_RejectsMalformedContentTypes(string contentType)
+    {
+        var asset = Asset("logo.png");
+        asset.ContentType = contentType;
+
+        Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(asset)));
+    }
+
+    [Fact]
+    public void Validate_RejectsNullContentType()
+    {
+        var asset = Asset("logo.png");
+        asset.ContentType = null!;
+
+        Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(asset)));
+    }
+    // MARK: Stores
+
+    private static PageStore Store(string name = "downloads")
+        => new PageStore { Name = name };
+
+    [Fact]
+    public void Validate_ValidStore_Passes()
+    {
+        ConfigurationValidator.Validate(Config(Store()));
+    }
+
+    [Theory]
+    [InlineData("with space")]
+    [InlineData("../escape")]
+    [InlineData("")]
+    public void Validate_UnsafeStoreName_Throws(string name)
+    {
+        // The name becomes both a URL segment and a file name under the data directory.
+        Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(Store(name))));
+    }
+
+    [Fact]
+    public void Validate_DuplicateStoreNames_Throws()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            ConfigurationValidator.Validate(Config(Store("downloads"), Store("DOWNLOADS"))));
+    }
+
+    [Fact]
+    public void Validate_UnknownStoreReadTier_Throws()
+    {
+        var store = Store();
+        store.ReadAccess = (PageVisibility)99;
+        Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(store)));
+    }
+
+    [Fact]
+    public void Validate_UnknownStoreWriteTier_Throws()
+    {
+        var store = Store();
+        store.WriteAccess = (PageVisibility)99;
+        Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(store)));
+    }
+
+    [Fact]
+    public void Validate_UnknownStoreReadScope_Throws()
+    {
+        var store = Store();
+        store.ReadScope = (StoreScope)99;
+        Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(store)));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(PageStore.RecordCeiling + 1)]
+    public void Validate_StoreRecordLimitOutOfRange_Throws(int max)
+    {
+        var store = Store();
+        store.MaxRecords = max;
+        Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(store)));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(PageStore.RetentionDayCeiling + 1)]
+    public void Validate_StoreRetentionOutOfRange_Throws(int days)
+    {
+        // A negative retention would expire every record the moment it was written.
+        var store = Store();
+        store.RetentionDays = days;
+        Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(store)));
+    }
+
+    [Fact]
+    public void Validate_ZeroRetentionMeansKeepForever()
+    {
+        var store = Store();
+        store.RetentionDays = 0;
+        ConfigurationValidator.Validate(Config(store));
+    }
+
+    // MARK: Necto additions
+
+    /// <summary>
+    /// A slug a route of the pages' own addresses starts with is refused.
+    /// True: no page hides behind or shadows the image, store, or check routes.
+    /// False: a page named asset would serve an image in place of its content.
+    /// </summary>
+    [Theory]
+    [InlineData("asset")]
+    [InlineData("store")]
+    [InlineData("stores")]
+    [InlineData("Configuration")]
+    public void Validate_RejectsAReservedSlug(string slug)
+        => Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(new CustomPage { Slug = slug })));
+
+    /// <summary>
+    /// Two pages may not share an id, since groups name pages by id.
+    /// True: one group's grant reaches exactly one page.
+    /// False: giving one page silently gives another.
+    /// </summary>
+    [Fact]
+    public void Validate_RejectsTwoPagesWithOneId()
+        => Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(
+            new CustomPage { Id = "same", Slug = "a" },
+            new CustomPage { Id = "same", Slug = "b" })));
+
+    /// <summary>
+    /// A refusal is a full sentence in the requested language that names the page.
+    /// True: the Custom pages tool shows the administrator what to fix.
+    /// False: the save fails with a key or an exception message.
+    /// </summary>
+    [Fact]
+    public void Validate_RefusalNamesThePageInASentence()
+    {
+        var error = Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(
+            new CustomPage { Slug = "dup" },
+            new CustomPage { Slug = "dup" })));
+
+        Assert.Equal("Two pages use the slug dup.", error.Message);
+    }
+}

@@ -294,7 +294,7 @@ public static class TriggerCatalog
 
         Build(ScriptTrigger.SessionStarted, TranslationKeys.ScriptsTriggerSessionStarted, TranslationKeys.ScriptsTriggerGroupSessions, TranslationKeys.ScriptsTriggerSessionStartedDescription, false, true, User, Session),
         Build(ScriptTrigger.SessionEnded, TranslationKeys.ScriptsTriggerSessionEnded, TranslationKeys.ScriptsTriggerGroupSessions, TranslationKeys.ScriptsTriggerSessionEndedDescription, false, true, User, Session),
-        Build(ScriptTrigger.AuthenticationSuccess, TranslationKeys.ScriptsTriggerAuthenticationSuccess, TranslationKeys.ScriptsTriggerGroupSessions, TranslationKeys.ScriptsTriggerAuthenticationSuccessDescription, false, true, User, Session),
+        Build(ScriptTrigger.AuthenticationSuccess, TranslationKeys.PagesTierUser, TranslationKeys.ScriptsTriggerGroupSessions, TranslationKeys.ScriptsTriggerAuthenticationSuccessDescription, false, true, User, Session),
         Build(ScriptTrigger.NewDeviceSeen, TranslationKeys.ScriptsTriggerNewDeviceSeen, TranslationKeys.ScriptsTriggerGroupSessions, TranslationKeys.ScriptsTriggerNewDeviceSeenDescription, false, true, User, Session),
         Build(ScriptTrigger.ClientConnected, TranslationKeys.ScriptsTriggerClientConnected, TranslationKeys.ScriptsTriggerGroupSessions, TranslationKeys.ScriptsTriggerClientConnectedDescription, false, true, User, Session),
         Build(ScriptTrigger.DeviceSettingsChanged, TranslationKeys.ScriptsTriggerDeviceSettingsChanged, TranslationKeys.ScriptsTriggerGroupSessions, TranslationKeys.ScriptsTriggerDeviceSettingsChangedDescription, false, false, Device),

@@ -30,6 +30,8 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
         // Encrypts the WireGuard keys and the script secrets at rest. The name is fixed, since a new one makes every stored secret unreadable.
         serviceCollection.AddPluginSecretProtector("Jellyfin.Plugin.Necto");
         ScriptsServices.Register(serviceCollection);
+        Services.Storage.StorageServices.Register(serviceCollection);
+        Services.CustomPages.CustomPagesServices.Register(serviceCollection);
     }
 
     /// <summary>

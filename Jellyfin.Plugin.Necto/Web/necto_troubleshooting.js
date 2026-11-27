@@ -6,6 +6,8 @@ import * as nectoModule from './configurationpage?name=necto_shared.js';
 import './configurationpage?name=necto_groups_sections.js';
 import './configurationpage?name=necto_wireguard_sections.js';
 import './configurationpage?name=necto_scripts_sections.js';
+import './configurationpage?name=necto_storage_sections.js';
+import './configurationpage?name=necto_pages_sections.js';
 
 export default function (view) {
     'use strict';

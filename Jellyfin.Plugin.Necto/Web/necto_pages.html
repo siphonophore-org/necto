@@ -1,12 +1,18 @@
 <!-- necto_pages.html -->
-<!-- The Custom pages tool. It shows an empty state that says the tool is coming. -->
+<!-- The Custom pages tool. It holds the pages, their images, and the stores they write to, each opening in a sidecar. -->
 
 <div id="NectoCustomPagesPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox"
      data-controller="__plugin/necto_pages.js">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+                <div class="fieldDescription" data-role="pages-intro" data-str="PagesIntro">Serves the pages you write at their own addresses. Who may open a signed in page is set on its groups.</div>
+                <div id="pagesStatus" class="stolon-status-text" role="status"></div>
+
+                <!-- Tabs -->
+                <!-- Pages, Images, and Stores, each drawn the first time it opens. -->
+                <div id="pagesTabs"></div>
             </div>
         </div>
     </div>

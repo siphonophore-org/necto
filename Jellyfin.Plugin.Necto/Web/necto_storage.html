@@ -1,12 +1,37 @@
 <!-- necto_storage.html -->
-<!-- The Storage tool. It shows an empty state that says the tool is coming. -->
+<!-- The Storage tool. It lists every disk and share Jellyfin uses, with what needs a look and the space they hold. -->
 
 <div id="NectoStoragePage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select"
      data-controller="__plugin/necto_storage.js">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+                <div class="fieldDescription" data-str="StorageHelpStorage">Each disk and share Jellyfin uses, for its libraries or its own folders, with its space and state. Open a disk for its details.</div>
+
+                <!-- Attention -->
+                <!-- What needs a look, one line per problem, or one line saying every disk is healthy. -->
+                <div id="storageAttention" role="status"></div>
+
+                <!-- Space -->
+                <!-- The size, used, and free space of every disk the libraries use, added up. -->
+                <div id="storageSpaceCards" class="stolon-cards"></div>
+
+                <!-- Disks -->
+                <!-- One row per disk or share, each opened in a sidecar. The filter shows disks no library uses too. -->
+                <h2 class="stolon-subsection-title" data-str="StorageHeaderDisks">Disks</h2>
+                <div class="necto-storage-toolbar">
+                    <div class="stolon-pill-group" id="storageDiskFilter" role="group" aria-label="Show" data-str-label="StorageLabelShow">
+                        <button type="button" class="stolon-pill" data-value="used" aria-pressed="true" data-str="StorageFilterJellyfin">Jellyfin</button>
+                        <button type="button" class="stolon-pill" data-value="all" aria-pressed="false" data-str="All">All</button>
+                    </div>
+                    <button is="emby-button" type="button" id="btnStorageCheck" class="raised stolon-button secondary necto-storage-refresh">
+                        <span id="storageRefreshIcon" class="material-icons" aria-hidden="true">refresh</span>
+                        <span data-str="Refresh">Refresh</span>
+                    </button>
+                </div>
+                <div id="storageCheckStatus" class="stolon-error stolon-hidden" role="status"></div>
+                <div id="storageDiskList"></div>
             </div>
         </div>
     </div>

@@ -931,7 +931,7 @@ export default function (view) {
                         return { value: k, label: presets[k] };
                     })), { help: t.tr('ScriptsHelpPreset') }) +
                     select(op, 'Method', t.tr('ScriptsLabelMethod'), HTTP_METHODS.map(function (m) { return { value: m, label: m }; })) +
-                    input(op, 'Url', t.tr('ScriptsLabelUrl'), { placeholder: 'https://example.com/hook?item={{ITEM_NAME:url}}' }) +
+                    input(op, 'Url', t.tr('PagesLabelUrl'), { placeholder: 'https://example.com/hook?item={{ITEM_NAME:url}}' }) +
                     input(op, 'Headers', t.tr('ScriptsLabelHeaders'), { textarea: true, rows: 2, placeholder: 'Authorization: Bearer {{SECRET_TOKEN}}' }) +
                     input(op, 'ContentType', t.tr('LabelContentType'), { placeholder: 'application/json', variables: false }) +
                     input(op, 'Body', t.tr('ScriptsLabelBody'), { textarea: true, rows: 5, placeholder: '{ "text": "{{USER_NAME:json}} started {{ITEM_NAME:json}}" }' }) +

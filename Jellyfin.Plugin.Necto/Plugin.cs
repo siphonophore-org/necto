@@ -65,10 +65,11 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
     protected override void OnConfigurationSaving(PluginConfiguration incoming, PluginConfiguration stored)
     {
         ArgumentNullException.ThrowIfNull(incoming);
-        ArgumentNullException.ThrowIfNull(stored);
         GroupNormalizer.Normalize(incoming);
-        incoming.WireGuard = WireGuardValidator.Saving(incoming.WireGuard, stored.WireGuard);
-        incoming.Scripts = ScriptSettingsSaving.Saving(incoming.Scripts, stored.Scripts, ApplicationPaths);
+        incoming.WireGuard = WireGuardValidator.Saving(incoming.WireGuard, stored?.WireGuard ?? new());
+        incoming.Scripts = ScriptSettingsSaving.Saving(incoming.Scripts, stored?.Scripts ?? new(), ApplicationPaths);
+        Services.Storage.AlertOrder.Normalize(incoming.Storage ??= new Configuration.Storage.StorageConfiguration());
+        Services.CustomPages.CustomPagesSaving.Apply(incoming, stored, ApplicationPaths);
     }
 
     /// <inheritdoc />
@@ -132,6 +133,19 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
         {
             yield return new PluginPageInfo { Name = name, EmbeddedResourcePath = $"{ns}.Web.{name}" };
         }
+        // The Storage sections of Settings and Troubleshooting.
+        yield return new PluginPageInfo
+        {
+            Name = "necto_storage_sections.js",
+            EmbeddedResourcePath = $"{ns}.Web.necto_storage_sections.js"
+        };
+
+        // The Custom pages sections of Settings and Troubleshooting.
+        yield return new PluginPageInfo
+        {
+            Name = "necto_pages_sections.js",
+            EmbeddedResourcePath = $"{ns}.Web.necto_pages_sections.js"
+        };
 
         foreach (var page in GetSharedPages("necto"))
         {

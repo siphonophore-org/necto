@@ -201,7 +201,12 @@ export function sectionSpecs() {
                 ] }
             ]
         },
-        { key: 'pages', title: 'TabPages', icon: 'web', fields: [{ path: 'CustomPages.AllPages', kind: 'check', label: 'LabelAllPages' }] },
+        {
+            key: 'pages', title: 'TabPages', icon: 'web', built: true, fields: [
+                { path: 'CustomPages.AllPages', kind: 'check', label: 'LabelAllPages', help: 'PagesAllPagesHelp' },
+                { path: 'CustomPages.PageIds', kind: 'pages', label: 'PagesLabelGroupPages', help: 'PagesGroupPagesHelp', hiddenBy: 'CustomPages.AllPages' }
+            ]
+        },
         { key: 'notifications', title: 'TabNotifications', icon: 'notifications', fields: [{ path: 'Notifications.AllEvents', kind: 'check', label: 'LabelAllEvents' }] }
     ];
 }
@@ -449,6 +454,26 @@ export function createGroupEditor(group, ctx) {
             readers.push(function (out) { setPath(out.Permissions, spec.path, records.getValue()); });
         } else if (spec.kind === 'sessions') {
             drawSessions(into, value || [], spec);
+        } else if (spec.kind === 'pages') {
+            var pages = nectoModule.createCheckboxList({
+                fetchItems: function () { return shared.request('Pages').catch(function () { return []; }); },
+                idKey: 'Id',
+                value: value || [],
+                searchKeys: ['Title', 'Slug'],
+                emptyMessage: t.tr('PagesEmptyGroupPages'),
+                renderRow: function (p) { return { label: p.Title || ('/pages/' + p.Slug), sublabel: '/pages/' + p.Slug }; }
+            });
+            var pagesRow = el('div', { 'data-field': spec.path }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), pages.element, describe(spec)]);
+            into.appendChild(pagesRow);
+            handles.push(pages);
+            ready = Promise.all([ready, pages.ready]);
+            readers.push(function (out) { setPath(out.Permissions, spec.path, pages.getValue()); });
+            var every = into.querySelector('[data-field="' + spec.hiddenBy + '"]');
+            if (every) {
+                var hide = function () { pagesRow.classList.toggle('stolon-hidden', every.checked); };
+                every.addEventListener('change', hide);
+                hide();
+            }
         }
 
         // Fields a checkbox hides while it is on, such as the scripts a group runs while it runs every script.

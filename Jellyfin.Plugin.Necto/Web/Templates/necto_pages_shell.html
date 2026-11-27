@@ -1,0 +1,143 @@
+<!-- necto_pages_shell -->
+<!-- The content of Stolon's status card for a page that needs a signed in viewer. PageService fills in the strings. -->
+<div id="signin" class="stolon-hidden">
+    <h1>{{SIGNIN_HEADING}}</h1>
+    <p>{{SIGNIN_MESSAGE}}</p>
+    <a id="signinLink" class="stolon-btn" href="/web/">{{SIGNIN_BUTTON}}</a>
+</div>
+
+<div id="denied" class="stolon-hidden">
+    <h1>{{DENIED_HEADING}}</h1>
+    <p>{{DENIED_MESSAGE}}</p>
+    <a id="homeLink" class="stolon-btn" href="/web/">{{BACK_BUTTON}}</a>
+</div>
+
+<div id="missing" class="stolon-hidden">
+    <h1>{{MISSING_HEADING}}</h1>
+    <p>{{MISSING_MESSAGE}}</p>
+    <a id="missingLink" class="stolon-btn" href="/web/">{{BACK_BUTTON}}</a>
+</div>
+
+<script>
+    (function () {
+        var slug = '{{SLUG}}';
+        var tier = '{{TIER}}';
+
+        var prefix = location.pathname.split('/pages/')[0];
+        var contentUrl = prefix + '/pages/' + encodeURIComponent(slug) + '/' + tier;
+        var webHref = prefix + '/web/';
+
+        ['signinLink', 'homeLink', 'missingLink'].forEach(function (id) {
+            var a = document.getElementById(id);
+            if (a) a.href = webHref;
+        });
+
+        // leaveLoading
+        // Hides the card's loading heading and spinner before a state shows.
+        function leaveLoading() {
+            var h = document.querySelector('.stolon-status-page-card > h1');
+            var s = document.querySelector('.stolon-status-page-card > .stolon-spinner');
+            if (h) h.classList.add('stolon-hidden');
+            if (s) s.classList.add('stolon-hidden');
+        }
+
+        // show
+        // Shows one of the sign in, denied, and missing states.
+        function show(id) {
+            leaveLoading();
+            ['signin', 'denied', 'missing'].forEach(function (k) {
+                document.getElementById(k).classList.toggle('stolon-hidden', k !== id);
+            });
+        }
+
+        // readServers
+        // Reads the web client's saved servers. A change to their shape leaves none, so the page asks to sign in.
+        function readServers() {
+            try {
+                var raw = localStorage.getItem('jellyfin_credentials');
+                if (!raw) return [];
+                return (JSON.parse(raw) || {}).Servers || [];
+            } catch (e) { return []; }
+        }
+
+        // originOf
+        // Gives the origin of an address, or empty when it does not parse.
+        function originOf(address) {
+            try { return new URL(String(address)).origin.toLowerCase(); } catch (e) { return ''; }
+        }
+
+        // normalizeId
+        // Gives a server id without dashes, in lower case.
+        function normalizeId(id) {
+            return String(id || '').replace(/-/g, '').toLowerCase();
+        }
+
+        // getTokens
+        // Lists this server's saved tokens, matched by its id or by an address on this exact origin, so another
+        // server's token is never sent here.
+        function getTokens(serverId) {
+            var here = location.origin.toLowerCase();
+            var wanted = normalizeId(serverId);
+            var found = [];
+            var servers = readServers();
+            for (var i = 0; i < servers.length; i++) {
+                var server = servers[i];
+                if (!server || !server.AccessToken) continue;
+
+                var matches = wanted && normalizeId(server.Id) === wanted;
+                if (!matches) {
+                    var addresses = [server.ManualAddress, server.LocalAddress, server.RemoteAddress];
+                    for (var j = 0; j < addresses.length; j++) {
+                        if (addresses[j] && originOf(addresses[j]) === here) {
+                            matches = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (matches && found.indexOf(server.AccessToken) < 0) found.push(server.AccessToken);
+            }
+
+            return found;
+        }
+
+        // The tokens stay inside this closure, so the page written into this document cannot read them off the window.
+        var tokens = [];
+
+        // attempt
+        // Asks for the page with one token after another, and writes the page in or shows why it did not come.
+        function attempt(index) {
+            if (index >= tokens.length) { show('signin'); return; }
+
+            fetch(contentUrl, {
+                headers: {
+                    'Authorization': 'MediaBrowser Token="' + tokens[index] + '"',
+                    'Accept': 'text/html'
+                }
+            })
+                .then(function (r) {
+                    // A token no longer valid here, such as one from an earlier sign in, gives way to the next.
+                    if (r.status === 401) { attempt(index + 1); return null; }
+                    if (r.status === 403) { show('denied'); return null; }
+                    if (r.status === 404) { show('missing'); return null; }
+                    return r.text();
+                })
+                .then(function (html) {
+                    if (html === null || html === undefined) return;
+                    document.open();
+                    document.write(html);
+                    document.close();
+                })
+                .catch(function () { show('signin'); });
+        }
+
+        fetch(prefix + '/System/Info/Public', { headers: { 'Accept': 'application/json' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .catch(function () { return null; })
+            .then(function (info) {
+                tokens = getTokens(info && info.Id);
+                if (!tokens.length) { show('signin'); return; }
+                attempt(0);
+            });
+    })();
+</script>

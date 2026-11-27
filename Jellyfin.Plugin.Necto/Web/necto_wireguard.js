@@ -112,7 +112,7 @@ export default function (view) {
     function usageAside(id, limit) {
         if (!(limit.bytes > 0)) return null;
         var meter = nectoModule.createUsageMeter({
-            label: t.tr('WireGuardLabelDataUsed'),
+            label: t.tr('StorageLabelUsage'),
             used: bytesOf(id, limit.period),
             total: limit.bytes,
             bytes: true,
@@ -268,7 +268,7 @@ export default function (view) {
                 { label: t.tr('WireGuardLabelRoutedSubnets'), value: (peer.RoutedSubnets || []).join(', ') || null, mono: true },
                 { label: t.tr('WireGuardLabelLastHandshake'), value: state.LastHandshakeUtc ? shared.formatDate(state.LastHandshakeUtc) : null },
                 { label: t.tr('LabelSource'), value: state.Endpoint || null, mono: true },
-                { label: t.tr('WireGuardLabelDataUsed'), value: usedText(peer.Id, peerLimit(cfg, peer)) },
+                { label: t.tr('StorageLabelUsage'), value: usedText(peer.Id, peerLimit(cfg, peer)) },
                 { label: t.tr('WireGuardLabelSpeedLimit'), value: speedText(peer.DownloadMbps, cfg.PeerDownloadMbps, peer.UploadMbps, cfg.PeerUploadMbps) }
             ]
         }).element);
@@ -411,7 +411,7 @@ export default function (view) {
     // Asks first, then removes a peer or connection and closes its sidecar.
     function removeRecord(route, id, name, messageKey, close) {
         nectoModule.confirmDialog(t.tr(messageKey), {
-            title: t.format('WireGuardTitleRemove', name),
+            title: t.format('PagesTitleRemoveStore', name),
             confirmText: t.tr('ButtonRemove'),
             destructive: true
         }).then(function (yes) {
@@ -477,7 +477,7 @@ export default function (view) {
             onSave: function () {
                 var values = read();
                 if (!values.Name) {
-                    shared.setStatus(status, t.tr('WireGuardErrorNameRequired'), true);
+                    shared.setStatus(status, t.tr('PagesErrorEnterName'), true);
                     return false;
                 }
                 return saveRecord('WireGuard/Peers', isNew, peer.Id, values, status);
@@ -506,7 +506,7 @@ export default function (view) {
                 { label: t.tr('WireGuardLabelForwards'), value: (c.Forwards || []).map(function (f) { return '127.0.0.1:' + f.LocalPort + ' → ' + f.RemoteHost + ':' + f.RemotePort; }).join('\n') || null, mono: true },
                 { label: t.tr('WireGuardLabelLastHandshake'), value: state.LastHandshakeUtc ? shared.formatDate(state.LastHandshakeUtc) : null },
                 { label: t.tr('WireGuardLabelLastError'), value: state.State === 'Failed' ? state.Error : null },
-                { label: t.tr('WireGuardLabelDataUsed'), value: usedText(c.Id, connectionLimit(cfg, c)) },
+                { label: t.tr('StorageLabelUsage'), value: usedText(c.Id, connectionLimit(cfg, c)) },
                 { label: t.tr('WireGuardLabelSpeedLimit'), value: speedText(c.DownloadMbps, cfg.ConnectionDownloadMbps, c.UploadMbps, cfg.ConnectionUploadMbps) }
             ]
         }).element);
@@ -534,7 +534,7 @@ export default function (view) {
         var name = field('LabelName', 'text', c.Name, null, t.tr('WireGuardPlaceholderConnectionName'));
         var endpoint = field('WireGuardLabelRemoteHost', 'text', c.Endpoint, null, 'vpn.example.com:51820');
         var peerKey = field('WireGuardLabelRemotePublicKey', 'text', c.PeerPublicKey, null, '');
-        var psk = field('WireGuardLabelPresharedKey', 'password', '', null, c.PresharedKey ? t.tr('WireGuardPlaceholderKept') : t.tr('WireGuardPlaceholderOptional'));
+        var psk = field('WireGuardLabelPresharedKey', 'password', '', null, c.PresharedKey ? t.tr('WireGuardPlaceholderKept') : t.tr('PagesPlaceholderOptional'));
         var address = field('WireGuardLabelOurAddress', 'text', c.Address, null, '10.0.0.5');
         var privateKey = field('WireGuardLabelPrivateKey', 'password', '', 'WireGuardPrivateKeyHelp', c.PrivateKey ? t.tr('WireGuardPlaceholderKept') : t.tr('WireGuardPlaceholderMadeForYou'));
         var forwards = textArea('WireGuardLabelForwards', 'WireGuardForwardsHelp', (c.Forwards || []).map(function (f) { return f.LocalPort + ' ' + f.RemoteHost + ':' + f.RemotePort; }).join('\n'), '18096 10.0.0.1:8096', 3);
