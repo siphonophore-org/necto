@@ -32,6 +32,9 @@ public sealed class PeerConnection
     /// <summary>Gets or sets its state: Connected, Offline, Disabled, OverLimit, NotAllowed, OverPeerCount, Running, Starting, Failed, or Stopped.</summary>
     public string State { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets why its tunnel failed, or null.</summary>
+    public string? Error { get; set; }
+
     /// <summary>Gets or sets the last handshake, in UTC, or null.</summary>
     public DateTime? LastHandshakeUtc { get; set; }
 

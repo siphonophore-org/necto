@@ -103,6 +103,7 @@ public static class MapBuilder
                     Kind = end.Kind,
                     Name = end.Name,
                     State = end.State,
+                    Error = end.Error,
                     Connected = end.Connected,
                     CountryCode = place.CountryCode,
                     Country = place.Country

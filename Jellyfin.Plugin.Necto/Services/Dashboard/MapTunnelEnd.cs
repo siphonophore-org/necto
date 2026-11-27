@@ -14,6 +14,9 @@ public sealed class MapTunnelEnd
     /// <summary>Gets or sets its state, as the WireGuard tool reports it.</summary>
     public string State { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets why its tunnel failed, or null.</summary>
+    public string? Error { get; set; }
+
     /// <summary>Gets or sets a value indicating whether it is connected.</summary>
     public bool Connected { get; set; }
 

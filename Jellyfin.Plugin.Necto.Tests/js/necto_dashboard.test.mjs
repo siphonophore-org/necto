@@ -76,7 +76,7 @@ test('a card keeps only the parts that hold anything, and always lists them unde
     assert.equal(dashboard.showsLegend([{ label: 'Published', value: 2 }, { label: 'Unpublished', value: 1 }], 'published'), true);
 
     var none = dashboard.issuesCard(t, {});
-    assert.deepEqual([none.segments, none.legend, none.detail], [null, false, 'No issue reports yet']);
+    assert.deepEqual([none.segments, none.legend, none.detail], [null, false, 'No issues yet']);
     var one = dashboard.pagesCard(t, { CustomPages: { Pages: [{ Enabled: true }] } });
     assert.deepEqual([one.value, one.legend, one.detail, parts(one)], [1, true, '', ['Published 1']]);
 });
@@ -250,6 +250,7 @@ test('the WireGuard card counts the connected peers and connections, and a faile
     assert.deepEqual(card.segments.map(function (s) { return s.color; }), ['green', 'orange', 'gray']);
     map.Tunnels[3].State = 'Failed';
     assert.equal(dashboard.wireGuardCard(t, map).status, 'Failed');
+    assert.equal(dashboard.wireGuardCard(t, { Tunnels: [{ Kind: 'Host', State: 'Failed', Error: 'Port 51820 is in use' }] }).detail, 'Port 51820 is in use');
     assert.equal(dashboard.wireGuardCard(t, { Tunnels: [{ Kind: 'Host', State: 'Running' }] }).status, 'Active');
     var none = dashboard.wireGuardCard(t, { Tunnels: [] });
     assert.deepEqual([none.status, none.detail], ['Off', 'No peers yet']);

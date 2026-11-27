@@ -226,10 +226,17 @@ export function requestsCard(t, stats) {
     card.value = pending;
     card.valueLabel = t.tr('StatePending').toLowerCase();
     var total = Object.keys(by).reduce(function (n, k) { return n + (Number(by[k]) || 0); }, 0);
-    card.bars = sum(days.Made) > 0 ? dayBars(days.Days, days.Made, null, function (day, made) { return t.format('DashboardRequestsOnDay', day, made); }) : null;
-    card.segments = null;
-    card.legend = false;
-    card.detail = by.Failed > 0 ? t.format('ScheduledTaskFailedWithName', by.Failed) : (total > 0 ? '' : t.tr('DashboardEmptyRequests'));
+    // Requests made in the last 14 days show as a chart. With none made lately, the card shows its states as every
+    // other card does, or the line that there are none.
+    if (sum(days.Made) > 0) {
+        card.bars = dayBars(days.Days, days.Made, null, function (day, made) { return t.format('DashboardRequestsOnDay', day, made); });
+        card.segments = null;
+        card.legend = false;
+        card.detail = by.Failed > 0 ? t.format('ScheduledTaskFailedWithName', by.Failed) : '';
+    } else {
+        card.bars = null;
+        withBar(card, t, fromCountCards(requestCards(stats, t)), 'DashboardEmptyRequests');
+    }
     if (by.Failed > 0) return setState(card, t, 'failed');
     if (pending > 0) return setState(card, t, 'pending');
     if ((by.Approved || 0) + (by.PartiallyAvailable || 0) > 0) return setState(card, t, 'active');
@@ -423,7 +430,7 @@ export function ddnsCard(t, answer) {
 
 // wireGuardCard
 // Sums up WireGuard: the connected peers and connections as the number, and a part per tunnel state as the VPN tool
-// tags it.
+// tags it. A failed tunnel puts its error on the line under the title.
 //
 // Inputs
 // t [object]: The strings.
@@ -446,8 +453,11 @@ export function wireGuardCard(t, map) {
         return { label: tag.label, color: tag.color };
     })).sort(function (a, b) { return order.indexOf(a.color) - order.indexOf(b.color); });
     withBar(card, t, segments, 'DashboardEmptyTunnels');
-    var failed = (host && host.State === 'Failed') || ends.some(function (e) { return e.State === 'Failed'; });
-    if (failed) return setState(card, t, 'failed');
+    var failed = (host && host.State === 'Failed') ? host : ends.filter(function (e) { return e.State === 'Failed'; })[0];
+    if (failed) {
+        if (failed.Error) card.detail = failed.Error;
+        return setState(card, t, 'failed');
+    }
     if (connected > 0 || (host && host.State === 'Running')) return setState(card, t, 'active');
     return setState(card, t, 'off');
 }

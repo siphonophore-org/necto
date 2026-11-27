@@ -44,7 +44,8 @@ public static class PeerMap
                 Name = "Host",
                 RemoteAddress = string.IsNullOrWhiteSpace(settings.PublicEndpoint) ? null : TunnelActivity.HostOf(PeerConfigWriter.Endpoint(settings)),
                 Connected = host?.State == "Running",
-                State = host?.State ?? "Stopped"
+                State = host?.State ?? "Stopped",
+                Error = host?.State == "Failed" ? host.Error : null
             });
         }
 
@@ -79,6 +80,7 @@ public static class PeerMap
                 RemoteAddress = TunnelActivity.HostOf(state?.Endpoint ?? connection.Endpoint),
                 Connected = state?.Connected == true,
                 State = tunnel?.State == "Failed" ? "Failed" : StateOf(connection.Id, connection.Enabled && settings.ConnectEnabled, state?.Connected == true, blocked, new Dictionary<Guid, PeerRefusal>()),
+                Error = tunnel?.State == "Failed" ? tunnel.Error : null,
                 LastHandshakeUtc = state?.LastHandshakeUtc,
                 Bytes = (state?.RxBytes ?? 0) + (state?.TxBytes ?? 0)
             });
