@@ -46,7 +46,7 @@ The page takes the web client's look before its own CSS: the web client's Noto S
 
 ![A page with no CSS of its own](screenshots/Custom%20Page.png)
 
-A page that needs a signed in viewer opens on the web client's loading screen. It finds this server's saved sign-in, matched by server id or by an address on this exact origin, asks for the page with it, and writes the page in. A viewer with no sign-in gets the web client's sign in form and the page once they sign in. One the page refuses sees **You can't open this page**, and a page that went away, or an address with no page, shows **Page not found**.
+A page that needs a signed in viewer opens on the web client's loading screen. It finds this server's saved sign-in, matched by server id or by an address on this exact origin, asks for the page with it, and writes the page in. A viewer with no sign-in gets the same sign in as every Necto user page, and the page once they sign in. With **Remember me** on, the sign-in is kept for the web client too. One the page refuses sees **You cannot open this page**, and a page that went away, or an address with no page, shows **Page not found**.
 
 ## Who May Open a Page
 
@@ -176,8 +176,8 @@ An API key reads and writes a store as an administrator with no user, so it owns
 
 | Reason | What to do |
 | :--- | :--- |
-| "You can't open this page" on a **Signed in** page | Give the page to one of the viewer's groups in **Groups > Pages** |
-| The sign in form shows on every visit | Turn on **Remember me** in the web client's own sign in, then open the page again |
+| "You cannot open this page" on a **Signed in** page | Give the page to one of the viewer's groups in **Groups > Pages** |
+| The sign in form shows on every visit | Turn on **Remember me** when signing in, then open the page again |
 | "The saved password of the route *name* on the page *slug* could not be kept, since the route was renamed or points to another host. Enter the password again and save." | Enter the route's password again and save |
 | "The slug *slug* is kept for the pages' own routes. Pick another." | Pick another slug |
 | A store answers as empty and refuses writes | Check the server log for the store file, repair or remove it, then restart Jellyfin |

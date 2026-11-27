@@ -264,7 +264,8 @@ public class PageServiceTests
         Assert.Equal("mypage", values["SLUG"]);
         Assert.Equal(expected, values["TIER"]);
         Assert.Equal("Your account does not have access to this page.", values["DENIED_MESSAGE"]);
-        Assert.Equal("Loading", values["LOADING"]);
+        Assert.Equal("Sign in to Jellyfin to open this page.", values["SIGN_IN_MESSAGE"]);
+        Assert.Equal("Your sign in expired. Sign in again.", values["EXPIRED_MESSAGE"]);
     }
 
     // MARK: Content style

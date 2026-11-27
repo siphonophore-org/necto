@@ -2,7 +2,7 @@
 // The script of a custom page's loading screen. It asks for the page with this server's sign-ins in turn and writes it
 // into the document, or shows Stolon's sign in, not authorized, or not found screen in the web client's look.
 
-import { startWebClientShell, createSignIn, createUnauthorized, createNotFound, showScreen, WEB_SPINNER } from './configurationpage?name=necto_shared.js';
+import { startWebClientShell, stopWebClientShell, createSignIn, createUnauthorized, createNotFound, showScreen, WEB_SPINNER } from './configurationpage?name=necto_shared.js';
 
 // normalizeId
 // Gives a server id without dashes, in lower case.
@@ -84,8 +84,26 @@ export function screenFor(status) {
     return 'page';
 }
 
+// spinnerScreen
+// Builds the web client's loading spinner as a screen, shown while a sign-in from the page is tried.
+//
+// Inputs
+// doc [Document]: The page.
+// label [string]: The spinner's accessible name.
+//
+// Output
+// [object]: The screen, { element, destroy }.
+function spinnerScreen(doc, label) {
+    var element = doc.createElement('div');
+    element.className = 'docspinner mdl-spinner mdlSpinnerActive';
+    element.setAttribute('role', 'status');
+    element.setAttribute('aria-label', label);
+    element.innerHTML = WEB_SPINNER;
+    return { element: element, destroy: function () { element.remove(); } };
+}
+
 // start
-// Runs the loading screen.
+// Runs the loading screen. The shell stays signed out, since the page it fetches is written over it.
 //
 // Inputs
 // doc [Document]: The page.
@@ -94,34 +112,36 @@ export function screenFor(status) {
 // Output
 // [Promise]: Resolves once the page or a screen shows.
 export async function start(doc, loc) {
-    var loading = doc.getElementById('pageLoading');
-    loading.innerHTML = WEB_SPINNER;
-    await startWebClientShell({ translations: 'Necto/Translations' });
+    var data = doc.getElementById('pageLoading');
+    var slug = data.getAttribute('data-slug');
+    var tier = data.getAttribute('data-tier');
+    var denied = data.getAttribute('data-denied');
+    var signInMessage = data.getAttribute('data-sign-in');
+    var expiredMessage = data.getAttribute('data-expired');
+    var label = (doc.querySelector('[role="status"]') || data).getAttribute('aria-label') || '';
+    await startWebClientShell({ translations: 'Necto/Translations', follow: false });
     var prefix = loc.pathname.split('/pages/')[0];
-    var contentUrl = prefix + '/pages/' + encodeURIComponent(loading.getAttribute('data-slug')) + '/' + loading.getAttribute('data-tier');
+    var contentUrl = prefix + '/pages/' + encodeURIComponent(slug) + '/' + tier;
     var info = await fetch(prefix + '/System/Info/Public', { headers: { Accept: 'application/json' } })
         .then(function (r) { return r.ok ? r.json() : null; })
         .catch(function () { return null; });
     // The tokens stay inside this function, so the page written into this document cannot read them off the window.
     var tokens = tokensFor(readServers(), info && info.Id, loc.origin);
-
-    var show = function (screen) {
-        loading.hidden = true;
-        showScreen(screen);
-    };
+    var hadSignIn = tokens.length > 0;
 
     var signIn = function () {
         var screen = createSignIn({
             serverId: info && info.Id ? String(info.Id) : '',
             serverName: info && info.ServerName ? String(info.ServerName) : null,
+            message: hadSignIn ? expiredMessage : signInMessage,
             onSignedIn: function (result) {
                 screen.destroy();
-                loading.hidden = false;
+                showScreen(spinnerScreen(doc, label));
                 tokens.push(result.AccessToken);
                 attempt(tokens.length - 1);
             }
         });
-        show(screen);
+        showScreen(screen);
     };
 
     var attempt = function (index) {
@@ -130,9 +150,10 @@ export async function start(doc, loc) {
             var next = screenFor(r.status);
             // A token no longer valid here, such as one from an earlier sign in, gives way to the next.
             if (next === 'next') return attempt(index + 1);
-            if (next === 'denied') return show(createUnauthorized({ message: loading.getAttribute('data-denied') }));
-            if (next === 'missing') return show(createNotFound());
+            if (next === 'denied') return showScreen(createUnauthorized({ message: denied }));
+            if (next === 'missing') return showScreen(createNotFound());
             return r.text().then(function (html) {
+                stopWebClientShell();
                 doc.open();
                 doc.write(html);
                 doc.close();

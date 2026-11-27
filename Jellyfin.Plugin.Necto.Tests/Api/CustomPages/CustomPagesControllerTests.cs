@@ -231,20 +231,37 @@ public class CustomPagesControllerTests
     }
 
     /// <summary>
-    /// The loading screen is the web client's signed out frame named after the page, and an untitled page keeps the
-    /// server's name.
-    /// True: the tab shows the page's title from the start, and the frame never follows a sign-in.
-    /// False: the tab reads Loading, or the frame keeps working after the page is written over it.
+    /// The loading screen carries its values encoded, so a sentence never becomes markup.
+    /// True: the script reads the slug, tier, and denied sentence as written.
+    /// False: a translated sentence with a quote or angle bracket breaks the screen or injects markup.
     /// </summary>
     [Fact]
-    public void LoadingPage_IsTheSignedOutFrameNamedAfterThePage()
+    public void LoaderMarkup_EncodesItsValues()
     {
-        var named = CustomPagesController.LoadingPage("Family");
-        var untitled = CustomPagesController.LoadingPage(" ");
+        var html = CustomPagesController.LoaderMarkup(new Dictionary<string, string> { ["SLUG"] = "p", ["TIER"] = "user", ["DENIED_MESSAGE"] = "No \"<b>\" here.", ["SIGN_IN_MESSAGE"] = "Sign in.", ["EXPIRED_MESSAGE"] = "Expired." });
 
-        Assert.Equal(HostedPageFrame.WebClientSignedOut, named.Frame);
-        Assert.Equal("Family", named.Title);
-        Assert.Null(untitled.Title);
+        Assert.Contains("data-slug=\"p\"", html, StringComparison.Ordinal);
+        Assert.Contains("data-tier=\"user\"", html, StringComparison.Ordinal);
+        Assert.Contains("data-denied=\"No &quot;&lt;b&gt;&quot; here.\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("{{", html, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// An untitled page's loading screen keeps the screen's own title.
+    /// True: the tab reads a sensible name while the page loads.
+    /// False: the tab reads empty.
+    /// </summary>
+    [Fact]
+    public void Get_UntitledProtectedPage_KeepsTheScreensTitle()
+    {
+        var (controller, pages) = Create();
+        pages.Pages["p"] = Page(PageVisibility.User);
+        pages.Pages["p"].Title = " ";
+
+        var result = controller.Get("p");
+
+        Assert.DoesNotContain("<title> </title>", result.Content, StringComparison.Ordinal);
+        Assert.DoesNotContain("<title></title>", result.Content, StringComparison.Ordinal);
     }
 
     [Fact]

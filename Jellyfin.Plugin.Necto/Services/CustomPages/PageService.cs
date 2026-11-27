@@ -191,8 +191,9 @@ public sealed partial class PageService : IPageService
         {
             ["SLUG"] = slug,
             ["TIER"] = visibility.EndpointTier(),
-            ["LOADING"] = StolonTranslations.Get("Stolon.Loading", language),
-            ["DENIED_MESSAGE"] = StolonTranslations.Get(TranslationKeys.PagesMessageNotAuthorized, language)
+            ["DENIED_MESSAGE"] = StolonTranslations.Get(TranslationKeys.PagesMessageNotAuthorized, language),
+            ["SIGN_IN_MESSAGE"] = StolonTranslations.Get("Stolon.SignInToOpen", language),
+            ["EXPIRED_MESSAGE"] = StolonTranslations.Get("Stolon.SignInExpired", language)
         };
     }
 
