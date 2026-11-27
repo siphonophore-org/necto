@@ -104,9 +104,11 @@ test('Troubleshooting draws a section per tool, Groups with its repairs', async 
 
     assert.deepEqual(texts(opened.view, '.stolon-collapsible-title').filter(function (t) { return TOOLS.indexOf(t) >= 0; }), TOOLS);
     var groups = opened.section('groups');
-    assert.deepEqual(texts(groups, '.stolon-subsection-title'), ['Password requirements', 'Jellyfin settings', 'Scheduled checks', 'Password resets']);
+    assert.deepEqual(texts(groups, '.stolon-subsection-title'), ['Password requirements', 'Jellyfin settings', 'Scheduled checks']);
     assert.deepEqual(texts(groups, '[data-action]'), ['Apply', 'Apply', 'Run now', 'Run now']);
-    assert.match(groups.textContent, /Reset codes are off\. Turn on Show reset codes in a group's Password resets to list them\./);
+    // The pending password resets show on the Groups page, never here.
+    assert.equal(groups.querySelector('[data-role="resets"]'), null);
+    assert.equal(opened.page.requests.some(function (r) { return r.url === 'Groups/ResetCodes'; }), false);
 });
 
 test('Apply rules posts to the password rules route and reports how many users moved', async function () {
@@ -143,12 +145,38 @@ test('running the expiry checks asks first, and Cancel starts nothing', async fu
     assert.deepEqual(started, ['task-1']);
 });
 
-test('pending password resets are listed with their users while reset codes show', async function () {
-    var opened = await openTool('troubleshooting', { answers: { 'GET Groups/ResetCodes': { Enabled: true, Codes: [{ UserName: 'viewer', Pin: '123456', ExpirationDate: '2099-01-01T00:00:00Z', Expired: false }] } } });
+// openResets
+// Builds the Password resets section of the Groups page over an answer for the reset codes.
+async function openResets(answer) {
+    var page = installPage({});
+    routeApi(page, { 'GET Groups/ResetCodes': answer });
+    var bag = (await loadScript('necto_shared.js')).createNectoShared(pageView(page.dom, []));
+    await bag.translations;
+    var sections = await loadScript('necto_groups_sections.js');
+    var resets = sections.createPendingResets(bag, null);
+    page.dom.document.documentElement.appendChild(resets.element);
+    await resets.load();
+    await settle(50);
+    return { page: page, resets: resets };
+}
 
-    var resets = opened.section('groups').querySelector('[data-role="resets"]');
-    assert.match(resets.textContent, /viewer/);
-    assert.ok(resets.querySelector('.stolon-record-list'));
+test('the Password resets tab of the Groups page lists pending resets in a table with a badge each, and the HTTPS warning', async function () {
+    var opened = await openResets({ Enabled: true, Codes: [{ UserName: 'viewer', Pin: '123456', ExpirationDate: '2099-01-01T00:00:00Z', Expired: false }] });
+    var element = opened.resets.element;
+
+    assert.equal(element.querySelector('[data-role="resets-off"]').classList.contains('stolon-hidden'), true);
+    var cells = Array.prototype.map.call(element.querySelectorAll('.stolon-table-row .stolon-table-cell'), function (c) { return c.innerHTML; }).join(' ');
+    assert.match(cells, /viewer[\s\S]*Active/);
+    assert.match(element.textContent, /Reset codes are sent over this connection\. Use HTTPS so they cannot be read in transit\./);
+    assert.equal(cells.indexOf('123456'), -1);
+});
+
+test('the Password resets tab says how to turn reset codes on while no group shows them', async function () {
+    var opened = await openResets({ Enabled: false, Codes: [] });
+    var off = opened.resets.element.querySelector('[data-role="resets-off"]');
+
+    assert.equal(off.classList.contains('stolon-hidden'), false);
+    assert.match(off.textContent, /Turn on Show reset codes/);
 });
 
 test('resetItems tags each reset as active, expiring, or expired, and lists expired ones last', async function () {
@@ -168,15 +196,6 @@ test('resetItems tags each reset as active, expiring, or expired, and lists expi
     assert.deepEqual(items.map(function (i) { return [i.title, i.state, i.tags[0].label]; }), [
         ['soon', 'expiring', 'Expiring'], ['fresh', 'active', 'Active'], ['old', 'expired', 'Expired'], ['flagged', 'expired', 'Expired']
     ]);
-    assert.deepEqual(sections.resetCards(items, bag.t).map(function (c) { return [c.label, c.count]; }), [['Active', 1], ['Expiring', 1], ['Expired', 2]]);
-});
-
-test('pending password resets show their counts and the HTTPS warning', async function () {
-    var opened = await openTool('troubleshooting', { answers: { 'GET Groups/ResetCodes': { Enabled: true, Codes: [{ UserName: 'viewer', Pin: '123456', ExpirationDate: '2099-01-01T00:00:00Z', Expired: false }] } } });
-
-    var resets = opened.section('groups').querySelector('[data-role="resets"]');
-    assert.match(resets.querySelector('[data-role="reset-cards"]').textContent, /1\s*Active/);
-    assert.match(resets.textContent, /Reset codes are sent over this connection\. Use HTTPS so they cannot be read in transit\./);
 });
 
 test('the tile of a tool turns green as its switch is turned on, and gray as it is turned off', async function () {
@@ -238,7 +257,24 @@ test('no two sections or rows on Settings or Troubleshooting share an icon', asy
 
     var trouble = await openTool('troubleshooting', { config: allToolsOn(), answers: answers });
     var icons = texts(trouble.view, '.stolon-collapsible-section > .stolon-collapsible-header .stolon-collapsible-tile')
-        .concat(Array.prototype.map.call(trouble.view.querySelectorAll('.stolon-reset-row:not([data-store]) .stolon-collapsible-tile'), function (n) { return n.textContent; }));
+        .concat(Array.prototype.map.call(trouble.view.querySelectorAll('.stolon-reset-row:not([data-store]):not([data-record]) .stolon-collapsible-tile'), function (n) { return n.textContent; }));
     assert.ok(icons.length > 20);
     assert.deepEqual(icons.filter(function (icon, i) { return icons.indexOf(icon) !== i; }), []);
+});
+
+test('Troubleshooting holds only reset rows, with nothing a tool page or Settings shows', async function () {
+    var answers = { 'GET Ddns/Records': { Records: [{ Record: { Id: 'r1', Name: 'home.example.com' } }] }, 'GET Groups/ResetCodes': { Enabled: true, Codes: [] } };
+    var opened = await openTool('troubleshooting', { config: allToolsOn(), answers: answers });
+    var contents = opened.view.querySelectorAll('[data-role="section-content"]');
+
+    assert.ok(contents.length > 8);
+    Array.prototype.forEach.call(contents, function (content) {
+        var tool = content.closest('[data-tool]').getAttribute('data-tool');
+        Array.prototype.forEach.call(content.children, function (node) {
+            var cls = node.className || '';
+            var allowed = /stolon-status-text|stolon-subsection-title|stolon-reset-group/.test(cls);
+            assert.ok(allowed, tool + ' holds ' + cls);
+        });
+        assert.equal(content.querySelector('table, pre, select, .stolon-record-list, .stolon-definition-list, .stolon-table-wrapper, .stolon-data-table'), null, tool);
+    });
 });

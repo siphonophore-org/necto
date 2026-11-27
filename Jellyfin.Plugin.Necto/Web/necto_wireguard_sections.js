@@ -69,9 +69,6 @@ export function buildSettings(content, ctx) {
     var t = shared.t;
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var enabled = nectoModule.createCheckboxField({ label: t.tr('WireGuardLabelEnable'), help: t.tr('WireGuardEnabledHelp') });
-    var sidecarLine = h('div', { class: 'fieldDescription', 'data-role': 'sidecar' });
-    var replaceRow = nectoModule.createResetRow({ icon: 'swap_horiz', label: t.tr('WireGuardTitleReplace'), help: t.tr('WireGuardSidecarHelp'), button: t.tr('WireGuardButtonReplace'), action: 'replace-sidecar' });
-    var replace = replaceRow.button;
     var info = null;
 
     var host = nectoModule.createCheckboxField({ label: t.tr('WireGuardLabelHostEnabled'), help: t.tr('WireGuardHostEnabledHelp') });
@@ -107,12 +104,6 @@ export function buildSettings(content, ctx) {
     [
         status,
         enabled.element,
-        part('WireGuardHeaderSidecar', 'download', [
-            sidecarLine,
-            nectoModule.createResetGroup([
-                replaceRow
-            ]).element
-        ]),
         part('LabelServerHost', 'router', [host.element, endpoint.element, port.element, subnet.element]),
         part('WireGuardHeaderSecurity', 'key', [keyRow, psk.element, forward.element]),
         part('WireGuardHeaderDns', 'language', [dns.element, dnsFields]),
@@ -134,17 +125,10 @@ export function buildSettings(content, ctx) {
         shared.setStatus(status, message, !!isError, { timeout: 10000 });
     }
 
-    // showSidecar
-    // Draws what wireguard-go the server has, and names the button Download or Replace.
-    function showSidecar(next) {
-        info = next;
-        sidecarLine.textContent = sidecarText(info, shared);
-        (replace.querySelector('span') || replace).textContent = t.tr(info && info.Installed ? 'WireGuardButtonReplace' : 'Download');
-        replace.disabled = !(info && info.Platform);
-    }
-
+    // loadSidecar
+    // Reads whether the server has wireguard-go, so turning WireGuard on knows to download it first.
     function loadSidecar() {
-        return shared.request('WireGuard/Sidecar').then(showSidecar).catch(function () { showSidecar(null); });
+        return shared.request('WireGuard/Sidecar').then(function (next) { info = next; }).catch(function () { info = null; });
     }
 
     // fetchSidecar
@@ -154,8 +138,8 @@ export function buildSettings(content, ctx) {
     // [Promise]: Resolves true once downloaded, and false when it failed.
     function fetchSidecar() {
         report(t.tr('WireGuardDownloading'), false);
-        return downloadSidecar(shared, replace).then(function (next) {
-            showSidecar(next);
+        return downloadSidecar(shared, null).then(function (next) {
+            info = next;
             report(t.tr('WireGuardToastDownloaded'), false);
             return true;
         }).catch(function (err) {
@@ -179,14 +163,6 @@ export function buildSettings(content, ctx) {
             }
             return fetchSidecar().then(function (ok) { if (!ok) enabled.input.checked = false; });
         });
-    });
-
-    replace.addEventListener('click', function () {
-        if (!(info && info.Installed)) { fetchSidecar(); return; }
-        nectoModule.confirmDialog(t.tr('WireGuardConfirmReplace'), {
-            title: t.tr('WireGuardTitleReplace'),
-            confirmText: t.tr('WireGuardButtonReplace')
-        }).then(function (yes) { if (yes) fetchSidecar(); });
     });
 
     var reflectDns = function () { dnsFields.classList.toggle('stolon-hidden', !dns.input.checked); };
@@ -263,61 +239,133 @@ export function allowanceText(row, shared) {
     return row.DataLimit > 0 ? count + ', ' + dataText(t, shared, row.DataLimit, row.DataPeriod) : count;
 }
 
+// peerState
+// Says where a user stands against what their groups give, as the badge of their row in Peers by user.
+//
+// Inputs
+// row [object]: A row of WireGuard/Users.
+// t [object]: The strings.
+//
+// Output
+// [object]: label and color.
+export function peerState(row, t) {
+    if (!row.IsAdministrator && !row.MayHavePeers) return { label: t.tr('WireGuardTagNotAllowed'), color: 'gray' };
+    if (!row.IsAdministrator && row.MaxPeers > 0 && row.Used > row.MaxPeers) return { label: t.tr('WireGuardTagOverPeerCount'), color: 'orange' };
+    return { label: t.tr('OptionAllowed'), color: 'green' };
+}
+
+// createPeersByUser
+// Builds the Usage tab of the VPN page: each user's peers against what their groups give, in a table.
+//
+// Inputs
+// shared [object]: The Necto helper bag.
+//
+// Output
+// [object]: element, load(), and destroy().
+export function createPeersByUser(shared) {
+    var t = shared.t;
+    var status = h('div', { class: 'stolon-status-text', role: 'status' });
+    var esc = nectoModule.escapeHtml;
+    var table = nectoModule.createRowsTable(shared, {
+        search: { enabled: true, placeholder: t.tr('WireGuardSearchUsers') },
+        text: function (row) { return row.Name; },
+        emptyState: { message: t.tr('EmptyUsers'), filteredMessage: t.tr('EmptyUsersMatch') },
+        columns: [
+            {
+                key: 'Name', type: 'custom', label: t.tr('LabelUser'),
+                render: function (row) {
+                    return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + esc(row.Name) + '</div>'
+                        + '<div class="stolon-table-item-sub">' + esc(allowanceText(row, shared)) + '</div></div>';
+                }
+            },
+            { key: 'State', type: 'custom', label: t.tr('LabelStatus'), className: 'stolon-table-cell-status', render: function (row) { var s = peerState(row, t); return shared.badge(s.color, s.label); } }
+        ]
+    });
+    var element = h('div', { class: 'stolon-stack', 'data-role': 'peers-by-user' }, [h('div', { class: 'fieldDescription', text: t.tr('WireGuardPeersByUserHelp') }), status, table.element]);
+
+    return {
+        element: element,
+        load: function () {
+            return shared.request('WireGuard/Users').then(function (rows) { return table.setRows(rows || []); }).catch(function () {
+                shared.setStatus(status, t.tr('WireGuardErrorLoad'), true);
+            });
+        },
+        destroy: function () { table.destroy(); }
+    };
+}
+
 // buildTroubleshooting
-// Fills the WireGuard section of Troubleshooting: each user's peers against what their groups give, and Restart
-// tunnels. Each tunnel's state and error show on the VPN page.
+// Fills the WireGuard section of Troubleshooting with downloading wireguard-go again and Restart tunnels. Each
+// tunnel's state and each user's peers show on the VPN page.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
 // ctx [object]: shared is the Necto helper bag.
 //
 // Output
-// [object]: A handle with load and destroy.
+// [object]: A handle with load.
 export function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var restartRow = nectoModule.createResetRow({ icon: 'autorenew', label: t.tr('WireGuardRestartTitle'), help: t.tr('WireGuardRestartHelp'), button: t.tr('Restart'), action: 'restart' });
     var restart = restartRow.button;
-    var userList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderPeersByUser'), emptyText: t.tr('EmptyUsers') });
+    var replaceRow = nectoModule.createResetRow({ icon: 'swap_horiz', label: t.tr('WireGuardTitleReplace'), help: t.tr('WireGuardSidecarHelp'), button: t.tr('WireGuardButtonReplace'), action: 'replace-sidecar' });
+    var replace = replaceRow.button;
+    var replaceHelp = replaceRow.element.querySelector('.fieldDescription');
+    var info = null;
 
     [
         status,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderPeersByUser') }),
-        h('div', { class: 'fieldDescription', text: t.tr('WireGuardPeersByUserHelp') }),
-        userList.element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
-        nectoModule.createResetGroup([
-            restartRow
-        ]).element
+        nectoModule.createResetGroup([replaceRow, restartRow]).element
     ].forEach(function (node) { content.appendChild(node); });
 
     function report(message, isError) {
         shared.setStatus(status, message, !!isError, { timeout: 10000 });
     }
 
-    function load() {
-        shared.request('WireGuard/Users').then(function (rows) {
-            userList.setItems((rows || []).map(function (row) {
-                return { id: row.UserId, title: row.Name, secondary: allowanceText(row, shared) };
-            }));
-        }).catch(function () { report(t.tr('WireGuardErrorLoad'), true); });
+    // showSidecar
+    // Says what wireguard-go the server has under its row, and names the button Download or Replace.
+    function showSidecar(next) {
+        info = next;
+        if (replaceHelp) replaceHelp.textContent = t.tr('WireGuardSidecarHelp') + ' ' + sidecarText(info, shared);
+        (replace.querySelector('span') || replace).textContent = t.tr(info && info.Installed ? 'WireGuardButtonReplace' : 'Download');
+        replace.disabled = !(info && info.Platform);
     }
+
+    // fetchSidecar
+    // Downloads wireguard-go, which restarts the tunnels with it, and reports the result.
+    function fetchSidecar() {
+        report(t.tr('WireGuardDownloading'), false);
+        return downloadSidecar(shared, replace).then(function (next) {
+            showSidecar(next);
+            report(t.tr('WireGuardToastDownloaded'), false);
+        }).catch(function (err) {
+            return shared.errorText(err, t.tr('WireGuardErrorDownload')).then(function (text) { report(text, true); });
+        });
+    }
+
+    replace.addEventListener('click', function () {
+        if (!(info && info.Installed)) { fetchSidecar(); return; }
+        nectoModule.confirmDialog(t.tr('WireGuardConfirmReplace'), {
+            title: t.tr('WireGuardTitleReplace'),
+            confirmText: t.tr('WireGuardButtonReplace')
+        }).then(function (yes) { if (yes) fetchSidecar(); });
+    });
 
     restart.addEventListener('click', function () {
         restart.disabled = true;
         shared.request('WireGuard/Restart', 'POST').then(function () {
             report(t.tr('WireGuardToastRestarted'), false);
-            load();
         }).catch(function (err) {
             return shared.errorText(err, t.tr('WireGuardErrorRestart')).then(function (text) { report(text, true); });
         }).finally(function () { restart.disabled = false; });
     });
 
     return {
-        load: load,
-        destroy: function () {
-            userList.destroy();
+        load: function () {
+            return shared.request('WireGuard/Sidecar').then(showSidecar).catch(function () { showSidecar(null); });
         }
     };
 }

@@ -331,22 +331,17 @@ The **Testing** section, above **Save**, holds the trigger to test with, **Test*
 
 A test of a script that runs for each item or user uses one sample item or user. To run the script for real, use **Run now**.
 
+## History
+
+The Scripts page has two tabs, **Scripts** with the picker and the editor, and **History**. **History** shows how many runs succeeded and failed on each of the last 14 days, or 7 on a phone, in the server's time zone, as a chart. Test runs are left out of it, and it is hidden while those days have no run.
+
+Every run, tests included, is listed under the chart in a table, newest first, with its trigger, when it started, how long it took, and **Succeeded** or **Failed**. A test shows *(test)* after its script's name, and more runs load as you scroll. Search the runs, or filter them to **Failed**, **Tests**, or one script. Open a run to see, in a sidecar, its result, trigger, start, and length, each step's result with any captured output, and the variables it received.
+
 ## Troubleshooting
 
-**Troubleshooting > Scripts** holds the run history.
+**Troubleshooting > Scripts** holds **Clear history**, which asks first, then deletes every recorded run.
 
 ![Scripts troubleshooting](screenshots/troubleshooting/Scripts.png)
-
-### History
-
-A chart at the top of **History** shows how many runs succeeded and failed on each of the last 14 days, or 7 on a phone, in the server's time zone. Test runs are left out of it, and it is hidden while those days have no run.
-
-Every run, tests included, is listed under the chart, newest first. The table grows with its rows, and more load as you scroll. Its columns are **Run**, **Trigger**, **Started**, **Duration**, and **Result**, and a test shows *(test)* after its script's name. Drag the edge of a heading to resize its column, and the width is kept for the next visit. On a phone the table shows only the run and its result.
-
-Search the runs, or filter them to **Failed**, **Tests**, or one script. Under **Repairs**, **Clear history** asks first, then deletes every recorded run.
-
-
-Open a run to see, in a sidecar, its result, trigger, start, and length, each step's result with any captured output, and the variables it received.
 
 | Reason | What to do |
 | :--- | :--- |

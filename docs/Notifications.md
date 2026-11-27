@@ -24,6 +24,10 @@ Cards at the top of **Settings > Notifications** count the sends in the send log
 
 A test of **Browser notifications**, **Jellyfin messages**, or **Administrators** goes to the administrator who selected it. A channel that fails never stops the others, and every send is written to the send log.
 
+## Send Log
+
+**Send log**, at the end of **Settings > Notifications**, lists the latest 200 sends, newest first, each with its channel, what happened, and **Sent** or **Failed**. Search it, or filter it to **Sent** or **Failed**. It starts empty when the server starts. **Browsers**, under it, lists the browsers with notifications on, by user, and the count of Jellyfin messages waiting for an app while any wait.
+
 ## Who Gets an Event
 
 * **Groups > Notifications** lists the events for users, those about a member such as a request's or an invite's, under the tool that sends each. Each has a **Browser** switch for browser notifications and a **Jellyfin** switch for Jellyfin messages, and an event with both off is off for members.
@@ -192,12 +196,11 @@ A test checks that every key a tool sends is in a list, so no event is left out 
 
 ## Troubleshooting
 
-**Troubleshooting > Notifications** holds the send log and the repairs. The tests sit beside their channels in **Settings > Notifications**.
+**Troubleshooting > Notifications** holds the repairs. The send log, the browsers, and the tests are in **Settings > Notifications**.
 
 ![Notifications troubleshooting](screenshots/troubleshooting/Notifications.png)
 
-* **Send log** lists the latest 200 sends, newest first, with what happened. It starts empty when the server starts. **Refresh** reads it again, and **Clear** beside **Clear the send log** empties it.
-* **Browsers** lists the browsers with notifications on, by user, and the count of Jellyfin messages waiting for an app while any wait.
+* **Clear** beside **Clear the send log** empties the send log.
 * **Clear waiting messages** asks first, then drops every held Jellyfin message. Its tile is gray while none wait, and the tile of **Clear the send log** is gray while the log is empty.
 * **Replace** beside **Make new push keys** asks first, then makes a new key pair. Every browser must turn notifications on again.
 

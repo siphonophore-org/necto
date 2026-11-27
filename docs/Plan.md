@@ -114,7 +114,7 @@ The proxy forwards to any service, not only Jellyfin. A route is a host name, an
 * Routes and certificate passwords change only through the `/Proxy` routes. A save of the whole configuration, such as from another tool's Settings section, keeps them as stored. **Review**
 * Every tool's secrets share one key ring, `Jellyfin.Plugin.Necto.Keys`, through Stolon's `AddPluginSecretProtector`. On Windows its keys are wrapped with DPAPI, as Remote Access wrapped its own. **Review**
 * **Reset to defaults** is a Troubleshooting repair, which has no form to review before saving, so it lists the settings it puts back in its confirm and saves once confirmed. It keeps the trusted networks, the block list, and the country rule with its countries, as Remote Access's reset did. **Review**
-* The public name's details (the name, the addresses it points to, and this server's public address) sit in **Troubleshooting > Proxy**, since the setup wizard that showed them is dropped. The Proxy page keeps its **Public name** card. **Review**
+* The public name's details (the name, the addresses it points to, and this server's public address) sit on the Proxy page's **Checks** tab, since the setup wizard that showed them is dropped. The Proxy page keeps its **Public name** card. **Review**
 
 ### DDNS
 
@@ -143,7 +143,7 @@ Turning WireGuard on asks to download `wireguard-go`, which is the only way Wire
 
 ### Scripts
 
-Everything the Scripts plugin does, with its history in **Troubleshooting** and its settings in **Settings**.
+Everything the Scripts plugin does, with its history on the Scripts page, **Clear history** in **Troubleshooting**, and its settings in **Settings**.
 
 * A script runs for every user while its editor is **Permissive**, and only for the groups picked while it is **Restrictive**, as the Scripts plugin's empty users list ran a script for everyone. Groups hold no script picks. A stored script takes the groups that ran it, or runs for everyone when no group or every group did. **Review**
 * A failed sign in for a name with no account takes **Everyone**. **Review**
@@ -222,7 +222,7 @@ Every route says what it does, as Zooid's do: `/Dashboard`, `/Requests`, `/Issue
 
 ## Settings and Troubleshooting
 
-**Settings** holds every setting that is not a permission, in one collapsible section per tool and subsections inside it. **Troubleshooting** holds only what a user reaches for when something is wrong: running a scheduled task now, repairs, resets, and diagnostics that are not the tool's normal status. Each thing lives in one place. Nothing in Troubleshooting repeats what a tool page or Settings shows or does, and no tool page carries its own settings tab.
+**Settings** holds every setting that is not a permission, in one collapsible section per tool and subsections inside it. **Troubleshooting** holds only reset rows: running a scheduled task now, repairs, and clearing or resetting data. Each thing lives in one place. Nothing in Troubleshooting repeats what a tool page or Settings shows or does, and no tool page carries its own settings tab.
 
 ## Strings
 

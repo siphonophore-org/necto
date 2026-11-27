@@ -5,6 +5,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import * as fields from './configurationpage?name=necto_netfields.js';
+import { createProxyDetails } from './configurationpage?name=necto_proxy_sections.js';
 
 var h = nectoModule.h;
 
@@ -723,6 +724,7 @@ export default function (view) {
     var hostnames = [];
     var proxyStatus = {};
     var visitors = null;
+    var details = null;
     var loadSeq = 0;
     var refreshSeq = 0;
     var acceptTerms = false;
@@ -767,6 +769,7 @@ export default function (view) {
         shared.setVisible('proxyRoutes', !off || routes.length > 0);
         if (jellyfin) shared.setVisible(jellyfin.section.element, !off);
         if (visitors) shared.setVisible(visitors.element, !off);
+        if (details) shared.setVisible(details.element, !off);
     }
 
     // drawJellyfin
@@ -890,6 +893,7 @@ export default function (view) {
             showStatus(answers[1] || {});
             if (openEditor) openEditor.editor.setRequestable(requestable());
             if (visitors) visitors.load();
+            if (details) details.load();
         }).catch(function (err) {
             if (mine !== loadSeq) return;
             shared.errorText(err, shared.t.tr('ProxyErrorLoad')).then(function (text) { report(text, true); });
@@ -1092,8 +1096,8 @@ export default function (view) {
     }
 
     // createVisitors
-    // Builds the Visitors section: the bans and what each address did. The countries show on the Dashboard's
-    // Locations, and how the location database stands shows in Troubleshooting.
+    // Builds the Visitors tab: the bans and what each address did. The countries show on the Dashboard's Locations,
+    // and how the location database stands on the Checks tab.
     function createVisitors() {
         var t = shared.t;
         var content = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr('ProxyVisitorsHelp') })]);
@@ -1106,10 +1110,11 @@ export default function (view) {
             h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderBanned') }), bannedHost,
             h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderActivity') }), activityHost,
             attribution].forEach(function (n) { content.appendChild(n); });
-        var section = nectoModule.createCollapsibleSection({ title: t.tr('HeaderVisitors'), icon: 'travel_explore', collapsed: true, content: content });
-        section.element.id = 'proxyVisitors';
+        content.classList.add('stolon-stack');
+        content.id = 'proxyVisitors';
+        // A view with a Visitors holder of its own takes the tab's content in its place.
         var holderVisitors = view.querySelector('#proxyVisitors');
-        holderVisitors.parentNode.replaceChild(section.element, holderVisitors);
+        if (holderVisitors) holderVisitors.parentNode.replaceChild(content, holderVisitors);
 
         var button = function (label, variant, act, name) {
             var b = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-small ' + variant, 'aria-label': name }, [h('span', { text: label })]);
@@ -1222,7 +1227,7 @@ export default function (view) {
             });
         }
 
-        return { element: section.element, load: load, destroy: function () { banned.destroy(); activity.destroy(); section.destroy && section.destroy(); } };
+        return { element: content, load: load, destroy: function () { banned.destroy(); activity.destroy(); } };
     }
 
     var made = nectoModule.createNectoPage(view, {
@@ -1230,8 +1235,23 @@ export default function (view) {
         bind: function (bag, pg) {
             view.querySelector('#btnAddRoute').addEventListener('click', pickTemplate);
             visitors = createVisitors();
+            // Routes holds the routes and the Jellyfin section, Visitors the bans and activity, and Checks what the
+            // proxy runs with.
+            details = createProxyDetails(shared);
+            var holder = view.querySelector('#proxyTabs');
+            if (holder) {
+                nectoModule.createToolTabs(holder, {
+                    label: shared.t.tr('TabProxy'),
+                    tabs: [
+                        { id: 'routes', label: shared.t.tr('ProxyHeaderRoutes') },
+                        { id: 'visitors', label: shared.t.tr('HeaderVisitors'), element: visitors.element, open: visitors.load },
+                        { id: 'checks', label: shared.t.tr('HeaderChecks'), element: details.element, open: details.load }
+                    ]
+                });
+            }
             pg.addCleanup(function () {
                 if (visitors) visitors.destroy();
+                if (details) details.destroy();
             });
         },
         load: function (bag, pg) {

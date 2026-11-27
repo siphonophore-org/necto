@@ -8,11 +8,14 @@ import {
     createCollapsibleSection, confirmDialog, promptSidecar, openSidecar, generateGuid, downloadJson, pickJsonFile, setFieldState, SECRET_KEPT,
     fieldGroups, fieldLabel, NUMERIC_FIELDS, operatorLabels, operationTypes, renderRunSummary, renderRunSteps, t
 } from './configurationpage?name=necto_scripts_common.js';
+import { createRunHistory } from './configurationpage?name=necto_scripts_sections.js';
+import { createToolTabs } from './configurationpage?name=necto_shared.js';
 
 export default function (view) {
     'use strict';
 
     var tracker = null;
+    var history = null;
     var folds = {};
     var page = createScriptsPage(view, {
         bind: bind,
@@ -1540,6 +1543,18 @@ export default function (view) {
 
     function bind() {
         foldSections();
+        // Scripts holds the picker and the editor, and History each recent day's runs.
+        history = createRunHistory(Shared, page);
+        if (el('scriptsTabs')) {
+            createToolTabs(el('scriptsTabs'), {
+                label: t.tr('TabScripts'),
+                tabs: [
+                    { id: 'scripts', label: t.tr('TabScripts') },
+                    { id: 'history', label: t.tr('ScriptsTabHistory'), element: history.element, open: history.load }
+                ]
+            });
+        }
+        page.addCleanup(function () { history.destroy(); });
         el('selectScript').addEventListener('change', function () { selectScript(this.value); });
         el('btnNewScript').addEventListener('click', newScript);
         el('btnRenameScript').addEventListener('click', renameScript);
@@ -1763,6 +1778,8 @@ export default function (view) {
     }
 
     function load() {
+        // History reads again each time the page shows, once its tab has opened.
+        if (history && history.element.parentNode) history.load();
         Promise.all([Shared.request('Scripts/Catalog', 'GET'), Shared.request('Groups').catch(function () { return []; })]).then(function (results) {
             catalog = results[0];
             nectoGroups = results[1] || [];

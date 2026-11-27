@@ -1,12 +1,12 @@
 // necto_scripts_sections.js
 // The Scripts sections of Settings and Troubleshooting, which this module adds to the registry when it loads.
 // Settings holds how many runs go at once, the default command timeout, and how many runs the history keeps.
-// Troubleshooting holds the run history, with a chart of each day's runs, the runs in a table, a run's steps and
-// variables in a sidecar, and Clear history.
+// Troubleshooting holds Clear history. The run history, with a chart of each day's runs and the runs in a table, is
+// built here for the Scripts page.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import {
-    createDataTable, createBarChart, createSliderField, createDurationField, confirmDialog, openSidecar,
+    createBarChart, createSliderField, createDurationField, confirmDialog, openSidecar,
     renderRunSummary, renderRunSteps, renderRunVariables, formatDuration, useStrings, t
 } from './configurationpage?name=necto_scripts_common.js';
 
@@ -70,30 +70,23 @@ export function buildSettings(content, ctx) {
     };
 }
 
-// buildTroubleshooting
-// Fills the Scripts section of Troubleshooting with the run history.
+// createRunHistory
+// Builds the History tab of the Scripts page: a chart of each recent day's runs, and the runs in a table, each
+// opening its result, steps, and variables in a sidecar.
 //
 // Inputs
-// content [HTMLElement]: The section's content.
-// ctx [object]: shared is the Necto helper bag, and page the page handle.
+// Shared [object]: The Necto helper bag.
+// page [object]: The page handle, for the sidecar.
 //
 // Output
-// [object]: A handle with load and destroy.
-export function buildTroubleshooting(content, ctx) {
-    var Shared = ctx.shared;
-    var page = ctx.page;
+// [object]: element, load(), and destroy().
+export function createRunHistory(Shared, page) {
     var cleanups = [];
     useStrings(Shared);
-    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'history-status' });
     var chartHost = h('div', { 'data-role': 'history-chart' });
-    var tableHost = h('div', { 'data-role': 'history-table' });
-    var clearRow = nectoModule.createResetRow({ icon: 'history_toggle_off', label: t.tr('ScriptsTitleClearHistory'), help: t.tr('ScriptsHelpClearHistory'), button: t.tr('ButtonClear'), action: 'clear-history', destructive: true, onClick: function () { clearHistory(); } });
-    content.appendChild(status);
-    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('ScriptsTabHistory') }));
-    content.appendChild(chartHost);
-    content.appendChild(tableHost);
-    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }));
-    content.appendChild(nectoModule.createResetGroup([clearRow]).element);
+    var tableHost = h('div', { id: 'scriptsHistoryTable', 'data-role': 'history-table' });
+    var element = h('div', { class: 'stolon-stack', 'data-role': 'run-history' }, [status, chartHost, tableHost]);
 
     var table = null;
     var chart = null;
@@ -154,15 +147,14 @@ export function buildTroubleshooting(content, ctx) {
             label: t.tr('ScriptsChartRunsLabel'),
             emptyText: t.tr('ScriptsChartRunsEmpty')
         });
-        var host = chartHost;
-        host.innerHTML = '';
-        host.appendChild(chart.element);
+        chartHost.innerHTML = '';
+        chartHost.appendChild(chart.element);
     }
 
     // loadChart
     // Reads each recent day's runs from the server and draws them.
     function loadChart() {
-        Shared.request('Scripts/History/Days', 'GET').then(function (data) {
+        return Shared.request('Scripts/History/Days', 'GET').then(function (data) {
             chartData = data || {};
             drawChart();
         }).catch(function () {
@@ -190,109 +182,66 @@ export function buildTroubleshooting(content, ctx) {
             body.appendChild(title);
             body.appendChild(part[1]);
         });
-        openSidecar({
-            title: runName(run),
-            body: body,
-            size: 'large',
-            page: page
-        });
-    }
-
-    // fetchRuns
-    // Reads one page of runs for the table from the History route.
-    //
-    // Inputs
-    // query [object]: The table's search, filters, page, and page size.
-    //
-    // Output
-    // [Promise]: The page, as { Items, TotalCount }.
-    function fetchRuns(query) {
-        var filter = (query.filters.run || [])[0] || '';
-        var params = '?Skip=' + ((query.page - 1) * query.pageSize) + '&Take=' + query.pageSize
-            + (query.search ? '&Search=' + encodeURIComponent(query.search) : '')
-            + (filter ? '&Filter=' + encodeURIComponent(filter) : '');
-        return Shared.request('Scripts/History' + params, 'GET');
-    }
-
-    // clearHistory
-    // Asks first, then deletes every recorded run.
-    function clearHistory() {
-        confirmDialog(t.tr('ScriptsConfirmClearHistory'), { title: t.tr('ScriptsTitleClearHistory'), confirmText: t.tr('ButtonClear'), destructive: true }).then(function (ok) {
-            if (!ok) return;
-            Shared.request('Scripts/History', 'DELETE').then(function () {
-                Shared.setStatus(status, t.tr('ToastHistoryCleared'), false);
-                if (table) table.reload();
-                loadChart();
-            }).catch(function () {
-                Shared.setStatus(status, t.tr('ErrorClearHistory'), true);
-            });
-        });
+        openSidecar({ title: runName(run), body: body, size: 'large', page: page });
     }
 
     // createTable
-    // Draws the runs with Base's Data Table, as tall as its rows. More rows load as the page scrolls.
+    // Draws the runs with Stolon's Paginated Table over the History route, each row its run, its trigger, when it
+    // started and how long it took, and its result. More rows load as the page scrolls.
     //
     // Inputs
     // scripts [Array]: The scripts, offered as filters.
     function createTable(scripts) {
         if (table) table.destroy();
-        var host = tableHost;
-        host.innerHTML = '';
-        table = createDataTable({
-            label: t.tr('ScriptsLabelRuns'),
-            fetch: fetchRuns,
-            rowKey: 'Id',
-            pageSize: 50,
-            search: { placeholder: t.tr('ScriptsPlaceholderSearchRuns') },
-            filters: [{
-                name: 'run',
+        tableHost.innerHTML = '';
+        var bag = Object.create(Shared);
+        bag.apiPrefix = '';
+        table = nectoModule.createPaginatedTable(element, bag, {
+            containerId: 'scriptsHistoryTable',
+            endpoint: 'Scripts/History',
+            search: { enabled: true, placeholder: t.tr('ScriptsPlaceholderSearchRuns') },
+            filters: {
+                name: 'filter',
                 label: t.tr('ScriptsLabelRuns'),
                 options: [
                     { value: 'failed', label: t.tr('LabelFailed') },
                     { value: 'test', label: t.tr('HeaderTests') }
                 ].concat(scripts.map(function (s) { return { value: s.Id, label: s.Name }; }))
-            }],
-            emptyText: t.tr('ScriptsEmptyRuns'),
-            widthKey: 'scripts-history',
+            },
+            pagination: { pageSize: 50 },
+            emptyState: { message: t.tr('ScriptsEmptyRuns'), filteredMessage: t.tr('ScriptsEmptyRunsMatch') },
             columns: [
-                { key: 'ScriptName', label: t.tr('ScriptsLabelRun'), icon: 'code', width: '2fr', sortable: false, render: runName },
-                { key: 'Trigger', label: t.tr('ScriptsLabelTrigger'), icon: 'bolt', width: '1.5fr', sortable: false, render: function (run) { return triggerLabel(run.Trigger); } },
-                { key: 'StartedUtc', label: t.tr('ScriptsLabelStarted'), icon: 'schedule', width: '1.5fr', sortable: false, render: function (run) { return when(run.StartedUtc); } },
-                { key: 'DurationMs', label: t.tr('LabelDuration'), icon: 'timer', align: 'end', sortable: false, render: function (run) { return formatDuration(Shared, run.DurationMs); } },
                 {
-                    key: 'Succeeded', label: t.tr('LabelResult'), icon: 'check_circle', width: '8rem', sortable: false, render: function (run) {
-                        var cell = document.createElement('span');
-                        cell.innerHTML = Shared.badge(run.Succeeded ? 'green' : 'red', run.Succeeded ? t.tr('ScriptsStatusSucceeded') : t.tr('LabelFailed'));
-                        return cell;
+                    key: 'ScriptName', type: 'custom', label: t.tr('ScriptsLabelRun'),
+                    render: function (run) {
+                        var line = [triggerLabel(run.Trigger), when(run.StartedUtc), formatDuration(Shared, run.DurationMs)].filter(Boolean).join(' · ');
+                        return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + nectoModule.escapeHtml(runName(run)) + '</div>'
+                            + '<div class="stolon-table-item-sub">' + nectoModule.escapeHtml(line) + '</div></div>';
                     }
+                },
+                {
+                    key: 'Succeeded', type: 'custom', label: t.tr('LabelResult'), className: 'stolon-table-cell-status',
+                    render: function (run) { return Shared.badge(run.Succeeded ? 'green' : 'red', run.Succeeded ? t.tr('ScriptsStatusSucceeded') : t.tr('LabelFailed')); }
                 }
             ],
-            onOpen: showRun
+            actions: { onRowClick: showRun }
         });
-        host.appendChild(table.element);
+        table.load().catch(function () { Shared.setStatus(status, t.tr('ScriptsErrorLoadHistory'), true, { timeout: 0 }); });
+    }
 
-        // A phone keeps the run and its result. The dialog shows the trigger, the start, and the length.
-        var phone = window.matchMedia('(max-width: 600px)');
-        function fit() {
-            if (!table) return;
-            table.setColumnHidden('Trigger', phone.matches);
-            table.setColumnHidden('StartedUtc', phone.matches);
-            table.setColumnHidden('DurationMs', phone.matches);
-        }
-        fit();
-        phone.addEventListener('change', fit);
+    // A phone shows fewer days, so the chart draws again when the width crosses over.
+    var phone = window.matchMedia('(max-width: 600px)');
+    if (phone.addEventListener) {
         phone.addEventListener('change', drawChart);
-        cleanups.push(function () {
-            phone.removeEventListener('change', fit);
-            phone.removeEventListener('change', drawChart);
-        });
+        cleanups.push(function () { phone.removeEventListener('change', drawChart); });
     }
 
     return {
+        element: element,
         load: function () {
             loadChart();
-            Promise.all([Shared.getConfig(), Shared.request('Scripts/Catalog', 'GET')]).then(function (results) {
-                (results[1].Triggers || []).forEach(function (t) { triggerLabels[t.Key] = t.Label; });
+            return Promise.all([Shared.getConfig(), Shared.request('Scripts/Catalog', 'GET')]).then(function (results) {
+                (results[1].Triggers || []).forEach(function (x) { triggerLabels[x.Key] = x.Label; });
                 // The catalog lists only triggers a script can pick, so a Run now run takes its label here.
                 if (!triggerLabels.Manual) triggerLabels.Manual = t.tr('ButtonRunTask');
                 createTable((results[0].Scripts && results[0].Scripts.Scripts) || []);
@@ -306,6 +255,40 @@ export function buildTroubleshooting(content, ctx) {
             if (chart) { chart.destroy(); chart = null; }
         }
     };
+}
+
+// buildTroubleshooting
+// Fills the Scripts section of Troubleshooting with Clear history. The runs show on the Scripts page.
+//
+// Inputs
+// content [HTMLElement]: The section's content.
+// ctx [object]: shared is the Necto helper bag.
+//
+// Output
+// [object]: A handle with load.
+export function buildTroubleshooting(content, ctx) {
+    var Shared = ctx.shared;
+    useStrings(Shared);
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var clearRow = nectoModule.createResetRow({ icon: 'history_toggle_off', label: t.tr('ScriptsTitleClearHistory'), help: t.tr('ScriptsHelpClearHistory'), button: t.tr('ButtonClear'), action: 'clear-history', destructive: true, onClick: function () { clearHistory(); } });
+    content.appendChild(status);
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }));
+    content.appendChild(nectoModule.createResetGroup([clearRow]).element);
+
+    // clearHistory
+    // Asks first, then deletes every recorded run.
+    function clearHistory() {
+        confirmDialog(t.tr('ScriptsConfirmClearHistory'), { title: t.tr('ScriptsTitleClearHistory'), confirmText: t.tr('ButtonClear'), destructive: true }).then(function (ok) {
+            if (!ok) return;
+            Shared.request('Scripts/History', 'DELETE').then(function () {
+                Shared.setStatus(status, t.tr('ToastHistoryCleared'), false);
+            }).catch(function () {
+                Shared.setStatus(status, t.tr('ErrorClearHistory'), true);
+            });
+        });
+    }
+
+    return { load: function () {} };
 }
 
 nectoModule.registerSection('settings', 'scripts', { build: buildSettings });

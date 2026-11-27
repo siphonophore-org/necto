@@ -170,7 +170,7 @@ An API key reads and writes a store as an administrator with no user, so it owns
 
 ![Pages troubleshooting](screenshots/troubleshooting/Pages.png)
 
-* **Stores** lists each store with its records and limit. **Clear** asks first, then deletes every record in the store. A settings backup cannot bring them back.
+* **Stores** has a row for each store with its records and limit. **Clear** asks first, then deletes every record in the store. A settings backup cannot bring them back.
 * **Run now** beside **Apply page store retention** runs the retention task.
 * **Check now** beside **Check the settings** asks the server whether the saved pages, images, and stores would save again, and why not.
 

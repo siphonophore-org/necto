@@ -5,6 +5,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import * as nectoTemplates from './configurationpage?name=necto_groups_templates.js';
+import { createPendingResets } from './configurationpage?name=necto_groups_sections.js';
 
 var h = nectoModule.h;
 
@@ -1061,12 +1062,29 @@ export default function (view) {
         });
     }
 
+    var resets = null;
     var made = nectoModule.createNectoPage(view, {
         page: 'necto_groups',
-        bind: function () {
+        bind: function (bag, pg) {
             view.querySelector('#btnAddGroup').addEventListener('click', function () { openGroup(null); });
+            // Groups holds the counts and the list, and Password resets each pending reset.
+            resets = createPendingResets(bag, pg);
+            var holder = view.querySelector('#groupsTabs');
+            if (holder) {
+                nectoModule.createToolTabs(holder, {
+                    label: bag.t.tr('TabGroups'),
+                    tabs: [
+                        { id: 'groups', label: bag.t.tr('TabGroups') },
+                        { id: 'resets', label: bag.t.tr('HeaderPasswordResets'), element: resets.element, open: resets.load }
+                    ]
+                });
+            }
+            pg.addCleanup(function () { resets.destroy(); });
         },
-        load: function () { loadGroups(); }
+        load: function () {
+            loadGroups();
+            if (resets.element.parentNode) resets.load();
+        }
     });
     shared = made.shared;
     page = made.page;

@@ -13,7 +13,6 @@ import './configurationpage?name=necto_invites_sections.js';
 import './configurationpage?name=necto_ddns_sections.js';
 import './configurationpage?name=necto_proxy_sections.js';
 import './configurationpage?name=necto_requests_sections.js';
-import './configurationpage?name=necto_menulinks_sections.js';
 
 export default function (view) {
     'use strict';

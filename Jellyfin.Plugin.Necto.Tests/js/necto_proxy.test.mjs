@@ -238,7 +238,7 @@ test('while the proxy is off the page says so in place of its cards and sections
     ['proxyCards', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].forEach(function (id) {
         assert.equal(view.querySelector('#' + id).classList.contains('stolon-hidden'), true, id);
     });
-    assert.deepEqual(texts(view, '.stolon-collapsible-title'), ['Jellyfin', 'Visitors']);
+    assert.deepEqual(texts(view, '.stolon-collapsible-title'), ['Jellyfin']);
 });
 
 test('the Proxy Settings section saves a value equal to its default as unset', async function () {
@@ -299,16 +299,14 @@ test('Settings and Troubleshooting draw the Proxy and DDNS sections, filled from
     assert.ok(page.requests.find(function (r) { return r.type === 'POST' && r.url === 'Proxy/Visitors/Settings'; }));
 });
 
-test('the Proxy Troubleshooting section shows what the Proxy page does not, and the recovery file', async function () {
+test('Troubleshooting holds only the Proxy and DDNS rows, one Reset per DDNS record', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
     var view = pageView(dom, [dom.el('div', { id: 'troubleshootingSections' })]);
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
         'GET Proxy/Status': { Running: true, Addresses: ['http://[::]:80'], Backend: 'http://127.0.0.1:8096/', DisableFlagPath: '/config/Jellyfin.Plugin.Necto.Proxy/DISABLE', Reachability: {} },
-        'GET Proxy/Defaults': { IsLowMemory: false, MemoryMb: 8192 },
-        'GET Proxy/Visitors': { Location: { Detail: 'Country', Loaded: false, Downloading: true } },
-        'GET Ddns/Records': { Records: [] }
+        'GET Ddns/Records': { Records: [{ Record: { Id: 'r1', Name: 'home.example.com' } }, { Record: { Id: 'r2', Hostname: 'media.example.com' } }] }
     });
     var mod = await loadScript('necto_troubleshooting.js');
     mod.default(view);
@@ -316,19 +314,41 @@ test('the Proxy Troubleshooting section shows what the Proxy page does not, and 
     await settle();
 
     var section = view.querySelector('[data-tool="proxy"]');
-    assert.ok(section.textContent.indexOf('/config/Jellyfin.Plugin.Necto.Proxy/DISABLE') >= 0);
-    assert.ok(section.textContent.indexOf('http://[::]:80') >= 0);
-    assert.ok(section.textContent.indexOf('The location database is downloading.') >= 0);
-    // Whether the proxy runs and whether Jellyfin trusts it, with Trust and Undo, live on the Proxy page.
-    assert.equal(section.textContent.indexOf('Running'), -1);
-    assert.equal(section.textContent.indexOf('trusts the proxy'), -1);
+    // What the proxy runs with shows in Details on the Proxy page, and Trust and Undo there too.
+    assert.equal(section.textContent.indexOf('http://[::]:80'), -1);
+    assert.equal(section.textContent.indexOf('DISABLE'), -1);
+    assert.equal(section.querySelector('.stolon-definition-list, pre'), null);
     assert.equal(section.querySelector('[data-action="undo"]'), null);
+    assert.deepEqual(Array.prototype.map.call(section.querySelectorAll('[data-action]'), function (b) { return b.getAttribute('data-action'); }),
+        ['reach', 'task-external', 'task-certificates', 'task-locations', 'restart', 'reset', 'clear']);
     var ddns = view.querySelector('[data-tool="ddns"]');
-    assert.ok(ddns.textContent.indexOf('Public IPv4') < 0);
-    // Update now and why the public IP was not found live on the DDNS page, so only the task and the reset stay.
-    assert.ok(ddns.querySelector('[data-action="run-update"]'));
+    // Update now and why the public IP was not found live on the DDNS page.
     assert.equal(ddns.querySelector('[data-action="update-now"]'), null);
-    assert.equal(ddns.querySelector('[data-role="detection"]'), null);
+    assert.equal(ddns.querySelector('select'), null);
+    assert.deepEqual(texts(ddns, '[data-record] .stolon-reset-info > div:first-child'), ['home.example.com', 'media.example.com']);
+});
+
+test('the Checks tab of the Proxy page lists what the proxy runs with in a table, and the recovery file', async function () {
+    var page = installPage({});
+    routeApi(page, {
+        'GET Proxy/Status': { Addresses: ['http://[::]:80'], Backend: 'http://127.0.0.1:8096/', DisableFlagPath: '/config/Jellyfin.Plugin.Necto.Proxy/DISABLE', Reachability: { CheckedUtc: '2026-11-26T12:00:00Z', Reachable: true, Nodes: [] } },
+        'GET Proxy/Defaults': { IsLowMemory: false, MemoryMb: 8192 },
+        'GET Proxy/Visitors': { Location: { Detail: 'Country', Loaded: false, Downloading: true } }
+    });
+    var bag = (await loadScript('necto_shared.js')).createNectoShared(pageView(page.dom, []));
+    await bag.translations;
+    var sections = await loadScript('necto_proxy_sections.js');
+    var details = sections.createProxyDetails(bag);
+    page.dom.document.documentElement.appendChild(details.element);
+    await details.load();
+    await settle(50);
+
+    var cells = Array.prototype.map.call(details.element.querySelectorAll('.stolon-table-cell'), function (c) { return c.innerHTML; }).join(' ');
+    assert.equal(details.element.getAttribute('data-role'), 'proxy-details');
+    assert.match(cells, /Listening on[\s\S]*http:\/\/\[::\]:80/);
+    assert.match(cells, /The location database is downloading\./);
+    assert.match(cells, /Reachable[\s\S]*Yes/);
+    assert.equal(details.element.querySelector('[data-role="recovery-path"]').textContent, '/config/Jellyfin.Plugin.Necto.Proxy/DISABLE');
 });
 
 // openProxyPage

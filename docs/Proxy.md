@@ -12,6 +12,8 @@ The page opens with notices that need a look, such as a port another program hol
 
 The proxy is off until **Settings > Proxy > Enable proxy** is on. While it is off the page says so in place of its cards, **Add route**, **Jellyfin**, and **Visitors**, and lists any routes already added.
 
+Under the cards the page has three tabs. **Routes** holds the routes and the **Jellyfin** section, **Visitors** the bans and activity, and **Checks** what the proxy runs with.
+
 The page reads the proxy's status and routes again every 10 seconds, and the visitors every 30 seconds, so a certificate being issued, Jellyfin restarting, and new visitors or bans show without a reload.
 
 ## Routes
@@ -134,13 +136,19 @@ Every response drops the `Server`, `X-Powered-By`, and timing headers, and gets 
 
 ## Visitors
 
-The **Visitors** section shows the banned addresses with when each ban began and ends and **Unban**, and what each address did with **Block**, **Unblock**, or **Unblock** for its country. The totals by country are on the [Dashboard](Dashboard.md)'s **Locations**. With **Location lookup** set to **Country and city**, the activity table also shows each visitor's city.
+The **Visitors** tab shows the banned addresses with when each ban began and ends and **Unban**, and what each address did with **Block**, **Unblock**, or **Unblock** for its country. The totals by country are on the [Dashboard](Dashboard.md)'s **Locations**. With **Location lookup** set to **Country and city**, the activity table also shows each visitor's city.
 
 **Block** and unblocking a country ask first, since a country rule covers many people. Unblocking a country lets its addresses through, and addresses blocked one by one stay blocked. Your network and trusted networks are never blocked, so their **Block** is off. An address blocked by a range in the block list has its **Unblock** off, since the range is changed in **Settings**. Hover a button that is off to see why.
 
-With **Record visitors** off, nothing is recorded. Locations are looked up on this server with DB-IP's free database, which the location task keeps current. **Troubleshooting > Proxy** says how the location database stands, or that lookups are off.
+With **Record visitors** off, nothing is recorded. Locations are looked up on this server with DB-IP's free database, which the location task keeps current. **Checks** says how the location database stands, or that lookups are off.
 
 The [Dashboard](Dashboard.md) map shows the same totals by country, through `GET /Dashboard/Map`, and its share card shows the proxy's public address from `GET /Proxy/PublicAddress`.
+
+## Checks
+
+**Checks**, the page's third tab after **Routes** and **Visitors**, lists what the proxy runs with in a table: the addresses it listens on, the Jellyfin it forwards to, the LAN address, the location database, the server's country, and which defaults the server's memory picks. While a country rule refused anyone, **Refused by country** counts them since Jellyfin started. With a public name, it also shows the name, the addresses it points to, and this server's public address, and after a **Test from outside** in Troubleshooting, when it ran and which places connected.
+
+To turn the proxy off without the dashboard, create an empty file named `DISABLE` in the proxy's folder, `plugins/configurations/Jellyfin.Plugin.Necto.Proxy` in Jellyfin's data folder, and restart Jellyfin. **Checks** shows the full path in a code block.
 
 ## Settings
 
@@ -162,7 +170,7 @@ The description under **Country rule** says what the picked rule does and, for *
 
 ## Troubleshooting
 
-**Troubleshooting > Proxy** shows what the Proxy page does not: the addresses the proxy listens on, the Jellyfin it forwards to, the LAN address, the location database, the server's country, and which defaults the server's memory picks. While a country rule refused anyone, **Refused by country** counts them since Jellyfin started. With a public name, it also shows the name, the addresses it points to, and this server's public address.
+**Troubleshooting > Proxy** holds the check from outside, the tasks, and the repairs. What they find shows on the Proxy page's **Checks** tab.
 
 ![Proxy troubleshooting](screenshots/troubleshooting/Proxy.png)
 
@@ -171,8 +179,6 @@ The description under **Country rule** says what the picked rule does and, for *
 * **Restart the proxy** stops it and starts it again, such as after a port was freed.
 * **Reset to defaults** puts every listener and protection value back to its default. It lists the settings that change and asks first. The routes, **Trusted networks**, the block list, and the country rule with its countries stay.
 * **Clear visitor history** asks first. Bans stay.
-
-To turn the proxy off without the dashboard, create an empty file named `DISABLE` in the proxy's folder, `plugins/configurations/Jellyfin.Plugin.Necto.Proxy` in Jellyfin's data folder, and restart Jellyfin. **Recovery** shows the full path in a code block.
 
 ## Scheduled Tasks
 

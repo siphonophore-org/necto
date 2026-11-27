@@ -1,6 +1,6 @@
 // necto_menulinks.test.mjs
-// Tests for the Menu links sections: the editor of the web client's side menu in Settings, its sidecar, its Save, and
-// the file check in Troubleshooting.
+// Tests for the Menu links section: the editor of the web client's side menu in Settings, its sidecar, its Save, and
+// what it says when config.json cannot be written.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -139,7 +139,7 @@ test('the sidecar of a managed link has no Remove and keeps its address, while a
     assert.deepEqual(puts[0], [{ Name: 'Ask', Icon: 'movie', Url: '../requests/' }, { Name: 'Rules', Icon: '', Url: '../pages/rules' }]);
 });
 
-test('a config.json that cannot be written says so in Settings and in Troubleshooting', async function () {
+test('a config.json that cannot be written says so in Settings, and Troubleshooting has no Menu links section', async function () {
     var readOnly = Object.assign({}, VIEW, { Writable: false, Problem: 'The web client\'s config.json cannot be written.' });
     var settings = await openTool('settings', { 'GET Necto/MenuLinks': readOnly });
     var problem = settings.section.querySelector('[data-role="problem"]');
@@ -148,11 +148,5 @@ test('a config.json that cannot be written says so in Settings and in Troublesho
     assert.equal(settings.section.querySelector('[data-action="add-link"]').disabled, true);
 
     var trouble = await openTool('troubleshooting', { 'GET Necto/MenuLinks': readOnly });
-    var state = trouble.section.querySelector('[data-role="file-state"]');
-    assert.ok(state.classList.contains('stolon-warn'));
-    assert.match(state.textContent, /cannot be written/);
-    assert.equal(trouble.section.querySelector('[data-role="file-path"]').textContent, '/srv/jellyfin/web/config.json');
-
-    var fine = await openTool('troubleshooting');
-    assert.ok(fine.section.querySelector('[data-role="file-state"]').classList.contains('stolon-success'));
+    assert.equal(trouble.section, null);
 });

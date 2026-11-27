@@ -64,12 +64,12 @@ Cloudflare, DigitalOcean, Duck DNS, and Porkbun can also publish the TXT record 
 
 ## Troubleshooting
 
-**Troubleshooting > DDNS** holds the update task and the record reset. **Update now** and why the last run could not find the public IP show on the DDNS page.
+**Troubleshooting > DDNS** holds the update task and a reset row for each record. **Update now** and why the last run could not find the public IP show on the DDNS page.
 
 ![DDNS troubleshooting](screenshots/troubleshooting/DDNS.png)
 
 * **Update DDNS records** runs the scheduled task, which checks each record that is due.
-* **Reset a record** clears the picked record's pause, failure count, and last pushed address, so the next run pushes it again.
+* **Reset** beside a record asks first, then clears its pause, failure count, and last pushed address, so the next run pushes it again.
 
 ## Scheduled Task
 

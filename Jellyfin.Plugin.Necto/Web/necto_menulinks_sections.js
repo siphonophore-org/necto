@@ -1,6 +1,6 @@
 // necto_menulinks_sections.js
-// The Menu links sections of Settings and Troubleshooting. Settings edits the custom links in the web client's side
-// menu, which live in the menuLinks of its config.json. Troubleshooting says whether that file can be saved.
+// The Menu links section of Settings. It edits the custom links in the web client's side menu, which live in the
+// menuLinks of its config.json, and says when that file cannot be saved.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
@@ -369,43 +369,5 @@ function buildSettings(content, ctx) {
     };
 }
 
-// buildTroubleshooting
-// Fills the Menu links section of Troubleshooting: where config.json is, and whether the links can be saved.
-//
-// Inputs
-// content [HTMLElement]: The section's content.
-// ctx [object]: shared is the Necto helper bag.
-//
-// Output
-// [object]: A handle with load.
-function buildTroubleshooting(content, ctx) {
-    var shared = ctx.shared;
-    var t = shared.t;
-    var state = h('div', { role: 'status', 'data-role': 'file-state' });
-    var path = h('pre', { class: 'stolon-code stolon-code-block', 'data-role': 'file-path' });
-    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('MenuLinksTroubleFile') }));
-    content.appendChild(state);
-    content.appendChild(path);
-
-    return {
-        load: function () {
-            return shared.request(MENU_LINKS_ROUTE).then(function (view) {
-                var ok = !!view.Writable;
-                state.className = ok ? 'stolon-success' : 'stolon-warn';
-                state.textContent = ok ? t.tr('MenuLinksTroubleWritable') : (view.Problem || t.tr('MenuLinksErrorLoad'));
-                path.textContent = view.Path || '';
-                path.classList.toggle('stolon-hidden', !view.Path);
-            }).catch(function (err) {
-                return shared.errorText(err, t.tr('MenuLinksErrorLoad')).then(function (text) {
-                    state.className = 'stolon-error';
-                    state.textContent = text;
-                    path.classList.add('stolon-hidden');
-                });
-            });
-        }
-    };
-}
-
 var section = { name: function () { return nectoModule.toolName('MenuLinksTitle', 'Menu links'); }, icon: 'add_link' };
 nectoModule.registerSection('settings', 'menulinks', Object.assign({ build: buildSettings }, section));
-nectoModule.registerSection('troubleshooting', 'menulinks', Object.assign({ build: buildTroubleshooting }, section));

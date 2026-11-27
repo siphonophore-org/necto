@@ -128,12 +128,13 @@ function buildTroubleshooting(content, ctx) {
     var pollers = [];
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var stores = h('div', { class: 'stolon-reset-group', 'data-role': 'stores' });
+    var storesTitle = h('h3', { class: 'stolon-subsection-title', text: t.tr('PagesTabStores') });
     var retention = nectoModule.createResetRow({ icon: 'auto_delete', label: t.tr('PagesTaskRetentionName'), help: t.tr('PagesTaskRetentionDescription'), button: t.tr('ButtonRunTask'), action: 'run-retention' }).element;
     var check = nectoModule.createResetRow({ icon: 'fact_check', label: t.tr('PagesLabelCheckSettings'), help: t.tr('PagesCheckSettingsHelp'), button: t.tr('PagesButtonCheck'), action: 'check-settings' }).element;
 
     [
         status,
-        h('h3', { class: 'stolon-subsection-title', text: t.tr('PagesTabStores') }),
+        storesTitle,
         stores,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
         h('div', { class: 'stolon-reset-group' }, [retention]),
@@ -184,10 +185,9 @@ function buildTroubleshooting(content, ctx) {
             }));
         }).then(function (rows) {
             stores.textContent = '';
-            if (!rows.length) {
-                stores.innerHTML = shared.emptySection(t.tr('PagesEmptyStoresHere'), { inline: true });
-                return;
-            }
+            // With no store there is nothing to clear, so Stores hides.
+            shared.setVisible(storesTitle, rows.length > 0);
+            shared.setVisible(stores, rows.length > 0);
             rows.forEach(function (row) {
                 var help = typeof row.count === 'number'
                     ? t.format('PagesUsageRecords', row.count, row.limit || row.store.MaxRecords || 1000)

@@ -31,6 +31,7 @@ import {
     createSaveBar,
     createCopyField,
     createPaginatedTable,
+    createSubTabs,
     openSidecar,
     promptSidecar,
     createMediaCard,
@@ -402,3 +403,102 @@ export function createNectoShared(view, bag) {
     return shared;
 }
 
+
+// rowsPage
+// Answers one page of a table from rows the page already holds, as a paged route would: the rows the search and the
+// filters keep, then the page asked for.
+//
+// Inputs
+// rows [object[]]: Every row.
+// url [string]: The address the table asked for, such as rows?skip=0&take=50&search=phone&filter=failed.
+// options [object]: text(row) gives what the search looks in, and keep(row, query) whether a row passes the
+//   filters.
+//
+// Output
+// [object]: { Items, TotalCount }.
+export function rowsPage(rows, url, options) {
+    var query = {};
+    String(url || '').split('?').slice(1).join('?').split('&').forEach(function (pair) {
+        if (!pair) return;
+        var at = pair.indexOf('=');
+        query[decodeURIComponent(at < 0 ? pair : pair.slice(0, at))] = decodeURIComponent((at < 0 ? '' : pair.slice(at + 1)).replace(/\+/g, ' '));
+    });
+    var opts = options || {};
+    var search = String(query.search || '').trim().toLowerCase();
+    var found = (rows || []).filter(function (row) {
+        if (opts.keep && !opts.keep(row, query)) return false;
+        return !search || String(opts.text ? opts.text(row) : '').toLowerCase().indexOf(search) >= 0;
+    });
+    var skip = Number(query.skip) || 0;
+    var take = Number(query.take) || found.length;
+    return { Items: found.slice(skip, skip + take), TotalCount: found.length };
+}
+
+// createRowsTable
+// Builds Stolon's Paginated Table over rows the page reads itself, with the same look as every tool table: the search,
+// the filters, a status badge column, and the empty text inside the frame. The table shows "Loading" until the first
+// rows are set.
+//
+// Inputs
+// shared [object]: The Necto helper bag.
+// options [object]: The Paginated Table options, without containerId or endpoint, plus text(row) for the search and
+//   keep(row, query) for the filters.
+//
+// Output
+// [object]: element to place, setRows(rows) to draw them, table, and destroy().
+export function createRowsTable(shared, options) {
+    var rows = [];
+    var loaded = false;
+    var id = 'necto-rows-' + (++rowsTableSeq);
+    var host = h('div', { id: id });
+    var element = h('div', {}, [host]);
+    var bag = Object.create(shared);
+    bag.apiPrefix = '';
+    bag.apiRequest = function (url) { return Promise.resolve(rowsPage(rows, url, options)); };
+    var table = createPaginatedTable(element, bag, Object.assign({ pagination: { pageSize: 50 } }, options, { containerId: id, endpoint: 'rows' }));
+    return {
+        element: element,
+        table: table,
+        setRows: function (next) {
+            rows = next || [];
+            var run = loaded ? table.refresh() : table.load();
+            loaded = true;
+            return Promise.resolve(run).catch(function () { /* the rows are local, so nothing can fail */ });
+        },
+        destroy: function () { table.destroy(); }
+    };
+}
+
+var rowsTableSeq = 0;
+
+// createToolTabs
+// Splits a tool page into sub-tabs, as Pages has. Everything already in the host moves into the first tab, so the
+// page's main list keeps its place and ids. Each later tab holds the element it names, and its open runs the first
+// time the tab is picked.
+//
+// Inputs
+// host [HTMLElement]: The element whose children become the first tab.
+// options [object]: label for the tab list, and tabs, each { id, label, element, open }. The first tab takes no
+//   element.
+//
+// Output
+// [object]: The Stolon sub-tabs handle.
+export function createToolTabs(host, options) {
+    var first = Array.prototype.slice.call(host.childNodes || host.children || []);
+    var specs = {};
+    options.tabs.forEach(function (tab) { specs[tab.id] = tab; });
+    var tabs = createSubTabs({
+        label: options.label,
+        tabs: options.tabs.map(function (tab) { return { id: tab.id, label: tab.label }; }),
+        render: function (tab, panel) {
+            panel.classList.add('stolon-stack');
+            var spec = specs[tab.id];
+            if (spec === options.tabs[0]) first.forEach(function (node) { panel.appendChild(node); });
+            else if (spec.element) panel.appendChild(spec.element);
+            if (spec.open) spec.open();
+        }
+    });
+    tabs.element.setAttribute('data-role', 'tool-tabs');
+    host.appendChild(tabs.element);
+    return tabs;
+}
