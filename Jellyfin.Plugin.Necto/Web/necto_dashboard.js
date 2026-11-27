@@ -88,7 +88,7 @@ export function setState(card, t, state) {
 // emptyKey [string]: The key of the line shown while every part is 0.
 //
 // Output
-// [string]: Such as "No requests yet.", or empty while any part holds something.
+// [string]: Such as "No requests yet", or empty while any part holds something.
 export function emptyLine(t, segments, emptyKey) {
     return segments.some(function (s) { return s.value > 0; }) ? '' : t.tr(emptyKey);
 }
@@ -820,10 +820,10 @@ export default function (view) {
         });
         mapHost.appendChild(map.element);
         countries = nectoModule.createDataTable({
-            // The country takes the width of its longest name, and the counts share the rest, each turning into its
-            // icon heading on a narrow table.
-            columns: [{ key: 'name', label: t.tr('HeaderCountry'), width: 'auto' }].concat(layers.filter(function (l) { return l.column; }).map(function (l) {
-                return { key: l.key, label: l.label, icon: l.icon, align: 'end' };
+            // The country takes twice a count's share, so a name such as United States fits on a phone, and each count
+            // turns into its icon heading on a narrow table.
+            columns: [{ key: 'name', label: t.tr('HeaderCountry'), width: 'minmax(7rem, 2fr)' }].concat(layers.filter(function (l) { return l.column; }).map(function (l) {
+                return { key: l.key, label: l.label, icon: l.icon, align: 'end', width: 'minmax(3rem, 1fr)' };
             })),
             rows: [],
             rowKey: 'code',

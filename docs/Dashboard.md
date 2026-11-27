@@ -49,7 +49,7 @@ Each card ends in one bar split into parts, in the colors the tool's own page us
 | **Connections** | WireGuard connections, by the host they connect to | WireGuard |
 | **This server** | This server's own country | Either |
 
-A tool that is off takes its layers with it. A layer button turns its layer on or off, and the table shows a column for each layer that is on but **This server**, which only marks the map. On a narrow screen each column heading shows as an icon. The country column takes the width of its longest name. The table shows a dash in each column until the map is read and while the location database loads, and "No locations yet." when no country has anything to show. Select a country on the map to select its row, or a row to mark its country.
+A tool that is off takes its layers with it. A layer button turns its layer on or off, and the table shows a column for each layer that is on but **This server**, which only marks the map. On a narrow screen each column heading shows as an icon. The country column takes twice a count column's width. The table shows a dash in each column until the map is read and while the location database loads, and "No locations yet." when no country has anything to show. Select a country on the map to select its row, or a row to mark its country.
 
 Places come from the location database the proxy uses, DB-IP's free database, kept on this server. WireGuard's tunnel ends are placed on the server, and no address leaves it. While WireGuard is on, the database stays loaded at country detail even when **Record visitors** is off. "The location database is loading. Places show once it is ready." shows until it is. The host is placed at this server's country, which Necto looks up from its public address.
 

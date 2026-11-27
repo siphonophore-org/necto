@@ -227,7 +227,7 @@ test('the WireGuard card counts the connected peers and connections, and a faile
     assert.equal(dashboard.wireGuardCard(t, map).status, 'Failed');
     assert.equal(dashboard.wireGuardCard(t, { Tunnels: [{ Kind: 'Host', State: 'Running' }] }).status, 'Active');
     var none = dashboard.wireGuardCard(t, { Tunnels: [] });
-    assert.deepEqual([none.status, none.detail], ['Off', 'No peers or connections yet']);
+    assert.deepEqual([none.status, none.detail], ['Off', 'No peers yet']);
 });
 
 test('the Scripts, Storage, and Notifications cards show failures first', async function () {
