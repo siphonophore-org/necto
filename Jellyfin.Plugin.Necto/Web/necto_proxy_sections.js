@@ -427,7 +427,7 @@ function buildSettings(content, ctx) {
             body.Advanced = readAdvanced(inputs, defaults, countries);
             body.Routes = [];
             if (!turnsOnLoopback(stored && stored.Advanced, inputs.JellyfinLoopbackOnly.input.checked, defaults)) return send(body);
-            return nectoModule.confirmDialog(t.tr('ProxyConfirmLoopbackOnly'), { title: t.tr('ProxyTitleLoopbackOnly'), confirmText: t.tr('InvitesButtonTurnOn') }).then(function (ok) {
+            return nectoModule.confirmDialog(t.tr('ProxyConfirmLoopbackOnly'), { title: t.tr('ProxyTitleLoopbackOnly'), confirmText: t.tr('ButtonTurnOn') }).then(function (ok) {
                 if (!ok) throw new Error(t.tr('ProxyErrorNothingSaved'));
                 return send(body);
             });

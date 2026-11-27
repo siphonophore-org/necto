@@ -328,7 +328,7 @@ export default function (view) {
         var isNew = !invite;
         var editor = createInviteEditor(invite || { MaxUses: 1 }, { shared: shared, groups: groups, newUserGroupId: newUserGroupId, link: isNew ? '' : inviteLink(invite.Token, linkUrl, serverAddress()) });
         var actions = isNew ? [] : [
-            { text: t.tr(invite.Enabled ? 'InvitesButtonTurnOff' : 'InvitesButtonTurnOn'), onClick: function (handle) {
+            { text: t.tr(invite.Enabled ? 'ButtonTurnOff' : 'ButtonTurnOn'), onClick: function (handle) {
                 shared.request('Invites/' + invite.Id + '/Enabled', 'POST', { Enabled: !invite.Enabled }).then(function () {
                     handle.close('saved');
                     report(t.tr(invite.Enabled ? 'InvitesTurnedOff' : 'InvitesTurnedOn'), false);
