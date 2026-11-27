@@ -1067,7 +1067,7 @@ export default function (view) {
                 el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }), el('span', { text: t.tr('PagesButtonAddPage') })
             ]);
             addPage.addEventListener('click', function () { openPage(-1); });
-            [pagesIntro, el('div', { class: 'stolon-cards compact', 'data-role': 'page-counts' }), el('div', { 'data-role': 'page-list' }), el('div', { class: 'stolon-card-list-actions' }, [addPage])]
+            [pagesIntro, el('div', { class: 'stolon-cards stolon-compact', 'data-role': 'page-counts' }), el('div', { 'data-role': 'page-list' }), el('div', { class: 'stolon-card-list-actions' }, [addPage])]
                 .forEach(function (n) { panel.appendChild(n); });
             drawPages();
         } else if (tab.id === 'assets') {
@@ -1094,7 +1094,7 @@ export default function (view) {
                     setTimeout(function () { refused = ''; }, 0);
                 }
             });
-            [assetsIntro, assetsInfo, el('div', { class: 'stolon-cards compact', 'data-role': 'asset-counts' }), picker.element, el('div', { class: 'stolon-asset-list', 'data-role': 'asset-list' })]
+            [assetsIntro, assetsInfo, el('div', { class: 'stolon-cards stolon-compact', 'data-role': 'asset-counts' }), picker.element, el('div', { class: 'stolon-asset-list', 'data-role': 'asset-list' })]
                 .forEach(function (n) { panel.appendChild(n); });
             drawAssets();
         } else if (tab.id === 'stores') {
@@ -1104,7 +1104,7 @@ export default function (view) {
                 el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }), el('span', { text: t.tr('PagesButtonAddStore') })
             ]);
             addStore.addEventListener('click', function () { openStore(-1); });
-            [storesIntro, el('div', { class: 'stolon-cards compact', 'data-role': 'store-counts' }), el('div', { 'data-role': 'store-list' }), el('div', { class: 'stolon-card-list-actions' }, [addStore])]
+            [storesIntro, el('div', { class: 'stolon-cards stolon-compact', 'data-role': 'store-counts' }), el('div', { 'data-role': 'store-list' }), el('div', { class: 'stolon-card-list-actions' }, [addStore])]
                 .forEach(function (n) { panel.appendChild(n); });
             drawStores();
         }
