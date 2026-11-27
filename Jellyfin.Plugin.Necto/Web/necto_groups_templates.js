@@ -408,7 +408,6 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
     on.addEventListener('change', reflect);
     reflect();
 
-    // The Library access row, and the home screen rows that list only the libraries it leaves members.
     var libraryAccess = null;
     var viewRefreshers = [];
     var refreshViews = function () { viewRefreshers.forEach(function (f) { f(); }); };
@@ -479,7 +478,6 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
                 var select = el('select', { is: 'emby-select', id: id, 'aria-label': row.label });
                 choices(row, sources).forEach(function (o) { select.appendChild(el('option', { value: o[0], text: o[1] })); });
                 select.value = value == null ? '' : String(value);
-                // A row whose choices each have a sentence shows the picked one's under the select, as Jellyfin does.
                 var optionHelp = row.optionHelp ? el('div', { class: 'fieldDescription', 'data-role': 'option-help' }) : null;
                 var showHelp = function () { if (optionHelp) optionHelp.textContent = row.optionHelp[select.value] || ''; };
                 select.addEventListener('change', showHelp);
