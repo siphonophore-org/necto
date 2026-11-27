@@ -119,6 +119,27 @@ public class ProxyController : ControllerBase
     }
 
     /// <summary>
+    /// Lists one page of routes for the Proxy tool's table, in their order, each with its certificate's status.
+    /// </summary>
+    /// <param name="query">The page, the search over each host name and upstream, and a state in the filter, such as
+    /// Ready or Off, or All.</param>
+    /// <returns>The page.</returns>
+    [HttpGet("Routes/All")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult<PagedResult<RouteRow>> AllRoutes([FromQuery] PagedQuery? query)
+    {
+        var settings = Read();
+        var statuses = _proxy.RouteStatuses(settings);
+        var now = DateTime.UtcNow;
+        var rows = settings.Routes.Select(route =>
+        {
+            var status = statuses.FirstOrDefault(s => string.Equals(s.Id, route.Id, StringComparison.Ordinal));
+            return new RouteRow(Redact(route), status, RouteRow.StateOf(route, status, now));
+        });
+        return Ok(TablePage.Of(rows, query, r => r.State, r => new[] { r.Route.Host, r.Route.Upstream, r.Route.LocalHost }));
+    }
+
+    /// <summary>
     /// Gives the templates for a new route, under the domain the DDNS records suggest.
     /// </summary>
     /// <returns>The suggested domain and a route per template.</returns>

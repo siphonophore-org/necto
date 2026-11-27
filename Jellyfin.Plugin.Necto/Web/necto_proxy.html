@@ -14,16 +14,11 @@
                 <div id="proxyNotices" class="stolon-hidden"></div>
                 <div id="proxyCards" class="stolon-cards stolon-words"></div>
 
+                <div id="proxyStatus" class="stolon-status-text" role="status"></div>
+
                 <!-- Routes -->
-                <!-- Every route, each opening its editor. -->
+                <!-- Every route, with search, a state filter, Add route, and bulk actions on the rows picked, each opening its editor. -->
                 <div id="proxyRoutes"></div>
-                <div id="proxyActions" class="stolon-card-list-actions">
-                    <button is="emby-button" type="button" id="btnAddRoute" class="raised stolon-button stolon-primary">
-                        <span class="material-icons" aria-hidden="true">add</span>
-                        <span data-str="ButtonAddRoute">Add route</span>
-                    </button>
-                    <span id="proxyStatus" class="stolon-status-text" role="status"></span>
-                </div>
 
                 <!-- Jellyfin -->
                 <!-- Lets Jellyfin trust the proxy, so it sees each visitor's address, and puts it back. -->

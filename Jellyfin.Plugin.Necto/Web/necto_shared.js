@@ -405,7 +405,7 @@ export function createNectoShared(view, bag) {
 
 // TABLE_PAST
 // The past tense of each bulk verb, as the result strings name it, such as InvitesBulkEnabledOne.
-var TABLE_PAST = { enable: 'Enabled', disable: 'Disabled', remove: 'Removed', update: 'Updated', export: 'Exported' };
+var TABLE_PAST = { enable: 'Enabled', disable: 'Disabled', remove: 'Removed', update: 'Updated', export: 'Exported', unban: 'Unbanned' };
 
 // readTableQuery
 // Reads a table's request, such as Groups/All?skip=0&take=50&search=kids&filter=On, into a query.
@@ -457,7 +457,8 @@ export function tablePageOf(rows, query, textOf, filters) {
 //
 // Inputs
 // badges [object|object[]]: label and color for each badge, or none.
-// buttons [object[]]: action, icon, and label for each button, or none.
+// buttons [object[]]: action, icon, and label for each button, with title for its tooltip, disabled, and destructive,
+//   or none.
 // id [string]: The row's id, which each button carries.
 //
 // Output
@@ -468,7 +469,7 @@ export function tableStatusHtml(badges, buttons, id) {
         return '<span data-role="row-state">' + badgeHtml(b.label, b.color) + '</span>';
     }).join('');
     (buttons || []).forEach(function (b) {
-        html += '<button is="emby-button" type="button" class="stolon-row-btn" data-row-action="' + escapeHtml(b.action) + '" data-id="' + escapeHtml(id) + '" title="' + escapeHtml(b.label) + '" aria-label="' + escapeHtml(b.label) + '">'
+        html += '<button is="emby-button" type="button" class="stolon-row-btn' + (b.destructive ? ' stolon-destructive' : '') + '" data-row-action="' + escapeHtml(b.action) + '" data-id="' + escapeHtml(id) + '" title="' + escapeHtml(b.title || b.label) + '" aria-label="' + escapeHtml(b.label) + '"' + (b.disabled ? ' disabled' : '') + '>'
             + '<span class="material-icons" aria-hidden="true">' + escapeHtml(b.icon) + '</span></button>';
     });
     return '<div class="necto-row-aside">' + html + '</div>';
@@ -492,7 +493,7 @@ export function tableInfoHtml(title, lines) {
 // createToolTable
 // Builds a tool's table of records in the one layout every tool uses: search first, then the filters, then the tool's
 // own actions such as Add, at the end of the toolbar. Picked rows show the bulk bar with Select all, the count, the
-// bulk actions, and Reload at its end. Each row has an optional thumbnail, its name over its lines, and a status cell
+// bulk actions, and Reload at its end. A table with no bulk actions picks no rows and ends its toolbar with Reload. Each row has an optional thumbnail, its name over its lines, and a status cell
 // with its badges and icon buttons. A row opens with onRowClick. The empty and no match lines show inside the table.
 // The rows come from a route that takes skip, take, search, and each filter, or from rows the page already holds.
 //
@@ -512,7 +513,8 @@ export function tableInfoHtml(title, lines) {
 //   lines       : lines(row) gives the lines under the name
 //   image       : image(row) gives the thumbnail's address, with imageShape, for a table with thumbnails
 //   status      : status(row) gives the badge, or badges, of the status cell
-//   buttons     : buttons(row) gives the icon buttons after the badges, each { action, icon, label }
+//   buttons     : buttons(row) gives the icon buttons after the badges, each { action, icon, label, title, disabled,
+//                 destructive }
 //   onButton    : onButton(action, row, button) runs when one is chosen
 //   add         : [{ id, icon, text, variant, onClick }] for the end of the toolbar. variant is primary by default
 //   bulk        : [{ verb, text, variant }] for the bulk bar, and onBulk(verb, rows) runs when one is chosen
@@ -524,6 +526,7 @@ export function tableInfoHtml(title, lines) {
 //   while the tool has no records at all, so the table says No X yet. whatever the filter, and destroy, which also
 //   empties the container.
 export function createToolTable(view, shared, o) {
+    var t = shared.t;
     var bag = Object.create(shared);
     bag.apiPrefix = '';
     var filters = (o.filters || []).map(function (f) {
@@ -567,7 +570,7 @@ export function createToolTable(view, shared, o) {
     var table = createPaginatedTable(view, bag, {
         containerId: o.containerId,
         endpoint: o.endpoint || 'rows',
-        selection: { enabled: true, idKey: idKey, onSelectionChange: onSelection },
+        selection: { enabled: bulk.length > 0, idKey: idKey, onSelectionChange: onSelection },
         search: { enabled: true, placeholder: o.search },
         filters: filters,
         pagination: { pageSize: o.pageSize || 50 },
@@ -593,6 +596,18 @@ export function createToolTable(view, shared, o) {
         buttons[a.id] = button;
         if (controls) controls.appendChild(button);
     });
+
+    // A table with no bulk actions picks no rows, so Reload goes at the end of its toolbar instead of its bulk bar.
+    if (!bulk.length && controls) {
+        var reload = h('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn stolon-table-reload-btn', title: t.tr('Refresh'), 'aria-label': t.tr('Refresh') }, [
+            h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'refresh' })
+        ]);
+        reload.addEventListener('click', function () {
+            table.reload().then(function () { if (o.onReload) o.onReload(); }, function () { if (o.onReload) o.onReload(); });
+        });
+        buttons.reload = reload;
+        controls.appendChild(reload);
+    }
 
     var actions = table.getBulkActionsContainer();
     if (actions && bulk.length) {
@@ -651,7 +666,7 @@ export function createToolTable(view, shared, o) {
 //
 // Inputs
 // shared [object]: The Necto helper bag.
-// o [object]: verb, enable, disable, remove, update, or export, rows, the rows picked, prefix, the strings' prefix,
+// o [object]: verb, enable, disable, remove, update, export, or unban, rows, the rows picked, prefix, the strings' prefix,
 //   call(row), which runs it on one row and returns a promise, fits(row), which tells whether a row takes it (by
 //   default Enable skips the enabled rows and Disable the disabled ones, by enabled(row)), confirm, { text, title }
 //   for the question before a removal, and report(text, isError).

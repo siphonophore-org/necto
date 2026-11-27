@@ -79,27 +79,45 @@ export function routeState(route, status, t) {
     return certificateTag(status, route, t);
 }
 
-// routeItems
-// Turns the routes into rows for the record list, each with its upstream and who may reach it, and its state at its
-// end.
+// ROUTE_STATES
+// Each state of a route's row, as Proxy/Routes/All names it, with the key of its word and its color, in the order
+// the state filter lists them.
+var ROUTE_STATES = {
+    Ready: { key: 'ProxyTagCertificateReady', color: 'green' },
+    ExpiresSoon: { key: 'ProxyTagExpiresSoon', color: 'orange' },
+    Requesting: { key: 'ProxyTagRequesting', color: 'purple' },
+    Waiting: { key: 'ProxyTagCertificateWaiting', color: 'orange' },
+    Failed: { key: 'ProxyTagCertificateFailed', color: 'red' },
+    NoCertificate: { key: 'ProxyTagNoCertificate', color: 'gray' },
+    Off: { key: 'Off', color: 'gray' }
+};
+
+// routeBadges
+// Gives the badges a route's row ends with: its state, then Local only for a route only your network may reach.
 //
 // Inputs
-// routes [object[]]: The routes from Proxy/Routes.
-// statuses [object[]]: Each route's status, by id.
+// row [object]: One row from Proxy/Routes/All, as { Route, Status, State }.
 // t [object]: The strings.
 //
 // Output
-// [object[]]: The rows, each carrying its route, status, and state.
-export function routeItems(routes, statuses, t) {
-    var byId = {};
-    (statuses || []).forEach(function (s) { byId[s.Id] = s; });
-    return (routes || []).map(function (route) {
-        var status = byId[route.Id] || null;
-        var tags = [];
-        if (route.LocalOnly) tags.push({ label: t.tr('ProxyTagLocalOnly'), icon: 'home', color: 'blue' });
-        var state = routeState(route, status, t);
-        return { id: route.Id, title: route.Host || t.tr('ProxyNoHost'), secondary: upstreamText(route, t), tags: tags, state: state, aside: nectoModule.rowBadge(state), route: route, status: status };
-    });
+// [object[]]: Each badge's label and color.
+export function routeBadges(row, t) {
+    var state = ROUTE_STATES[row.State] || ROUTE_STATES.Waiting;
+    var out = [{ label: t.tr(state.key), color: state.color }];
+    if (row.Route.LocalOnly) out.push({ label: t.tr('ProxyTagLocalOnly'), color: 'blue' });
+    return out;
+}
+
+// routeFilters
+// Lists the state filter's choices, in the words of the rows' badges.
+//
+// Inputs
+// t [object]: The strings.
+//
+// Output
+// [object[]]: Each choice's value and label.
+export function routeFilters(t) {
+    return Object.keys(ROUTE_STATES).map(function (state) { return { value: state, label: t.tr(ROUTE_STATES[state].key) }; });
 }
 
 // certificateItems
@@ -758,7 +776,7 @@ export default function (view) {
 
     var shared = null;
     var page = null;
-    var list = null;
+    var table = null;
     var routes = [];
     var statuses = [];
     var records = [];
@@ -805,8 +823,8 @@ export default function (view) {
         box.innerHTML = off ? shared.emptySection(t.tr('ProxyOffNotice')) : '';
         shared.setVisible(box, off);
         shared.setVisible('proxyCards', !off);
-        shared.setVisible('proxyActions', !off);
         shared.setVisible('proxyRoutes', !off || routes.length > 0);
+        if (table) shared.setVisible(table.addButton('btnAddRoute'), !off);
         if (jellyfin) shared.setVisible(jellyfin.section.element, !off);
         if (visitors) shared.setVisible(visitors.element, !off);
     }
@@ -875,25 +893,62 @@ export default function (view) {
     }
 
     // showRoutes
-    // Draws the route rows, and the open editor's certificate status when its route is among them.
+    // Keeps the routes and their status for the cards and the editor, draws the table again, and updates the open
+    // editor's certificate status when its route is among them.
     function showRoutes(answer) {
         routes = (answer && answer.Routes) || [];
         statuses = (answer && answer.Status) || [];
-        var items = routeItems(routes, statuses, shared.t);
-        if (list) list.setItems(items);
-        else {
-            list = nectoModule.createRecordList({
-                items: items,
-                label: shared.t.tr('ProxyHeaderRoutes'),
-                emptyText: shared.t.tr('ProxyEmptyRoutes'),
-                onOpen: function (item) { openRoute(item.route, item.status); }
-            });
-            view.querySelector('#proxyRoutes').appendChild(list.element);
-        }
+        if (!table) createTable();
+        table.refresh();
         if (openEditor && openEditor.id) {
             var mine = statuses.find(function (s) { return s.Id === openEditor.id; });
             if (mine) openEditor.editor.setRouteStatus(mine);
         }
+    }
+
+    // createTable
+    // Builds the routes' table with its search, its state filter, Add route, and its bulk actions.
+    function createTable() {
+        var t = shared.t;
+        table = nectoModule.createToolTable(view, shared, {
+            containerId: 'proxyRoutes',
+            endpoint: 'Proxy/Routes/All',
+            idKey: function (row) { return row.Route.Id; },
+            search: t.tr('ProxySearchRoutes'),
+            filters: [{ label: t.tr('HeaderStatus'), options: routeFilters(t) }],
+            empty: { message: t.tr('ProxyEmptyRoutes'), filteredMessage: t.tr('ProxyEmptyRoutesMatch') },
+            title: function (row) { return row.Route.Host || t.tr('ProxyNoHost'); },
+            lines: function (row) { return [upstreamText(row.Route, t)]; },
+            status: function (row) { return routeBadges(row, t); },
+            add: [{ id: 'btnAddRoute', icon: 'add', text: t.tr('ButtonAddRoute'), onClick: pickTemplate }],
+            bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
+            onBulk: bulk,
+            onRowClick: function (row) { openRoute(row.Route, row.Status); },
+            onReload: function () { loadAll(); }
+        });
+        page.addCleanup(function () { if (table) { table.destroy(); table = null; } });
+    }
+
+    // bulk
+    // Enables, disables, or removes the routes picked, asking first before a removal. A removed route's certificate
+    // files go with it, and the service it forwarded to stays.
+    //
+    // Output
+    // [Promise]: Resolves once the routes are read again.
+    function bulk(verb, picked) {
+        var t = shared.t;
+        return nectoModule.runBulk(shared, {
+            verb: verb,
+            rows: picked,
+            prefix: 'ProxyBulk',
+            enabled: function (row) { return !!row.Route.Enabled; },
+            confirm: verb === 'remove' ? { text: t.tr('ProxyConfirmRemoveRoute'), title: t.plural(picked.length, 'ProxyHeaderRemoveOne', 'ProxyHeaderRemoveMany') } : null,
+            call: function (row) {
+                var route = 'Proxy/Routes/' + encodeURIComponent(row.Route.Id);
+                return verb === 'remove' ? shared.request(route, 'DELETE') : shared.request(route, 'PUT', Object.assign({}, row.Route, { Enabled: verb === 'enable' }));
+            },
+            report: report
+        }).then(function (done) { if (done !== null) return loadAll(); });
     }
 
     // refresh
@@ -1140,9 +1195,9 @@ export default function (view) {
         var content = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr('ProxyVisitorsHelp') })]);
         var off = h('div', { class: 'stolon-info stolon-hidden', text: t.tr('ProxyVisitorsOff') });
         var status = h('div', { class: 'stolon-status-text', role: 'status' });
-        var bannedHost = h('div', {});
-        var activityHost = h('div', {});
-        var countryHost = h('div', {});
+        var bannedHost = h('div', { id: 'proxyBanned' });
+        var activityHost = h('div', { id: 'proxyActivity' });
+        var countryHost = h('div', { id: 'proxyCountries' });
         var attribution = h('div', { class: 'fieldDescription' });
         var location = h('div', { class: 'fieldDescription', 'data-role': 'location' });
         [off, status,
@@ -1155,73 +1210,80 @@ export default function (view) {
         var holderVisitors = view.querySelector('#proxyVisitors');
         holderVisitors.parentNode.replaceChild(section.element, holderVisitors);
 
-        var button = function (label, variant, act, name) {
-            var b = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-small ' + variant, 'aria-label': name }, [h('span', { text: label })]);
-            if (act && act.reason) b.setAttribute('title', act.action === 'unblock-country' ? t.format(act.reason, act.country) : t.tr(act.reason));
-            if (act && !act.disabled) b.addEventListener('click', function () { visitorAction(act); });
-            else b.disabled = true;
-            return b;
-        };
+        var data = { Banned: [], Activity: [], Countries: [] };
         var place = function (r) { return r.IsLocal ? t.tr('LabelLocal') : (r.Country || t.tr('Unknown')); };
-        var banned = nectoModule.createDataTable({
-            columns: [
-                { key: 'Ip', label: t.tr('LabelAddress'), icon: 'lan' },
-                { key: 'Country', label: t.tr('HeaderCountry'), icon: 'flag', value: function (b) { return b.Country || t.tr('Unknown'); } },
-                { key: 'Failures', label: t.tr('ProxyColumnFailures'), icon: 'error', align: 'end' },
-                { key: 'BannedUtc', label: t.tr('ProxyHeaderBanned'), icon: 'block', value: function (b) { return b.BannedUtc ? shared.formatDate(b.BannedUtc) : ''; } },
-                { key: 'UntilUtc', label: t.tr('ProxyColumnEnds'), icon: 'event', value: function (b) { return b.UntilUtc ? shared.formatDate(b.UntilUtc) : t.tr('ProxyUntilLifted'); } },
-                { key: 'action', label: t.tr('HeaderAction'), sortable: false, render: function (b) { return button(t.tr('ProxyButtonUnban'), 'stolon-secondary', { action: 'unban', value: b.Ip }, t.format('ProxyButtonUnbanAddress', b.Ip)); } }
-            ],
-            rows: [],
-            rowKey: 'Ip',
-            label: t.tr('ProxyHeaderBanned'),
-            emptyText: t.tr('ProxyEmptyBanned')
+        var ACTION_ICONS = { unban: 'lock_open', unblock: 'lock_open', 'unblock-country': 'public', block: 'block' };
+        var ACTION_LABELS = { unban: 'ProxyButtonUnban', unblock: 'ButtonUnblock', 'unblock-country': 'ButtonUnblock', block: 'ButtonBlock' };
+        var banned = nectoModule.createToolTable(view, shared, {
+            containerId: 'proxyBanned',
+            rows: function () { return data.Banned; },
+            idKey: 'Ip',
+            search: t.tr('ProxySearchBanned'),
+            empty: { message: t.tr('ProxyEmptyBanned'), filteredMessage: t.tr('ProxyEmptyBannedMatch') },
+            title: function (b) { return b.Ip; },
+            lines: function (b) {
+                return [
+                    [b.Country || t.tr('Unknown'), t.format('ProxyBannedFailures', b.Failures)].join(' · '),
+                    [b.BannedUtc ? t.format('ProxyBannedOn', shared.formatDate(b.BannedUtc)) : '', b.UntilUtc ? t.format('ProxyBannedUntil', shared.formatDate(b.UntilUtc)) : t.tr('ProxyUntilLifted')].filter(Boolean).join(' · ')
+                ];
+            },
+            status: function () { return { label: t.tr('ProxyHeaderBanned'), color: 'red' }; },
+            bulk: [{ verb: 'unban', text: t.tr('ProxyButtonUnban'), variant: 'primary' }],
+            onBulk: function (verb, picked) {
+                return nectoModule.runBulk(shared, {
+                    verb: 'unban', rows: picked, prefix: 'ProxyBulkBans',
+                    call: function (b) { return shared.request('Proxy/Visitors/Unban', 'POST', { Value: b.Ip }); },
+                    report: function (text, isError) { shared.setStatus(status, text, isError, { timeout: 6000 }); }
+                }).then(function (done) { if (done !== null) return load(); });
+            },
+            onReload: function () { load(); }
         });
-        bannedHost.appendChild(banned.element);
-        var activity = nectoModule.createDataTable({
-            columns: [
-                { key: 'Type', label: t.tr('ProxyColumnType'), icon: 'category', value: function (r) { return t.tr(ACTIVITY_KEYS[fields.enumName(r.Type, ACTIVITY_TYPES)]); } },
-                { key: 'User', label: t.tr('LabelUser'), icon: 'person' },
-                { key: 'Ip', label: t.tr('LabelAddress'), icon: 'lan' },
-                { key: 'Device', label: t.tr('LabelDevice'), icon: 'devices' },
-                { key: 'Host', label: t.tr('LabelHostName'), icon: 'dns', value: function (r) { return (r.Host || '').replace(/^https?:\/\//, ''); } },
-                { key: 'place', label: t.tr('HeaderCountry'), icon: 'flag', value: place },
-                { key: 'city', label: t.tr('ProxyColumnCity'), icon: 'location_city', hidden: true, value: function (r) { return r.IsLocal ? '' : (r.City || ''); } },
-                { key: 'LastUtc', label: t.tr('ProxyColumnLastSeen'), icon: 'schedule', value: function (r) { return shared.formatDate(r.LastUtc); } },
-                {
-                    key: 'action', label: t.tr('HeaderAction'), sortable: false, render: function (r) {
-                        var act = rowAction(r);
-                        var labels = { unban: 'ProxyButtonUnban', unblock: 'ButtonUnblock', 'unblock-country': 'ButtonUnblock', block: 'ButtonBlock' };
-                        return button(t.tr(labels[act.action]), act.action === 'block' ? 'stolon-destructive' : 'stolon-secondary', act, t.format('ProxyButtonActOn', r.Ip));
-                    }
-                }
-            ],
-            rows: [],
-            rowKey: function (r) { return r.Type + '|' + r.Ip + '|' + r.User + '|' + r.Host; },
+        var activity = nectoModule.createToolTable(view, shared, {
+            containerId: 'proxyActivity',
+            rows: function () { return data.Activity; },
+            idKey: function (r) { return r.Type + '|' + r.Ip + '|' + r.User + '|' + r.Host; },
+            search: t.tr('ProxySearchVisitors'),
             filters: [
-                { name: 'type', label: t.tr('ProxyColumnType'), field: 'kind', options: ACTIVITY_TYPES.map(function (k) { return { value: k, label: t.tr(ACTIVITY_KEYS[k]) }; }) },
-                { name: 'place', label: t.tr('HeaderCountry'), field: 'placeCode', options: [] }
+                { name: 'type', label: t.tr('ProxyColumnType'), options: ACTIVITY_TYPES.map(function (k) { return { value: k, label: t.tr(ACTIVITY_KEYS[k]) }; }), test: function (r, value) { return r.kind === value; } },
+                { name: 'place', label: t.tr('HeaderCountry'), options: [], test: function (r, value) { return r.placeCode === value; } }
             ],
             pageSize: 25,
-            maxHeight: '32rem',
-            label: t.tr('HeaderActivity'),
-            emptyText: t.tr('ProxyEmptyActivity')
+            empty: { message: t.tr('ProxyEmptyActivity'), filteredMessage: t.tr('ProxyEmptyActivityMatch') },
+            title: function (r) { return r.User || r.Ip; },
+            lines: function (r) {
+                var where = [place(r), data.ShowsCity && !r.IsLocal ? r.City : ''].filter(Boolean).join(', ');
+                return [
+                    [r.User ? r.Ip : '', r.Device, (r.Host || '').replace(/^https?:\/\//, '')].filter(Boolean).join(' · '),
+                    [where, t.format('ProxySeenAt', shared.formatDate(r.LastUtc))].filter(Boolean).join(' · ')
+                ];
+            },
+            status: function (r) { return { label: t.tr(ACTIVITY_KEYS[r.kind]), color: r.kind === 'Blocked' ? 'red' : r.kind === 'Failure' ? 'orange' : r.kind === 'User' ? 'green' : 'gray' }; },
+            buttons: function (r) {
+                var act = rowAction(r);
+                return [{
+                    action: act.action, icon: ACTION_ICONS[act.action], label: t.format('ProxyButtonActOn', r.Ip) + ': ' + t.tr(ACTION_LABELS[act.action]),
+                    title: act.reason ? (act.action === 'unblock-country' ? t.format(act.reason, act.country) : t.tr(act.reason)) : t.tr(ACTION_LABELS[act.action]),
+                    disabled: !!act.disabled, destructive: act.action === 'block'
+                }];
+            },
+            onButton: function (action, r) { var act = rowAction(r); if (!act.disabled) visitorAction(act); },
+            onReload: function () { load(); }
         });
-        activityHost.appendChild(activity.element);
-        var countries = nectoModule.createDataTable({
-            columns: [
-                { key: 'Country', label: t.tr('HeaderCountry'), icon: 'flag' },
-                { key: 'People', label: t.tr('People'), icon: 'group', align: 'end' },
-                { key: 'Failed', label: t.tr('HeaderFailedSignIns'), icon: 'error', align: 'end' },
-                { key: 'Blocked', label: t.tr('HeaderRefused'), icon: 'block', align: 'end' },
-                { key: 'LastUtc', label: t.tr('ProxyColumnLastSeen'), icon: 'schedule', value: function (c) { return c.LastUtc ? shared.formatDate(c.LastUtc) : ''; } }
-            ],
-            rows: [],
-            rowKey: 'Code',
-            label: t.tr('HeaderCountries'),
-            emptyText: t.tr('ProxyEmptyCountries')
+        var countries = nectoModule.createToolTable(view, shared, {
+            containerId: 'proxyCountries',
+            rows: function () { return data.Countries; },
+            idKey: 'Code',
+            search: t.tr('ProxySearchCountries'),
+            empty: { message: t.tr('ProxyEmptyCountries'), filteredMessage: t.tr('ProxyEmptyCountriesMatch') },
+            title: function (c) { return c.Country; },
+            lines: function (c) {
+                return [
+                    [t.plural(c.People || 0, 'ProxyPeopleOne', 'ProxyPeopleMany'), t.format('ProxyCountryFailed', c.Failed || 0), t.format('ProxyCountryRefused', c.Blocked || 0)].join(' · '),
+                    c.LastUtc ? t.format('ProxySeenAt', shared.formatDate(c.LastUtc)) : ''
+                ];
+            },
+            onReload: function () { load(); }
         });
-        countryHost.appendChild(countries.element);
         var loads = 0;
 
         // visitorAction
@@ -1263,19 +1325,17 @@ export default function (view) {
         // Reads the visitors and draws the tables. An answer that lands after a later read began is dropped.
         function load() {
             var mine = ++loads;
-            return shared.request('Proxy/Visitors').then(function (data) {
+            return shared.request('Proxy/Visitors').then(function (answer) {
                 if (mine !== loads) return;
-                off.classList.toggle('stolon-hidden', !!data.Recording);
-                banned.setRows(data.Banned || []);
-                var rows = (data.Activity || []).map(function (r) {
+                off.classList.toggle('stolon-hidden', !!answer.Recording);
+                var rows = (answer.Activity || []).map(function (r) {
                     return Object.assign({ kind: fields.enumName(r.Type, ACTIVITY_TYPES), placeCode: r.IsLocal ? 'local' : (r.CountryCode || '') }, r);
                 });
-                activity.setColumnHidden('city', !showsCity(data));
-                activity.setRows(rows);
-                activity.setFilterOptions('place', placeOptions(rows));
-                location.textContent = locationText(data.Location, shared);
-                countries.setRows(countryRows(data));
-                attribution.textContent = data.Attribution || '';
+                data = { Banned: answer.Banned || [], Activity: rows, Countries: countryRows(answer), ShowsCity: showsCity(answer) };
+                activity.setFilterOptions(placeOptions(rows), 'place');
+                [banned, activity, countries].forEach(function (table) { table.refresh(); });
+                location.textContent = locationText(answer.Location, shared);
+                attribution.textContent = answer.Attribution || '';
             }).catch(function (err) {
                 if (mine !== loads) return;
                 return shared.errorText(err, t.tr('ProxyErrorLoadVisitors')).then(function (text) { shared.setStatus(status, text, true); });
@@ -1288,7 +1348,6 @@ export default function (view) {
     var made = nectoModule.createNectoPage(view, {
         page: 'necto_proxy',
         bind: function (bag, pg) {
-            view.querySelector('#btnAddRoute').addEventListener('click', pickTemplate);
             visitors = createVisitors();
             pg.addCleanup(function () {
                 if (visitors) visitors.destroy();
