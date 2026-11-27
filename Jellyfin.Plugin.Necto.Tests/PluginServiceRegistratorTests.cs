@@ -1,4 +1,15 @@
+using System;
 using System.Linq;
+using System.Net.Http;
+using Jellyfin.Plugin.Necto.Services;
+using Jellyfin.Plugin.Necto.Tests.Fakes;
+using MediaBrowser.Common.Plugins;
+using MediaBrowser.Controller;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Dto;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Activity;
+using Microsoft.Extensions.Hosting;
 using Jellyfin.Data.Events.Users;
 using Jellyfin.Plugin.Necto.Services.Accounts;
 using Jellyfin.Plugin.Necto.Services.Configuration;
@@ -14,6 +25,7 @@ namespace Jellyfin.Plugin.Necto.Tests;
 /// <summary>
 /// The registrator registers Stolon's activity logger and every marked service, each once, under the type it asks for.
 /// </summary>
+[Collection(ServicesCollection.Name)]
 public class PluginServiceRegistratorTests
 {
     private static ServiceCollection Registered()
@@ -58,5 +70,49 @@ public class PluginServiceRegistratorTests
 
         Assert.Equal(implementation, descriptor.ImplementationType);
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
+    }
+
+    /// <summary>
+    /// DI builds every Requests and Issues service from the registrator, over stand-ins for what Jellyfin supplies.
+    /// True: Jellyfin starts every Requests and Issues service, the controller's and the hosted ones alike.
+    /// False: a service would ask for something nothing registers, and the plugin would fail to start.
+    /// </summary>
+    [Fact]
+    public void RegisterServices_RequestsAndIssues_AllBuild()
+    {
+        var services = Registered();
+        Microsoft.Extensions.DependencyInjection.LoggingServiceCollectionExtensions.AddLogging(services);
+        services.AddSingleton(InterfaceStub.Of<IUserManager>());
+        services.AddSingleton(InterfaceStub.Of<ILibraryManager>());
+        services.AddSingleton(InterfaceStub.Of<IUserDataManager>());
+        services.AddSingleton(InterfaceStub.Of<ILibraryMonitor>());
+        services.AddSingleton(InterfaceStub.Of<IDtoService>());
+        services.AddSingleton(InterfaceStub.Of<IHttpClientFactory>());
+        services.AddSingleton(InterfaceStub.Of<IPluginManager>());
+        services.AddSingleton(InterfaceStub.Of<IServerConfigurationManager>());
+        services.AddSingleton(InterfaceStub.Of<IServerApplicationHost>());
+        services.AddSingleton(InterfaceStub.Of<IActivityManager>());
+        var paths = InterfaceStub.Of<IServerApplicationPaths>();
+        services.AddSingleton(paths);
+        services.AddSingleton<MediaBrowser.Common.Configuration.IApplicationPaths>(paths);
+        var tools = PluginServiceRegistrator.DiscoverAnnotatedServices(typeof(Plugin).Assembly)
+            .Where(s => s.Impl.Namespace is "Jellyfin.Plugin.Necto.Services.Requests" or "Jellyfin.Plugin.Necto.Services.Issues" or "Jellyfin.Plugin.Necto.Services.Notifications")
+            .ToList();
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = false, ValidateScopes = true });
+
+        var hosted = provider.GetServices<IHostedService>().Select(h => h.GetType()).ToList();
+
+        Assert.True(tools.Count >= 20, "Only " + tools.Count + " Requests and Issues services are marked.");
+        Assert.All(tools, s =>
+        {
+            if (s.Attr.ServiceType == typeof(IHostedService))
+            {
+                Assert.Contains(s.Impl, hosted);
+            }
+            else
+            {
+                Assert.IsType(s.Impl, provider.GetRequiredService(s.Attr.ServiceType ?? s.Impl));
+            }
+        });
     }
 }

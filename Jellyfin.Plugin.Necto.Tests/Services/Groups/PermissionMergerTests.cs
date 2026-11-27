@@ -175,4 +175,98 @@ public class PermissionMergerTests
     {
         Assert.Equal(expected, PermissionMerger.Largest(limits));
     }
+
+    /// <summary>
+    /// Requests merge from the groups that allow requesting: any allow, the largest limit with 0 as no limit, and every
+    /// profile when any of them lists none.
+    /// True: a member of a 4K group and an HD group may pick both, and a group with no profile list opens them all.
+    /// False: a second group would narrow what the first allowed.
+    /// </summary>
+    [Fact]
+    public void RequestMerge_Requesters_AnyAllowLargestLimitAndProfileUnion()
+    {
+        var hd = Requests(r => { r.Series = false; r.MaxOpenRequests = 2; r.MovieQuota = 3; r.MaxSeasons = 2; r.MovieProfiles = new() { "hd" }; r.MaySeeOthers = true; });
+        var fourK = Requests(r => { r.Movies = false; r.AutoApproveMovies = true; r.MaxOpenRequests = 5; r.MovieQuota = 0; r.MaxSeasons = 4; r.MovieProfiles = new() { "4k", "hd" }; });
+        var open = Requests(r => r.MovieProfiles = new());
+
+        var merged = PermissionMerger.RequestMerge(new[] { hd, fourK }, new[] { hd, fourK });
+        var withOpen = PermissionMerger.RequestMerge(new[] { hd, open }, new[] { hd, open });
+
+        Assert.True(merged.MayRequest);
+        Assert.True(merged.Movies);
+        Assert.True(merged.Series);
+        Assert.True(merged.AutoApproveMovies);
+        Assert.False(merged.AutoApproveSeries);
+        Assert.Equal(5, merged.MaxOpenRequests);
+        Assert.Equal(0, merged.MovieQuota);
+        Assert.Equal(4, merged.MaxSeasons);
+        Assert.Equal(new[] { "hd", "4k" }, merged.MovieProfiles);
+        Assert.True(merged.MaySeeOthers);
+        Assert.False(merged.MaySeeRequesters);
+        Assert.Empty(withOpen.MovieProfiles);
+    }
+
+    /// <summary>
+    /// Without a group that allows requesting nothing is allowed, while managing comes from any group.
+    /// True: a moderator group that does not request still manages requests.
+    /// False: managing would need a request of one's own, or a group without requests would allow them.
+    /// </summary>
+    [Fact]
+    public void RequestMerge_NoRequester_AllowsOnlyManaging()
+    {
+        var moderators = new GroupPermissions();
+        moderators.Requests.MayManage = true;
+
+        var merged = PermissionMerger.RequestMerge(Array.Empty<GroupPermissions>(), new[] { moderators });
+
+        Assert.False(merged.MayRequest);
+        Assert.False(merged.Movies);
+        Assert.False(merged.MaySeeOthers);
+        Assert.Equal(0, merged.MaxOpenRequests);
+        Assert.True(merged.MayManage);
+    }
+
+    /// <summary>
+    /// Issues merge with any allow, the largest limit with 0 as no limit from the groups that report, and managing from any group.
+    /// True: a member of two reporting groups gets the larger limit, and a managing group needs no report.
+    /// False: a non reporting group's limit would count, or managing would need reporting.
+    /// </summary>
+    [Fact]
+    public void IssueMerge_Reporters_LargestLimitAndManagingFromAny()
+    {
+        var few = Issues(true, 2, false);
+        var many = Issues(true, 7, false);
+        var unlimited = Issues(true, 0, false);
+        var managers = Issues(false, 50, true);
+
+        var merged = PermissionMerger.IssueMerge(new[] { few, many }, new[] { few, many, managers });
+        var open = PermissionMerger.IssueMerge(new[] { few, unlimited }, new[] { few, unlimited });
+        var none = PermissionMerger.IssueMerge(Array.Empty<GroupPermissions>(), new[] { managers });
+
+        Assert.True(merged.MayReport);
+        Assert.Equal(7, merged.Limit);
+        Assert.True(merged.MayManage);
+        Assert.Equal(0, open.Limit);
+        Assert.False(open.MayManage);
+        Assert.False(none.MayReport);
+        Assert.Equal(0, none.Limit);
+        Assert.True(none.MayManage);
+    }
+
+    private static GroupPermissions Requests(Action<RequestPermissions> change)
+    {
+        var permissions = new GroupPermissions();
+        permissions.Requests.MayRequest = true;
+        change(permissions.Requests);
+        return permissions;
+    }
+
+    private static GroupPermissions Issues(bool report, int limit, bool manage)
+    {
+        var permissions = new GroupPermissions();
+        permissions.Issues.MayReport = report;
+        permissions.Issues.Limit = limit;
+        permissions.Issues.MayManage = manage;
+        return permissions;
+    }
 }

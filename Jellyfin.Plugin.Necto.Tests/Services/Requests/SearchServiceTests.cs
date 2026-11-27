@@ -257,9 +257,9 @@ public sealed class SearchServiceTests : IDisposable
     /// False: the warmer would sleep through a visit, or wake on every call.
     /// </summary>
     [Fact]
-    public void Used_AfterAQuietSpell_WakesTheWarmer()
+    public async Task Used_AfterAQuietSpell_WakesTheWarmer()
     {
-        WithSearch(search =>
+        await WithSearch(search =>
         {
             Assert.False(search.InUse);
             var woken = search.Woken;
@@ -273,7 +273,7 @@ public sealed class SearchServiceTests : IDisposable
             search.Used();
             Assert.False(next.IsCompleted);
             return Task.FromResult(0);
-        }).GetAwaiter().GetResult();
+        });
     }
 
     /// <summary>
