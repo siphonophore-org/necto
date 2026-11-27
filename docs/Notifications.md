@@ -4,7 +4,9 @@ Notifications sends every event a Necto tool reports to the people and channels 
 
 ## Channels
 
-**Notifications** lists every channel, each with **Test**, which sends the test event to that channel and shows what happened. **Channel settings** opens **Settings > Notifications**, where the channels are set.
+Cards at the top count the sends in the send log that went, as **Sent**, and those that **Failed**. They show a dash until the log is read.
+
+**Notifications** lists every channel, each with **Test**, which sends the test event to that channel and shows what happened. A channel with a name of its own, such as a webhook, also shows its kind. **Channel settings** opens **Settings > Notifications**, where the channels are set.
 
 | Notifications | Notifications on a phone |
 | :---: | :---: |
@@ -26,7 +28,7 @@ A test of **Browser notifications**, **Jellyfin messages**, or **Administrators*
 
 ## Who Gets an Event
 
-* **Groups > Notifications** sets the events members receive, with **Receive every event** or a pick from **Events**, and the channels they receive them on, with **Browser notifications** and **Jellyfin messages**. A member gets their events on each channel one of their groups with events turns on.
+* **Groups > Notifications** sets the events members receive, with **Receive every event** or a pick from **Events**, listed under the tool that sends each, and the channels they receive them on, with **Browser notifications** and **Jellyfin messages**. A member gets their events on each channel one of their groups with events turns on.
 * An event for users, such as a request's or an invite's, goes only to the users it is about, when the account is on and their groups give them the event. Administrators get every event about them.
 * Any other event, such as a proxy ban or a missing disk, goes to every member who is not an administrator and whose groups give them the event. Administrators get these through **Administrators**.
 * Every event goes to each administrators' channel that picks it, or takes every event.

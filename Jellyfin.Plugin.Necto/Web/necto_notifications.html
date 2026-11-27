@@ -1,5 +1,5 @@
 <!-- necto_notifications.html -->
-<!-- The Notifications tool. It lists every channel with a test for each. -->
+<!-- The Notifications tool. It counts the sends and lists every channel with a test for each. -->
 
 <div id="NectoNotificationsPage" data-role="page" class="page type-interior pluginConfigurationPage"
      data-require="emby-button"
@@ -7,8 +7,12 @@
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="fieldDescription" data-str="NotificationsHelpPage">Sends each event to the channels below. Channels are set in Settings, and who gets which event is set on groups.</div>
+                <div class="fieldDescription" data-str="NotificationsHelpPage">Sends each event to the channels below. Set the channels in Settings and who gets which event on groups.</div>
                 <div id="notificationsStatus" class="stolon-status-text" role="status"></div>
+
+                <!-- Sends -->
+                <!-- Counts the sends in the log that went and that failed. -->
+                <div id="notificationsCards" class="stolon-cards stolon-even"></div>
 
                 <!-- Channels -->
                 <!-- Every channel, the user channels first, each with its test. -->
