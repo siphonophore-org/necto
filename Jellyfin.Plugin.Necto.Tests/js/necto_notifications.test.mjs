@@ -166,3 +166,11 @@ test('workerScope registers the shared worker at the server root, under any base
     assert.equal(push.workerScope('https://media.example.com/jellyfin/'), '/jellyfin/');
     assert.equal(push.WORKER_URL, 'Notifications/Push/Worker.js');
 });
+
+test('a custom body lists every placeholder the server fills', async function () {
+    installPage({});
+    var mod = await loadScript('necto_notifications_sections.js');
+
+    assert.deepEqual(mod.bodyPlaceholders({ tr: function (k) { return k; } }).map(function (p) { return p[0]; }),
+        ['title', 'body', 'event', 'eventName', 'level', 'link', 'time', 'color', 'serverURL', 'userId']);
+});

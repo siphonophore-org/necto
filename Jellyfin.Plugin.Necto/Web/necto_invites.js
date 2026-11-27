@@ -83,6 +83,36 @@ export function inviteItems(invites, shared) {
     });
 }
 
+// stateCards
+// Counts the invites in each state, for the cards over the list.
+//
+// Inputs
+// invites [object[]]: The invites.
+// t [object]: The strings.
+//
+// Output
+// [object[]]: One card per state, with its count, label, and color.
+export function stateCards(invites, t) {
+    return STATES.map(function (state) {
+        var count = (invites || []).filter(function (i) { return stateName(i.State) === state; }).length;
+        return { count: count, label: t.tr(STATE_KEYS[state]), color: STATE_COLORS[state] };
+    });
+}
+
+// groupExpired
+// Tells whether a group's expiry date has come, so signups into it are refused.
+//
+// Inputs
+// group [object]: The group, or null.
+// now [Date]: The time now.
+//
+// Output
+// [boolean]: Whether it has expired.
+export function groupExpired(group, now) {
+    var due = group && group.Permissions && group.Permissions.Accounts && group.Permissions.Accounts.Expiry && group.Permissions.Accounts.Expiry.ExpiresOn;
+    return !!due && String(due).slice(0, 10) <= (now || new Date()).toISOString().slice(0, 10);
+}
+
 // inviteRequest
 // Builds what the editor sends for an invite. A PIN left as stored is sent as null, so it stays.
 //
@@ -173,11 +203,22 @@ export function createInviteEditor(invite, ctx) {
     var group = el('select', { is: 'emby-select', id: groupId, 'data-field': 'GroupId' });
     groupChoices(ctx.groups, t).forEach(function (o) { group.appendChild(el('option', { value: o.value, text: o.label })); });
     group.value = invite.GroupId || '';
+    var expiredWarn = el('div', { class: 'stolon-warn', 'data-role': 'group-expired', text: t.tr('InvitesGroupExpiredWarning') });
     root.appendChild(el('div', { class: 'selectContainer' }, [
         el('label', { class: 'selectLabel', for: groupId, text: t.tr('GroupsTemplateGroup') }),
         group,
         el('div', { class: 'fieldDescription', text: t.tr('InvitesGroupHelp') })
     ]));
+    root.appendChild(expiredWarn);
+    // checkGroup
+    // Shows the warning while the picked group, or the group for new users, has expired.
+    var checkGroup = function () {
+        var id = group.value || ctx.newUserGroupId;
+        var picked = (ctx.groups || []).find(function (g) { return g.Id === id; });
+        expiredWarn.classList.toggle('stolon-hidden', !groupExpired(picked));
+    };
+    group.addEventListener('change', checkGroup);
+    checkGroup();
 
     var uses = input(t.tr('InvitesLabelMaxUses'), 'number', invite.MaxUses == null ? 1 : invite.MaxUses, 'MaxUses', t.tr('GroupsTemplateZeroNoLimit'));
     var expiry = input(t.tr('LabelExpiryDate'), 'date', invite.ExpiresAt ? String(invite.ExpiresAt).slice(0, 10) : '', 'ExpiresAt', t.tr('InvitesExpiryAdminHelp'));
@@ -231,6 +272,7 @@ export default function (view) {
     var invites = [];
     var groups = [];
     var linkUrl = '';
+    var newUserGroupId = '';
     var loadSeq = 0;
 
     // report
@@ -258,6 +300,8 @@ export default function (view) {
             invites = Array.isArray(answers[0]) ? answers[0] : [];
             groups = Array.isArray(answers[1]) ? answers[1] : [];
             linkUrl = (answers[2] && answers[2].InviteSettings && answers[2].InviteSettings.LinkUrl) || '';
+            newUserGroupId = (answers[2] && answers[2].GroupSettings && answers[2].GroupSettings.NewUserGroupId) || '';
+            if (view.querySelector('#inviteCards')) shared.renderCards(view.querySelector('#inviteCards'), stateCards(invites, shared.t));
             var items = inviteItems(invites, shared);
             if (list) list.setItems(items);
             else {
@@ -282,7 +326,7 @@ export default function (view) {
     function openInvite(invite) {
         var t = shared.t;
         var isNew = !invite;
-        var editor = createInviteEditor(invite || { MaxUses: 1 }, { shared: shared, groups: groups, link: isNew ? '' : inviteLink(invite.Token, linkUrl, serverAddress()) });
+        var editor = createInviteEditor(invite || { MaxUses: 1 }, { shared: shared, groups: groups, newUserGroupId: newUserGroupId, link: isNew ? '' : inviteLink(invite.Token, linkUrl, serverAddress()) });
         var actions = isNew ? [] : [
             { text: t.tr(invite.Enabled ? 'InvitesButtonTurnOff' : 'InvitesButtonTurnOn'), onClick: function (handle) {
                 shared.request('Invites/' + invite.Id + '/Enabled', 'POST', { Enabled: !invite.Enabled }).then(function () {

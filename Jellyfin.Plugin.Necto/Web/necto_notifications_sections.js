@@ -330,6 +330,26 @@ function buildSettings(content, ctx) {
     };
 }
 
+// bodyPlaceholders
+// Lists the placeholders a custom body takes, each with what it holds.
+//
+// Inputs
+// t [object]: The strings.
+//
+// Output
+// [string[][]]: Each placeholder's name and description.
+export function bodyPlaceholders(t) {
+    return ['title', 'body', 'event', 'eventName', 'level', 'link', 'time', 'color', 'serverURL', 'userId'].map(function (name) {
+        return [name, t.tr(PLACEHOLDER_KEYS[name])];
+    });
+}
+
+var PLACEHOLDER_KEYS = {
+    title: 'NotificationsPlaceholderTitle', body: 'NotificationsPlaceholderBody', event: 'NotificationsPlaceholderEvent',
+    eventName: 'NotificationsPlaceholderEventName', level: 'NotificationsPlaceholderLevel', link: 'NotificationsPlaceholderLink',
+    time: 'NotificationsPlaceholderTime', color: 'NotificationsPlaceholderColor', serverURL: 'NotificationsPlaceholderServer', userId: 'NotificationsPlaceholderUser'
+};
+
 // createChannelEditor
 // Builds the body of an administrators' channel's sidecar: its name and switch, what it sends to, and its events.
 //
@@ -378,6 +398,10 @@ export function createChannelEditor(channel, ctx) {
         }
         var custom = check({ label: t.tr('NotificationsLabelCustomBody'), help: t.tr('NotificationsCustomBodyHelp'), checked: channel.UseCustomBody, data: 'UseCustomBody' });
         var body = field({ label: t.tr('NotificationsLabelBody'), type: 'textarea', value: channel.Body, data: 'Body', help: t.tr('NotificationsBodyHelp') });
+        var hint = el('div');
+        hint.innerHTML = nectoModule.placeholderHint(bodyPlaceholders(t));
+        while (hint.firstChild) body.wrap.appendChild(hint.firstChild);
+        nectoModule.bindPlaceholders(body.wrap);
         var indent = el('div', { class: 'stolon-indent' }, [body.wrap]);
         root.appendChild(custom.wrap);
         root.appendChild(indent);

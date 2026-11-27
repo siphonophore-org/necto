@@ -164,3 +164,21 @@ test('the signup page reads the token from its address and keeps only web links'
     assert.equal(member.inviteLink('t', '', 'https://media.example.com/'), 'https://media.example.com/invites/t');
     assert.deepEqual(member.memberRequest({ label: 'x', group: FAMILY, uses: '2', expiry: '' }), { Label: 'x', GroupId: FAMILY, MaxUses: 2, ExpiresAt: null, Resources: [] });
 });
+
+test('the counts, the expired group warning, and the http warning follow the invites and the settings', async function () {
+    installPage({});
+    var mod = await loadScript('necto_invites.js');
+    var sections = await loadScript('necto_invites_sections.js');
+    var t = { tr: function (k) { return k; } };
+
+    var cards = mod.stateCards(invites(), t);
+    assert.deepEqual(cards.map(function (c) { return c.count; }), [1, 0, 0, 0, 1]);
+    assert.equal(cards[0].color, 'green');
+    var now = new Date('2026-11-26T12:00:00Z');
+    assert.equal(mod.groupExpired({ Permissions: { Accounts: { Expiry: { ExpiresOn: '2026-11-26T00:00:00' } } } }, now), true);
+    assert.equal(mod.groupExpired({ Permissions: { Accounts: { Expiry: { ExpiresOn: '2026-12-01T00:00:00' } } } }, now), false);
+    assert.equal(mod.groupExpired(null, now), false);
+    assert.equal(sections.linksInsecure('http://media.example.com', 'https:'), true);
+    assert.equal(sections.linksInsecure('', 'http:'), true);
+    assert.equal(sections.linksInsecure('https://media.example.com', 'http:'), false);
+});

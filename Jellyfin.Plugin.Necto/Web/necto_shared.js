@@ -316,6 +316,8 @@ export {
     readSecretField,
     clearSecretField,
     SECRET_KEPT,
+    placeholderHint,
+    bindPlaceholders,
     subscribeWebPush,
     unsubscribeWebPush,
     webPushState,

@@ -51,6 +51,20 @@ export function readCount(input, fallback, min) {
     return isNaN(n) ? fallback : Math.max(min, n);
 }
 
+// linksInsecure
+// Tells whether invite links would use plain http.
+//
+// Inputs
+// linkUrl [string]: The link address in Settings.
+// protocol [string]: The protocol the dashboard is open over, such as https:.
+//
+// Output
+// [boolean]: Whether the links are not encrypted.
+export function linksInsecure(linkUrl, protocol) {
+    var v = String(linkUrl || '').trim().toLowerCase();
+    return v.indexOf('http://') === 0 || (v === '' && protocol === 'http:');
+}
+
 // buildSettings
 // Fills the Invites section of Settings: the address links start with, the signup rate limit, and the wrong PINs
 // that lock an invite.
@@ -69,6 +83,13 @@ function buildSettings(content, ctx) {
     var count = numberField(t.tr('InvitesLabelRateCount'), t.tr('InvitesRateCountHelp'), 'RateLimitCount', 0);
     var windowField = numberField(t.tr('InvitesLabelRateWindow'), t.tr('InvitesRateWindowHelp'), 'RateLimitWindowMinutes', 0);
     var pins = numberField(t.tr('InvitesLabelPinAttempts'), t.tr('InvitesPinAttemptsHelp'), 'MaxPinAttempts', 1);
+    var httpsWarn = el('div', { class: 'stolon-warn stolon-hidden', 'data-role': 'https-warning', text: t.tr('InvitesHttpsWarning') });
+    // checkHttps
+    // Shows the warning while links would use plain http, which carries the new password unencrypted.
+    var checkHttps = function () {
+        httpsWarn.classList.toggle('stolon-hidden', !linksInsecure(link.value, globalThis.location && globalThis.location.protocol));
+    };
+    link.addEventListener('input', checkHttps);
 
     [
         el('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderLinks') }),
@@ -77,6 +98,7 @@ function buildSettings(content, ctx) {
             link,
             el('div', { class: 'fieldDescription', text: t.tr('InvitesLinkUrlHelp') })
         ]),
+        httpsWarn,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderLimits') }),
         el('div', { class: 'fieldDescription', text: t.tr('InvitesLimitsHelp') }),
         count.wrap, windowField.wrap, pins.wrap
@@ -89,6 +111,7 @@ function buildSettings(content, ctx) {
             count.input.value = String(s.RateLimitCount == null ? 10 : s.RateLimitCount);
             windowField.input.value = String(s.RateLimitWindowMinutes == null ? 60 : s.RateLimitWindowMinutes);
             pins.input.value = String(s.MaxPinAttempts || 5);
+            checkHttps();
         },
         apply: function (config) {
             config.InviteSettings = config.InviteSettings || {};
