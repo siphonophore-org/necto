@@ -256,7 +256,7 @@ function buildTroubleshooting(content, ctx) {
             return;
         }
         var items = resetItems(result.Codes, shared, new Date());
-        var cards = el('div', { class: 'stolon-cards stolon-compact', 'data-role': 'reset-cards' });
+        var cards = el('div', { class: 'stolon-cards', 'data-role': 'reset-cards' });
         resets.appendChild(cards);
         resets.appendChild(warning);
         shared.renderCards(cards, resetCards(items, t));
