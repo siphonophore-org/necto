@@ -51,6 +51,14 @@ test('the list shows each invite with its group, uses, state, PIN, and maker', a
     assert.match(rows[1].textContent, /Untitled invite[\s\S]*Used up[\s\S]*viewer/);
 });
 
+test('each invite row holds its link in a copy field with a QR button', async function () {
+    var opened = await openPage();
+    var rows = opened.view.querySelectorAll('.stolon-record-list-row');
+
+    assert.match(rows[0].textContent + rows[0].innerHTML, /https:\/\/media\.example\.com\/invites\/abc123/);
+    assert.match(rows[1].textContent + rows[1].innerHTML, /https:\/\/media\.example\.com\/invites\/def/);
+});
+
 test('an invite opens with its link, its fields, and Turn off, Duplicate, Delete, Cancel, and Save', async function () {
     var opened = await openPage();
     opened.view.querySelectorAll('.stolon-record-list-row')[0].click();

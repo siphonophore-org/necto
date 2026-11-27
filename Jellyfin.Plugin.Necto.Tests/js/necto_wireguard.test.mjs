@@ -131,7 +131,7 @@ test('the Connect card reads Failed while a connection failed, and Active or Ina
     assert.equal(mod.connectCard(t, { ConnectEnabled: false, Connections: [] }, []), null);
     assert.deepEqual(mod.connectCard(t, on, [{ Key: 'host', State: 'Failed' }]), { count: 'StateActive', label: 'WireGuardLabelConnectEnabled', color: 'green' });
     assert.deepEqual(mod.connectCard(t, on, [{ Key: 'abc', State: 'Failed' }]), { count: 'LabelFailed', label: 'WireGuardLabelConnectEnabled', color: 'red' });
-    assert.equal(mod.connectCard(t, { ConnectEnabled: false, Connections: [{}] }, [{ Key: 'abc', State: 'Failed' }]).count, 'WireGuardStatusInactive');
+    assert.equal(mod.connectCard(t, { ConnectEnabled: false, Connections: [{}] }, [{ Key: 'abc', State: 'Failed' }]).count, 'StateInactive');
 });
 
 test('Add peer opens an editor sidecar that posts the peer to its route', async function () {

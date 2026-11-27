@@ -127,3 +127,31 @@ test('pending password resets are listed with their users while reset codes show
     assert.match(resets.textContent, /viewer/);
     assert.ok(resets.querySelector('.stolon-record-list'));
 });
+
+test('resetItems tags each reset as active, expiring, or expired, and lists expired ones last', async function () {
+    installPage({});
+    var sections = await loadScript('necto_groups_sections.js');
+    var bag = (await loadScript('necto_shared.js')).createNectoShared(installPage({}).dom.el('div', {}));
+    await bag.translations;
+    var now = new Date('2026-11-26T12:00:00Z');
+
+    var items = sections.resetItems([
+        { UserName: 'old', Pin: '1', ExpirationDate: '2026-11-26T11:00:00Z', Expired: false },
+        { UserName: 'soon', Pin: '2', ExpirationDate: '2026-11-26T12:03:00Z', Expired: false },
+        { UserName: 'fresh', Pin: '3', ExpirationDate: '2026-11-26T13:00:00Z', Expired: false },
+        { UserName: 'flagged', Pin: '4', ExpirationDate: '2026-11-26T13:00:00Z', Expired: true }
+    ], bag, now);
+
+    assert.deepEqual(items.map(function (i) { return [i.title, i.state, i.tags[0].label]; }), [
+        ['soon', 'expiring', 'Expiring'], ['fresh', 'active', 'Active'], ['old', 'expired', 'Expired'], ['flagged', 'expired', 'Expired']
+    ]);
+    assert.deepEqual(sections.resetCards(items, bag.t).map(function (c) { return [c.label, c.count]; }), [['Active', 1], ['Expiring', 1], ['Expired', 2]]);
+});
+
+test('pending password resets show their counts and the HTTPS warning', async function () {
+    var opened = await openTool('troubleshooting', { answers: { 'GET Groups/ResetCodes': { Enabled: true, Codes: [{ UserName: 'viewer', Pin: '123456', ExpirationDate: '2099-01-01T00:00:00Z', Expired: false }] } } });
+
+    var resets = opened.section('groups').querySelector('[data-role="resets"]');
+    assert.match(resets.querySelector('[data-role="reset-cards"]').textContent, /1\s*Active/);
+    assert.match(resets.textContent, /Reset codes are sent over this connection\. Use HTTPS so they cannot be read in transit\./);
+});

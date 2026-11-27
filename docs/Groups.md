@@ -4,9 +4,11 @@ Groups set what their members may do in every Necto tool, and hold the account r
 
 ## The Groups Tool
 
+Cards at the top count the server's users: **Administrators**, **Active**, **Inactive** for members past their groups' inactivity window, **Disabled**, and **Expiring** for members whose groups expire them within 7 days.
+
 **Groups** lists every group, **Everyone** first, then the others in group order. Each row shows how many members the group has and which account rules it has on. Select a row to open the group in a sidecar, select **Add group** to start a new one, or select **Group order** to reorder them.
 
-The sidecar holds the group's name, its members, **Account rules**, **Access and features**, **Preferences**, and one collapsible section per tool. Its shelf holds **Delete**, **Cancel**, and **Save**. **Delete** asks first, with the group's name in the title, such as "Delete Family". Its members keep their other groups, and a member in no other group takes **Everyone**.
+The sidecar holds the group's name, its members, **Account rules**, **Access and features**, **Preferences**, and one collapsible section per tool. Its shelf holds **Delete**, **Cancel**, and **Save**. **Save** asks first while the group has an expiry date and **Delete the account** as its method, since those members cannot come back. **Delete** asks first, with the group's name in the title, such as "Delete Family". Its members keep their other groups, and a member in no other group takes **Everyone**.
 
 Every tool fills its own section.
 
@@ -87,7 +89,9 @@ A refused change shows the reason on the password form, and writes "Password cha
 * **Set Jellyfin settings** turns the group's template on. It is written onto members when a group is saved or reordered, when a user is created or joins through an invite, and when the server starts.
 * Each setting shows **Member** or **Group**. **Member** leaves the setting as each member has it. **Group** sets it to the value under it.
 * **Access and features** holds Jellyfin's library, channel, and device access, media deletion, playback, Live TV, remote control, parental control with the access schedule, and the profile's switches, such as **Disable this user** and **Hide this user from login screens**.
-* **Preferences** holds the subtitle and audio languages and modes, **Google cast version**, missing episodes, the Collections view, the ten home screen sections, the library order, and the libraries on the home screen, in home sections, and grouped into views.
+* **Maximum allowed parental rating** lists each rating once per score and sub score, and keeps both, as Jellyfin does.
+* **Preferences** holds the subtitle and audio languages and modes, **Google cast version**, missing episodes, the Collections view, the ten home screen sections, the library order, and the libraries on the home screen, in home sections, and grouped into views. **Subtitle mode** explains the picked mode under it.
+* While the template sets **Library access** to some libraries, the library order and the library lists leave out the libraries members cannot see. A library left out keeps its place and its choices.
 * A template that sets **Disable this user** off never turns on an account its groups' expiry or inactivity turned off.
 * Administrators are never changed by a template.
 
@@ -127,7 +131,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 * **Apply templates** writes each user's group template onto them, and reports how many took one.
 * **Run now** beside **Process expired and inactive users** asks first, then runs the task. A deleted user cannot come back.
 * **Run now** beside **Clean expired sessions** runs the task.
-* **Password resets** lists each pending reset with its user and its code, while **Show reset codes** is on.
+* **Password resets** counts the pending resets that are **Active**, **Expiring** within 5 minutes, and **Expired**, warns to use HTTPS, and lists each with its user, its state, and its code, expired ones last, while **Show reset codes** is on.
 
 | Reason | What to do |
 | :--- | :--- |
@@ -157,7 +161,7 @@ Every route is for administrators.
 | `POST /Groups` | Creates a group |
 | `PUT /Groups/{id}` | Saves a group's name, members, and permissions |
 | `DELETE /Groups/{id}` | Deletes a group |
-| `GET /Groups/Users` | Lists the users with the groups that apply to each |
+| `GET /Groups/Users` | Lists the users with the groups that apply to each, and the expiry date and inactivity window those groups give |
 | `GET /Groups/Users/{userId}/Permissions` | Gives what a user may do in every tool |
 | `POST /Groups/PasswordRules/Apply` | Moves users onto or off password rules |
 | `GET /Groups/ResetCodes` | Lists the pending password resets while **Show reset codes** is on |

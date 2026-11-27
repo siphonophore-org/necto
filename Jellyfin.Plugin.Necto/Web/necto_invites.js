@@ -62,15 +62,17 @@ export function usesText(invite, t) {
 }
 
 // inviteItems
-// Turns the invites into rows, each with its group, uses, expiry, state, and PIN.
+// Turns the invites into rows, each with its group, uses, expiry, state, and PIN, and its link in a copy field with a
+// QR button.
 //
 // Inputs
 // invites [object[]]: The invites from Invites/List.
 // shared [object]: The Necto helper bag.
+// linkOf [function]: Gives an invite's link, or is left out for rows without one.
 //
 // Output
 // [object[]]: The rows, each carrying its invite.
-export function inviteItems(invites, shared) {
+export function inviteItems(invites, shared, linkOf) {
     var t = shared.t;
     return (invites || []).map(function (invite) {
         var state = stateName(invite.State);
@@ -79,7 +81,11 @@ export function inviteItems(invites, shared) {
         var tags = [{ label: t.tr(STATE_KEYS[state]), color: STATE_COLORS[state] }];
         if (invite.HasPin) tags.push({ label: t.tr('InvitesLabelPin'), icon: 'pin' });
         if (invite.CreatedByName) tags.push({ label: invite.CreatedByName, icon: 'person' });
-        return { id: invite.Id, title: invite.Label || t.tr('InvitesUntitled'), secondary: parts.join(' · '), tags: tags, invite: invite };
+        var title = invite.Label || t.tr('InvitesUntitled');
+        var aside = linkOf && invite.Token
+            ? nectoModule.createQrCode({ value: linkOf(invite), layout: 'inline', label: title, fileName: 'invite.png' })
+            : null;
+        return { id: invite.Id, title: title, secondary: parts.join(' · '), tags: tags, aside: aside, invite: invite };
     });
 }
 
@@ -302,7 +308,7 @@ export default function (view) {
             linkUrl = (answers[2] && answers[2].InviteSettings && answers[2].InviteSettings.LinkUrl) || '';
             newUserGroupId = (answers[2] && answers[2].GroupSettings && answers[2].GroupSettings.NewUserGroupId) || '';
             if (view.querySelector('#inviteCards')) shared.renderCards(view.querySelector('#inviteCards'), stateCards(invites, shared.t));
-            var items = inviteItems(invites, shared);
+            var items = inviteItems(invites, shared, function (invite) { return inviteLink(invite.Token, linkUrl, serverAddress()); });
             if (list) list.setItems(items);
             else {
                 list = nectoModule.createRecordList({ items: items, label: shared.t.tr('TabInvites'), emptyText: shared.t.tr('InvitesEmpty'), onOpen: function (item) { openInvite(item.invite); } });

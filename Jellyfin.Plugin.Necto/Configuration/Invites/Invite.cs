@@ -27,7 +27,7 @@ public class Invite
     /// <summary>Gets or sets the salted hash of the PIN, in Jellyfin's password hash format, or empty for none.</summary>
     public string PinHash { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the group a new account joins, or <c>null</c> for the group set for new users when the link is used.</summary>
+    /// <summary>Gets or sets the group a new account joins, Everyone's id for no group, or <c>null</c> for the group set for new users when the link is used.</summary>
     public Guid? GroupId { get; set; }
 
     /// <summary>Gets or sets the day the invite stops working, or <c>null</c> for never.</summary>

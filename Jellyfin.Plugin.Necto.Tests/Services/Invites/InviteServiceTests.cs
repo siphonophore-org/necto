@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Jellyfin.Plugin.Necto.Configuration.Accounts;
+using Jellyfin.Plugin.Necto.Configuration.Groups;
 using Jellyfin.Plugin.Necto.Configuration.Invites;
 using Jellyfin.Plugin.Necto.Services.Invites;
 using Jellyfin.Plugin.Necto.Tests.Fakes;
@@ -291,6 +292,27 @@ public sealed class InviteServiceTests : IDisposable
         Assert.NotNull(_h.Service.CreateForMember(member.Id, new InviteRequest { GroupId = target.Id }, null).Error);
         Assert.Single(_h.Service.SummariesOf(member.Id));
         Assert.Contains(_h.Notifier.Events, e => e.Key == InvitesEvents.Created && e.UserId == member.Id);
+    }
+
+    /// <summary>
+    /// A member allowed only Everyone invites into Everyone, even with a group for new users set.
+    /// True: the member's invite signs users into no group, as they picked.
+    /// False: the invite is refused, or lands users in the group for new users.
+    /// </summary>
+    [Fact]
+    public void CreateForMember_IntoEveryone_KeepsEveryone()
+    {
+        var family = TestGroups.Make("Family");
+        var member = _h.Users.Add("member");
+        var inviters = TestGroups.Make("Inviters", p => { p.Invites.MayCreate = true; p.Invites.TargetGroupIds.Add(Group.EveryoneId); }, member.Id);
+        _h.Config.Configuration.Groups.AddRange(new[] { family, inviters });
+        _h.Config.Configuration.GroupSettings.NewUserGroupId = family.Id;
+
+        var (mine, error) = _h.Service.CreateForMember(member.Id, new InviteRequest { GroupId = Group.EveryoneId }, null);
+
+        Assert.Null(error);
+        Assert.Equal(Group.EveryoneId, mine!.GroupId);
+        Assert.NotNull(_h.Service.CreateForMember(member.Id, new InviteRequest { GroupId = family.Id }, null).Error);
     }
 
     /// <summary>

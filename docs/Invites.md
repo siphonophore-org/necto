@@ -4,7 +4,7 @@ Invites are links anyone may use to make their own account on the server, in the
 
 ## The Invites Tool
 
-**Invites** counts the invites in each state at the top, then lists every invite, oldest first, with its group, its uses, its expiry, and its state. A PIN tag marks an invite that asks for a PIN, and a person tag names the member who made it. Select **Add invite** to make one, or select a row to open it in a sidecar.
+**Invites** counts the invites in each state at the top, then lists every invite, oldest first, with its group, its uses, its expiry, its state, and its link with **Copy** and a QR button. A PIN tag marks an invite that asks for a PIN, and a person tag names the member who made it. Select **Add invite** to make one, or select a row to open it in a sidecar.
 
 | State | Means |
 | :--- | :--- |

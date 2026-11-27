@@ -75,7 +75,7 @@ export function connectCard(t, cfg, tunnels) {
     if (!cfg.ConnectEnabled && !(cfg.Connections || []).length) return null;
     var failed = (tunnels || []).some(function (x) { return x.Key !== 'host' && x.State === 'Failed'; });
     var label = t.tr('WireGuardLabelConnectEnabled');
-    if (!cfg.ConnectEnabled) return { count: t.tr('WireGuardStatusInactive'), label: label, color: 'gray' };
+    if (!cfg.ConnectEnabled) return { count: t.tr('StateInactive'), label: label, color: 'gray' };
     return failed ? { count: t.tr('LabelFailed'), label: label, color: 'red' } : { count: t.tr('StateActive'), label: label, color: 'green' };
 }
 

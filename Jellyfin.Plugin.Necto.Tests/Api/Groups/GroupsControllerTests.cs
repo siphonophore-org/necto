@@ -162,6 +162,33 @@ public class GroupsControllerTests
     }
 
     /// <summary>
+    /// The user list gives each member the expiry date, inactivity window, and last activity their groups give.
+    /// True: the Groups page counts the inactive and soon expiring users as the account rules task sees them.
+    /// False: the count cards would miss users or count administrators.
+    /// </summary>
+    [Fact]
+    public async Task ListUsers_GivesTheAccountRulesOfEachUser()
+    {
+        var seen = new DateTime(2026, 11, 1, 0, 0, 0, DateTimeKind.Utc);
+        var member = _users.Add("member", lastActivity: seen);
+        var admin = _users.Add("admin", admin: true, lastActivity: seen);
+        var expires = new DateTime(2026, 12, 1, 0, 0, 0, DateTimeKind.Utc);
+        var rules = new Group { Name = "Family", MemberIds = { member.Id } };
+        rules.Permissions.Accounts.Expiry.ExpiresOn = expires;
+        rules.Permissions.Accounts.Inactivity.Enabled = true;
+        rules.Permissions.Accounts.Inactivity.Days = 30;
+        await Controller().CreateGroup(rules);
+
+        var users = Assert.IsAssignableFrom<IReadOnlyList<GroupUser>>(Assert.IsType<OkObjectResult>(Controller().ListUsers().Result).Value);
+
+        var row = users.First(u => u.Id == member.Id);
+        Assert.Equal((expires, 30, seen), (row.ExpiresOn!.Value, row.InactiveDays!.Value, row.LastActivityDate!.Value));
+        var adminRow = users.First(u => u.Id == admin.Id);
+        Assert.Null(adminRow.ExpiresOn);
+        Assert.Null(adminRow.InactiveDays);
+    }
+
+    /// <summary>
     /// A user's permissions answer with the merge, and an unknown user 404.
     /// True: the page shows what a user may do in each tool.
     /// False: an unknown id would read as Everyone.

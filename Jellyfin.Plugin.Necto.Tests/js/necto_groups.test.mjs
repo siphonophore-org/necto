@@ -166,6 +166,75 @@ test('an expiry turned on with no date is refused before anything is sent', asyn
     assert.match(sidecar.querySelector('[data-role="status"]').textContent, /Select an expiry date/);
 });
 
+test('userCounts counts administrators, active, inactive, disabled, and soon expiring users', async function () {
+    installPage({});
+    var mod = await loadScript('necto_groups.js');
+    var now = new Date(2026, 10, 26, 12, 0, 0);
+
+    var counts = mod.userCounts([
+        { IsAdministrator: true, ExpiresOn: '2026-11-27T00:00:00' },
+        { InactiveDays: 30, LastActivityDate: new Date(2026, 10, 20).toISOString() },
+        { InactiveDays: 30, LastActivityDate: new Date(2026, 9, 1).toISOString(), ExpiresOn: '2026-12-03T00:00:00' },
+        { IsDisabled: true, ExpiresOn: '2026-11-26T00:00:00' },
+        { ExpiresOn: '2026-12-04T00:00:00' },
+        { ExpiresOn: '2026-11-25T00:00:00' }
+    ], now);
+
+    assert.deepEqual(counts, { admins: 1, active: 3, inactive: 1, disabled: 1, expiring: 2 });
+});
+
+test('the page shows the user count cards over the list', async function () {
+    var page = installPage({});
+    var dom = page.dom;
+    var view = pageView(dom, [dom.el('div', { id: 'groupUserCards' }), dom.el('div', { id: 'groupList' }), dom.el('button', { id: 'btnAddGroup' }), dom.el('span', { id: 'groupsStatus' })]);
+    dom.document.documentElement.appendChild(view);
+    routeApi(page, { 'GET Groups': groups(), 'GET Groups/Users': users(), 'GET Devices': { Items: [] } });
+    var mod = await loadScript('necto_groups.js');
+    mod.default(view);
+    view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
+    await settle();
+
+    var text = view.querySelector('#groupUserCards').textContent;
+    assert.match(text, /1\s*Administrators/);
+    assert.match(text, /2\s*Active/);
+    assert.match(text, /Inactive/);
+    assert.match(text, /Expiring/);
+});
+
+test('deletesOnExpiry holds only for a group with an expiry date and Delete as its method', async function () {
+    installPage({});
+    var mod = await loadScript('necto_groups.js');
+    function group(expiry) { return { Permissions: { Accounts: { Expiry: expiry } } }; }
+
+    assert.equal(mod.deletesOnExpiry(group({ ExpiresOn: '2026-12-01T00:00:00', Action: 'Delete' })), true);
+    assert.equal(mod.deletesOnExpiry(group({ ExpiresOn: '2026-12-01T00:00:00', Action: 1 })), true);
+    assert.equal(mod.deletesOnExpiry(group({ ExpiresOn: '2026-12-01T00:00:00', Action: 'Disable' })), false);
+    assert.equal(mod.deletesOnExpiry(group({ ExpiresOn: null, Action: 'Delete' })), false);
+    assert.equal(mod.deletesOnExpiry({ Permissions: {} }), false);
+});
+
+test('saving a group that deletes its members on expiry asks first, and Cancel sends nothing', async function () {
+    var deleting = groups();
+    deleting[1].Permissions.Accounts.Expiry = { ExpiresOn: '2026-12-01T00:00:00', Action: 'Delete' };
+    var opened = await openPage({ 'GET Groups': deleting, ['PUT Groups/' + FAMILY]: function (o) { return JSON.parse(o.data); } });
+    var sidecar = await openRow(opened, 1);
+
+    clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Save');
+    await settle(50);
+    var dialog = dialogText(opened.dom);
+    assert.equal(dialog.title, 'Save Family');
+    assert.equal(dialog.body, 'Its members and their data are deleted on 2026-12-01. This cannot be undone.');
+    clickDialogButton(opened.dom, 'Cancel');
+    await settle(50);
+    assert.equal(sent(opened).length, 0);
+
+    clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Save');
+    await settle(50);
+    clickDialogButton(opened.dom, 'Save');
+    await settle(50);
+    assert.equal(sent(opened)[0].type, 'PUT');
+});
+
 test('Delete asks first with a title naming the group and says what follows, and Cancel sends nothing', async function () {
     var opened = await openPage();
     var sidecar = await openRow(opened, 1);

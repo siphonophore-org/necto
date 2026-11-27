@@ -172,7 +172,7 @@ public class GroupsController : ControllerBase
     }
 
     /// <summary>
-    /// Lists the server's users with the groups that apply to each.
+    /// Lists the server's users with the groups that apply to each, and the expiry and inactivity those groups give.
     /// </summary>
     /// <returns>The users, by name.</returns>
     [HttpGet("Users")]
@@ -183,13 +183,16 @@ public class GroupsController : ControllerBase
         var result = _store.Read(c => users.Select(u =>
         {
             var admin = u.HasPermission(PermissionKind.IsAdministrator);
+            var groups = admin ? Array.Empty<Group>() : GroupMembership.GroupsOf(c, u.Id);
             return new GroupUser
             {
                 Id = u.Id,
                 Name = u.Username,
                 IsAdministrator = admin,
                 IsDisabled = u.HasPermission(PermissionKind.IsDisabled),
-                GroupIds = admin ? new List<Guid>() : GroupMembership.GroupIdsOf(c, u.Id)
+                GroupIds = admin ? new List<Guid>() : GroupMembership.GroupIdsOf(c, u.Id),
+                ExpiresOn = admin ? null : AccountRuleMerger.ExpiresOn(groups),
+                InactiveDays = admin ? null : AccountRuleMerger.InactiveDays(groups)
             };
         }).ToList());
 
@@ -197,7 +200,9 @@ public class GroupsController : ControllerBase
         {
             if (users.FirstOrDefault(u => u.Id == row.Id) is { } user)
             {
-                row.PrimaryImageTag = _userManager.GetUserDto(user, string.Empty)?.PrimaryImageTag;
+                var dto = _userManager.GetUserDto(user, string.Empty);
+                row.PrimaryImageTag = dto?.PrimaryImageTag;
+                row.LastActivityDate = dto?.LastActivityDate ?? dto?.LastLoginDate;
             }
         }
 
