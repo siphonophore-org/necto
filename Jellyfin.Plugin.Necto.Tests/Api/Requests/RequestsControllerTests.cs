@@ -821,21 +821,41 @@ public sealed class RequestsControllerTests : IDisposable
     }
 
     /// <summary>
-    /// The page's script leaves the web client's markup to its own file, building only the page's own classes.
+    /// The page's script leaves the web client's markup to Stolon's builders, writing only the page's own classes.
     /// True: everything copied from the web client has one home to update.
     /// False: the web client's markup would spread through the page's script.
     /// </summary>
     [Fact]
-    public void Page_Script_LeavesTheWebClientsMarkupToItsOwnFile()
+    public void Page_Script_LeavesTheWebClientsMarkupToStolon()
     {
         var page = PageHtml();
         var script = page[page.LastIndexOf("<script>", StringComparison.Ordinal)..];
-        var own = new HashSet<string>(StringComparer.Ordinal) { "checkboxListTools", "formError", "issueHeader", "issueTitleRow", "pushSettings", "requestHeader", "requestInfo", "requestOverview", "requestTitle", "rq-homeRow", "rq-titleFull", "rq-titleShort" };
+        var own = new HashSet<string>(StringComparer.Ordinal) { "checkboxListTools", "stolon-web-error", "issueHeader", "issueTitleRow", "pushSettings", "requestHeader", "requestInfo", "requestOverview", "requestTitle", "rq-fullRow", "rq-homeRow", "rq-titleFull", "rq-titleShort" };
 
         var classes = Regex.Matches(script, "class=\"([^\"]*)\"").SelectMany(m => m.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
         Assert.All(classes, c => Assert.Contains(c, own));
-        Assert.Contains("<script src=\"webclient.js?v=ASSET_VERSION\"></script>", page, StringComparison.Ordinal);
+        Assert.Contains("import('../web/configurationpage?name=necto_stolon.js')", script, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The page sits in Stolon's web client shell, says where a title stands with a plain icon, and offers no Optional
+    /// placeholder or custom state colors.
+    /// True: the page wraps its detail buttons on a phone and reads as the web client does.
+    /// False: a state would show as a greyed disabled button, or fields would carry a placeholder sentence.
+    /// </summary>
+    [Fact]
+    public void Page_Markup_UsesStolonsShellAndPlainStates()
+    {
+        var page = PageHtml();
+
+        Assert.Contains("<body dir=\"ltr\" class=\"stolon-shell\">", page, StringComparison.Ordinal);
+        Assert.Contains("statusIcon = S.webDetailStatus", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("PlaceholderOptional", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("rq-detailStatus", page, StringComparison.Ordinal);
+        Assert.DoesNotContain(".t-requested", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("Images/Primary?height=80&quality=90';\n            show(user)", page, StringComparison.Ordinal);
+        Assert.Contains("if (access.HasImage)", page, StringComparison.Ordinal);
     }
 
     // ------------------------------------------------------------------ sign in

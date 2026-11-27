@@ -43,7 +43,8 @@ async function openPage(answers, storage) {
         dom.el('div', { id: 'requestStats' }),
         dom.el('div', { id: 'requestsChanged', class: 'stolon-hidden' }),
         dom.el('div', { id: 'requestsStatus' }),
-        dom.el('div', { id: 'requestsTable' })
+        dom.el('div', { id: 'requestsTable' }),
+        dom.el('div', { id: 'requestsEmpty', class: 'stolon-hidden' })
     ]);
     dom.document.documentElement.appendChild(view);
     var routes = Object.assign({
@@ -63,7 +64,7 @@ async function openPage(answers, storage) {
     var mod = await loadScript('necto_requests.js');
     var handle = mod.default(view);
     view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
-    await settle();
+    await settle(50);
     return { page: page, view: view, dom: dom, handle: handle, routes: routes };
 }
 
@@ -88,16 +89,16 @@ function sent(opened) {
     return opened.page.requests.filter(function (r) { return r.type === 'POST' || r.type === 'DELETE'; });
 }
 
-test('statCards counts Open as the four open statuses, each card in its status color', async function () {
+test('statCards counts each status in its color', async function () {
     var t = await strings();
     var mod = await loadScript('necto_requests.js');
 
     var cards = mod.statCards({ ByStatus: { Pending: 2, Approved: 1, Failed: 1, PartiallyAvailable: 1, Available: 5, Declined: 3 } }, t);
 
-    assert.deepEqual(cards.map(function (c) { return c.label; }), ['Open', 'Pending', 'Approved', 'Failed', 'Partial', 'Available', 'Rejected']);
-    assert.deepEqual(cards.map(function (c) { return c.count; }), [5, 2, 1, 1, 1, 5, 3]);
-    assert.deepEqual(cards.map(function (c) { return c.color; }), ['', 'purple', 'blue', 'red', 'orange', 'green', 'gray']);
-    assert.deepEqual(mod.statCards(null, t).map(function (c) { return c.count; }), [0, 0, 0, 0, 0, 0, 0]);
+    assert.deepEqual(cards.map(function (c) { return c.label; }), ['Pending', 'Approved', 'Failed', 'Partial', 'Available', 'Rejected']);
+    assert.deepEqual(cards.map(function (c) { return c.count; }), [2, 1, 1, 1, 5, 3]);
+    assert.deepEqual(cards.map(function (c) { return c.color; }), ['purple', 'blue', 'red', 'orange', 'green', 'gray']);
+    assert.deepEqual(mod.statCards(null, t).map(function (c) { return c.count; }), [0, 0, 0, 0, 0, 0]);
 });
 
 test('the filters are kept for the next visit and fall back to Open and everyone', async function () {
@@ -156,11 +157,11 @@ test('a request goes to its own profile, else its server\'s first, and profiles 
 test('each status offers its own actions in shelf order', async function () {
     var mod = await loadScript('necto_requests.js');
 
-    assert.deepEqual(mod.requestActions({ Status: 'Pending' }), ['remove', 'available', 'reject', 'edit', 'approve']);
-    assert.deepEqual(mod.requestActions({ Status: 'Failed' }), ['remove', 'available', 'reject', 'retry']);
-    assert.deepEqual(mod.requestActions({ Status: 'Approved', LibraryItemId: 'x' }), ['remove', 'library', 'available', 'reject']);
-    assert.deepEqual(mod.requestActions({ Status: 'Available', LibraryItemId: 'x' }), ['remove', 'library']);
-    assert.deepEqual(mod.requestActions({ Status: 'Declined' }), ['remove']);
+    assert.deepEqual(mod.requestActions({ Status: 'Pending' }), ['remove', 'cancel', 'available', 'reject', 'edit', 'approve']);
+    assert.deepEqual(mod.requestActions({ Status: 'Failed' }), ['remove', 'cancel', 'available', 'reject', 'retry']);
+    assert.deepEqual(mod.requestActions({ Status: 'Approved', LibraryItemId: 'x' }), ['remove', 'cancel', 'library', 'available', 'reject']);
+    assert.deepEqual(mod.requestActions({ Status: 'Available', LibraryItemId: 'x' }), ['remove', 'cancel', 'library']);
+    assert.deepEqual(mod.requestActions({ Status: 'Declined' }), ['remove', 'cancel']);
 });
 
 test('a bulk result says what was done, what was not sent, and what was skipped', async function () {
@@ -187,7 +188,7 @@ test('a download shows its progress and the time it has left', async function ()
 test('the page draws the counts and reads the list on the kept filters', async function () {
     var opened = await openPage({}, { 'necto-requests-filters': JSON.stringify({ status: 'Failed', requester: VIEWER }) });
 
-    assert.deepEqual(texts(opened.view.querySelector('#requestStats'), '.stolon-card-label'), ['Open', 'Pending', 'Approved', 'Failed', 'Partial', 'Available', 'Rejected']);
+    assert.deepEqual(texts(opened.view.querySelector('#requestStats'), '.stolon-card-label'), ['Pending', 'Approved', 'Failed', 'Partial', 'Available', 'Rejected']);
     var list = opened.page.requests.find(function (r) { return String(r.url).indexOf('Requests/All?') === 0; });
     assert.ok(list);
     assert.match(list.url, /filter=Failed/);
@@ -210,7 +211,7 @@ test('a request opens in a sidecar with its actions, and Approve sends it with t
     await settle(50);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
     assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'Dune');
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Mark available', 'Reject', 'Edit', 'Approve']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Cancel', 'Mark available', 'Reject', 'Edit', 'Approve']);
     var picker = sidecar.querySelector('select');
     assert.deepEqual(texts(picker, 'option'), ['1080p', '4K']);
     picker.value = 'p2';
@@ -352,4 +353,31 @@ test('a server refusal keeps the sidecar open and shows a reason there', async f
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
     assert.ok(sidecar);
     assert.match(sidecar.querySelector('[data-role="status"]').textContent, /Could not update the request\./);
+});
+
+test('each row names who asked and when under its title, and the bulk bar takes full size buttons', async function () {
+    var opened = await openPage();
+
+    assert.match(cellHtml(opened.view), /viewer · /);
+    assert.equal(opened.view.querySelectorAll('.stolon-table-row .stolon-table-cell').length >= 2, true);
+    assert.ok(Array.prototype.every.call(opened.view.querySelectorAll('[data-bulk]'), function (b) { return !/stolon-small/.test(b.className); }));
+});
+
+test('with no requests at all the page says No requests yet in place of the list', async function () {
+    var opened = await openPage({ 'GET Requests/Stats': { Total: 0, ByStatus: {} } });
+
+    var empty = opened.view.querySelector('#requestsEmpty');
+    assert.equal(empty.classList.contains('stolon-hidden'), false);
+    assert.match(empty.innerHTML, /No requests yet\./);
+    assert.equal(opened.view.querySelector('#requestsTable').classList.contains('stolon-hidden'), true);
+});
+
+test('the sidecar shows the status once, in its header, and a movie with one profile edits its note alone', async function () {
+    var opened = await openPage({ 'GET Requests/Profiles': [{ Id: 'p1', Name: '1080p', Type: 'Movie', ServerId: 's1', Server: 'Radarr' }] });
+    opened.handle.showRequest(dune());
+    await settle(50);
+
+    var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
+    assert.equal((sidecar.textContent.match(/Pending/g) || []).length, 1);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Cancel', 'Mark available', 'Reject', 'Edit note', 'Approve']);
 });

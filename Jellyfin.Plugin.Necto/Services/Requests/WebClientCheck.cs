@@ -16,16 +16,13 @@ namespace Jellyfin.Plugin.Necto.Services.Requests;
 public sealed class WebClientCheck : IHostedService
 {
     /// <summary>
-    /// The web client's classes the page's script builds from parts, such as <c>'cardPadder-' + shape</c>, which reading
-    /// its markup cannot see.
+    /// The web client's card shapes the page passes to Stolon's builders, such as <c>'square'</c>, whose classes Stolon writes
+    /// from parts, so neither reading the markup nor Stolon's own list sees them.
     /// </summary>
     internal static readonly string[] Built =
     [
-        "overflowPortraitCard", "portraitCard", "cardPadder-overflowPortrait", "cardPadder-portrait",
         "overflowBackdropCard", "cardPadder-overflowBackdrop", "overflowSquareCard", "cardPadder-overflowSquare",
-        "backdropCard", "cardPadder-backdrop", "squareCard", "cardPadder-square",
-        "defaultCardBackground1", "defaultCardBackground2", "defaultCardBackground3", "defaultCardBackground4", "defaultCardBackground5",
-        "button-submit", "button-delete", "mediaInfoCriticRatingFresh", "mediaInfoCriticRatingRotten"
+        "backdropCard", "cardPadder-backdrop", "squareCard", "cardPadder-square"
     ];
 
     private readonly IServerApplicationPaths _paths;
@@ -43,12 +40,11 @@ public sealed class WebClientCheck : IHostedService
     }
 
     /// <summary>
-    /// Gets everything the request page's markup is built from: the page, and its script that builds the web client's
-    /// markup, read as a script of the page so its class lists count.
+    /// Gets the request page's markup, with its script. The web client markup it builds with is Stolon's, which Stolon's
+    /// check covers itself.
     /// </summary>
-    /// <returns>The page with the script inside it.</returns>
-    internal static string PageMarkup()
-        => EmbeddedResources.Read("necto_requests_page.html") + "\n<script>\n" + EmbeddedResources.Read("necto_requests_webclient.js") + "\n</script>\n";
+    /// <returns>The page.</returns>
+    internal static string PageMarkup() => EmbeddedResources.Read("necto_requests_page.html");
 
     /// <inheritdoc />
     public Task StartAsync(CancellationToken cancellationToken)

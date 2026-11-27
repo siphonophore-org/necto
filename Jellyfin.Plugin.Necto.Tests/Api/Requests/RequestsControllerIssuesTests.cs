@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Plugin.Necto.Api.Requests;
 using Jellyfin.Plugin.Necto.Services.Issues.Models;
+using Jellyfin.Plugin.Necto.Services.Requests.Models;
 using Jellyfin.Plugin.Necto.Tests.Fakes;
 using MediaBrowser.Controller.Entities.Movies;
 using Microsoft.AspNetCore.Mvc;
@@ -50,7 +51,8 @@ public sealed class RequestsControllerIssuesTests : IDisposable
         Assert.IsType<NotFoundObjectResult>(api.IssueSearch("keeper").Result);
         Assert.IsType<NotFoundObjectResult>(api.IssueItem(_movie.Id).Result);
         Assert.IsType<NotFoundObjectResult>(api.ReportIssue(new IssueSubmit { ItemId = _movie.Id, Type = IssueType.Video }).Result);
-        Assert.IsType<NotFoundObjectResult>(_h.Api(_admin).ListIssues(null, null, null, null, null, null).Result);
+        Assert.IsType<NotFoundObjectResult>(_h.Api(_admin).ListIssues(null, null, null, null, null, null, null).Result);
+        Assert.IsType<NotFoundObjectResult>(_h.Api(_admin).IssueReporters(null, null, null).Result);
     }
 
     /// <summary>
@@ -92,6 +94,29 @@ public sealed class RequestsControllerIssuesTests : IDisposable
         Assert.Equal(1, _h.Db.IssuePage(new PagedQuery { Search = "harbor" }).TotalCount);
         Assert.Equal(1, _h.Db.IssuePage(new PagedQuery { Search = "other" }).TotalCount);
         Assert.Equal(1, _h.Db.CountIssuesByState()[IssueState.Rescinded]);
+    }
+
+    /// <summary>
+    /// The managers' list is narrowed to one reporter, and the reporters are listed with how many issues each reported.
+    /// True: the Issues page's reporter filter lists each reporter once and shows only their issues.
+    /// False: the filter would miss a reporter, count one twice, or show another person's issues.
+    /// </summary>
+    [Fact]
+    public void IssueReporters_Filter_NarrowsTheListToOneReporter()
+    {
+        var harbor = Movie("Paper Harbor", 2021);
+        _h.Issues.Report(_h.Access(_viewer), new IssueSubmit { ItemId = _movie.Id, Type = IssueType.Audio });
+        _h.Issues.Report(_h.Access(_viewer), new IssueSubmit { ItemId = harbor.Id, Type = IssueType.Video });
+        _h.Issues.Report(_h.Access(_other), new IssueSubmit { ItemId = Movie("Glass Orchard", 2020).Id, Type = IssueType.Video });
+
+        var reporters = _h.Db.IssueReporters();
+        var listed = Assert.IsType<OkObjectResult>(_h.Api(_admin).ListIssues(null, null, null, null, "All", null, _other.Id).Result).Value as RequestsQueryResult<Issue>;
+
+        Assert.Equal(["other", "viewer"], reporters.ConvertAll(r => r.UserName));
+        Assert.Equal([1, 2], reporters.ConvertAll(r => r.Count));
+        Assert.Equal(2, _h.Db.IssuePage(new PagedQuery(), null, null, _viewer.Id).TotalCount);
+        Assert.Equal(1, listed!.TotalRecordCount);
+        Assert.Equal(0, _h.Db.IssuePage(new PagedQuery(), null, null, Guid.NewGuid()).TotalCount);
     }
 
     private Movie Movie(string name, int year)

@@ -1,23 +1,25 @@
 // necto_issues.js
-// The Issues tool. It counts the issues by state, lists them with search, state, and type filters, and opens each in
-// a sidecar where it is confirmed, resolved, declined, or reopened. While issues are off it says so.
+// The Issues tool. It counts the issues by state, lists them with search, state, type, and reporter filters, acts on
+// the rows picked, and opens each in a sidecar where it is confirmed, resolved, declined, or reopened. While issues are
+// off it says so.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
 var h = nectoModule.h;
 var esc = nectoModule.escapeHtml;
 
-// The rows a page of the list holds.
+// The rows a page of the list holds, and the most reporters the filter lists.
 export var PAGE_SIZE = 50;
+var REPORTERS_LIMIT = 200;
 
 // FILTERS_KEY
-// Where the state and type filters are kept for the next visit.
+// Where the state, type, and reporter filters are kept for the next visit.
 export var FILTERS_KEY = 'necto-issues-filters';
 
 // ISSUE_STATES
 // Each issue state by the name the server sends, with its string key and badge color.
 export var ISSUE_STATES = {
-    Reported: { key: 'StateReported', color: 'yellow' },
+    Reported: { key: 'StateReported', color: 'orange' },
     Confirmed: { key: 'StateConfirmed', color: 'red' },
     Resolved: { key: 'StateResolved', color: 'green' },
     Declined: { key: 'StateDeclined', color: 'gray' },
@@ -100,7 +102,7 @@ export function stateFilters(t) {
 }
 
 // statCards
-// Turns the Stats answer into the count cards: Open untinted as the reported and confirmed issues, then each state.
+// Turns the Stats answer into the count cards, one per state in its color.
 //
 // Inputs
 // by [object]: The Issues/Stats answer, a count by state.
@@ -110,11 +112,51 @@ export function stateFilters(t) {
 // [object[]]: The cards, each a label, a count, and a color.
 export function statCards(by, t) {
     by = by || {};
-    return [{ label: t.tr('StateOpen'), count: (by.Reported || 0) + (by.Confirmed || 0), color: '' }]
-        .concat(['Reported', 'Confirmed', 'Resolved', 'Declined'].map(function (k) {
-            var s = stateOf(k, t);
-            return { label: s.label, count: by[k] || 0, color: s.color };
-        }));
+    return Object.keys(ISSUE_STATES).map(function (k) {
+        var s = stateOf(k, t);
+        return { label: s.label, count: by[k] || 0, color: s.color };
+    });
+}
+
+// totalOf
+// Adds up the issues in every state.
+//
+// Inputs
+// by [object]: The Issues/Stats answer, a count by state.
+//
+// Output
+// [number]: How many issues there are.
+export function totalOf(by) {
+    return Object.keys(by || {}).reduce(function (n, k) { return n + (Number(by[k]) || 0); }, 0);
+}
+
+// reporterOptions
+// Turns the reporters into the reporter filter's choices, each with how many issues they reported.
+//
+// Inputs
+// reporters [object[]]: The Issues/Reporters items.
+//
+// Output
+// [object[]]: Each choice's value and label.
+export function reporterOptions(reporters) {
+    return (reporters || []).map(function (r) { return { value: r.UserId, label: r.UserName + ' (' + r.Count + ')' }; });
+}
+
+// BULK_VERBS
+// The decisions the bulk bar offers, each with its button's string key and class.
+export var BULK_VERBS = [['Resolve', 'IssuesButtonResolve', 'stolon-primary'], ['Confirm', 'IssuesButtonConfirm', 'stolon-secondary'], ['Decline', 'ButtonDecline', 'stolon-destructive']];
+
+// canDecide
+// Tells whether a decision applies to an issue in its state, so the bulk bar skips the rest.
+//
+// Inputs
+// issue [object]: The issue.
+// verb [string]: Confirm, Resolve, Decline, or Reopen.
+//
+// Output
+// [boolean]: Whether the issue takes it.
+export function canDecide(issue, verb) {
+    return issueActions(issue).indexOf(verb) >= 0;
 }
 
 // issueActions
@@ -131,28 +173,32 @@ export function issueActions(issue) {
 }
 
 // readFilters
-// Reads the state and type filters kept from the last visit.
+// Reads the state, type, and reporter filters kept from the last visit.
 //
 // Inputs
 // storage [object]: The browser storage, or null.
 //
 // Output
-// [object]: state, Open unless kept, and type, empty for every type.
+// [object]: state, Open unless kept, type, empty for every type, and reporter, empty for everyone.
 export function readFilters(storage) {
     var kept = null;
     try { kept = JSON.parse((storage && storage.getItem(FILTERS_KEY)) || 'null'); } catch (e) { kept = null; }
     kept = kept || {};
-    return { state: typeof kept.state === 'string' && kept.state ? kept.state : 'Open', type: typeof kept.type === 'string' ? kept.type : '' };
+    return {
+        state: typeof kept.state === 'string' && kept.state ? kept.state : 'Open',
+        type: typeof kept.type === 'string' ? kept.type : '',
+        reporter: typeof kept.reporter === 'string' ? kept.reporter : ''
+    };
 }
 
 // keepFilters
-// Keeps the state and type filters for the next visit.
+// Keeps the state, type, and reporter filters for the next visit.
 //
 // Inputs
 // storage [object]: The browser storage, or null.
-// filters [object]: state and type.
+// filters [object]: state, type, and reporter.
 export function keepFilters(storage, filters) {
-    try { if (storage) storage.setItem(FILTERS_KEY, JSON.stringify({ state: filters.state || 'Open', type: filters.type || '' })); } catch (e) { /* kept for this visit only */ }
+    try { if (storage) storage.setItem(FILTERS_KEY, JSON.stringify({ state: filters.state || 'Open', type: filters.type || '', reporter: filters.reporter || '' })); } catch (e) { /* kept for this visit only */ }
 }
 
 // titleOf
@@ -185,6 +231,20 @@ export function titleOf(issue, t) {
 export function typesOf(issue, t) {
     return (issue.Reporters || []).map(function (r) { return r.Type; }).filter(function (x, i, all) { return all.indexOf(x) === i; })
         .map(function (x) { return typeName(x, t); }).join(', ');
+}
+
+// reportersLine
+// Writes who reported an issue and when it last changed.
+//
+// Inputs
+// issue [object]: The issue.
+// t [object]: The strings.
+//
+// Output
+// [string]: The line.
+export function reportersLine(issue, t) {
+    var names = (issue.Reporters || []).map(function (r) { return r.UserName; }).join(', ');
+    return [names, t.format('IssuesValueUpdatedOn', when(issue.UpdatedUtc))].filter(Boolean).join(' · ');
 }
 
 // subline
@@ -245,13 +305,33 @@ export function detailItems(issue, t) {
     ].filter(Boolean);
 }
 
+// bulkResultText
+// Words what a bulk decision did, a sentence for each outcome.
+//
+// Inputs
+// done [number]: How many it decided.
+// failed [number]: How many the server refused.
+// skipped [number]: How many did not take the decision in their state.
+// t [object]: The strings.
+//
+// Output
+// [object]: text, the sentences, and isError, true when some failed.
+export function bulkResultText(done, failed, skipped, t) {
+    var text = [t.plural(done, 'IssuesBulkDoneOne', 'IssuesBulkDoneMany')];
+    if (failed) text.push(t.plural(failed, 'IssuesBulkFailedOne', 'IssuesBulkFailedMany'));
+    if (skipped) text.push(t.plural(skipped, 'IssuesBulkSkippedOne', 'IssuesBulkSkippedMany'));
+    return { text: text.join(' '), isError: !!failed };
+}
+
 export default function (view) {
     'use strict';
 
     var shared = null;
     var page = null;
     var table = null;
-    var filters = { state: 'Open', type: '' };
+    var filters = { state: 'Open', type: '', reporter: '' };
+    var reporters = [];
+    var tableReporters = null;
 
     // storage
     // Gives the browser storage, or null where the browser refuses it.
@@ -272,24 +352,49 @@ export default function (view) {
         return shared.badge(s.color, s.label) + (issue.FileChanged ? ' ' + shared.badge('orange', shared.t.tr('IssuesLabelFileChanged')) : '');
     }
 
+    // report
+    // Shows a result on the page's status line.
+    function report(message, isError) {
+        shared.setStatus('issuesStatus', message, !!isError, isError ? { timeout: 0 } : undefined);
+    }
+
+    // showEmpty
+    // Shows No issues yet in place of the list while there are none at all.
+    function showEmpty(none) {
+        view.querySelector('#issuesEmpty').classList.toggle('stolon-hidden', !none);
+        view.querySelector('#issuesTable').classList.toggle('stolon-hidden', none);
+    }
+
     // loadStats
     // Reads the counts and draws the cards.
     function loadStats() {
         return shared.request('Issues/Stats').then(function (by) {
             shared.renderCards('issueStats', statCards(by, shared.t));
+            showEmpty(!totalOf(by));
         }).catch(function () { /* the counts are a nicety */ });
     }
 
+    // loadReporters
+    // Reads everyone who reported issues, for the reporter filter, and drops a kept reporter who has none left.
+    function loadReporters() {
+        return shared.request('Issues/Reporters?limit=' + REPORTERS_LIMIT).then(function (answer) {
+            reporters = (answer && answer.Items) || [];
+            var kept = filters.reporter && reporters.some(function (r) { return r.UserId === filters.reporter; }) ? filters.reporter : '';
+            if (kept !== filters.reporter) { filters.reporter = kept; keepFilters(storage(), filters); }
+        }).catch(function () { /* the filter keeps its last list */ });
+    }
+
     // createTable
-    // Builds the list with its search and its state and type filters.
+    // Builds the list with its search, its state, type, and reporter filters, and its bulk actions.
     function createTable() {
         var t = shared.t;
         var bag = Object.create(shared);
         bag.apiPrefix = '';
+        tableReporters = JSON.stringify(reporterOptions(reporters));
         table = nectoModule.createPaginatedTable(view, bag, {
             containerId: 'issuesTable',
             endpoint: 'Issues/All',
-            selection: { enabled: false, idKey: 'Id' },
+            selection: { enabled: true, idKey: 'Id', onSelectionChange: onSelection },
             search: { enabled: true, placeholder: t.tr('IssuesSearchPlaceholder') },
             filters: [
                 {
@@ -308,6 +413,15 @@ export default function (view) {
                     initialValue: filters.type,
                     onChange: function (value) { filters.type = value; keepFilters(storage(), filters); },
                     buildParams: function (value) { return { type: value }; }
+                },
+                {
+                    name: 'user',
+                    label: t.tr('IssuesLabelReporter'),
+                    options: reporterOptions(reporters),
+                    allLabel: t.tr('GroupEveryone'),
+                    initialValue: filters.reporter,
+                    onChange: function (value) { filters.reporter = value; keepFilters(storage(), filters); },
+                    buildParams: function (value) { return { user: value }; }
                 }
             ],
             pagination: { pageSize: PAGE_SIZE },
@@ -319,19 +433,31 @@ export default function (view) {
                     imageShape: 'portrait',
                     render: function (issue) {
                         return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + esc(titleOf(issue, t)) + '</div>'
-                            + '<div class="stolon-table-item-sub">' + esc(subline(issue, t)) + '</div></div>';
-                    }
-                },
-                {
-                    key: 'Reporters', type: 'custom', render: function (issue) {
-                        return '<div class="stolon-table-item-info"><div>' + esc((issue.Reporters || []).map(function (r) { return r.UserName; }).join(', ')) + '</div>'
-                            + '<div class="stolon-table-item-sub">' + esc(t.format('IssuesValueUpdatedOn', when(issue.UpdatedUtc))) + '</div></div>';
+                            + '<div class="stolon-table-item-sub">' + esc(subline(issue, t)) + '</div>'
+                            + '<div class="stolon-table-item-sub">' + esc(reportersLine(issue, t)) + '</div></div>';
                     }
                 },
                 { key: 'State', type: 'custom', className: 'stolon-table-cell-status', render: stateCell }
             ],
             actions: { onRowClick: function (issue) { showIssue(issue); } }
         });
+
+        var actions = table.getBulkActionsContainer();
+        if (actions) {
+            BULK_VERBS.forEach(function (b) {
+                actions.appendChild(h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + b[2], 'data-bulk': b[0], disabled: true }, [h('span', { text: t.tr(b[1]) })]));
+            });
+            actions.addEventListener('click', function (e) {
+                var btn = e.target.closest('[data-bulk]');
+                if (btn && !btn.disabled) bulk(btn.getAttribute('data-bulk'));
+            });
+        }
+    }
+
+    // onSelection
+    // Turns the bulk actions on while rows are picked.
+    function onSelection(ids) {
+        view.querySelectorAll('[data-bulk]').forEach(function (btn) { btn.disabled = !ids.length; });
     }
 
     // destroyTable
@@ -343,15 +469,26 @@ export default function (view) {
     }
 
     // reload
-    // Reads the counts and the list again from the top, building the list the first time.
+    // Reads the counts, the reporters, and the list again from the top, building the list the first time.
     function reload() {
         loadStats();
-        if (!table) { createTable(); return table.load(); }
-        return table.reload();
+        return loadReporters().then(function () {
+            if (!table) { createTable(); return table.load(); }
+            var key = JSON.stringify(reporterOptions(reporters));
+            if (key !== tableReporters) { tableReporters = key; table.setFilterOptions(reporterOptions(reporters), 'user'); }
+            return table.reload();
+        });
+    }
+
+    // askNote
+    // Asks for the note the reporters see with a decision, which may be left blank.
+    function askNote(title, verb) {
+        var t = shared.t;
+        return nectoModule.promptSidecar([{ name: 'Note', label: t.tr('IssuesLabelNoteShown'), type: 'textarea' }], { title: title, submitText: t.tr(VERBS[verb].button) });
     }
 
     // act
-    // Confirms, resolves, declines, or reopens an issue, asking first for an optional note its reporters see.
+    // Confirms, resolves, declines, or reopens an issue, asking first for the note its reporters see.
     //
     // Inputs
     // issue [object]: The issue.
@@ -360,14 +497,11 @@ export default function (view) {
     // status [HTMLElement]: Where the sidecar says what went wrong.
     function act(issue, verb, close, status) {
         var t = shared.t;
-        return nectoModule.promptSidecar([{ name: 'Note', label: t.tr('IssuesLabelNoteShown'), type: 'textarea', placeholder: t.tr('PlaceholderOptional') }], {
-            title: t.format(VERBS[verb].title, titleOf(issue, t)),
-            submitText: t.tr(VERBS[verb].button)
-        }).then(function (values) {
+        return askNote(t.format(VERBS[verb].title, titleOf(issue, t)), verb).then(function (values) {
             if (!values) return null;
             return shared.request('Issues/' + issue.Id + '/' + verb, 'POST', { Note: values.Note || '' }).then(function () {
                 close();
-                shared.setStatus('issuesStatus', t.tr(VERBS[verb].toast), false);
+                report(t.tr(VERBS[verb].toast), false);
                 reload();
             });
         }).catch(function (err) {
@@ -375,9 +509,35 @@ export default function (view) {
         });
     }
 
+    // bulk
+    // Confirms, resolves, or declines every row picked that takes it, with one note, and says how many it decided.
+    function bulk(verb) {
+        var t = shared.t;
+        var picked = table ? table.getSelectedItems() : [];
+        if (!picked.length) return Promise.resolve();
+        var fits = picked.filter(function (issue) { return canDecide(issue, verb); });
+        var title = t.plural(picked.length, 'IssuesHeaderBulkOne', 'IssuesHeaderBulkMany', t.tr(VERBS[verb].button));
+        return askNote(title, verb).then(function (values) {
+            if (!values) return null;
+            report(t.tr('TextWorking'), false);
+            var done = 0;
+            var failedCount = 0;
+            return fits.reduce(function (chain, issue) {
+                return chain.then(function () {
+                    return shared.request('Issues/' + issue.Id + '/' + verb, 'POST', { Note: values.Note || '' })
+                        .then(function () { done += 1; }, function () { failedCount += 1; });
+                });
+            }, Promise.resolve()).then(function () {
+                var said = bulkResultText(done, failedCount, picked.length - fits.length, t);
+                report(said.text, said.isError);
+                return reload();
+            });
+        });
+    }
+
     // showIssue
-    // Opens an issue in a sidecar: its poster, title, and state, a notice when its file changed, its details, its
-    // notes, and its decisions. Radarr's or Sonarr's page for it is linked once found.
+    // Opens an issue in a sidecar: its poster and title, a notice when its file changed, its details, its notes, and
+    // its decisions. Radarr's or Sonarr's page for it is linked once found.
     function showIssue(issue) {
         var t = shared.t;
         var s = stateOf(issue.State, t);
@@ -387,7 +547,6 @@ export default function (view) {
             image: posterOf(issue),
             title: titleOf(issue, t),
             subtitle: subline(issue, t),
-            status: { label: s.label, color: s.color },
             badges: issue.FileChanged ? [{ label: t.tr('IssuesLabelFileChanged'), color: 'orange' }] : []
         });
         var items = detailItems(issue, t);
@@ -398,11 +557,10 @@ export default function (view) {
             card.element,
             issue.FileChanged ? h('div', { class: 'stolon-warn', text: t.tr('IssuesHelpFileChanged') }) : null,
             details.element,
-            notes ? h('h3', { class: 'stolon-subsection-title', text: t.tr('LabelNotes') }) : null,
-            notes ? notes.element : null,
+            notes ? nectoModule.createCollapsibleSection({ title: t.tr('LabelNotes'), icon: 'forum', collapsible: false, content: notes.element }).element : null,
             status
         ]);
-        var buttons = [];
+        var buttons = [{ text: t.tr('ButtonCancel'), className: 'stolon-button stolon-secondary', action: function (close) { close(); } }];
         if (issue.ItemId) buttons.push({ text: t.tr('ButtonOpenInLibrary'), className: 'stolon-button stolon-secondary', action: function (close) { close(); Dashboard.navigate('details?id=' + issue.ItemId); } });
         issueActions(issue).forEach(function (verb) {
             var kind = verb === 'Decline' ? 'stolon-destructive' : verb === 'Confirm' ? 'stolon-secondary' : 'stolon-primary';
@@ -433,6 +591,7 @@ export default function (view) {
         view.querySelector('#issuesOff').classList.toggle('stolon-hidden', !off);
         view.querySelector('#issueStats').classList.toggle('stolon-hidden', off);
         view.querySelector('#issuesTable').classList.toggle('stolon-hidden', off);
+        if (off) view.querySelector('#issuesEmpty').classList.add('stolon-hidden');
     }
 
     // loadPage
@@ -441,13 +600,14 @@ export default function (view) {
         filters = readFilters(storage());
         page.addCleanup(destroyTable);
         view.querySelector('#issuesOff').innerHTML = shared.emptySection(shared.t.tr('IssuesMessageOff'));
+        view.querySelector('#issuesEmpty').innerHTML = shared.emptySection(shared.t.tr('IssuesEmpty'));
         return shared.getConfig().then(function (config) {
             var on = !!(config && config.Issues && config.Issues.Enabled);
             showOff(!on);
             if (on) return reload();
             return null;
         }).catch(function () {
-            shared.setStatus('issuesStatus', shared.t.tr('IssuesErrorLoad'), true, { timeout: 0 });
+            report(shared.t.tr('IssuesErrorLoad'), true);
         });
     }
 
@@ -455,5 +615,5 @@ export default function (view) {
     shared = made.shared;
     page = made.page;
 
-    return { reload: function () { return reload(); }, showIssue: function (issue) { return showIssue(issue); } };
+    return { reload: function () { return reload(); }, showIssue: function (issue) { return showIssue(issue); }, bulk: function (verb) { return bulk(verb); } };
 }

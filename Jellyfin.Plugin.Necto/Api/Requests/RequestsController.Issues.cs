@@ -139,13 +139,14 @@ public partial class RequestsController
     /// <param name="searchTerm">Title, show or reporter.</param>
     /// <param name="state">A state, several separated by commas, Open, or All.</param>
     /// <param name="type">Only issues where a reporter says this is wrong.</param>
+    /// <param name="user">Only issues this user reported or joined.</param>
     /// <returns>The page.</returns>
     [HttpGet("/Issues/All")]
     [Authorize]
     [ManagesIssues]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult<RequestsQueryResult<Issue>> ListIssues([FromQuery] PagedQuery? query, [FromQuery] int? startIndex, [FromQuery] int? limit, [FromQuery] string? searchTerm, [FromQuery] string? state, [FromQuery] string? type)
+    public ActionResult<RequestsQueryResult<Issue>> ListIssues([FromQuery] PagedQuery? query, [FromQuery] int? startIndex, [FromQuery] int? limit, [FromQuery] string? searchTerm, [FromQuery] string? state, [FromQuery] string? type, [FromQuery] Guid? user)
     {
         if (IssuesOff() is { } off)
         {
@@ -153,9 +154,29 @@ public partial class RequestsController
         }
 
         var paging = Paging(query, startIndex, limit, searchTerm, state);
-        var page = _db.IssuePage(paging, IssueStates(paging.Filter), Enum.TryParse<IssueType>(type, true, out var t) && Enum.IsDefined(t) ? t : null);
+        var page = _db.IssuePage(paging, IssueStates(paging.Filter), Enum.TryParse<IssueType>(type, true, out var t) && Enum.IsDefined(t) ? t : null, user is { } u && u != Guid.Empty ? u : null);
         var (skip, _) = RequestDatabase.Window(paging);
         return Ok(new RequestsQueryResult<Issue>(skip, page.TotalCount, page.Items.ToList()));
+    }
+
+    /// <summary>Lists everyone who reported issues, for filtering the list by reporter.</summary>
+    /// <param name="query">The page (skip and take).</param>
+    /// <param name="startIndex">Where the page starts, as Jellyfin names it.</param>
+    /// <param name="limit">How many, as Jellyfin names it.</param>
+    /// <returns>A page of the reporters, by name.</returns>
+    [HttpGet("/Issues/Reporters")]
+    [Authorize]
+    [ManagesIssues]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public ActionResult<RequestsQueryResult<Requester>> IssueReporters([FromQuery] PagedQuery? query, [FromQuery] int? startIndex, [FromQuery] int? limit)
+    {
+        if (IssuesOff() is { } off)
+        {
+            return off;
+        }
+
+        return Ok(Slice(_db.IssueReporters(), Paging(query, startIndex, limit, null, null)));
     }
 
     /// <summary>Counts the issues in each state, for the Issues tab.</summary>

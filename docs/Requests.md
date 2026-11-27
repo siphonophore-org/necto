@@ -23,7 +23,7 @@ The request page is at `https://jellyfin.example.com/requests/`. It looks and wo
 * Search checks the library first, then TMDb, in **Movies**, **Shows**, and **People** rows. Search `tmdb:603`, `imdb:tt0133093`, or `tvdb:81189` to find a title by its id.
 * A title's page has its genres, studios, and networks as links, **More Like This**, its seasons with their episodes, a trailer, and its collection. A collection's page has **Request all**.
 * A row's page has a **Filter** button that works like a library's, with status, type, genre, and for TMDb lists sort, decade, rating, runtime, language, and streaming service.
-* Each card's badge says where the title stands: in the library, requested, approved or in Radarr or Sonarr, downloaded, or blocked.
+* Each card's badge says where the title stands: in the library, pending, approved or in Radarr or Sonarr, downloaded, or blocked. On a title's page the same state is a plain icon among its buttons, and its words show on hover.
 * The user menu's **Notifications** item turns on browser notifications in this browser. It signs the browser up through `/Notifications/Push/Subscribe`, so Requests and Issues events reach it.
 * Over HTTPS a browser can install the page as an app called **Requests**.
 
@@ -45,13 +45,14 @@ While a request waits, its requester can change its seasons, profile, and note, 
 
 ![Request details](screenshots/Request%20Detail.png)
 
-* Cards count the requests by status, **Open** first.
+* Cards count the requests in each status.
 * Each row shows the poster, the title, its requester and when, how many joined it, and its status with any download progress.
+* With no requests at all, the page says "No requests yet."
 * **Search** matches titles, requesters, and notes. The status filter and the requester filter are kept for the next visit.
 * Select rows to **Approve**, **Reject**, or **Remove** them together.
 * When requests change while the list is open, a notice says so, and **Show latest** loads them.
 
-Select a row to open the request in a sidecar, with **Approve** to the profile picked in **Goes to**, **Edit**, **Reject** with an optional reason, **Mark available**, **Retry** for a failed one, **Remove**, **Open in library**, and **Open in Radarr** or **Open in Sonarr**.
+Select a row to open the request in a sidecar, its status in the header. Its shelf offers **Approve** to the profile picked in **Goes to**, **Edit**, or **Edit note** for a movie with one profile, **Cancel**, **Reject** with an optional reason, **Mark available**, **Retry** for a failed one, **Remove**, **Open in library**, and **Open in Radarr** or **Open in Sonarr**.
 
 ## Settings
 

@@ -28,14 +28,14 @@
         <div class="selectArrowContainer"><span class="selectArrow material-icons keyboard_arrow_down" aria-hidden="true"></span></div>
     </div>
     <div class="inputContainer">
-        <label class="inputLabel inputLabelUnfocused" for="inviteUses" data-str="InvitesLabelMaxUses">Accounts it may make</label>
+        <label class="inputLabel inputLabelUnfocused" for="inviteUses" data-str="InvitesLabelMaxUses">Uses</label>
         <input is="emby-input" class="emby-input" id="inviteUses" type="number" min="0" value="1" />
         <div class="fieldDescription" data-str="HelpZeroNoLimit">0 is no limit.</div>
     </div>
     <div class="inputContainer">
         <label class="inputLabel inputLabelUnfocused" for="inviteExpiry" data-str="LabelExpiryDate">Expiry date</label>
         <input is="emby-input" class="emby-input" id="inviteExpiry" type="date" />
-        <div class="fieldDescription" data-str="InvitesExpiryAdminHelp">Stops the link on this day. Leave blank to keep it.</div>
+        <div class="fieldDescription" data-str="InvitesExpiryAdminHelp">Stops the link on this day. Leave blank to keep it until it is used up.</div>
     </div>
     <button is="emby-button" type="submit" class="raised button-submit block emby-button" id="createInvite"><span data-str="InvitesButtonAdd">Add invite</span></button>
 </form>

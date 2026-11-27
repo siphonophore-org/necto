@@ -116,9 +116,10 @@ public partial class RequestsController : ControllerBase, IActionFilter
         }
 
         // The page runs on Jellyfin's origin and holds the viewer's token, so only its own scripts run (each tag carrying
-        // this response's nonce, the ones loading webclient.js and page.js too, so no other script on the server can
-        // be loaded into it), it calls only this server, and no other site can frame it. Images come from the server
-        // and the artwork hosts; styles may come from wherever the server's custom CSS imports them.
+        // this response's nonce, the ones loading webclient.js and page.js too, and the Stolon module page.js imports
+        // under that nonce, so no other script on the server can be loaded into it), it calls only this server, and no
+        // other site can frame it. Images come from the server and the artwork hosts; styles may come from wherever the
+        // server's custom CSS imports them.
         var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(18));
         Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'nonce-" + nonce + "'; style-src 'self' 'unsafe-inline' https:; "
             + "img-src 'self' https: data: blob:; font-src 'self' https: data:; connect-src 'self'; media-src 'self'; object-src 'none'; "
@@ -345,7 +346,7 @@ public partial class RequestsController : ControllerBase, IActionFilter
     }
 
     /// <summary>
-    /// Serves the page's script that builds the web client's markup (requests_webclient.js), cached as its stylesheets
+    /// Serves the page's strings and artwork script (requests_webclient.js), cached as its stylesheets
     /// are: the page links it with the fingerprint that changes whenever it does.
     /// </summary>
     /// <returns>The script.</returns>

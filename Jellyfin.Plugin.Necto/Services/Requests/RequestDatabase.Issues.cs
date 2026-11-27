@@ -80,14 +80,15 @@ public sealed partial class RequestDatabase
         => SelectIssues("WHERE State IN (" + IssueNumber(IssueState.Reported) + ", " + IssueNumber(IssueState.Confirmed) + ") ORDER BY CreatedUtc DESC", null);
 
     /// <summary>
-    /// Returns a page of issues, most recently changed first, narrowed by state, by what a reporter says is wrong, and by a
-    /// search of the title, the show and the reporters' names.
+    /// Returns a page of issues, most recently changed first, narrowed by state, by what a reporter says is wrong, by
+    /// reporter, and by a search of the title, the show and the reporters' names.
     /// </summary>
     /// <param name="query">The page, and the search in <see cref="PagedQuery.Search"/>.</param>
     /// <param name="states">Only these states, when set.</param>
     /// <param name="type">Only issues where some reporter says this is wrong, when set.</param>
+    /// <param name="reporter">Only issues this user reported or joined, when set.</param>
     /// <returns>The page.</returns>
-    public PagedResult<Issue> IssuePage(PagedQuery query, IReadOnlyCollection<IssueState>? states = null, IssueType? type = null)
+    public PagedResult<Issue> IssuePage(PagedQuery query, IReadOnlyCollection<IssueState>? states = null, IssueType? type = null, Guid? reporter = null)
     {
         ArgumentNullException.ThrowIfNull(query);
         var (skip, take) = Window(query);
@@ -102,6 +103,11 @@ public sealed partial class RequestDatabase
             where.Add("EXISTS (SELECT 1 FROM json_each(Reporters) WHERE json_extract(value, '$.Type') = @type)");
         }
 
+        if (reporter is not null)
+        {
+            where.Add("EXISTS (SELECT 1 FROM json_each(Reporters) WHERE REPLACE(LOWER(json_extract(value, '$.UserId')), '-', '') = @reporter)");
+        }
+
         var search = (query.Search ?? string.Empty).Trim();
         if (search.Length > 0)
         {
@@ -114,6 +120,11 @@ public sealed partial class RequestDatabase
             if (type is { } t)
             {
                 p.AddWithValue("@type", (int)t);
+            }
+
+            if (reporter is { } who)
+            {
+                p.AddWithValue("@reporter", who.ToString("N", CultureInfo.InvariantCulture));
             }
 
             if (search.Length > 0)
@@ -146,6 +157,21 @@ public sealed partial class RequestDatabase
 
         return counts;
     });
+
+    /// <summary>Lists everyone who reported or joined an issue, each with how many issues and the name on their latest report.</summary>
+    /// <returns>The reporters, by name.</returns>
+    public List<Requester> IssueReporters()
+    {
+        var latest = new Dictionary<Guid, (string Name, DateTime When, int Count)>();
+        foreach (var reporter in SelectIssues(string.Empty, null).SelectMany(i => i.Reporters.DistinctBy(r => r.UserId)))
+        {
+            var seen = latest.TryGetValue(reporter.UserId, out var was);
+            var newer = !seen || reporter.ReportedUtc >= was.When;
+            latest[reporter.UserId] = (newer ? reporter.UserName : was.Name, newer ? reporter.ReportedUtc : was.When, (seen ? was.Count : 0) + 1);
+        }
+
+        return latest.Select(p => new Requester(p.Key, p.Value.Name, p.Value.Count)).OrderBy(r => r.UserName, StringComparer.OrdinalIgnoreCase).ToList();
+    }
 
     /// <summary>Counts how many issues someone reported or joined since a time, for their limit.</summary>
     /// <param name="userId">The user.</param>

@@ -37,6 +37,9 @@ public class UserAccess
     /// <summary>Gets or sets the user name.</summary>
     public string UserName { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets a value indicating whether the user has a profile image, so the page asks for it only then.</summary>
+    public bool HasImage { get; set; }
+
     /// <summary>Gets or sets a value indicating whether the user manages requests: an administrator, or in a group that may manage them.</summary>
     public bool IsAdministrator { get; set; }
 

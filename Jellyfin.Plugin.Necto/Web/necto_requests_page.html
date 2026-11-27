@@ -48,12 +48,16 @@
     })();
 </script>
 <noscript><link rel="stylesheet" href="../web/themes/dark/theme.css" /></noscript>
+<!-- Stolon's styles, after the theme as in Stolon's own shell. They draw its web client shell and markup: the bar,
+     menus, drawer, filters, toasts, empty states, placeholders, notes and limits. The page's own styles come after. -->
+<link rel="stylesheet" href="../web/configurationpage?name=necto_stolon.css" />
 <style>
     /*
      * Layout only, wherever possible, with the web client's own values. Colors come from the Jellyfin theme through
      * the web client's class names (backgroundContainer, detailRibbon, dialog, formDialogHeader, cardPadder,
      * playedIndicator, itemProgressBarForeground, button-submit, button-delete, raised, emby-input, mediaInfoText,
-     * toast...) and the palette below, so the page follows every theme and the server's custom CSS.
+     * toast...) and the palette Stolon writes for each theme, so the page follows every theme and the server's custom
+     * CSS. Stolon's styles draw the bar, menus, drawer and its web client markup; these are what the page adds.
      * The root font size, line height, headings and font stacks come from the web client's site stylesheet and fonts;
      * like the web client, boxes are content-box except where a rule below says otherwise.
      */
@@ -62,97 +66,15 @@
     /* What takes focus scrolls clear of the fixed header, two rows tall on a list. */
     html { scroll-padding-top: var(--headerHeight, 48px); }
     a { color: inherit; }
-    /* The web client's MUI theme writes its palette as variables at runtime, from JavaScript this page doesn't run, and
-       the theme stylesheets read them (several, such as the light theme's field background, with a fallback that only
-       suits a dark page). These are the values the web client sets for each theme, read from it. --rq-overlay-* are
-       MUI's dark-mode paper overlays for elevations 1, 8 and 16 (the light themes have none). */
-    :root, [data-theme="dark"] { --jf-palette-info-main: #29b6f6; --jf-palette-Alert-infoFilledBg: #0288d1; --jf-palette-Alert-infoFilledColor: #fff; --jf-palette-AppBar-defaultBg: #202020; --jf-palette-Button-inheritContainedBg: #424242; --jf-palette-Button-inheritContainedHoverBg: #616161; --jf-palette-FilledInput-bg: rgba(255,255,255,0.09); --jf-palette-SnackbarContent-bg: #303030; --jf-palette-SnackbarContent-color: rgba(255,255,255,0.87); --jf-palette-action-focus: rgba(255,255,255,0.12); --jf-palette-action-hover: rgba(255,255,255,0.08); --jf-palette-action-selectedOpacity: 0.2; --jf-palette-action-hoverOpacity: 0.08; --jf-palette-background-default: #101010; --jf-palette-background-paper: #202020; --jf-palette-common-white: #fff; --jf-palette-divider: rgba(255,255,255,0.12); --jf-palette-error-contrastText: #fff; --jf-palette-error-light: rgb(209,83,83); --jf-palette-error-main: #c62828; --jf-palette-primary-contrastText: rgba(0,0,0,0.87); --jf-palette-primary-dark: rgb(0,114,154); --jf-palette-primary-main: #00a4dc; --jf-palette-primary-mainChannel: 0 164 220; --jf-palette-secondary-contrastText: rgba(0,0,0,0.87); --jf-palette-secondary-main: #00a4dc; --jf-palette-text-primary: #fff; --jf-palette-text-secondary: rgba(255,255,255,0.7); --jf-palette-action-active: #fff; --jf-palette-text-primaryChannel: 255 255 255; --rq-overlay-1: linear-gradient(rgba(255 255 255 / 0.051), rgba(255 255 255 / 0.051)); --rq-overlay-8: linear-gradient(rgba(255 255 255 / 0.119), rgba(255 255 255 / 0.119)); --rq-overlay-16: linear-gradient(rgba(255 255 255 / 0.147), rgba(255 255 255 / 0.147)); }
-    [data-theme="light"] { --jf-palette-info-main: #0288d1; --jf-palette-Alert-infoFilledBg: #fff3a5; --jf-palette-Alert-infoFilledColor: #000; --jf-palette-AppBar-defaultBg: #e8e8e8; --jf-palette-Button-inheritContainedBg: #d8d8d8; --jf-palette-Button-inheritContainedHoverBg: #ccc; --jf-palette-FilledInput-bg: rgba(0,0,0,0.06); --jf-palette-SnackbarContent-bg: rgb(48,48,48); --jf-palette-SnackbarContent-color: #fff; --jf-palette-action-focus: #bbb; --jf-palette-action-hover: #ddd; --jf-palette-action-selectedOpacity: 0.2; --jf-palette-action-hoverOpacity: 0.04; --jf-palette-background-default: #f2f2f2; --jf-palette-background-paper: #e8e8e8; --jf-palette-common-white: #fff; --jf-palette-divider: rgba(0,0,0,0.12); --jf-palette-error-contrastText: #fff; --jf-palette-error-light: rgb(209,83,83); --jf-palette-error-main: #c62828; --jf-palette-primary-contrastText: rgba(0,0,0,0.87); --jf-palette-primary-dark: rgb(0,114,154); --jf-palette-primary-main: #00a4dc; --jf-palette-primary-mainChannel: 0 164 220; --jf-palette-secondary-contrastText: rgba(0,0,0,0.87); --jf-palette-secondary-main: #00a4dc; --jf-palette-text-primary: #000; --jf-palette-text-secondary: rgba(0,0,0,0.87); --jf-palette-action-active: rgba(0,0,0,0.54); --jf-palette-text-primaryChannel: 0 0 0; --rq-overlay-1: none; --rq-overlay-8: none; --rq-overlay-16: none; }
-    [data-theme="appletv"] { --jf-palette-info-main: #0288d1; --jf-palette-Alert-infoFilledBg: #fff3a5; --jf-palette-Alert-infoFilledColor: #000; --jf-palette-AppBar-defaultBg: #bcbcbc; --jf-palette-Button-inheritContainedBg: rgba(0,0,0,0.14); --jf-palette-Button-inheritContainedHoverBg: rgba(0,0,0,0.24); --jf-palette-FilledInput-bg: rgba(255,255,255,0.9); --jf-palette-SnackbarContent-bg: #303030; --jf-palette-SnackbarContent-color: rgba(255,255,255,0.87); --jf-palette-action-focus: rgba(0,0,0,0.2); --jf-palette-action-hover: rgba(0,0,0,0.1); --jf-palette-action-selectedOpacity: 0.2; --jf-palette-action-hoverOpacity: 0.04; --jf-palette-background-default: #d5e9f2; --jf-palette-background-paper: #eaeaea; --jf-palette-common-white: #fff; --jf-palette-divider: rgba(0,0,0,0.158); --jf-palette-error-contrastText: #fff; --jf-palette-error-light: #ef5350; --jf-palette-error-main: #c62828; --jf-palette-primary-contrastText: #fff; --jf-palette-primary-dark: #1565c0; --jf-palette-primary-main: #00a4dc; --jf-palette-primary-mainChannel: 25 118 210; --jf-palette-secondary-contrastText: #fff; --jf-palette-secondary-main: #00a4dc; --jf-palette-text-primary: rgba(0,0,0,0.87); --jf-palette-text-secondary: rgba(0,0,0,0.87); --jf-palette-action-active: rgba(0,0,0,0.54); --jf-palette-text-primaryChannel: 0 0 0; --rq-overlay-1: none; --rq-overlay-8: none; --rq-overlay-16: none; }
-    [data-theme="blueradiance"] { --jf-palette-Alert-infoFilledBg: #111; --jf-palette-Alert-infoFilledColor: #ddd; --jf-palette-AppBar-defaultBg: #011432; --jf-palette-Button-inheritContainedBg: rgba(0,0,0,0.5); --jf-palette-Button-inheritContainedHoverBg: rgba(0,0,0,0.7); --jf-palette-FilledInput-bg: rgba(255,255,255,0.09); --jf-palette-SnackbarContent-bg: rgb(250,250,250); --jf-palette-SnackbarContent-color: rgba(0,0,0,0.87); --jf-palette-action-focus: #00a4dc; --jf-palette-action-hover: rgba(0,164,220,0.2); --jf-palette-action-selectedOpacity: 0.2; --jf-palette-action-hoverOpacity: 0.08; --jf-palette-background-default: #033361; --jf-palette-background-paper: #011432; --jf-palette-common-white: #fff; --jf-palette-divider: rgba(255,255,255,0.12); --jf-palette-error-contrastText: #fff; --jf-palette-error-light: #e57373; --jf-palette-error-main: #c62828; --jf-palette-primary-contrastText: rgba(0,0,0,0.87); --jf-palette-primary-dark: #42a5f5; --jf-palette-primary-main: #00a4dc; --jf-palette-primary-mainChannel: 144 202 249; --jf-palette-secondary-contrastText: rgba(0,0,0,0.87); --jf-palette-secondary-main: #00a4dc; --jf-palette-text-primary: #eee; --jf-palette-text-secondary: rgba(255,255,255,0.9); --jf-palette-action-active: #fff; --jf-palette-text-primaryChannel: 255 255 255; --rq-overlay-1: linear-gradient(rgba(255 255 255 / 0.051), rgba(255 255 255 / 0.051)); --rq-overlay-8: linear-gradient(rgba(255 255 255 / 0.119), rgba(255 255 255 / 0.119)); --rq-overlay-16: linear-gradient(rgba(255 255 255 / 0.147), rgba(255 255 255 / 0.147)); }
-    [data-theme="purplehaze"] { --jf-palette-Alert-infoFilledBg: #dbe6ff; --jf-palette-Alert-infoFilledColor: #0e0f2d; --jf-palette-AppBar-defaultBg: #230c33; --jf-palette-Button-inheritContainedBg: rgba(0,0,0,0.5); --jf-palette-Button-inheritContainedHoverBg: rgb(12,232,214); --jf-palette-FilledInput-bg: rgba(0,0,0,0.5); --jf-palette-SnackbarContent-bg: #303030; --jf-palette-SnackbarContent-color: rgba(255,255,255,0.87); --jf-palette-action-focus: rgba(0,0,0,0.3); --jf-palette-action-hover: #12122f; --jf-palette-action-selectedOpacity: 0.2; --jf-palette-action-hoverOpacity: 0.08; --jf-palette-background-default: #230c33; --jf-palette-background-paper: #230c33; --jf-palette-common-white: #fff; --jf-palette-divider: rgba(255,255,255,0.14); --jf-palette-error-contrastText: #fff; --jf-palette-error-light: #e57373; --jf-palette-error-main: #c62828; --jf-palette-primary-contrastText: rgba(0,0,0,0.87); --jf-palette-primary-dark: #42a5f5; --jf-palette-primary-main: #48c3c8; --jf-palette-primary-mainChannel: 144 202 249; --jf-palette-secondary-contrastText: rgba(0,0,0,0.87); --jf-palette-secondary-main: #ff77f1; --jf-palette-text-primary: #f8f8fe; --jf-palette-text-secondary: rgba(248,248,254,0.973); --jf-palette-action-active: #fff; --jf-palette-text-primaryChannel: 255 255 255; --rq-overlay-1: linear-gradient(rgba(255 255 255 / 0.051), rgba(255 255 255 / 0.051)); --rq-overlay-8: linear-gradient(rgba(255 255 255 / 0.119), rgba(255 255 255 / 0.119)); --rq-overlay-16: linear-gradient(rgba(255 255 255 / 0.147), rgba(255 255 255 / 0.147)); }
-    [data-theme="wmc"] { --jf-palette-Alert-infoFilledBg: #fff3a5; --jf-palette-Alert-infoFilledColor: #000; --jf-palette-AppBar-defaultBg: #0c2450; --jf-palette-Button-inheritContainedBg: #082845; --jf-palette-Button-inheritContainedHoverBg: #143451; --jf-palette-FilledInput-bg: rgba(255,255,255,0.09); --jf-palette-SnackbarContent-bg: rgb(250,250,250); --jf-palette-SnackbarContent-color: rgba(0,0,0,0.87); --jf-palette-action-focus: #00a4dc; --jf-palette-action-hover: rgba(0,164,220,0.2); --jf-palette-action-selectedOpacity: 0.2; --jf-palette-action-hoverOpacity: 0.08; --jf-palette-background-default: #0f3562; --jf-palette-background-paper: #0c2450; --jf-palette-common-white: #fff; --jf-palette-divider: rgba(255,255,255,0.12); --jf-palette-error-contrastText: #fff; --jf-palette-error-light: #e57373; --jf-palette-error-main: #c62828; --jf-palette-primary-contrastText: rgba(0,0,0,0.87); --jf-palette-primary-dark: #42a5f5; --jf-palette-primary-main: #00a4dc; --jf-palette-primary-mainChannel: 144 202 249; --jf-palette-secondary-contrastText: rgba(0,0,0,0.87); --jf-palette-secondary-main: #00a4dc; --jf-palette-text-primary: #eee; --jf-palette-text-secondary: rgba(255,255,255,0.9); --jf-palette-action-active: #fff; --jf-palette-text-primaryChannel: 255 255 255; --rq-overlay-1: linear-gradient(rgba(255 255 255 / 0.051), rgba(255 255 255 / 0.051)); --rq-overlay-8: linear-gradient(rgba(255 255 255 / 0.119), rgba(255 255 255 / 0.119)); --rq-overlay-16: linear-gradient(rgba(255 255 255 / 0.147), rgba(255 255 255 / 0.147)); }
     /* The web client's index.html carries this rather than its stylesheet. */
     .hide { display: none !important; }
-    /* The web client turns outlines off on its buttons and links (outline: none !important), so keyboard focus is
-       shown on them here. */
-    :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-    .emby-button:focus-visible, .paper-icon-button-light:focus-visible, .textActionButton:focus-visible, .itemAction:focus-visible,
-    .appIconButton:focus-visible, .appNavButton:focus-visible, .appServerButton:focus-visible { outline: 2px solid currentColor !important; outline-offset: 2px; }
-    /* A heading that takes focus when its page opens, for screen readers, without a ring for the mouse. */
-    [tabindex="-1"]:focus:not(:focus-visible) { outline: none; }
+    /* Keyboard focus on the page's own controls; Stolon shows it on the web client's buttons and links. */
+    :where(:focus-visible) { outline: 2px solid currentColor; outline-offset: 2px; }
 
     /* ---------- the page backdrop: the fixed image behind a 86% layer of the theme's background ---------- */
     /* The web client lays these out and fades the image in (backdropImageFadeIn); the page keeps the layer behind it. */
     .backgroundContainer { right: 0; z-index: -1; }
 
-    /* ---------- the app bar, as the web client's (a MUI AppBar): 48px, clear at the top of the page ---------- */
-    /* The web client's stylesheet places it (skinHeader). Once the page scrolls the web client's bar takes the theme's
-       bar colour with MUI's elevation 1 overlay, at once: only its shadow is animated. MUI's own styles only exist
-       inside the web client, so the bar is laid out here. */
-    #header { background-color: transparent; background-image: none; transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    #header.scrolled { background-color: var(--jf-palette-AppBar-defaultBg); background-image: var(--rq-overlay-1); }
-    .appToolbar { display: flex; align-items: center; min-height: 48px; }
-    /* The web client's bar takes MUI's primary text colour (full white; near black on the light themes), not the
-       theme's dimmer header text, which this page would otherwise inherit. */
-    #header, .appToolbar { color: #fff; }
-    [data-theme="light"] #header, [data-theme="light"] .appToolbar, [data-theme="appletv"] #header, [data-theme="appletv"] .appToolbar { color: rgba(0, 0, 0, 0.87); }
-    .appToolbar > * { flex-shrink: 0; }
-    /* MUI's buttons are border-box (ButtonBase). */
-    .appIconButton { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 46px; height: 46px; padding: 12px; margin: 0; border: 0; border-radius: 50%;
-        background: transparent; color: inherit; cursor: pointer; text-decoration: none; -webkit-tap-highlight-color: transparent; }
-    .appIconButton > svg { width: 22px; height: 22px; fill: currentColor; }
-    /* Search, on the search itself: off, as MUI's disabled icon button. */
-    .appIconButton[aria-disabled="true"] { color: var(--jf-palette-action-disabled, rgba(255, 255, 255, 0.3)); pointer-events: none; cursor: default; }
-    .appToolbar .appServerButton { display: inline-flex; align-items: center; box-sizing: border-box; padding: 8px 11px; border-radius: 4px; color: inherit; text-decoration: none; font-size: 1rem;
-        font-weight: 700; line-height: 1.75; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
-    /* MUI's start icon: its box sits 4px into the button's padding with 8px after it; the logo itself has no margin. */
-    .appServerIcon { display: inherit; margin: 0 8px 0 -4px; }
-    .appServerIcon > img { width: 1.85em; height: 1.85em; object-fit: contain; }
-    /* The libraries in the bar (UserViewNav): MUI's medium text Buttons, 4px apart as its Stack spaces them, at least
-       64px wide and as tall as the bar's other buttons, each with its 20px start icon 4px into the padding and 8px
-       before the text, and More with its drop-down arrow as an end icon. The page the bar is on is in the primary colour. */
-    .appNav { display: flex; align-items: center; min-width: 0; }
-    .appNavButton { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 64px; min-height: 44px; padding: 6px 8px; margin: 0 0 0 4px;
-        border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; font-size: 0.875rem; font-weight: 500; line-height: 1.75; white-space: nowrap;
-        text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    .appNavButton[aria-current] { color: var(--jf-palette-primary-main); }
-    .appNavIcon { display: inherit; margin: 0 8px 0 -4px; }
-    .appNavEndIcon { display: inherit; margin: 0 -4px 0 8px; }
-    .appNavIcon > svg, .appNavEndIcon > svg { width: 20px; height: 20px; fill: currentColor; }
-    .appNavIcon > .material-icons { width: 20px; height: 20px; overflow: hidden; font-size: 20px; }
-    /* MUI's hover for a text button in the inherited colour: the text colour at the theme's hover opacity. */
-    @media (hover: hover) and (pointer: fine) {
-        .appIconButton:hover, .appNavButton:hover, .appToolbar .appServerButton:hover { background-color: rgba(var(--jf-palette-text-primaryChannel) / var(--jf-palette-action-hoverOpacity)); }
-    }
-    .appToolbarEnd { display: flex; align-items: center; margin-left: auto; padding-left: 8px; }
-    /* MUI's Avatar: 40px in the primary's dark shade, the person icon 75% of it, in the bar's text colour. */
-    .appAvatar { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; color: var(--jf-palette-text-primary); text-decoration: none;
-        background: var(--jf-palette-primary-dark); }
-    .appAvatar > img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .appAvatar > svg { width: 75%; height: 75%; fill: currentColor; }
-    button.appAvatar { border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    /* The web client's user menu is a MUI Menu, whose styles exist only inside the web client; these are its measured
-       values: paper 4px corners and elevation 8 (with its overlay on dark themes), items 6px 16px with 36px for the
-       icon, dividers 8px apart, in the theme's paper, text, icon, hover and divider colours. It grows in from its top
-       right corner as MUI's Grow does. */
-    .rq-userMenu { position: fixed; z-index: 1300; border-radius: 4px; padding: 8px 0; color: var(--jf-palette-text-primary); background-color: var(--jf-palette-background-paper);
-        background-image: var(--rq-overlay-8); transform-origin: top right;
-        box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12);
-        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-    .rq-userMenu.growing { opacity: 0; transform: scale(0.75, 0.5625); }
-    /* The bar's More menu opens under its button, from the button's left edge. */
-    .rq-userMenu.rq-navMenu { transform-origin: top left; }
-    .rq-userMenu .MuiListItemIcon-root > .material-icons { width: 1.5em; height: 1.5em; overflow: hidden; font-size: 1.5em; }
-    .rq-userMenu ul { list-style: none; margin: 0; padding: 0; }
-    .rq-userMenu .MuiMenuItem-root { display: flex; align-items: center; width: 100%; box-sizing: border-box; padding: 6px 16px; margin: 0; border: 0;
-        background: none; color: inherit; font: inherit; font-size: 1rem; line-height: 1.5; text-align: left; text-decoration: none; white-space: nowrap;
-        cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    .rq-userMenu .MuiMenuItem-root:hover { background-color: var(--jf-palette-action-hover); }
-    .rq-userMenu .MuiMenuItem-root:focus-visible { background-color: var(--jf-palette-action-focus); outline: 0; }
-    .rq-userMenu .MuiListItemIcon-root { display: inline-flex; min-width: 36px; flex-shrink: 0; color: var(--jf-palette-action-active); }
-    .rq-userMenu svg { width: 1.5em; height: 1.5em; fill: currentColor; }
-    .rq-userMenu hr { margin: 8px 0; border: 0; border-bottom: 1px solid var(--jf-palette-divider); }
     /* A list page's title, in a second row of the bar as the web client's library pages carry theirs: the title in a
        MUI large text button's box (8px 11px) as an h2 (1.5rem, light, 1.2 line height), then MUI's medium Chip with the
        count, 8px after it. */
@@ -162,9 +84,9 @@
     .rq-listTitleBar .appPageTitleBox { padding-left: 0; }
     /* A long title gives way, cut short with an ellipsis; its count and the buttons after it keep their size. */
     .rq-listTitleBar .appPageTitleBox { flex: 0 1 auto; min-width: 0; overflow: hidden; }
-    .rq-listTitleBar .appPageCount, .rq-listTitleBar .rq-resetFilters, .rq-listTitleBar .rq-listActions, .rq-listTitleBar .rq-filterButton { flex-shrink: 0; }
+    .rq-listTitleBar .appPageCount, .rq-listTitleBar .stolon-web-reset-filters, .rq-listTitleBar .rq-listActions, .rq-listTitleBar .rq-filterButton { flex-shrink: 0; }
     /* Room between the title's side (its count, Reset Filters) and the buttons on the right, however long the title. */
-    .rq-listTitleBar .appPageCount, .rq-listTitleBar .rq-resetFilters { margin-right: 16px; }
+    .rq-listTitleBar .appPageCount, .rq-listTitleBar .stolon-web-reset-filters { margin-right: 16px; }
     .rq-listTitleBar .rq-filterButton { margin-right: calc(1.2em - 5px); }
     .appPageTitle { margin: 0; font-size: 1.5rem; font-weight: 300; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .appPageCount { display: flex; margin-left: 8px; }
@@ -172,25 +94,6 @@
         font-size: 0.8125rem; color: var(--jf-palette-text-primary); background-color: rgba(var(--jf-palette-text-primaryChannel) / 0.16); }
     [data-theme="light"] .appPageCount .MuiChip-root, [data-theme="appletv"] .appPageCount .MuiChip-root { background-color: rgba(0, 0, 0, 0.08); }
     .appPageCount .MuiChip-label { padding: 0 12px; overflow: hidden; text-overflow: ellipsis; }
-    /* Below the web client's medium breakpoint (900px) the bar keeps a menu button, its icon buttons and the avatar;
-       the server button moves into the drawer, as the web client's does. */
-    .appDrawerButton { display: none; }
-    @media (max-width: 899.98px) {
-        .appDrawerButton { display: inline-flex; }
-        .appToolbar > .appServerButton, .appToolbar > .appNav { display: none; }
-    }
-    /* The web client's drawer, a MUI Drawer: as wide as its items need, from the left over a dimmed page, in the
-       theme's paper with MUI's elevation 16 overlay. Its lists are MUI's: the server first (logo in a 56px column, its
-       name and version), then a divider between groups, items 46px tall with their 22px icon in a 36px column. */
-    .appDrawer { position: fixed; top: 0; bottom: 0; left: 0; z-index: 1200; box-sizing: border-box; padding-bottom: 4.2rem; overflow-y: auto; outline: 0; color: var(--jf-palette-text-primary);
-        background-color: var(--jf-palette-background-paper); background-image: var(--rq-overlay-16); padding-top: env(safe-area-inset-top);
-        box-shadow: 0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12);
-        transform: translateX(-105%); visibility: hidden; transition: transform 225ms cubic-bezier(0, 0, 0.2, 1), visibility 0s 225ms; }
-    .appDrawer.open { transform: none; visibility: visible; transition: transform 225ms cubic-bezier(0, 0, 0.2, 1); }
-    .appDrawerBackdrop { position: fixed; inset: 0; z-index: 1199; background-color: rgba(0, 0, 0, 0.5); }
-    .appDrawerList { list-style: none; margin: 0; padding: 8px 0; }
-    .appDrawerList:first-of-type { padding-top: 0; }
-    .appDrawer hr { margin: 0; border: 0; border-bottom: 1px solid var(--jf-palette-divider); }
     /* TMDb's attribution, as its terms ask of apps using its data: its logo and notice, quietly at the foot of the page. */
     .rq-tmdb { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: auto; padding: 2.5em 1em 2em; text-align: center; color: var(--jf-palette-text-secondary); font-size: 0.75rem; line-height: 1.4; }
     /* The pages' bottom padding is the web client's room for its now-playing bar, which this page doesn't have: the
@@ -199,22 +102,10 @@
     .rq-tmdb img { display: block; width: 80px; height: auto; }
     /* Only under a page that has loaded: not over a sign-in or error screen, nor alone on screen while one loads. */
     .gate:not(.hide) ~ .rq-tmdb { display: none; }
-    .appDrawerItem, .appDrawerServer { display: flex; align-items: center; box-sizing: border-box; width: 100%; padding: 8px 16px; margin: 0; border: 0; background: transparent; color: inherit;
-        font-family: inherit; font-size: 1rem; font-weight: 400; line-height: 1.5; text-align: left; text-decoration: none; white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    .appDrawerIcon { display: inline-flex; flex-shrink: 0; min-width: 36px; color: var(--jf-palette-action-active); }
-    .appDrawerIcon > svg { width: 1.5rem; height: 1.5rem; fill: currentColor; }
-    .appDrawerText { flex: 1 1 auto; min-width: 0; margin: 4px 0; }
-    /* The page the drawer is opened on, as a MUI selected ListItemButton: the primary colour at its selected opacity. */
-    .appDrawerItem[aria-current] { background-color: rgba(var(--jf-palette-primary-mainChannel) / var(--jf-palette-action-selectedOpacity)); }
-    .appDrawerIcon > .material-icons { width: 1.5rem; height: 1.5rem; overflow: hidden; font-size: 1.5rem; }
-    /* MUI's ListSubheader over the libraries: 48px tall, medium weight, in the secondary text colour. */
-    .appDrawerSubheader { padding: 0 16px; font-size: 0.875rem; font-weight: 500; line-height: 48px; color: var(--jf-palette-text-secondary); }
-    .appDrawerServer .appDrawerIcon { min-width: 56px; }
-    .appDrawerServer .appDrawerIcon > img { width: 2.5rem; height: 2.5rem; object-fit: contain; }
-    .appDrawerServer .appDrawerText { margin: 6px 0; }
-    .appDrawerServerName { display: block; font-size: 1.25rem; font-weight: 500; line-height: 1.6; }
-    .appDrawerServerVersion { display: block; font-size: 0.875rem; line-height: 1.43; color: var(--jf-palette-text-secondary); }
-    @media (hover: hover) and (pointer: fine) { .appDrawerItem:hover, .appDrawerServer:hover { background-color: var(--jf-palette-action-hover); } }
+    /* Search, on the search itself: off, as MUI's disabled icon button. */
+    #searchButton[aria-disabled="true"] { opacity: 0.3; pointer-events: none; cursor: default; }
+    /* The list page's title bar, the bar's second row, as the web client's library pages carry theirs. */
+    .rq-listTitleBar { min-height: var(--stolon-shell-bar); }
 
     /* ---------- pages ---------- */
     /* Pages start right under the bar, as the web client's do. */
@@ -239,44 +130,14 @@
     /* What shows behind a poster while it loads, in place of the web client's blurred preview: amber for a movie (as
        Radarr), blue for a show (as Sonarr). */
     .movieCardBackground { background-color: #7a5326; } .seriesCardBackground { background-color: #2b5673; }
-    /* Loading placeholders built from the real heading and card text, so results drop in without moving anything. */
-    .skeleton .cardPadder, .skeletonBar { animation: pulse 1.4s ease-in-out infinite; }
-    .skeleton .cardPadder { background: rgba(128, 128, 128, 0.18); border-radius: 0.2em; }
-    .skeletonBar { display: inline-block; vertical-align: middle; height: 0.8em; width: 70%; border-radius: 0.2em; background: rgba(128, 128, 128, 0.25); }
-    .sectionTitle .skeletonBar { width: 4.5em; height: 0.75em; }
-    .cardText-secondary .skeletonBar { width: 35%; }
-    .skeletonLine { display: block; width: 100%; height: 0.9em; margin: 0.55em 0; }
-    .skeletonLine:last-child { width: 60%; }
-    @keyframes pulse { 50% { opacity: 0.45; } }
-    .rq-appear { animation: rq-appear 0.25s ease-out 0.3s both; }
-    @keyframes rq-appear { from { opacity: 0; } to { opacity: 1; } }
     #loading.gate { display: block; text-align: start; padding: calc(var(--headerHeight, 4em) + 1em) 0 0; }
-    @media (prefers-reduced-motion: reduce) {
-        .skeleton .cardPadder, .skeletonBar { animation: none; }
-        .rq-appear { animation: none; }
-    }
 
     /* ---------- item details and person pages: the web client's own stylesheet lays them out ---------- */
     /* The web client's layout helpers, which its index.html carries rather than its stylesheet. */
     .layout-desktop .hide-desktop, .layout-mobile .hide-mobile { display: none !important; }
     .detailImageContainer .card { cursor: default; }
-    /* A state with no request to open (waiting, downloaded, blocked), greyed as the web client's disabled icon
-       buttons (.paper-icon-button-light:disabled). */
-    .rq-detailStatus:disabled { cursor: default; opacity: .3; }
-    /* Where a title stands, as a tag in the info row beside the age rating. */
-    .statusTag { font-weight: 600; }
-    .t-requested { color: #c995da; } .t-approved { color: #5fb3cf; } .t-downloaded { color: #5fb3cf; } .t-library { color: #4fc3ec; }
-    .t-rejected { color: #9aa0a6; } .t-failed { color: #e07a6f; }
-    /* Darker where the ribbon is light, to keep their contrast: Apple TV's grey ribbon (Light's ribbon is dark). */
-    [data-theme="appletv"] .t-requested { color: #5e2a70; } [data-theme="appletv"] .t-approved, [data-theme="appletv"] .t-downloaded { color: #164b5e; } [data-theme="appletv"] .t-library { color: #005a7a; }
-    [data-theme="appletv"] .t-rejected { color: #3d3d3d; } [data-theme="appletv"] .t-failed { color: #7a2a20; }
-    /* The request's own details, in the web client's track selection rows above the overview. */
-    /* The web client's details group labels are MUI body1 paragraphs (1.5 line height). */
-    .detailsGroupItem .label { line-height: 1.5; }
 
     /* ---------- buttons and form fields ---------- */
-    /* The web client's stylesheet draws buttons and fields; the page only adds what its own elements need. */
-    .emby-button:disabled { opacity: 0.45; cursor: default; }
     /* The web client's textarea (elements/emby-textarea/emby-textarea.scss), whose stylesheet loads only with its editors;
        the theme colours it with its inputs. */
     .emby-textarea { display: block; margin: 0; margin-bottom: 0 !important; font-size: 110%; font-family: inherit; font-weight: inherit; color: inherit;
@@ -285,42 +146,14 @@
     /* The request form leads with what's being requested: its poster, as a card's, beside its title and year. */
     .requestHeader { display: flex; align-items: flex-start; gap: 1em; margin: 0.5em 0 1.5em; }
     .requestInfo { min-width: 0; }
-    /* The issue dialog: its title at the foot of the poster, as the details page sets a title beside its poster, and its
-       list of issues spaced from the form below it as the web client spaces a section. */
-    /* The heading over the issue form, spaced from the fields as a settings page spaces its sections. */
-    .issueNotice { margin: 0 0 1.5em; }
-    .issueNotice .sectionTitle { display: block; margin: 0 0 0.2em; }
-    .issueNotice .fieldDescription { margin: 0; padding: 0; }
-    .issueBadge { display: flex; margin: 0 0 0.4em; }
-    .issueBadge .mediaInfoItem { flex: none; text-transform: uppercase; letter-spacing: 0.03em; }
-    .issueBadge .t-reported, .issueChip .t-reported { color: #f2c94c; border-color: currentColor; }
-    .issueBadge .t-confirmed, .issueChip .t-confirmed { color: #ef5350; border-color: currentColor; }
-    .issueBadge .t-resolved, .issueChip .t-resolved { color: #66bb6a; border-color: currentColor; }
-    .issueHeader { align-items: flex-end; }
     /* The title and its history button on one line, centred on each other, the title's margins off so the line sits
        on the foot of the poster. */
     .pushSettings { padding-top: 1.5em; }
     .issueTitleRow { display: flex; align-items: center; gap: 0.25em; }
     .issueTitleRow .requestTitle { margin: 0; }
     .issueTitleRow #issueHistory { margin: 0 !important; flex-shrink: 0; }
-    /* Equal-width footer buttons, their labels centred as the web client's form dialogs centre them. Side by side they
-       share the width, up to 12em each, so on a phone neither runs past the dialog. */
-    .formDialogFooter .formDialogFooterItem:not(.formDialogFooterItem-autosize) { justify-content: center; }
-    .formDialogFooter-flex { box-sizing: border-box; }
-    .formDialogFooter-flex .formDialogFooterItem:not(.formDialogFooterItem-autosize) { flex: 1 1 0; min-width: 0; max-width: 12em; }
+    .issueHeader { align-items: flex-end; }
     .issueList { margin-bottom: 1.5em; }
-    .issueRow { cursor: default; }
-    .issueList .issueRow:hover, .issueList .issueRow:focus { background: transparent; }
-    .issueRow .listItem-content { gap: 0.75em; align-items: flex-start; }
-    .issueRow .listItemBody { padding: 0.85em 0 0.85em 1em; }
-    .issueChip { padding: 0.85em 1em 0 0; }
-    .issueRow h3.listItemBodyText { margin: 0 0 0.15em; font-size: 1.15em; font-weight: 500; }
-    .issueChip .mediaInfoItem { margin: 0; }
-    .issueNotes { width: 100%; box-sizing: border-box; padding: 0 1em 1em; }
-    .issueBy { margin-bottom: 0.25em; }
-    .issueNote { display: flex; flex-direction: column; gap: 0.15em; margin-top: 0.75em; }
-    .issueNoteBy { font-size: 85%; }
-    .issueNoteText { white-space: pre-wrap; overflow-wrap: anywhere; }
     .requestFacts { margin-top: 0.3em; font-size: 0.9em; }
     .requestOverview { margin: 0.6em 0 0; font-size: 0.9em; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
     /* The poster is a card's, so it takes the theme's corners and placeholder. */
@@ -329,19 +162,8 @@
     .requestTitle { margin: 0; font-size: 1.4em; font-weight: 400; line-height: 1.3; }
     .inputContainer .emby-textarea ~ .fieldDescription + .fieldDescription { margin-top: 0.15em; }
     .emby-textarea + .fieldDescription { margin-top: 0.25em; }
-    /* Seasons already here or asked for stay ticked but fixed; the web client only greys the tick, so the row dims too. */
-    .emby-checkbox:disabled + .checkboxLabel, .emby-checkbox:disabled + .checkboxLabel + .checkboxOutline { opacity: 0.5; }
-    .emby-checkbox:disabled ~ * { cursor: default; }
-    .checkboxListTools { display: flex; gap: 1.5em; margin-top: 0.6em; }
-    .formError { color: #ef5350; margin-top: 0.8em; }
-    .formError:empty { display: none; }
-    /* Darker on the light themes' dialogs. */
-    [data-theme="light"] .formError, [data-theme="appletv"] .formError { color: #b71c1c; }
 
     /* ---------- states ---------- */
-    .emptyState { text-align: center; padding: 4em 1em; }
-    .emptyState h2 { margin: 0 0 0.4em; }
-    .emptyState > .material-icons { display: block; font-size: 3.5em; opacity: 0.4; margin-bottom: 0.2em; }
     .gate { box-sizing: border-box; min-height: 100vh; padding: calc(var(--headerHeight, 4em) + 2em) 2em 2em; display: flex; align-items: center; justify-content: center; text-align: center; }
     .gate .inner { max-width: 26em; }
     .gate img { width: 5em; height: 5em; margin-bottom: 1em; }
@@ -349,31 +171,18 @@
     .gate p { margin: 0 0 1.5em; }
     .rq-signinForm { text-align: start; }
     .rq-signinForm .emby-button + .emby-button { margin-top: 1em; }
+    /* The spinner under a list while its next page loads. */
+    .rq-listMore { padding: 2em; text-align: center; }
     .rq-insecure { color: #ffb74d; }
     [data-theme="light"] .rq-insecure, [data-theme="appletv"] .rq-insecure { color: #e65100; }
     .rq-quickConnectCode { font-size: 2.4em; font-weight: 600; letter-spacing: 0.15em; font-variant-numeric: tabular-nums; }
     #quickConnect .docspinner { position: static; width: 3em; height: 3em; margin: 0 auto 1.5em; }
-    /* The web client's toast, with room for one action such as Undo. */
-    .toast { display: flex; align-items: center; justify-content: space-between; gap: 1.5em; max-width: calc(100vw - 2em); min-width: min(20em, calc(100vw - 2em)); }
-    .toast button { background: none; border: 0; cursor: pointer; font: inherit; font-weight: 600; padding: 0; color: rgb(var(--jf-palette-primary-mainChannel)); }
     /* Filter, the library toolbar's (FilterButton.tsx): MUI's small text button with the FilterAlt icon, and its dot
        badge while any filter is on; at the end of a list page's title bar, and beside the search field. */
     .rq-filterButton { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 40px; padding: 4px 5px; margin: 0 0 0 auto;
         border: 0; border-radius: 4px; background: none; color: inherit; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent;
         transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1); }
     .rq-filterButton:hover { background-color: var(--jf-palette-action-hover); }
-    /* Reset Filters, the library toolbar's while any filter is on: MUI's primary text button with the FilterAltOff icon,
-       after the count. The filter popover ends with one too. */
-    .rq-resetFilters { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 64px; padding: 6px 8px; margin: 0 0 0 8px;
-        border: 0; border-radius: 4px; background: none; color: var(--jf-palette-primary-main); font: inherit; font-size: 0.875rem; font-weight: 500; line-height: 1.75;
-        letter-spacing: 0.02857em; text-transform: none; white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent;
-        transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1); }
-    .rq-resetFilters:hover { background-color: rgba(var(--jf-palette-primary-mainChannel) / var(--jf-palette-action-hoverOpacity)); }
-    .rq-resetFilters:focus-visible { background-color: rgba(var(--jf-palette-primary-mainChannel) / 0.12); outline: 0; }
-    .rq-resetFilters:disabled { color: var(--jf-palette-text-secondary); opacity: 0.5; cursor: default; background: none; }
-    .rq-resetFilters .MuiButton-startIcon { display: inherit; margin: 0 8px 0 -4px; }
-    .rq-resetFilters svg { display: block; width: 20px; height: 20px; fill: currentColor; }
-    .rq-filterPopover .rq-resetFilters { display: flex; margin: 4px 8px 8px auto; }
     /* Previous and Next, the library toolbar's Pagination (its own text button group, last on the right): disabled on the
        first or last page, and while a page loads. */
     .rq-paging { display: inline-flex; flex-shrink: 0; margin: 0 calc(1.2em - 5px) 0 8px; }
@@ -399,20 +208,10 @@
     .rq-listAction .MuiButton-startIcon { display: inherit; margin: 0 8px 0 -4px; }
     .rq-listAction svg { display: block; width: 18px; height: 18px; fill: currentColor; }
     @media (min-width: 600px) { .rq-listAction { padding: 6px 16px; font-size: 0.875rem; } .rq-listAction svg { width: 20px; height: 20px; } }
-    /* The request form's limits, in the Seasons box's paper list: each a line over a thin bar, MUI's LinearProgress
-       coloured as the dashboard's storage bars are. */
-    .rq-limits { padding: .5em 1em; }
-    .rq-limit { padding: .5em 0; }
-    .rq-limitHead { display: flex; flex-wrap: wrap; column-gap: 8px; justify-content: space-between; margin-bottom: .4em; }
-    .MuiLinearProgress-root { --rq-bar: var(--jf-palette-success-main, #66bb6a); position: relative; overflow: hidden; display: block; height: 4px; z-index: 0;
-        background-color: color-mix(in srgb, var(--rq-bar) 50%, #000); }
-    .MuiLinearProgress-colorWarning { --rq-bar: var(--jf-palette-warning-main, #ffa726); }
-    .MuiLinearProgress-colorError { --rq-bar: var(--jf-palette-error-main, #f44336); }
-    [data-theme="light"] .MuiLinearProgress-root, [data-theme="appletv"] .MuiLinearProgress-root { --rq-bar: var(--jf-palette-success-main, #2e7d32); background-color: color-mix(in srgb, var(--rq-bar) 38%, #fff); }
-    [data-theme="light"] .MuiLinearProgress-colorWarning, [data-theme="appletv"] .MuiLinearProgress-colorWarning { --rq-bar: var(--jf-palette-warning-main, #ed6c02); }
-    [data-theme="light"] .MuiLinearProgress-colorError, [data-theme="appletv"] .MuiLinearProgress-colorError { --rq-bar: var(--jf-palette-error-main, #d32f2f); }
-    .MuiLinearProgress-bar { position: absolute; top: 0; bottom: 0; left: 0; width: 100%; background-color: var(--rq-bar); transform-origin: left; transition: transform .4s linear; }
     .rq-titleShort { display: none; }
+    .rq-searchField { margin-bottom: 0; }
+    /* A message in a grid of cards, across the grid's whole width. */
+    .rq-fullRow { width: 100%; }
     /* On a phone, Reset Filters is only at the foot of the filters, so the bar keeps its room. */
     @media (max-width: 599px) { .rq-titleFull { display: none; } .rq-titleShort { display: inline; } #listResetButton { display: none; } }
     @media (max-width: 599px) { .rq-listActionLabel { display: none; } .rq-listAction .MuiButton-startIcon { margin: 0; } }
@@ -422,38 +221,16 @@
     .rq-filterButton .MuiBadge-dot { position: absolute; top: 0; right: 0; box-sizing: border-box; min-width: 8px; height: 8px; padding: 0; border-radius: 4px;
         background-color: var(--jf-palette-info-main); transform: scale(1) translate(50%, -50%); transform-origin: 100% 0%; transition: transform 225ms cubic-bezier(0.4, 0, 0.2, 1); }
     .rq-filterButton .MuiBadge-invisible { transform: scale(0) translate(50%, -50%); }
-    /* Its popover: MUI's Popover paper, 250px wide and at most half the window tall, grown from under the button. */
-    .rq-filterBackdrop { position: fixed; inset: 0; z-index: 1300; }
-    .rq-filterPopover { position: fixed; z-index: 1300; box-sizing: border-box; width: 250px; min-height: 16px; max-height: 50%; overflow-x: hidden; overflow-y: auto; outline: 0;
-        border-radius: 4px; color: var(--jf-palette-text-primary); background-color: var(--jf-palette-background-paper); background-image: var(--rq-overlay-8);
-        box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12);
-        font-size: .93rem; line-height: 1.35; transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-    .rq-filterPopover.growing { opacity: 0; transform: scale(0.75, 0.5625); }
-    .rq-filterPopover .MuiAccordion-root { position: relative; background-color: var(--jf-palette-background-paper); border-top: 1px solid var(--jf-palette-divider); }
-    .rq-filterPopover .MuiAccordion-heading { margin: 0; font: inherit; }
-    .rq-filterPopover .MuiAccordionSummary-root { display: flex; align-items: center; width: 100%; box-sizing: border-box; min-height: 48px; padding: 0 16px; margin: 0; border: 0;
-        border-radius: 0; background-color: rgba(255, 255, 255, 0.05); color: inherit; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent;
-        transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); }
-    [data-theme="light"] .rq-filterPopover .MuiAccordionSummary-root { background-color: rgba(0, 0, 0, 0.03); }
-    .rq-filterPopover .MuiAccordionSummary-root:focus-visible { background-color: var(--jf-palette-action-focus); outline: 0; }
-    .rq-filterPopover .MuiAccordionSummary-content { display: flex; flex-grow: 1; margin: 12px 0 12px 8px; }
-    .rq-filterPopover .MuiTypography-body1 { margin: 0; font-size: .93rem; font-weight: 400; line-height: 1.5; }
-    .rq-filterPopover .MuiAccordionSummary-expandIconWrapper { display: flex; transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1); }
-    .rq-filterPopover [aria-expanded="true"] .MuiAccordionSummary-expandIconWrapper { transform: rotate(90deg); }
-    .rq-filterPopover .MuiAccordionSummary-expandIconWrapper svg { width: .9rem; height: .9rem; fill: currentColor; }
-    .rq-filterPopover .MuiAccordionDetails-root { padding: 16px; border-top: 1px solid rgba(0, 0, 0, 0.125); }
-    .rq-filterPopover .MuiFormGroup-root { display: flex; flex-direction: column; flex-wrap: wrap; }
-    .rq-filterPopover .MuiFormControlLabel-root { display: inline-flex; align-items: center; margin: 0 16px 0 -11px; vertical-align: middle; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    .rq-filterPopover .MuiCheckbox-root { position: relative; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; box-sizing: border-box; padding: 9px;
-        border-radius: 50%; color: var(--jf-palette-text-secondary); transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); }
-    .rq-filterPopover .MuiCheckbox-root:hover { background-color: var(--jf-palette-action-hover); }
-    .rq-filterPopover .MuiCheckbox-root:has(input:checked) { color: var(--jf-palette-primary-main); }
-    .rq-filterPopover .MuiCheckbox-root:has(input:checked):hover { background-color: rgba(var(--jf-palette-primary-mainChannel) / var(--jf-palette-action-hoverOpacity)); }
-    .rq-filterPopover .MuiCheckbox-root:has(input:focus-visible) { background-color: var(--jf-palette-action-focus); }
-    .rq-filterPopover .PrivateSwitchBase-input { position: absolute; top: 0; left: 0; z-index: 1; width: 100%; height: 100%; margin: 0; padding: 0; opacity: 0; cursor: inherit; }
-    .rq-filterPopover .MuiCheckbox-root svg { width: 1.5rem; height: 1.5rem; fill: currentColor; }
-    .rq-filterPopover input:checked ~ .rq-unchecked, .rq-filterPopover input:not(:checked) ~ .rq-checked { display: none; }
-    /* Headings the page moves focus to, so a screen reader starts there. They aren't controls, so no focus ring. */
+    /* The filters' backdrop, which closes them on a click outside. */
+    .rq-filterBackdrop { position: fixed; inset: 0; z-index: var(--stolon-shell-layer-menu); }
+    /* Stopgap for Stolon 12.4.10, whose section-title.css draws the web client's own sectionTitleContainer as a dashboard
+       heading, ruled and spaced, on every page that loads it. These put back the web client's values. Remove them with the
+       Stolon that scopes that rule to its config pages. */
+    .stolon-shell .sectionTitleContainer, .stolon-shell .sectionTitleContainer:first-child { margin-top: 0; }
+    .stolon-shell .sectionTitleContainer .sectionTitle { flex: 0 1 auto; width: auto; border-bottom: 0; padding-bottom: 0; }
+    .stolon-shell .sectionTitleTextButton > .sectionTitle { margin-bottom: .35em; }
+    .stolon-shell .sectionTitleContainer-cards > .sectionTitle-cards { margin: 0; padding-bottom: .2em; }
+    /* Headings the page moves focus to, so a screen reader starts there. They are not controls, so no focus ring. */
     #detailName:focus, #pageTitle:focus { outline: none; }
     /* A home row's holder, there only so each row can be redrawn on its own: it lays out as if it weren't there. */
     .rq-homeRow { display: contents; }
@@ -461,49 +238,49 @@
 </style>
 <link rel="stylesheet" id="brandingCss" />
 </head>
-<body dir="ltr">
+<body dir="ltr" class="stolon-shell">
 
 <!-- The web client's page backdrop: a fixed image behind the theme's background, shown through on details pages. -->
 <div class="backdropContainer"><div class="backdropImage backdropImageFadeIn" id="backdropImage"></div></div>
 <div class="backgroundContainer" id="backgroundContainer"></div>
 
 <!-- The web client's app bar: clear at the top of the page, the theme's bar colour once it scrolls (see #header.scrolled). -->
-<div class="skinHeader MuiPaper-root MuiAppBar-root" id="header">
-    <div class="appToolbar MuiToolbar-root MuiToolbar-dense padded-left padded-right">
-        <button type="button" id="drawerButton" class="appIconButton appDrawerButton paper-icon-button-light hide" title="Menu" aria-label="Open menu" data-tr-label="MenuOpen" aria-controls="drawer" aria-expanded="false">
+<header class="skinHeader MuiPaper-root MuiAppBar-root stolon-shell-bar" id="header">
+    <div class="MuiToolbar-root MuiToolbar-dense padded-left padded-right stolon-shell-toolbar">
+        <button type="button" id="drawerButton" class="paper-icon-button-light stolon-shell-icon-button stolon-shell-drawer-button hide" title="Menu" aria-label="Open menu" data-tr-label="MenuOpen" aria-controls="drawer" aria-expanded="false">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
         </button>
-        <a id="homeButton" class="appServerButton rq-home" href="../web/" title="Home"><span class="appServerIcon MuiButton-startIcon"><img src="logo.png" alt="" /></span><span id="serverName">Jellyfin</span></a>
+        <a id="homeButton" class="stolon-shell-server rq-home" href="../web/" title="Home"><span class="MuiButton-startIcon stolon-shell-server-icon"><img src="logo.png" alt="" /></span><span class="stolon-shell-server-name" id="serverName">Jellyfin</span></a>
         <!-- The web client's libraries (UserViewNav), filled in by the script. -->
-        <nav class="appNav hide" id="appNav" aria-label="Libraries"></nav>
-        <div class="appToolbarEnd">
-            <a id="searchButton" class="appIconButton hide" href="./" title="Search" aria-label="Search"></a>
-            <button type="button" id="userButton" class="appAvatar MuiAvatar-root hide" title="User Menu" aria-label="User Menu" data-tr-label="UserMenu" data-tr-title="UserMenu" aria-haspopup="true" aria-controls="app-user-menu" aria-expanded="false">
+        <nav class="stolon-shell-nav hide" id="appNav" aria-label="Libraries"></nav>
+        <div class="stolon-shell-end">
+            <a id="searchButton" class="paper-icon-button-light stolon-shell-icon-button hide" href="./" title="Search" aria-label="Search"></a>
+            <button type="button" id="userButton" class="MuiAvatar-root stolon-shell-avatar hide" title="User Menu" aria-label="User Menu" data-tr-label="UserMenu" data-tr-title="UserMenu" aria-haspopup="true" aria-controls="app-user-menu" aria-expanded="false">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
             </button>
         </div>
     </div>
     <!-- A list page's title, count, Filter and paging, as the web client's library pages show theirs in a second row
          of the bar, so they stay in reach as the list scrolls. -->
-    <div class="appToolbar MuiToolbar-root MuiToolbar-dense padded-left padded-right rq-listTitleBar hide" id="pageTitleBar"><div class="appPageTitleBox"><h1 class="appPageTitle MuiTypography-h2" id="pageTitle" tabindex="-1"></h1></div><div class="appPageCount hide" id="pageCount"><div class="MuiChip-root MuiChip-filled MuiChip-sizeMedium"><span class="MuiChip-label" id="pageCountLabel"></span></div></div><button type="button" class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium rq-resetFilters hide" id="listResetButton"><span class="MuiButton-startIcon"><svg class="MuiSvgIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M19.79 5.61C20.3 4.95 19.83 4 19 4H6.83l7.97 7.97zM2.81 2.81 1.39 4.22 10 13v6c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-2.17l5.78 5.78 1.41-1.41z"></path></svg></span><span class="rq-resetLabel">Reset Filters</span></button><div class="MuiButtonGroup-root MuiButtonGroup-contained rq-listActions hide" id="listActions" role="group"><button type="button" class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButtonGroup-grouped rq-listAction" id="listActionButton"><span class="MuiButton-startIcon"><svg class="MuiSvgIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg></span><span class="rq-listActionLabel" id="listActionLabel"></span></button></div><button type="button" class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-sizeSmall rq-filterButton hide" id="listFilterButton" title="Filter" aria-label="Filter" aria-haspopup="dialog" aria-expanded="false"><span class="MuiBadge-root"><svg class="MuiSvgIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M4.25 5.61C6.27 8.2 10 13 10 13v6c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-6s3.72-4.8 5.74-7.39c.51-.66.04-1.61-.79-1.61H5.04c-.83 0-1.3.95-.79 1.61"></path></svg><span class="MuiBadge-badge MuiBadge-dot MuiBadge-invisible"></span></span></button><div class="MuiButtonGroup-root MuiButtonGroup-text rq-paging hide" id="listPaging" role="group"><button type="button" class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButtonGroup-grouped" id="listPrev" title="Previous" aria-label="Previous"><svg class="MuiSvgIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg></button><button type="button" class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButtonGroup-grouped" id="listNext" title="Next" aria-label="Next"><svg class="MuiSvgIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"></path></svg></button></div></div>
-</div>
+    <div class="MuiToolbar-root MuiToolbar-dense padded-left padded-right stolon-shell-toolbar rq-listTitleBar hide" id="pageTitleBar"><div class="appPageTitleBox"><h1 class="appPageTitle MuiTypography-h2" id="pageTitle" tabindex="-1"></h1></div><div class="appPageCount hide" id="pageCount"><div class="MuiChip-root MuiChip-filled MuiChip-sizeMedium"><span class="MuiChip-label" id="pageCountLabel"></span></div></div><button type="button" class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeMedium stolon-web-reset-filters hide" id="listResetButton"><span class="MuiButton-startIcon"><svg class="MuiSvgIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M19.79 5.61C20.3 4.95 19.83 4 19 4H6.83l7.97 7.97zM2.81 2.81 1.39 4.22 10 13v6c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-2.17l5.78 5.78 1.41-1.41z"></path></svg></span><span class="rq-resetLabel">Reset Filters</span></button><div class="MuiButtonGroup-root MuiButtonGroup-contained rq-listActions hide" id="listActions" role="group"><button type="button" class="MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-containedPrimary MuiButtonGroup-grouped rq-listAction" id="listActionButton"><span class="MuiButton-startIcon"><svg class="MuiSvgIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path></svg></span><span class="rq-listActionLabel" id="listActionLabel"></span></button></div><button type="button" class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-sizeSmall rq-filterButton hide" id="listFilterButton" title="Filter" aria-label="Filter" aria-haspopup="dialog" aria-expanded="false"><span class="MuiBadge-root"><svg class="MuiSvgIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M4.25 5.61C6.27 8.2 10 13 10 13v6c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-6s3.72-4.8 5.74-7.39c.51-.66.04-1.61-.79-1.61H5.04c-.83 0-1.3.95-.79 1.61"></path></svg><span class="MuiBadge-badge MuiBadge-dot MuiBadge-invisible"></span></span></button><div class="MuiButtonGroup-root MuiButtonGroup-text rq-paging hide" id="listPaging" role="group"><button type="button" class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButtonGroup-grouped" id="listPrev" title="Previous" aria-label="Previous"><svg class="MuiSvgIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"></path></svg></button><button type="button" class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButtonGroup-grouped" id="listNext" title="Next" aria-label="Next"><svg class="MuiSvgIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"></path></svg></button></div></div>
+</header>
 
 <!-- The libraries that don't fit in the bar, under More (UserViewsMenu). -->
-<div class="MuiPaper-root MuiMenu-paper rq-userMenu rq-navMenu hide" id="user-view-overflow-menu"><ul class="MuiList-root MuiMenu-list" role="menu" aria-label="More" id="navMoreList"></ul></div>
+<div class="MuiPaper-root MuiMenu-paper stolon-shell-menu stolon-shell-nav-menu hide" id="stolon-shell-nav-menu"><ul class="MuiList-root MuiMenu-list" role="menu" aria-label="More" id="navMoreList"></ul></div>
 <!-- The web client's user menu (AppUserMenu), opened from the avatar: Profile and Settings; Dashboard and Metadata
      Manager for administrators; Quick Connect when the server has it on; Sign Out. Filled in by the script. -->
-<div class="MuiPaper-root MuiMenu-paper rq-userMenu hide" id="app-user-menu"><ul class="MuiList-root MuiMenu-list" role="menu" aria-label="User Menu" id="userMenuList"></ul></div>
+<div class="MuiPaper-root MuiMenu-paper stolon-shell-menu hide" id="app-user-menu"><ul class="MuiList-root MuiMenu-list" role="menu" aria-label="User Menu" id="userMenuList"></ul></div>
 
 <!-- The web client's drawer, for narrow screens (MainDrawerContent): the server and its version, Home and Favorites,
      then the menu links and the libraries, filled in by the script. -->
-<div class="appDrawerBackdrop hide" id="drawerBackdrop"></div>
-<nav class="appDrawer MuiPaper-root MuiDrawer-paper" id="drawer" aria-label="Menu" tabindex="-1">
-    <ul class="appDrawerList MuiList-root">
-        <li><a class="appServerButton appDrawerServer MuiListItemButton-root rq-home" href="../web/">
-            <span class="appDrawerIcon MuiListItemIcon-root"><img src="logo.png" alt="" /></span>
-            <span class="appDrawerText MuiListItemText-root"><span class="appDrawerServerName" id="drawerServerName">Jellyfin</span><span class="appDrawerServerVersion hide" id="drawerServerVersion"></span></span></a></li>
-        <li><a class="appDrawerItem MuiListItemButton-root rq-home" href="../web/">
-            <span class="appDrawerIcon MuiListItemIcon-root"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span><span class="appDrawerText MuiListItemText-root" id="drawerHomeText">Home</span></a></li>
+<div class="stolon-shell-scrim hide" id="drawerBackdrop"></div>
+<nav class="MuiPaper-root MuiDrawer-paper stolon-shell-drawer" id="drawer" aria-label="Menu" tabindex="-1">
+    <ul class="MuiList-root stolon-shell-drawer-list">
+        <li><a class="MuiListItemButton-root stolon-shell-drawer-item stolon-shell-drawer-server rq-home" href="../web/">
+            <span class="MuiListItemIcon-root stolon-shell-drawer-icon"><img src="logo.png" alt="" /></span>
+            <span class="MuiListItemText-root stolon-shell-drawer-text"><span class="stolon-shell-drawer-server-name" id="drawerServerName">Jellyfin</span><span class="stolon-shell-drawer-server-version" id="drawerServerVersion"></span></span></a></li>
+        <li><a class="MuiListItemButton-root stolon-shell-drawer-item rq-home" href="../web/">
+            <span class="MuiListItemIcon-root stolon-shell-drawer-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span><span class="MuiListItemText-root stolon-shell-drawer-text" id="drawerHomeText">Home</span></a></li>
     </ul>
     <div id="drawerNav"></div>
 </nav>
@@ -527,7 +304,7 @@
             </div>
             <button type="submit" id="signinSubmit" class="raised button-submit block emby-button" data-tr="ButtonSignIn">Sign In</button>
             <button type="button" id="signinQuickConnect" class="raised block emby-button hide" data-tr="ButtonUseQuickConnect">Use Quick Connect</button>
-            <div class="formError" id="signinError" role="alert" aria-live="assertive"></div>
+            <div class="stolon-web-error" id="signinError" role="alert" aria-live="assertive"></div>
         </form>
         <div id="quickConnect" class="hide" role="status" aria-live="polite">
             <p class="secondaryText" id="quickConnectPrompt"></p>
@@ -563,7 +340,7 @@
         <div class="padded-left padded-right searchFields">
             <div class="searchFieldsInner flex align-items-center justify-content-center">
                 <span class="searchfields-icon material-icons search" aria-hidden="true"></span>
-                <div class="inputContainer flex-grow" style="margin-bottom: 0;">
+                <div class="inputContainer flex-grow rq-searchField">
                     <label for="query" class="inputLabel inputLabelUnfocused"></label>
                     <input id="query" class="emby-input searchfields-txtSearch" type="text" autocomplete="off" placeholder="Search" aria-label="Search" enterkeyhint="search" />
                 </div>
@@ -596,7 +373,7 @@
             </div>
             <div class="detailPagePrimaryContent padded-right">
                 <div class="detailSection">
-                    <form class="trackSelections hide focuscontainer-x" id="requestRows"></form>
+                    <form class="trackSelections hide focuscontainer-x" id="detailRows"></form>
                     <div class="detailSectionContent">
                         <p class="itemGenres"></p>
                         <h3 class="tagline hide" id="detailTagline"></h3>
@@ -633,7 +410,7 @@
 <div class="view padded-left padded-right padded-bottom-page hide" id="view-list">
     <div class="itemsContainer vertical-wrap" id="listItems"></div>
     <div id="listError" class="hide"></div>
-    <div id="listMore" class="emptyState hide" style="padding:2em"><div class="mdl-spinner mdlSpinnerActive" dir="ltr" data-spinner></div></div>
+    <div id="listMore" class="rq-listMore hide"><div class="mdl-spinner mdlSpinnerActive" dir="ltr" data-spinner></div></div>
 </div>
 
 <!-- TMDb's attribution, as its terms ask of apps using its data: under every page, never over a sign-in or error screen. -->
@@ -641,7 +418,7 @@
 
 <!-- The library toolbar's filter popover (FilterButton.tsx), under the Filter button that opened it. -->
 <div class="rq-filterBackdrop hide" id="filterBackdrop"></div>
-<div class="MuiPaper-root MuiPopover-paper rq-filterPopover hide" id="filter-popover" role="dialog" aria-modal="true" aria-label="Filters" tabindex="-1"></div>
+<div class="MuiPaper-root MuiPopover-paper stolon-web-filters hide" id="filter-popover" role="dialog" aria-modal="true" aria-label="Filters" tabindex="-1"></div>
 <!-- One dialog, filled for each use: a form dialog, or a centered confirmation -->
 <div class="dialogBackdrop dialogBackdropOpened hide" id="dialogBackdrop"></div>
 <div class="dialogContainer hide" id="dialog">
@@ -656,14 +433,15 @@
     </div>
 </div>
 
-<!-- The web client's markup, built in one place (requests_webclient.js): the script below calls it for every piece of
-     the page that copies jellyfin-web. -->
+<!-- The page's strings and its TMDb artwork addresses (requests_webclient.js). The web client's markup is Stolon's,
+     which the script below loads first. -->
 <script src="webclient.js?v=ASSET_VERSION"></script>
 <!-- Stolon's page script (StolonPage), with no markup or styles of its own: the casing of the home rows' headings, and
      browser notifications. -->
 <script src="stolon-page.js?v=ASSET_VERSION"></script>
 <script>
-    (function () {
+    // Stolon's module, from the dashboard's own address for it, holds the web client's markup the page builds with.
+    import('../web/configurationpage?name=necto_stolon.js').then(function (S) {
         // Derive the Jellyfin base path by stripping this page's own "/requests/" suffix (served at any case). The same
         // page served at "/issues/" is the issue page.
         var ISSUES = /\/issues\/?$/i.test(location.pathname);
@@ -672,16 +450,24 @@
         var api = prefix + '/Requests/';
         // The web client's own themes, for a config.json without its list.
         var THEMES = ['dark', 'light', 'appletv', 'blueradiance', 'purplehaze', 'wmc'];
-        var WC = window.WebClient, esc = WC.esc, cssUrl = WC.cssUrl, str = WC.str;
+        var WC = window.WebClient, esc = S.escapeHtml, str = WC.str;
+        // A poster's url(), from the server's own copy of a TMDb image.
+        function cssUrl(u) { return S.webCssUrl(WC.artwork(u)); }
+        // The palette the web client's Material UI theme writes for a theme, which its stylesheets and Stolon's read.
+        function applyPalette(theme) {
+            var vars = S.WEB_CLIENT_PALETTES[theme] || S.WEB_CLIENT_PALETTES.dark;
+            Object.keys(vars).forEach(function (name) { document.documentElement.style.setProperty(name, vars[name]); });
+        }
+        applyPalette(document.documentElement.getAttribute('data-theme') || 'dark');
         // The details page is the web client's own when the plugin found its template (inlined as #webDetailsTemplate);
         // otherwise, or when it lacks a part the page fills in, the page's own copy below stays.
         (function () {
             var template = document.getElementById('webDetailsTemplate'), missing = [];
-            if (template && !WC.adoptDetailsTemplate(document.getElementById('view-details'), template, missing)) {
+            if (template && !S.adoptDetailsTemplate(document.getElementById('view-details'), template, missing)) {
                 console.info('Requests: the web client\u2019s details page template lacks ' + missing.join(', ') + '; using the page\u2019s own copy.');
             }
         })();
-        Array.prototype.forEach.call(document.querySelectorAll('[data-spinner]'), function (n) { n.innerHTML = WC.SPINNER; });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-spinner]'), function (n) { n.innerHTML = S.WEB_SPINNER; });
         document.getElementById('loading').innerHTML = homeSkeleton();
         // The API gives requests as Jellyfin items, each with its request under Request: these read the requests back out,
         // a page's as { Items, TotalCount } and one on its own.
@@ -722,7 +508,7 @@
         }
 
         // A toast, optionally with one action such as Undo, in the web client's toast container.
-        var toast = WC.toaster(document.body);
+        var toast = S.createWebToaster(document.body).show;
 
         el('tryAgain').addEventListener('click', function () { location.reload(); });
 
@@ -1031,6 +817,7 @@
             } catch (e) { /* the web client's defaults */ }
             // For the few colours of the page's own that need a darker shade on the light themes.
             document.documentElement.setAttribute('data-theme', theme);
+            applyPalette(theme);
         }
 
         function authHeader(t) { return 'MediaBrowser Token="' + t + '"'; }
@@ -1166,9 +953,8 @@
             // Asked for once a language: started alongside Me for the stored sign-in's user (firstTokens), it's the
             // same answer start then waits on.
             if (stringsAsked && stringsAsked.language === language) return stringsAsked.done;
-            var done = fetch(prefix + '/Necto/Translations?language=' + encodeURIComponent(language) + '&v=ASSET_VERSION', { headers: { 'Accept': 'application/json' } })
-                .then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })
-                .then(function (s) { WC.setStrings(s); translatePage(); });
+            var done = S.loadTranslations(prefix + '/Necto/Translations?v=ASSET_VERSION', { language: language })
+                .then(function (t) { WC.setStrings({ strings: t.strings, casing: t.casing, language: t.language }); translatePage(); });
             stringsAsked = { language: language, done: done };
             return done;
         }
@@ -1211,10 +997,13 @@
             // The viewer's Jellyfin avatar, as the web client's header shows it.
             var user = el('userButton');
             user.title = access.UserName;
-            var avatar = new Image();
-            avatar.onload = function () { user.innerHTML = ''; avatar.alt = ''; user.appendChild(avatar); };
             user.setAttribute('aria-label', access.UserName);
-            avatar.src = prefix + '/Users/' + access.UserId + '/Images/Primary?height=80&quality=90';
+            // A user with no image keeps the person icon, as the web client's bar does, so nothing asks for one.
+            if (access.HasImage) {
+                var avatar = new Image();
+                avatar.onload = function () { user.innerHTML = ''; avatar.alt = ''; user.appendChild(avatar); };
+                avatar.src = prefix + '/Users/' + access.UserId + '/Images/Primary?height=80&quality=90';
+            }
             show(user);
             buildUserMenu(access);
             buildNav(access);
@@ -1388,8 +1177,8 @@
             setLogo(null);
             setPoster(image, name, type);
             setName(name, null);
-            ['detailMisc', 'detailButtons', 'requestRows', 'detailGroup'].forEach(function (id) { setHtml(el(id), ''); });
-            hide('requestRows');
+            ['detailMisc', 'detailButtons', 'detailRows', 'detailGroup'].forEach(function (id) { setHtml(el(id), ''); });
+            hide('detailRows');
             setDetailRow('castCollapsible', '', '');
             setDetailRow('similarCollapsible', '', '');
             hide('detailMisc');
@@ -1397,7 +1186,7 @@
             setOverview('');
             hide('detailLinks');
             setLifeDates(null);
-            el('detailOverview').innerHTML = WC.placeholderLines(3);
+            el('detailOverview').innerHTML = S.webPlaceholderLines(3);
             show('detailOverview');
             hide('overviewControls');
             setChildren('');
@@ -1408,10 +1197,10 @@
         }
 
         // MARK: homeSkeleton
-        function homeSkeleton() { return WC.placeholderRow(8) + WC.placeholderRow(8) + WC.placeholderRow(8); }
+        function homeSkeleton() { return S.webPlaceholderRow(8) + S.webPlaceholderRow(8) + S.webPlaceholderRow(8); }
 
         // MARK: gridSkeleton
-        function gridSkeleton(count) { return WC.placeholderCards(count, GRID); }
+        function gridSkeleton(count) { return S.webPlaceholderCards(count, GRID); }
 
         // ---------- navigation ----------
         // The search is the root; every other page stacks on top of it, and the back arrow and the
@@ -1422,7 +1211,7 @@
         var header = el('header');
         // Clear at the top of every page, the theme's bar colour as soon as it scrolls at all, as the web client's bar
         // (MUI's scroll trigger with no threshold).
-        function syncHeaderBackground() { header.classList.toggle('scrolled', window.scrollY > 0); }
+        function syncHeaderBackground() { header.classList.toggle('stolon-shell-scrolled', window.scrollY > 0); }
         window.addEventListener('scroll', syncHeaderBackground, { passive: true });
 
         function syncHeaderHeight() { document.documentElement.style.setProperty('--headerHeight', header.offsetHeight + 'px'); }
@@ -1513,15 +1302,15 @@
         function findOpener(left) {
             var want = left.item, match = null;
             if (left.type === 'list') {
-                Array.prototype.some.call(document.querySelectorAll('[data-list]'), function (a) {
-                    var l = lists[a.getAttribute('data-list')];
+                Array.prototype.some.call(document.querySelectorAll('[data-stolon-list]'), function (a) {
+                    var l = lists[a.getAttribute('data-stolon-list')];
                     if (l && left.listHash && l.listHash === left.listHash && a.offsetParent) { match = a; return true; }
                     return false;
                 });
                 return match;
             }
-            Array.prototype.some.call(document.querySelectorAll('.cardImageContainer[data-card]'), function (node) {
-                var entry = cards[node.getAttribute('data-card')], item = entry && entry.item;
+            Array.prototype.some.call(document.querySelectorAll('.cardImageContainer[data-stolon-card]'), function (node) {
+                var entry = cards[node.getAttribute('data-stolon-card')], item = entry && entry.item;
                 var same = item && want && (item === want || (item.Request && want.Request && item.Request.Id === want.Request.Id));
                 if (same && node.offsetParent) { match = node; return true; }
                 return false;
@@ -1544,7 +1333,7 @@
         var navItems = [];
         function buildNav(access) {
             var web = prefix + '/web/', here = location.pathname.replace(/\/?$/, '/');
-            el('searchButton').innerHTML = WC.svgIcon('Search');
+            el('searchButton').innerHTML = S.webIcon('Search');
             show('searchButton');
             // Back down the pages to the search, as Back would, with its field ready to type in.
             el('searchButton').onclick = function (e) {
@@ -1566,28 +1355,28 @@
                     try { href = new URL(l.url, location.origin + web).href; } catch (e) { /* kept as written */ }
                     var mine = false;
                     try { mine = new URL(href).origin === location.origin && new URL(href).pathname.replace(/\/?$/, '/') === here; } catch (e) { /* not this page */ }
-                    return { href: mine ? here : href, icon: WC.linkIcon(l.icon), name: l.name, current: mine, external: !mine };
+                    return { href: mine ? here : href, icon: S.webIcon(l.icon), name: l.name, current: mine, external: !mine };
                 });
-                if (!links.some(function (l) { return l.current; })) links.unshift({ href: here, icon: WC.linkIcon(ISSUES ? 'bug_report' : 'search'), name: str(ISSUES ? 'TabIssues' : 'TabRequests'), current: true });
+                if (!links.some(function (l) { return l.current; })) links.unshift({ href: here, icon: S.webIcon(ISSUES ? 'bug_report' : 'search'), name: str(ISSUES ? 'TabIssues' : 'TabRequests'), current: true });
                 var libraries = ((got[1] && got[1].Items) || []).map(function (v) {
-                    return { href: web + WC.libraryRoute(v), icon: WC.libraryIcon(v), name: v.Name };
+                    return { href: web + S.webLibraryRoute(v), icon: S.webLibraryIcon(v), name: v.Name };
                 });
                 navItems = links.concat(libraries);
                 renderNav();
-                var drawer = links.map(function (l) { return WC.drawerItem(l.href, l.icon, l.name, l.current, l.external); }).join('');
-                var shelves = libraries.map(function (l) { return WC.drawerItem(l.href, l.icon, l.name); }).join('');
-                el('drawerNav').innerHTML = WC.drawerList(WC.drawerItem(web + '#/home?tab=1', WC.svgIcon('Favorite'), WC.tr('Favorites', 'Favorites')))
-                    + WC.drawerList(drawer, true) + WC.drawerList(shelves, true, WC.tr('HeaderLibraries', 'Libraries'));
+                var drawer = links.map(function (l) { return S.webDrawerItem(l.href, l.icon, l.name, l.current, l.external); }).join('');
+                var shelves = libraries.map(function (l) { return S.webDrawerItem(l.href, l.icon, l.name); }).join('');
+                el('drawerNav').innerHTML = S.webDrawerList(S.webDrawerItem(web + '#/home?tab=1', S.webIcon('Favorite'), WC.tr('Favorites', 'Favorites')))
+                    + S.webDrawerList(drawer, true) + S.webDrawerList(shelves, true, WC.tr('HeaderLibraries', 'Libraries'));
             });
         }
         // As many as fit the width in the bar, the rest under More.
         function renderNav() {
             closeNavMenu(false);
-            var web = prefix + '/web/', shown = WC.userViewsShown(navItems.length);
-            el('appNav').innerHTML = WC.navButton(web + '#/home?tab=1', WC.svgIcon('Favorite'), WC.tr('Favorites', 'Favorites'))
-                + navItems.slice(0, shown).map(function (i) { return WC.navButton(i.href, i.icon, i.name, i.current, i.external); }).join('')
-                + (navItems.length > shown ? WC.navMoreButton() : '');
-            el('navMoreList').innerHTML = navItems.slice(shown).map(function (i) { return WC.navMenuItem(i.href, i.icon, i.name, i.external); }).join('');
+            var web = prefix + '/web/', shown = S.webUserViewsShown(navItems.length);
+            el('appNav').innerHTML = S.webNavButton(web + '#/home?tab=1', S.webIcon('Favorite'), WC.tr('Favorites', 'Favorites'))
+                + navItems.slice(0, shown).map(function (i) { return S.webNavButton(i.href, i.icon, i.name, i.current, i.external); }).join('')
+                + (navItems.length > shown ? S.webNavMoreButton() : '');
+            el('navMoreList').innerHTML = navItems.slice(shown).map(function (i) { return S.webMenuItem(i.icon, i.name, i.href, null, i.external); }).join('');
             show('appNav');
         }
         ['(min-width: 1200px)', '(min-width: 1536px)'].forEach(function (q) {
@@ -1604,34 +1393,36 @@
             if (depth) history.go(-depth); else { window.scrollTo(0, 0); el('query').focus(); }
         });
         function openNavMenu() {
-            var menu = el('user-view-overflow-menu'), button = el('navMore'), r = button.getBoundingClientRect();
+            var menu = el('stolon-shell-nav-menu'), button = navMore(), r = button.getBoundingClientRect();
             menu.style.top = r.bottom + 'px';
             menu.style.left = r.left + 'px';
-            menu.classList.add('growing');
+            menu.classList.add('stolon-shell-growing');
             show(menu);
             void menu.offsetWidth;
-            menu.classList.remove('growing');
+            menu.classList.remove('stolon-shell-growing');
             button.setAttribute('aria-expanded', 'true');
             var first = menu.querySelector('.MuiMenuItem-root');
             if (first) first.focus();
         }
         function closeNavMenu(refocus) {
-            if (el('user-view-overflow-menu').classList.contains('hide')) return;
-            hide('user-view-overflow-menu');
-            var button = el('navMore');
+            if (el('stolon-shell-nav-menu').classList.contains('hide')) return;
+            hide('stolon-shell-nav-menu');
+            var button = navMore();
             if (!button) return;
             button.setAttribute('aria-expanded', 'false');
             if (refocus) button.focus();
         }
+        // The bar's More button, which Stolon's markup marks with its class.
+        function navMore() { return el('appNav').querySelector('.stolon-shell-nav-more'); }
         el('appNav').addEventListener('click', function (e) {
-            if (!e.target.closest('#navMore')) return;
+            if (!e.target.closest('.stolon-shell-nav-more')) return;
             e.stopPropagation();
-            if (el('user-view-overflow-menu').classList.contains('hide')) openNavMenu(); else closeNavMenu(false);
+            if (el('stolon-shell-nav-menu').classList.contains('hide')) openNavMenu(); else closeNavMenu(false);
         });
-        document.addEventListener('click', function (e) { if (!e.target.closest('#user-view-overflow-menu')) closeNavMenu(false); });
+        document.addEventListener('click', function (e) { if (!e.target.closest('#stolon-shell-nav-menu')) closeNavMenu(false); });
         window.addEventListener('resize', function () { closeNavMenu(false); });
-        el('user-view-overflow-menu').addEventListener('keydown', function (e) { menuKeys(e, el('user-view-overflow-menu'), closeNavMenu); });
-        el('user-view-overflow-menu').addEventListener('click', function (e) { if (e.target.closest('.MuiMenuItem-root')) closeNavMenu(false); });
+        el('stolon-shell-nav-menu').addEventListener('keydown', function (e) { menuKeys(e, el('stolon-shell-nav-menu'), closeNavMenu); });
+        el('stolon-shell-nav-menu').addEventListener('click', function (e) { if (e.target.closest('.MuiMenuItem-root')) closeNavMenu(false); });
 
         // A MUI Menu's keys: Escape closes it back to its button, Tab closes it, and the arrows move through its items,
         // Down from nothing to the first and Up to the last.
@@ -1651,37 +1442,31 @@
         // The web client's (AppUserMenu): the same items in the same order, each going to the web client's own page,
         // with the administrator's and Quick Connect's only for those who'd see them there. Opens under the avatar,
         // right-aligned, and closes on a choice, a click elsewhere, Escape or Tab, as a MUI Menu does.
-        var USER_MENU_ICONS = {
-            profile: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6m0 14c-2.03 0-4.43-.82-6.14-2.88C7.55 15.8 9.68 15 12 15s4.45.8 6.14 2.12C16.43 19.18 14.03 20 12 20',
-            settings: 'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6',
-            dashboard: 'M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z',
-            metadata: 'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z',
-            quickconnect: 'M19 1H9c-1.1 0-2 .9-2 2v3h2V4h10v16H9v-2H7v3c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2m-8.2 10V9.5C10.8 8.1 9.4 7 8 7S5.2 8.1 5.2 9.5V11c-.6 0-1.2.6-1.2 1.2v3.5c0 .7.6 1.3 1.2 1.3h5.5c.7 0 1.3-.6 1.3-1.2v-3.5c0-.7-.6-1.3-1.2-1.3m-1.3 0h-3V9.5c0-.8.7-1.3 1.5-1.3s1.5.5 1.5 1.3z',
-            signout: 'm17 7-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4z',
-            // The MUI Notifications icon, as the web client draws its icons in this menu.
-            notifications: 'M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2m6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1z'
-        };
+        // The web client's icons for each item (@mui/icons-material), by Stolon's names for them.
+        var USER_MENU_ICONS = { profile: 'Profile', settings: 'Settings', dashboard: 'Dashboard', metadata: 'Edit', quickconnect: 'PhonelinkLock', signout: 'Logout', notifications: 'Notifications' };
         function buildUserMenu(access) {
-            function item(icon, text, href, id) { return WC.userMenuItem(USER_MENU_ICONS[icon], icon, text, href ? prefix + '/web/#/' + href : null, id); }
+            function item(icon, text, href) { return S.webMenuItem(S.webIcon(USER_MENU_ICONS[icon]), text, href ? prefix + '/web/#/' + href : null, icon); }
             var tr = WC.tr;
             // Browser notifications sit with the viewer's own settings, as a button the page answers itself.
             var html = item('profile', tr('Profile', 'Profile'), 'userprofile?userId=' + encodeURIComponent(access.UserId)) + item('settings', tr('Settings', 'Settings'), 'mypreferencesmenu')
                 + item('notifications', str('TabNotifications'));
-            if (access.IsAdministrator) html += WC.userMenuDivider() + item('dashboard', tr('TabDashboard', 'Dashboard'), 'dashboard') + item('metadata', tr('MetadataManager', 'Metadata Manager'), 'metadata');
-            html += WC.userMenuDivider() + item('quickconnect', tr('QuickConnect', 'Quick Connect'), 'quickconnect', 'quickConnectItem') + item('signout', tr('ButtonSignOut', 'Sign Out'));
+            if (access.IsAdministrator) html += S.webMenuDivider() + item('dashboard', tr('TabDashboard', 'Dashboard'), 'dashboard') + item('metadata', tr('MetadataManager', 'Metadata Manager'), 'metadata');
+            html += S.webMenuDivider() + item('quickconnect', tr('QuickConnect', 'Quick Connect'), 'quickconnect') + item('signout', tr('ButtonSignOut', 'Sign Out'));
             el('userMenuList').innerHTML = html;
             // Only when the server has Quick Connect on, as the web client asks it.
-            call('/QuickConnect/Enabled').then(function (on) { if (on === true) show('quickConnectItem'); }).catch(function () { /* left out */ });
+            var quickItem = el('userMenuList').querySelector('[data-stolon-menu="quickconnect"]').parentNode;
+            hide(quickItem);
+            call('/QuickConnect/Enabled').then(function (on) { if (on === true) show(quickItem); }).catch(function () { /* left out */ });
         }
         function openUserMenu() {
             var menu = el('app-user-menu'), r = el('userButton').getBoundingClientRect();
             menu.style.top = r.bottom + 'px';
             menu.style.right = Math.max(0, document.documentElement.clientWidth - r.right) + 'px';
             // MUI's Grow: shown at three-quarters size and clear, then grown to full size and faded in.
-            menu.classList.add('growing');
+            menu.classList.add('stolon-shell-growing');
             show(menu);
             void menu.offsetWidth;
-            menu.classList.remove('growing');
+            menu.classList.remove('stolon-shell-growing');
             el('userButton').setAttribute('aria-expanded', 'true');
             var first = menu.querySelector('.MuiMenuItem-root');
             if (first) first.focus();
@@ -1705,12 +1490,12 @@
             closeUserMenu(false);
             // Signing out ends this session on the server and forgets it in the browser, as the web client's does, so
             // the web client is signed out too, then starts the page again at its sign-in.
-            if (choice.getAttribute('data-menu') === 'notifications') {
+            if (choice.getAttribute('data-stolon-menu') === 'notifications') {
                 e.preventDefault();
                 openBrowserNotifications();
                 return;
             }
-            if (choice.getAttribute('data-menu') === 'signout') {
+            if (choice.getAttribute('data-stolon-menu') === 'signout') {
                 e.preventDefault();
                 var signingOut = token;
                 call('/Sessions/Logout', 'POST').catch(function () { /* signed out either way */ }).then(function () {
@@ -1755,7 +1540,7 @@
         }
         function openBrowserNotifications() {
             var push = window.StolonPage;
-            openDialog(str('LabelBrowserNotifications'), '<div class="pushSettings">' + WC.settingsCheckbox('chkBrowserNotifications', str('RequestsLabelNotifyInThisBrowser'), 'browserNotificationsState') + '</div>', null);
+            openDialog(str('LabelBrowserNotifications'), '<div class="pushSettings">' + S.webSettingsCheckbox('chkBrowserNotifications', str('RequestsLabelNotifyInThisBrowser'), 'browserNotificationsState') + '</div>', null);
             var box = el('chkBrowserNotifications');
             function show(state) {
                 box.checked = state === 'on';
@@ -1786,7 +1571,7 @@
         // While open, the rest of the page is out of reach, as behind the web client's drawer.
         var DRAWER = ['drawer', 'drawerBackdrop'];
         function openDrawer() {
-            el('drawer').classList.add('open');
+            el('drawer').classList.add('stolon-shell-open');
             setInert(true, DRAWER);
             show('drawerBackdrop');
             el('drawerButton').setAttribute('aria-expanded', 'true');
@@ -1794,8 +1579,8 @@
         }
         // Closed, the focus goes back to the menu button, unless refocus is false (the button isn't there to take it).
         function closeDrawer(refocus) {
-            if (!el('drawer').classList.contains('open')) return;
-            el('drawer').classList.remove('open');
+            if (!el('drawer').classList.contains('stolon-shell-open')) return;
+            el('drawer').classList.remove('stolon-shell-open');
             setInert(false, DRAWER);
             hide('drawerBackdrop');
             el('drawerButton').setAttribute('aria-expanded', 'false');
@@ -1853,10 +1638,11 @@
         // As the web client's dialogHelper, an open dialog has its own history entry, so Back closes just the dialog.
         // Each opening gets a number: callbacks from an earlier dialog check it and leave a newer one alone.
         var dialogOpen = false, dialogPushed = false, dialogSeq = 0, returnFocus = null;
-        // The classes and footers are the web client's, as its own dialogs end up once opened (WebClient.FORM_DIALOG and
-        // CONFIRM_DIALOG).
+        // The classes and footers are the web client's, as its own dialogs end up once opened (Stolon's WEB_FORM_DIALOG and
+        // WEB_CONFIRM_DIALOG). dialog.js sets the message dialog's spacing on its elements, as these do.
+        var CONFIRM_BODY_STYLE = 'padding-top:1em;padding-bottom: 1em; text-align: center;', CONFIRM_FOOTER_STYLE = 'margin:1em';
         function openDialog(title, bodyHtml, submit) {
-            var d = WC.FORM_DIALOG;
+            var d = S.WEB_FORM_DIALOG;
             el('dialogBox').className = d.box;
             el('dialogHeader').className = d.header;
             setTitle('dialogTitle', 'confirmTitle');
@@ -1868,28 +1654,28 @@
             el('dialogFooter').className = d.footer;
             el('dialogFooter').removeAttribute('style');
             // Without a submit, only something to read: no footer.
-            el('dialogFooter').innerHTML = submit ? WC.formDialogFooter(submit.text, submit.type) : '';
+            el('dialogFooter').innerHTML = submit ? S.webFormDialogFooter(submit.text, submit.type) : '';
             el('dialogFooter').classList.toggle('hide', !submit);
             if (submit) el('dialogSubmit').addEventListener('click', function () { submit.action(el('dialogSubmit')); });
             return fillDialog(title, bodyHtml, null);
         }
         // dialog.js showDialog: no scrolling, centred, the content as wide as its buttons need.
         function openConfirm(title, text, ok) {
-            var d = WC.CONFIRM_DIALOG;
+            var d = S.WEB_CONFIRM_DIALOG;
             el('dialogBox').className = d.box;
             el('dialogHeader').className = d.header;
             setTitle('confirmTitle', 'dialogTitle');
             el('dialogContent').className = d.content;
             el('dialogContent').removeAttribute('style');
-            el('dialogContent').style.maxWidth = d.contentMaxWidth(innerWidth);
-            el('dialogBody').setAttribute('style', d.bodyStyle);
+            el('dialogContent').style.maxWidth = S.webConfirmDialogWidth(innerWidth);
+            el('dialogBody').setAttribute('style', CONFIRM_BODY_STYLE);
             el('dialogFooter').className = d.footer;
-            el('dialogFooter').setAttribute('style', d.footerStyle);
-            el('dialogFooter').innerHTML = WC.confirmDialogFooter(ok.text, ok.type);
+            el('dialogFooter').setAttribute('style', CONFIRM_FOOTER_STYLE);
+            el('dialogFooter').innerHTML = S.webConfirmDialogFooter(ok.text, ok.type);
             el('dialogCancel').addEventListener('click', function () { closeDialog(); });
             el('dialogSubmit').addEventListener('click', function () { ok.action(el('dialogSubmit')); });
             // Cancel takes the focus, as in the web client's confirm, so Enter never removes by accident.
-            return fillDialog(title, WC.confirmDialogBody(text), el('dialogCancel'));
+            return fillDialog(title, S.webConfirmDialogBody(text), el('dialogCancel'));
         }
         // A form dialog has the back arrow and a small title; a confirmation a large centred one and no arrow.
         function setTitle(showId, hideId) {
@@ -2012,7 +1798,7 @@
             if (droppedByArr(req)) return { cls: 'failed', icon: 'error', tag: str('RequestsRequestStatusNotDownloading') };
             if (r.LibraryItemId && r.Partial) return { cls: 'library', icon: 'check', tag: str('RequestsRequestStatusPartlyInLibrary') };
             if (r.LibraryItemId) return { cls: 'library', icon: 'check', tag: str('RequestsRequestStatusInLibrary') };
-            if (r.RequestStatus === 'Pending') return { cls: 'requested', icon: 'hourglass_empty', tag: str('RequestsRequestStatusRequested') };
+            if (r.RequestStatus === 'Pending') return { cls: 'requested', icon: 'hourglass_empty', tag: str('StatePending') };
             // Downloaded, waiting for the library to scan it in.
             if (downloaded(r)) return { cls: 'downloaded', icon: 'file_download', tag: str('RequestsRequestStatusDownloaded') };
             // Approved, or Radarr or Sonarr has it, and not downloaded yet.
@@ -2073,7 +1859,7 @@
         // A request's status as a title's RequestStatus: one that's done (in the library, or declined) no longer holds it.
         function openStatus(status) { return status === 'Available' || status === 'Declined' ? null : status; }
 
-        var emptyState = WC.emptyState;
+        var emptyState = S.webEmptyState;
 
         // ---------- cards ----------
         // Every card on the page is registered under a key, so one click handler can open what it shows. A card's
@@ -2081,17 +1867,22 @@
 
         // Replaces a container's markup, first dropping the registry entries of the cards and rows inside it.
         function prune(node) {
-            Array.prototype.forEach.call(node.querySelectorAll('[data-card]'), function (n) { delete cards[n.getAttribute('data-card')]; });
-            Array.prototype.forEach.call(node.querySelectorAll('[data-list]'), function (n) { delete lists[n.getAttribute('data-list')]; });
+            Array.prototype.forEach.call(node.querySelectorAll('[data-stolon-card]'), function (n) { delete cards[n.getAttribute('data-stolon-card')]; });
+            Array.prototype.forEach.call(node.querySelectorAll('[data-stolon-list]'), function (n) { delete lists[n.getAttribute('data-stolon-list')]; });
         }
         function setHtml(node, html) { prune(node); node.innerHTML = html; }
 
-        // Cards are jellyfin-web's own (cardBuilder.js and indicators.js), built by WebClient.buildCard; the card functions
+        // Cards are jellyfin-web's own (cardBuilder.js and indicators.js), built by Stolon's webCard; the card functions
         // below feed it this page's titles and people instead of library items.
         var cardSeq = 0;
         // Rows of cards scroll (overflowPortrait); list pages lay them out in a grid (portrait), as the web client's do.
         // A card function takes its item and a shape, and a card keeps its shape when it is redrawn.
-        var ROW = WC.ROW, GRID = WC.GRID, buildCard = WC.buildCard, getIndicatorHtml = WC.getIndicatorHtml;
+        var ROW = S.WEB_CARD_ROW, GRID = S.WEB_CARD_GRID;
+        // A title's standing as the played indicator's round badge, in the standing's own colour; what the library has
+        // keeps the theme's.
+        function indicatorOf(s) { return s ? { icon: s.icon, title: s.tag, className: s.cls === 'library' ? '' : s.cls + 'Indicator' } : null; }
+        // What shows behind a poster while it loads: a colour for a movie or a show.
+        function imageClassOf(type) { return type === 'Movie' ? 'movieCardBackground' : type === 'Series' ? 'seriesCardBackground' : ''; }
         function cardsHtml(items, card, shape) { return items.map(function (x) { return card(x, shape || ROW); }).join(''); }
         // The year, or the run of years for a show, as the web client's card and info row show it: "2005 - 2013" for
         // one that has ended (EndYear, from the server), "2020 - Present" for one still running.
@@ -2118,17 +1909,17 @@
         function titleCard(r, shape) {
             var key = 't' + (++cardSeq), req = r.Request;
             cards[key] = { type: 'title', item: r, shape: shape, render: function () { return titleCard(r, shape); } };
-            var fab = canRequest(r) ? { quick: 'request', key: key, icon: 'playlist_add', title: str('RequestsButtonRequest'), label: str('RequestsLabelRequestTitle', r.Title) } : null;
+            var fab = canRequest(r) ? { action: 'request', key: key, icon: 'playlist_add', title: str('RequestsButtonRequest') } : null;
             var buttons = [];
             if (req && me.IsAdministrator && (req.Status === 'Pending' || req.Status === 'Failed')) {
                 var retry = req.Status === 'Failed';
-                buttons.push({ quick: 'approve', key: key, icon: retry ? 'refresh' : 'thumb_up', title: retry ? WC.tr('Retry', 'Retry') : str('RequestsButtonApprove'), label: str(retry ? 'RequestsLabelRetryTitle' : 'RequestsLabelApproveTitle', r.Title) },
-                    { quick: 'decline', key: key, icon: 'thumb_down', title: str('RequestsButtonReject'), label: str('RequestsLabelRejectTitle', r.Title) });
+                buttons.push({ action: 'approve', key: key, icon: retry ? 'refresh' : 'thumb_up', title: retry ? WC.tr('Retry', 'Retry') : str('RequestsButtonApprove') },
+                    { action: 'decline', key: key, icon: 'thumb_down', title: str('RequestsButtonReject') });
             }
-            if (req && req.UserId === me.UserId && droppedByArr(req)) buttons.push({ quick: 'cancel', key: key, icon: 'delete_sweep', title: WC.tr('ButtonRemove', 'Remove'), label: str('RequestsLabelRemoveRequestFor', r.Title) });
+            if (req && req.UserId === me.UserId && droppedByArr(req)) buttons.push({ action: 'cancel', key: key, icon: 'delete_sweep', title: WC.tr('ButtonRemove', 'Remove') });
             var progress = req && typeof req.Progress === 'number' && (req.Status === 'Approved' || req.Status === 'PartiallyAvailable') ? req.Progress : null;
             var s = standing(r);
-            return buildCard({ key: key, shape: shape, href: titleHref(r), type: r.Type, image: r.PosterUrl, title: r.Title, secondary: years(r), indicator: getIndicatorHtml(s), status: s && s.tag, fab: fab, progress: progress, buttons: buttons });
+            return S.webCard({ key: key, shape: shape, href: titleHref(r), type: r.Type, image: r.PosterUrl, imageClass: imageClassOf(r.Type), title: r.Title, secondary: years(r), indicator: indicatorOf(s), status: s && s.tag, fab: fab, progress: progress, buttons: buttons });
         }
 
         // A request's card: its title's, opened from the request.
@@ -2139,16 +1930,16 @@
         function personCard(p, shape, subtitle) {
             var key = 'p' + (++cardSeq), cast = subtitle !== undefined;
             cards[key] = { type: 'person', person: p };
-            return buildCard({ key: key, shape: shape, href: personHash(p), type: 'Person', image: p.ImageUrl, title: p.Name, secondary: subtitle, personCard: cast, oneLine: !cast });
+            return S.webCard({ key: key, shape: shape, href: personHash(p), type: 'Person', image: p.ImageUrl, title: p.Name, secondary: subtitle, personCard: cast, oneLine: !cast });
         }
 
         // A library title the web client knows (More Like This), opened in the web client itself.
         function jellyfinCard(item) {
             var tag = item.ImageTags && item.ImageTags.Primary;
-            return buildCard({
+            return S.webCard({
                 href: libraryHref(item.Id), type: item.Type, title: item.Name, secondary: item.ProductionYear ? String(item.ProductionYear) : '',
                 image: tag ? prefix + '/Items/' + item.Id + '/Images/Primary?fillHeight=480&quality=90&tag=' + tag : null,
-                indicator: getIndicatorHtml({ cls: 'library', icon: 'check', tag: str('RequestsRequestStatusInLibrary') })
+                indicator: indicatorOf({ cls: 'library', icon: 'check', tag: str('RequestsRequestStatusInLibrary') })
             });
         }
 
@@ -2156,8 +1947,8 @@
         // pages. The rows around them keep their scroll, and focus inside a card moves to its replacement.
         function refreshCards(item) {
             var done = [];
-            Array.prototype.forEach.call(document.querySelectorAll('[data-card]'), function (node) {
-                var entry = cards[node.getAttribute('data-card')], root = node.closest('.card');
+            Array.prototype.forEach.call(document.querySelectorAll('[data-stolon-card]'), function (node) {
+                var entry = cards[node.getAttribute('data-stolon-card')], root = node.closest('.card');
                 if (!entry || entry.item !== item || !entry.render || !root || done.indexOf(root) >= 0) return;
                 done.push(root);
                 var focused = root.contains(document.activeElement), opener = root.contains(returnFocus), holder = document.createElement('div');
@@ -2176,12 +1967,12 @@
 
         document.addEventListener('click', function (e) {
             if (!ready) return;
-            var quick = e.target.closest('[data-quick]');
-            if (quick) { e.preventDefault(); quickAction(quick.getAttribute('data-quick'), quick.getAttribute('data-key'), quick); return; }
-            var c = e.target.closest('[data-card]');
+            var quick = e.target.closest('[data-stolon-action]');
+            if (quick) { e.preventDefault(); quickAction(quick.getAttribute('data-stolon-action'), quick.getAttribute('data-stolon-key'), quick); return; }
+            var c = e.target.closest('[data-stolon-card]');
             if (!c || !plainClick(e)) return;
             e.preventDefault();
-            var target = cards[c.getAttribute('data-card')];
+            var target = cards[c.getAttribute('data-stolon-card')];
             if (!target || target.type === 'episode') return;
             if (target.type === 'issue') { openIssue(target.item.Id); return; }
             // A season opens its episodes' list.
@@ -2228,7 +2019,7 @@
             });
         }).observe(document.body, { childList: true, subtree: true });
 
-        // A row of cards on a page of rows (the empty search and search results), in the web client's markup (WebClient.section):
+        // A row of cards on a page of rows (the empty search and search results), in the web client's markup (Stolon's webCardSection):
         // full width as the web client's home rows, the heading and the cards padded in from both edges, so a scrolled
         // row runs on under the gutters to the screen's edges. A row with a list page to open has the home row heading,
         // a link with its chevron; others the search page's plain heading. The details page's rows are the template's
@@ -2242,12 +2033,12 @@
                 // Its own address, so opening it in a new tab works.
                 listHref = list.listHash || (topPage() ? topPage().hash : rootHash()) || '#';
             }
-            return WC.section({ id: id, title: title, inner: inner, scroll: scroll, listHref: listHref, listKey: id });
+            return S.webCardSection({ id: id, title: title, inner: inner, scroll: scroll, listHref: listHref, listKey: id });
         }
 
         document.addEventListener('click', function (e) {
-            var l = e.target.closest('[data-list]');
-            if (l && lists[l.getAttribute('data-list')] && plainClick(e)) { e.preventDefault(); pushPage(Object.assign({ type: 'list' }, lists[l.getAttribute('data-list')])); }
+            var l = e.target.closest('[data-stolon-list]');
+            if (l && lists[l.getAttribute('data-stolon-list')] && plainClick(e)) { e.preventDefault(); pushPage(Object.assign({ type: 'list' }, lists[l.getAttribute('data-stolon-list')])); }
         });
 
         // Scroll arrows only for rows wider than the screen, each greyed at its end, as the web client's.
@@ -2255,15 +2046,15 @@
         // fits; the box stays.
         function syncScrollButtons() {
             // Every row measured first, then every button set, so the page is laid out once rather than once a row.
-            var rows = Array.prototype.map.call(document.querySelectorAll('[data-buttons]'), function (buttons) {
-                var row = el(buttons.getAttribute('data-buttons'));
+            var rows = Array.prototype.map.call(document.querySelectorAll('[data-stolon-buttons]'), function (buttons) {
+                var row = el(buttons.getAttribute('data-stolon-buttons'));
                 return { buttons: buttons, row: row, size: row ? { width: row.scrollWidth, shown: row.clientWidth, left: row.scrollLeft } : null };
             });
             rows.forEach(function (x) {
                 var size = x.size, overflows = !!size && size.width > size.shown + 20;
-                var prev = x.buttons.querySelector('[data-dir="-1"]'), next = x.buttons.querySelector('[data-dir="1"]');
-                prev.classList.toggle('hide', !overflows);
-                next.classList.toggle('hide', !overflows);
+                var prev = x.buttons.querySelector('[data-stolon-direction="-1"]'), next = x.buttons.querySelector('[data-stolon-direction="1"]');
+                prev.hidden = !overflows;
+                next.hidden = !overflows;
                 prev.disabled = !overflows || size.left <= 1;
                 next.disabled = !overflows || size.left + size.shown >= size.width - 1;
             });
@@ -2276,7 +2067,7 @@
         }
         // Only changes that add or remove a row's buttons, or cards in a row, need the buttons set again.
         new MutationObserver(function (changes) {
-            if (changes.some(function (c) { return c.target.closest && c.target.closest('.emby-scroller, #results, #childrenContent, #detailRows, #requestRows, .rq-homeRow') || Array.prototype.some.call(c.addedNodes, function (n) { return n.nodeType === 1 && (n.matches('[data-buttons]') || !!n.querySelector('[data-buttons]')); }); })) queueSync();
+            if (changes.some(function (c) { return c.target.closest && c.target.closest('.emby-scroller, #results, #childrenContent, #detailRows, .rq-homeRow') || Array.prototype.some.call(c.addedNodes, function (n) { return n.nodeType === 1 && (n.matches('[data-stolon-buttons]') || !!n.querySelector('[data-stolon-buttons]')); }); })) queueSync();
         }).observe(document.body, { childList: true, subtree: true });
         document.addEventListener('scroll', function (e) { if (e.target.classList && e.target.classList.contains('emby-scroller')) queueSync(); }, true);
         window.addEventListener('resize', queueSync);
@@ -2376,7 +2167,7 @@
                     hide('listMore');
                     if (first) setHtml(el('listItems'), '');
                     el('listError').innerHTML = emptyState(page.items.length ? str('RequestsErrorLoadMore') : str('RequestsErrorLoadList', page.title), err.message,
-                        WC.raisedButton('listRetry', WC.tr('Retry', 'Retry'), 'margin-top:1.5em'));
+                        S.webRaisedButton('listRetry', WC.tr('Retry', 'Retry')));
                     show('listError');
                 });
             }
@@ -2435,9 +2226,9 @@
                 // Where the next page starts: where the server says, for a list it reads on from; else a page on.
                 page.next = result.paged ? result.next : (page.start + result.items.length < result.total ? page.start + size : null);
                 page.total = result.paged ? (result.next == null ? page.start + result.items.length : Math.max(result.total, page.start + result.items.length + 1)) : result.total;
-                // An empty list says so, as the web client's libraries do.
+                // An empty list says so, as the web client's libraries do, under the list's own title in the bar.
                 setHtml(el('listItems'), page.items.length || page.start ? cardsHtml(page.items, page.card, GRID)
-                    : '<div style="width:100%">' + emptyState(page.title, str(page.filterKind && isFiltered(filterOf(page.filterKind)) ? 'RequestsMessageNothingMatches' : 'RequestsMessageNothingLeft')) + '</div>');
+                    : '<div class="rq-fullRow">' + emptyState(str(page.filterKind && isFiltered(filterOf(page.filterKind)) ? 'RequestsMessageNothingMatches' : 'RequestsMessageNothingLeft'), '') + '</div>');
                 syncPaging();
                 // The button that turned the page keeps focus, or its partner when it's now off.
                 if (turned) {
@@ -2449,7 +2240,7 @@
                 if (seq !== listSeq) return;
                 syncPaging();
                 setHtml(el('listItems'), '');
-                el('listError').innerHTML = emptyState(str('RequestsErrorLoadList', page.title), err.message, WC.raisedButton('listRetry', WC.tr('Retry', 'Retry'), 'margin-top:1.5em'));
+                el('listError').innerHTML = emptyState(str('RequestsErrorLoadList', page.title), err.message, S.webRaisedButton('listRetry', WC.tr('Retry', 'Retry')));
                 show('listError');
             });
         }
@@ -2487,8 +2278,8 @@
                     if (!page.items.length && page.start > 0) pageBack(page);
                 }
             });
-            Array.prototype.forEach.call(el('listItems').querySelectorAll('.cardImageContainer[data-card]'), function (node) {
-                var entry = cards[node.getAttribute('data-card')], root = node.closest('.card');
+            Array.prototype.forEach.call(el('listItems').querySelectorAll('.cardImageContainer[data-stolon-card]'), function (node) {
+                var entry = cards[node.getAttribute('data-stolon-card')], root = node.closest('.card');
                 if (entry && entry.item && sameRequest(entry.item.Request) && root) { prune(root); root.remove(); }
             });
             var page = topPage();
@@ -2499,14 +2290,14 @@
                 return;
             }
             if (page && page.type === 'list') syncListCount(page);
-            if (page && page.type === 'list' && page.items && !page.items.length && page.total <= 0) setHtml(el('listItems'), '<div style="width:100%">' + emptyState(page.title, str('RequestsMessageNothingLeft')) + '</div>');
+            if (page && page.type === 'list' && page.items && !page.items.length && page.total <= 0) setHtml(el('listItems'), '<div class="rq-fullRow">' + emptyState(str('RequestsMessageNothingLeft'), '') + '</div>');
         }
 
         document.addEventListener('click', function (e) {
-            var b = e.target.closest('[data-scroll]');
+            var b = e.target.closest('[data-stolon-scroll]');
             if (!b) return;
-            var row = el(b.getAttribute('data-scroll'));
-            if (row) row.scrollTo({ left: scrollStop(row, parseInt(b.getAttribute('data-dir'), 10)), behavior: 'smooth' });
+            var row = el(b.getAttribute('data-stolon-scroll'));
+            if (row) row.scrollTo({ left: scrollStop(row, parseInt(b.getAttribute('data-stolon-direction'), 10)), behavior: 'smooth' });
         });
 
         // scrollStop
@@ -2766,7 +2557,7 @@
             cachedTitleCall('Titles/Seasons', 'Series', r, { Title: r.Title, Year: r.Year, ProviderIds: r.ProviderIds }).then(function (details) {
                 var seasons = (details && details.Seasons) || [];
                 if (seq !== renderSeq || !seasons.length) return;
-                setChildren(WC.childrenGrid(cardsHtml(seasons, function (s, shape) { return seasonCard(r, s, shape); })), WC.tr('HeaderSeasons', 'Seasons'));
+                setChildren(S.webChildrenGrid(cardsHtml(seasons, function (s, shape) { return seasonCard(r, s, shape); })), WC.tr('HeaderSeasons', 'Seasons'));
             }).catch(function () { /* the seasons are a nicety */ });
         }
         function seasonCard(r, s, shape) {
@@ -2774,10 +2565,10 @@
             cards[key] = { type: 'list', list: list };
             var aired = s.AirDate ? new Date(s.AirDate).getFullYear() : null;
             var count = s.EpisodeCount === 1 ? str('ValueOneEpisode') : s.EpisodeCount ? str('ValueEpisodeCount', s.EpisodeCount) : '';
-            return buildCard({
+            return S.webCard({
                 key: key, shape: shape, href: list.listHash, type: 'Season', image: s.PosterUrl || r.PosterUrl, title: s.Name || str('NameSeasonNumber', s.Number),
                 secondary: [aired, count].filter(Boolean).join(' \u00b7 '),
-                indicator: s.InLibrary ? getIndicatorHtml({ cls: 'library', icon: 'check', tag: str('RequestsRequestStatusInLibrary') }) : null
+                indicator: s.InLibrary ? indicatorOf({ cls: 'library', icon: 'check', tag: str('RequestsRequestStatusInLibrary') }) : null
             });
         }
         // A season's episodes (#/search?season=2&name=…&tmdb=…), from TMDb, with their air dates and which the library has.
@@ -2804,10 +2595,10 @@
             cards[key] = { type: 'episode' };
             var when = e.AirDate ? new Date(e.AirDate) : null;
             var date = when ? longDate(e.AirDate) : '';
-            return buildCard({
+            return S.webCard({
                 key: key, shape: 'backdrop', type: 'Episode', image: e.StillUrl, title: e.Number + '. ' + (e.Name || str('RequestsEpisodeNumber', e.Number)),
                 secondary: !when ? str('RequestsEpisodeAirDateUnknown') : when > new Date() ? str('RequestsEpisodeAirs', date) : date,
-                indicator: e.InLibrary ? getIndicatorHtml({ cls: 'library', icon: 'check', tag: str('RequestsRequestStatusInLibrary') }) : null
+                indicator: e.InLibrary ? indicatorOf({ cls: 'library', icon: 'check', tag: str('RequestsRequestStatusInLibrary') }) : null
             });
         }
 
@@ -2840,7 +2631,7 @@
         ];
         // Where a request stands, each the request statuses it covers.
         var REQUEST_GROUPS = [
-            { key: 'Pending', label: 'RequestsRequestStatusAwaitingApproval', statuses: ['Pending'] },
+            { key: 'Pending', label: 'StatePending', statuses: ['Pending'] },
             { key: 'Approved', label: 'StateApproved', statuses: ['Approved', 'Failed'] },
             { key: 'PartiallyAvailable', label: 'RequestsRequestStatusPartlyInLibrary', statuses: ['PartiallyAvailable'] },
             { key: 'Available', label: 'RequestsRequestStatusInLibrary', statuses: ['Available'] },
@@ -2946,33 +2737,33 @@
         var FILTER_POPOVER = ['filter-popover', 'filterBackdrop'], filterSeq = 0, filterOpener = null;
         function openFilterPopover(kind, context, button) {
             var titles = kind !== 'requests', discover = kind === 'discover', f = filterOf(kind), pop = el('filter-popover');
-            var check = WC.filterCheckbox;
+            var check = S.webFilterCheckbox;
             // A list TMDb discovers can be read in another order: as a section of its own, first, one choice at a time.
-            var sorting = discover ? WC.filterAccordion('filtersSort', str('HeaderSortBy'), DISCOVER_SORTS.map(function (x) { return check(' data-sort="' + x.key + '"', str(x.label), (f.sort || '') === x.key); }).join('')) : '';
+            var sorting = discover ? S.webFilterAccordion('filtersSort', str('HeaderSortBy'), DISCOVER_SORTS.map(function (x) { return check({ 'data-sort': x.key }, str(x.label), (f.sort || '') === x.key); }).join('')) : '';
             var html = sorting + (titles
-                ? WC.filterAccordion('filtersAvailability', WC.tr('Filters', 'Filters'), check(' data-library="true"', str('LabelAvailable'), f.inLibrary === true)
-                    + check(' data-library="false"', str('RequestsFilterUnavailable'), f.inLibrary === false))
-                    + WC.filterAccordion('filtersStatus', WC.tr('HeaderStatus', 'Status'), TITLE_STATES.map(function (x) { return check(' data-state="' + x.key + '"', str(x.label), f.states.indexOf(x.key) >= 0); }).join(''))
-                : WC.filterAccordion('filtersStatus', WC.tr('HeaderStatus', 'Status'), REQUEST_GROUPS.map(function (x) { return check(' data-status="' + x.key + '"', str(x.label), f.statuses.indexOf(x.key) >= 0); }).join('')));
+                ? S.webFilterAccordion('filtersAvailability', WC.tr('Filters', 'Filters'), check({ 'data-library': 'true' }, str('LabelAvailable'), f.inLibrary === true)
+                    + check({ 'data-library': 'false' }, str('RequestsFilterUnavailable'), f.inLibrary === false))
+                    + S.webFilterAccordion('filtersStatus', WC.tr('HeaderStatus', 'Status'), TITLE_STATES.map(function (x) { return check({ 'data-state': x.key }, str(x.label), f.states.indexOf(x.key) >= 0); }).join(''))
+                : S.webFilterAccordion('filtersStatus', WC.tr('HeaderStatus', 'Status'), REQUEST_GROUPS.map(function (x) { return check({ 'data-status': x.key }, str(x.label), f.statuses.indexOf(x.key) >= 0); }).join('')));
             if (context.types) {
-                html += WC.filterAccordion('filtersType', WC.tr('LabelType', 'Type'), check(' data-type="Movie"', WC.tr('Movies', 'Movies'), f.types.indexOf('Movie') >= 0)
-                    + check(' data-type="Series"', WC.tr('Shows', 'Shows'), f.types.indexOf('Series') >= 0));
+                html += S.webFilterAccordion('filtersType', WC.tr('LabelType', 'Type'), check({ 'data-type': 'Movie' }, WC.tr('Movies', 'Movies'), f.types.indexOf('Movie') >= 0)
+                    + check({ 'data-type': 'Series' }, WC.tr('Shows', 'Shows'), f.types.indexOf('Series') >= 0));
             }
             // What TMDb narrows a list it discovers by, after the genres; streaming services as they're read.
-            var narrowing = !discover ? '' : WC.filterAccordion('filtersDecade', str('RequestsFilterDecade'), DECADES.map(function (y) { return check(' data-decade="' + y + '"', y === 1900 ? str('RequestsDecadeBefore1970') : str('RequestsDecadeLabel', y), f.decades.indexOf(y) >= 0); }).join(''))
-                + WC.filterAccordion('filtersRating', str('RequestsFilterRating'), [8, 7, 6, 5].map(function (n) { return check(' data-rating="' + n + '"', str('RequestsRatingAtLeast', n), f.rating === n); }).join(''))
-                + WC.filterAccordion('filtersRuntime', str('Runtime'), [['Short', str('RequestsRuntimeShort')], ['Medium', str('RequestsRuntimeMedium')], ['Long', str('RequestsRuntimeLong')]].map(function (k) { return check(' data-runtime="' + k[0] + '"', k[1], f.runtimes.indexOf(k[0]) >= 0); }).join(''))
-                + WC.filterAccordion('filtersLanguage', WC.tr('LabelOriginalLanguage', 'Original language'), LANGUAGES.map(function (c) { return [c, languageName(c)]; })
+            var narrowing = !discover ? '' : S.webFilterAccordion('filtersDecade', str('RequestsFilterDecade'), DECADES.map(function (y) { return check({ 'data-decade': y }, y === 1900 ? str('RequestsDecadeBefore1970') : str('RequestsDecadeLabel', y), f.decades.indexOf(y) >= 0); }).join(''))
+                + S.webFilterAccordion('filtersRating', str('RequestsFilterRating'), [8, 7, 6, 5].map(function (n) { return check({ 'data-rating': n }, str('RequestsRatingAtLeast', n), f.rating === n); }).join(''))
+                + S.webFilterAccordion('filtersRuntime', str('Runtime'), [['Short', str('RequestsRuntimeShort')], ['Medium', str('RequestsRuntimeMedium')], ['Long', str('RequestsRuntimeLong')]].map(function (k) { return check({ 'data-runtime': k[0] }, k[1], f.runtimes.indexOf(k[0]) >= 0); }).join(''))
+                + S.webFilterAccordion('filtersLanguage', WC.tr('LabelOriginalLanguage', 'Original language'), LANGUAGES.map(function (c) { return [c, languageName(c)]; })
                     .sort(function (a, b) { return a[1].localeCompare(b[1]); })
-                    .map(function (l) { return check(' data-language="' + l[0] + '"', l[1], f.languages.indexOf(l[0]) >= 0); }).join(''))
+                    .map(function (l) { return check({ 'data-language': l[0] }, l[1], f.languages.indexOf(l[0]) >= 0); }).join(''))
                 + '<div id="filterProviders"></div>';
-            pop.innerHTML = html + '<div id="filterGenres"></div>' + narrowing + WC.resetFiltersButton('filterReset', WC.tr('ResetFilters', 'Reset Filters'), !isFiltered(f));
+            pop.innerHTML = html + '<div id="filterGenres"></div>' + narrowing + S.webResetFiltersButton('filterReset', WC.tr('ResetFilters', 'Reset Filters'), !isFiltered(f));
             if (discover) {
                 var providerSeq = filterSeq + 1;
                 providersFor(context.genreType || 'Movie').then(function (list) {
                     if (providerSeq !== filterSeq || !list || !list.length) return;
-                    el('filterProviders').innerHTML = WC.filterAccordion('filtersStreaming', str('RequestsFilterStreaming'), list.map(function (p) {
-                        return check(' data-provider="' + p.Id + '"', p.Name, f.providers.indexOf(p.Id) >= 0);
+                    el('filterProviders').innerHTML = S.webFilterAccordion('filtersStreaming', str('RequestsFilterStreaming'), list.map(function (p) {
+                        return check({ 'data-provider': p.Id }, p.Name, f.providers.indexOf(p.Id) >= 0);
                     }).join(''));
                 }).catch(function () { /* no services to offer */ });
             }
@@ -2987,11 +2778,8 @@
             pop.style.left = left + 'px';
             pop.style.top = r.bottom + 'px';
             pop.style.transformOrigin = (r.left + r.width / 2 - left) + 'px 0';
-            pop.classList.add('growing');
             show('filterBackdrop');
             show(pop);
-            void pop.offsetWidth;
-            pop.classList.remove('growing');
             setInert(true, FILTER_POPOVER);
             filterOpener = button;
             button.setAttribute('aria-expanded', 'true');
@@ -3010,8 +2798,8 @@
                     filtersChanged(kind);
                 }
                 if (context.genreType) f.genres.forEach(function (g) { if (names.indexOf(g) < 0) names.push(g); });
-                el('filterGenres').innerHTML = WC.filterAccordion('filtersGenres', WC.tr('Genres', 'Genres'), names.map(function (g) {
-                    return check(' data-genre="' + esc(g) + '"', g, f.genres.indexOf(g) >= 0);
+                el('filterGenres').innerHTML = S.webFilterAccordion('filtersGenres', WC.tr('Genres', 'Genres'), names.map(function (g) {
+                    return check({ 'data-genre': g }, g, f.genres.indexOf(g) >= 0);
                 }).join(''));
             }).catch(function () { /* no genres to offer */ });
 
@@ -3029,7 +2817,7 @@
                 if (!head) return;
                 var open = head.getAttribute('aria-expanded') !== 'true';
                 head.setAttribute('aria-expanded', open ? 'true' : 'false');
-                el(head.getAttribute('aria-controls')).classList.toggle('hide', !open);
+                el(head.getAttribute('aria-controls')).hidden = !open;
             };
             pop.onchange = function (e) {
                 // Available and Unavailable can't both be ticked.
@@ -3174,7 +2962,7 @@
             searchedQuery = q;
             syncRootAddress();
             // A placeholder row per type searched, each with the search page's heading and both lines of card text.
-            var row = WC.placeholderRow(8);
+            var row = S.webPlaceholderRow(8);
             showNoResults(null);
             setHtml(el('results'), typeFilter ? row : row + row);
             // Titles and people side by side; a failed people search just leaves that row out.
@@ -3200,7 +2988,7 @@
         // The web client's own no-results message (SearchResults.tsx) for query q, in place of the results; null takes
         // it away.
         function showNoResults(q) {
-            el('noResults').textContent = q == null ? '' : WC.noResultsText(q);
+            el('noResults').textContent = q == null ? '' : S.webNoResultsText(q);
             el('noResults').classList.toggle('hide', q == null);
             el('results').classList.toggle('hide', q != null);
         }
@@ -3261,7 +3049,7 @@
             cards[key] = { type: 'issue', item: item };
             var image = item.ImageTag ? itemImage(item.Id, item.ImageTag, 360) : episode && item.SeriesImageTag ? itemImage(item.SeriesId, item.SeriesImageTag, 360) : null;
             var secondary = episode ? episodeLine(item) : item.Type === 'Movie' ? (item.Year ? String(item.Year) : '') : (item.ParentName || '');
-            return buildCard({ key: key, shape: shape, href: issueHash(item.Id), type: item.Type, image: image, title: episode ? (item.ParentName || item.Name) : item.Name, secondary: secondary });
+            return S.webCard({ key: key, shape: shape, href: issueHash(item.Id), type: item.Type, image: image, title: episode ? (item.ParentName || item.Name) : item.Name, secondary: secondary });
         }
 
         // The empty search's suggestions: what the viewer played last, newest first, as the web client's Suggestions.
@@ -3275,7 +3063,7 @@
                 el('results').classList.remove('padded-top');
                 // As the web client's, a suggestion searches for the item by its own name, which finds an episode by its title.
                 // An episode reads as its show and its own name, anything else as its name alone.
-                setHtml(el('results'), items.length ? WC.searchSuggestions(items.map(function (i) {
+                setHtml(el('results'), items.length ? S.webSearchSuggestions(items.map(function (i) {
                     var text = i.Type === 'Episode' && i.ParentName && i.Name ? i.ParentName + ' · ' + i.Name : i.Name || i.Title;
                     return { href: '#/search?' + toQuery({ query: i.Name || i.Title }), text: text };
                 })) : '');
@@ -3295,7 +3083,7 @@
             syncRootAddress();
             showNoResults(null);
             el('results').classList.add('padded-top');
-            setHtml(el('results'), WC.placeholderRow(8));
+            setHtml(el('results'), S.webPlaceholderRow(8));
             searching = call('/Issues/Search?searchTerm=' + encodeURIComponent(q), 'GET', undefined, abort ? abort.signal : undefined).then(function (got) {
                 if (searchAbort === abort) searchAbort = null;
                 if (seq !== searchSeq) return [];
@@ -3338,20 +3126,20 @@
             var admin = !!(me && me.IsAdministrator);
             var reporters = issue.Reporters || [];
             var types = reporters.map(function (r) { return issueTypeName(r.Type); }).filter(function (v, i, a) { return a.indexOf(v) === i; });
-            var chip = WC.statusTag(String(issue.State || '').toLowerCase(), issueStateName(issue.State));
+            var chip = S.webStatusTag(issueStateName(issue.State));
             var who = function (id, name) { return id === me.UserId ? str('RequestsRequesterYou') : name; };
             var by = admin && reporters.length ? str('IssuesReportedBy', reporters.map(function (r) { return who(r.UserId, r.UserName); }).join(', ')) : '';
             var notes = (issue.Notes || []).map(function (n) {
                 return { by: n.UserId === me.UserId ? str('RequestsRequesterYou') : admin ? n.User : n.Admin ? str('RequestsLabelAdministrator') : n.User, text: n.Text };
             });
-            return WC.issueRow({ title: types.join(', '), when: longDate(issue.CreatedUtc), chip: chip, by: by, notes: notes });
+            return S.webNoteRow({ title: types.join(', '), secondary: longDate(issue.CreatedUtc), asideHtml: chip, by: by, notes: notes });
         }
 
         // A form dialog with Cancel and an action at its foot, as the web client's dialogs that ask (dialog.js).
         function openIssueDialog(title, bodyHtml, action) {
             var seq = openDialog(title, bodyHtml, null);
             if (!action) return seq;
-            el('dialogFooter').innerHTML = WC.cancelDialogFooter(action.text, action.type);
+            el('dialogFooter').innerHTML = S.webCancelDialogFooter(action.text, action.type);
             el('dialogFooter').classList.add('formDialogFooter-flex');
             show('dialogFooter');
             el('dialogCancel').addEventListener('click', function () { dismissDialog(); });
@@ -3363,13 +3151,13 @@
         // Dismissing it goes back to the item's dialog with what was typed.
         function showIssueHistory(view, past, typed) {
             var issue = view.Mine || view.Open;
-            openDialog(str('RequestsHeaderIssueHistory'), WC.paperList(past.map(issueDetails).join(''), 'issueList'), null);
+            openDialog(str('RequestsHeaderIssueHistory'), S.webPaperList(past.map(issueDetails).join(''), 'issueList'), null);
             dialogBack = function () { showIssueDialog(view, typed); };
             if (!me.IsAdministrator || !issue) return;
             var verbs = [{ id: 'issueDecline', verb: 'Decline', text: str('ButtonDecline'), done: str('IssuesToastDeclined'), type: 'delete' }]
                 .concat(issue.State === 'Reported' ? [{ id: 'issueConfirm', verb: 'Confirm', text: str('IssuesButtonConfirm'), done: str('IssuesToastConfirmed') }] : [])
                 .concat([{ id: 'issueResolve', verb: 'Resolve', text: str('IssuesButtonResolve'), done: str('IssuesToastResolved'), type: 'submit' }]);
-            el('dialogFooter').innerHTML = WC.actionsDialogFooter(verbs);
+            el('dialogFooter').innerHTML = S.webActionsDialogFooter(verbs);
             el('dialogFooter').classList.add('formDialogFooter-flex');
             show('dialogFooter');
             verbs.forEach(function (v) {
@@ -3379,8 +3167,8 @@
 
         // An administrator's decision on an issue, with a note its reporters see. Dismissing it goes back to the history.
         function decideIssue(issue, v, back) {
-            var body = WC.textareaField({ id: 'issueDecisionNote', label: str('IssuesLabelNoteShown'), rows: 3, maxLength: 1000, placeholder: str('PlaceholderOptional') })
-                + '<div class="formError" id="dialogError" role="alert"></div>';
+            var body = S.webTextareaField({ id: 'issueDecisionNote', label: str('IssuesLabelNoteShown'), rows: 3, maxLength: 1000 })
+                + '<div class="stolon-web-error" id="dialogError" role="alert"></div>';
             var seq = openIssueDialog(v.text, body, {
                 text: v.text, type: v.type || 'submit',
                 run: function (btn) {
@@ -3400,15 +3188,15 @@
             dialogBack = back;
         }
 
-        // The chip above an item's title: its open issue's state, yellow when reported and red when confirmed, else green
-        // for 30 days after its last issue was resolved. An issue declined or deleted in that time leaves it resolved.
+        // The tag above an item's title: its open issue's state, reported or confirmed, else resolved for 30 days after its
+        // last issue was resolved. An issue declined or deleted in that time leaves it resolved.
         var RESOLVED_BADGE_DAYS = 30;
         function issueBadge(open, closed) {
-            var chip = function (cls, key) { return WC.infoRow(WC.statusTag(cls, str(key)), 'issueBadge'); };
-            if (open) return open.State === 'Confirmed' ? chip('confirmed', 'IssuesBadgeConfirmed') : chip('reported', 'IssuesEventReported');
+            var chip = function (key) { return S.webInfoRow(S.webStatusTag(str(key))); };
+            if (open) return open.State === 'Confirmed' ? chip('IssuesBadgeConfirmed') : chip('IssuesEventReported');
             var since = Date.now() - RESOLVED_BADGE_DAYS * 86400000;
             var resolved = closed.some(function (i) { return i.State === 'Resolved' && new Date(i.UpdatedUtc).getTime() >= since; });
-            return resolved ? chip('resolved', 'IssuesEventResolved') : '';
+            return resolved ? chip('IssuesEventResolved') : '';
         }
 
         // The item's dialog: its poster and title, then its open issue (the viewer's own to change or delete, someone
@@ -3425,18 +3213,18 @@
             var heading = item.Type === 'Episode' || !item.Name ? item.Title : item.Name;
             var facts = item.Type === 'Episode' ? item.Name : item.Year ? String(item.Year) : (item.ParentName || '');
             // An item that already has an open issue says so above the form: the viewer's own to change, or someone else's to join.
-            var notice = mine ? WC.noticeBlock(str('IssuesExistingTitle'), str('IssuesExistingMine')) : open ? WC.noticeBlock(str('IssuesExistingTitle'), str('IssuesExistingJoin')) : '';
+            var notice = mine ? S.webNoticeBlock(str('IssuesExistingTitle'), str('IssuesExistingMine')) : open ? S.webNoticeBlock(str('IssuesExistingTitle'), str('IssuesExistingJoin')) : '';
             var badge = issueBadge(issue, view.Closed || []);
-            var body = '<div class="requestHeader issueHeader">' + WC.posterCard(poster.shape, poster.url, item.Title, item.Type, 'requestPoster', ' aria-hidden="true"')
+            var body = '<div class="requestHeader issueHeader">' + S.webPosterCard(poster.shape, poster.url, item.Title, item.Type, 'requestPoster')
                 + '<div class="requestInfo">' + badge + '<div class="issueTitleRow"><h2 class="requestTitle">' + esc(heading) + '</h2>'
-                + (past.length ? WC.detailButton('issueHistory', 'history', str('RequestsHeaderIssueHistory')) : '') + '</div>'
-                + (facts ? WC.secondaryText(facts, 'requestFacts') : '') + '</div></div>' + notice;
+                + (past.length ? S.webDetailButton('issueHistory', 'history', str('RequestsHeaderIssueHistory')) : '') + '</div>'
+                + (facts ? S.webSecondaryText(facts, 'requestFacts') : '') + '</div></div>' + notice;
             if (!refused) {
-                body += WC.selectField('issueType', str('IssuesLabelType'), ISSUE_TYPES.map(function (t) { return { value: t, text: issueTypeName(t) }; }))
-                    + WC.textareaField({ id: 'issueNote', label: str('RequestsLabelRequestNote'), rows: 3, maxLength: 1000, placeholder: str('PlaceholderOptional'), descriptions: [{ text: '', id: 'issueNoteHelp' }] });
+                body += S.webSelectField('issueType', str('IssuesLabelType'), ISSUE_TYPES.map(function (t) { return { value: t, text: issueTypeName(t) }; }))
+                    + S.webTextareaField({ id: 'issueNote', label: str('RequestsLabelRequestNote'), rows: 3, maxLength: 1000, descriptions: [{ text: '', id: 'issueNoteHelp' }] });
             }
-            if (mine) body += WC.blockButton('issueDelete', WC.tr('Delete', 'Delete'), 'delete');
-            body += '<div class="formError" id="dialogError" role="alert">' + esc(refused || '') + '</div>';
+            if (mine) body += S.webBlockButton('issueDelete', WC.tr('Delete', 'Delete'), 'delete');
+            body += '<div class="stolon-web-error" id="dialogError" role="alert">' + esc(refused || '') + '</div>';
             var action = refused ? null : mine ? { text: WC.tr('Save', 'Save'), run: function (btn) { send('/Issues/' + mine.Id, btn, str('ToastSaved')); } }
                 : open ? { text: str('RequestsButtonJoinIssue'), run: function (btn) { send('/Issues/' + open.Id + '/Join', btn, str('RequestsToastIssueJoined')); } }
                 : { text: WC.tr('ButtonSubmit', 'Submit'), run: function (btn) { send('/Issues', btn, str('RequestsToastIssueReported')); } };
@@ -3453,7 +3241,7 @@
             function syncNote() {
                 var other = el('issueType').value === 'Other';
                 el('issueNoteHelp').textContent = other ? str('RequestsHelpIssueNoteOther') : '';
-                el('issueNote').placeholder = other ? '' : str('PlaceholderOptional');
+                el('issueNote').placeholder = '';
             }
             el('issueType').addEventListener('change', syncNote);
             syncNote();
@@ -3522,7 +3310,7 @@
             // asked for at the same time.
             var similar = fetchSimilar(r);
             if (r.Type === 'Series') loadSeasons(r, seq);
-            setDetailRow('castCollapsible', WC.tr('HeaderCastAndCrew', 'Cast & Crew'), WC.placeholderCards(8));
+            setDetailRow('castCollapsible', WC.tr('HeaderCastAndCrew', 'Cast & Crew'), S.webPlaceholderCards(8));
             cachedTitleCall('Titles/Details', r.Type, r, { Type: r.Type, Title: r.Title, Year: r.Year, ProviderIds: r.ProviderIds, LibraryItemId: r.LibraryItemId }).then(function (d) {
                 if (seq !== renderSeq || !d) return;
                 // A title opened from a request doesn't know whether it's blocked; the details say, and administrators
@@ -3551,7 +3339,7 @@
         // emptied and hidden given none.
         function setDetailRow(id, title, cardsMarkup) {
             prune(el(id));
-            WC.fillDetailSection(el(id), id + 'Row', title, cardsMarkup);
+            S.webFillDetailSection(el(id), id + 'Row', title, cardsMarkup);
         }
         // What goes beside a person's photo (their titles), a show's seasons, or a title's spinner or error, in the web
         // client's #childrenContent, whose section shows only with something in it. heading, given, is the section's own
@@ -3568,7 +3356,7 @@
         // image to take a shape from.
         function setPoster(url, title, type) {
             // The web client draws the poster twice: beside the ribbon on desktop, inside it on phones.
-            var poster = WC.posterCard(url ? 'portrait' : 'square', url, title, type);
+            var poster = S.webPosterCard(url ? 'portrait' : 'square', url, title, type);
             el('detailImage').innerHTML = poster;
             el('detailImageMobile').innerHTML = poster;
         }
@@ -3579,7 +3367,7 @@
             logo.classList.toggle('hide', !url);
         }
         function setName(name, original) {
-            el('detailName').innerHTML = WC.bdi(name);
+            el('detailName').innerHTML = S.webBdi(name);
             el('detailName').classList.toggle('withOriginalTitle', !!original);
             el('detailOriginal').textContent = original || '';
             el('detailOriginal').classList.toggle('hide', !original);
@@ -3587,7 +3375,7 @@
         // The overview, clamped as the web client's with Show more when it runs over.
         function setOverview(text) {
             var o = el('detailOverview');
-            o.innerHTML = WC.bdi(text);
+            o.innerHTML = S.webBdi(text);
             o.classList.toggle('hide', !text);
             o.classList.add('detail-clamp-text');
             el('overviewExpand').textContent = WC.tr('ShowMore', 'Show more');
@@ -3618,25 +3406,25 @@
 
         // The web client's info row: year, length, age rating, community and critic scores, then where it stands.
         function renderMisc(r) {
-            var misc = [], text = function (t) { return WC.mediaInfoItem(esc(t)); };
+            var misc = [], text = function (t) { return S.webMediaInfoItem(esc(t)); };
             if (r.Year) misc.push(text(years(r)));
             if (r.Type === 'Movie' && r.RuntimeMinutes) misc.push(text(runtime(r.RuntimeMinutes)));
             if (r.Type === 'Series' && r.SeasonCount) misc.push(text(seasonCount(r)));
-            if (r.Certification) misc.push(WC.officialRating(r.Certification));
+            if (r.Certification) misc.push(S.webOfficialRating(r.Certification));
             var stars = score(r);
-            if (stars) misc.push(WC.starRating(stars));
-            if (r.RottenTomatoes) misc.push(WC.criticRating(r.RottenTomatoes));
+            if (stars) misc.push(S.webStarRating(stars));
+            if (r.RottenTomatoes) misc.push(S.webCriticRating(r.RottenTomatoes));
             // The run of years says Continuing and Ended already, as in the web client; any other status is said.
             if (r.Type === 'Series' && r.Status && r.Status !== 'Continuing' && r.Status !== 'Ended') misc.push(text(r.Status));
             var s = standing(r);
-            if (s) misc.push(WC.statusTag(s.cls, s.tag));
+            if (s) misc.push(S.webStatusTag(s.tag));
             el('detailMisc').innerHTML = misc.join('');
             // An empty row is hidden, as the web client hides it.
             el('detailMisc').classList.toggle('hide', !misc.length);
         }
 
         // The detail buttons of the web client's item details template: flat, an icon each.
-        var iconButton = WC.detailButton, linkButton = WC.detailLinkButton, statusIcon = WC.detailStatus;
+        var iconButton = S.webDetailButton, linkButton = S.webDetailLinkButton, statusIcon = S.webDetailStatus;
 
         // Blocks a title, or allows it again, for the administrator's button on its details page.
         function setBlocked(r, blocked) {
@@ -3780,7 +3568,7 @@
             var info = function (title) { return { icon: 'info_outline', title: title }; };
             if (status === 'Declined') return info(str('RequestsRequestStatusRejected'));
             if (droppedByArr(req)) return info(str('RequestsRequestStatusNotDownloading'));
-            if (status === 'Pending') return info(str('RequestsRequestStatusAwaitingApproval'));
+            if (status === 'Pending') return info(str('StatePending'));
             if (status === 'Failed') return info(str('RequestsRequestStatusWaitingToSend'));
             if (downloaded(r)) return info(str('RequestsRequestStatusAwaitingScan'));
             return info(str('StateApproved'));
@@ -3792,8 +3580,8 @@
         function openRequestInfo(r) {
             if (!r.Request) { withRequest(r, function () { openRequestInfo(r); }); return; }
             var heading = r.Title + (r.Year ? ' (' + r.Year + ')' : '');
-            openDialog(str('RequestsHeaderRequestInfo'), WC.mediaInfoContent(WC.mediaInfoSource(heading,
-                WC.mediaInfoStream(WC.tr('HeaderStatus', 'Status'), statusLines(r)) + WC.mediaInfoStream(str('RequestsLabelRequester'), requesterLines(r.Request)))), null);
+            openDialog(str('RequestsHeaderRequestInfo'), S.webMediaInfoContent(S.webMediaInfoSource(heading,
+                S.webMediaInfoStream(WC.tr('HeaderStatus', 'Status'), statusLines(r)) + S.webMediaInfoStream(str('RequestsLabelRequester'), requesterLines(r.Request)))), null);
         }
 
         // How long a download has left, as the download client last estimated it, after a separator; empty when it
@@ -3855,7 +3643,7 @@
         }
 
         // A line of the request dialog; a row of the details page's details group.
-        var attribute = WC.mediaInfoAttribute, row = WC.detailsGroupItem;
+        var attribute = S.webMediaInfoAttribute, row = S.webDetailsGroupItem;
 
         // Re-draws what a request changes on an open details page, and every card showing the title, in place.
         function refreshTitle(r) {
@@ -3897,7 +3685,7 @@
                     percent: Math.min(100, open / access.MaxOpenRequests * 100)
                 });
             }
-            return rows.length ? WC.limitsBox(str('HeaderLimits'), rows) : '';
+            return rows.length ? S.webLimitsBox(str('HeaderLimits'), rows) : '';
         }
         function quotaSpent(r, access) { var q = r.Type === 'Series' ? access.ShowQuota : access.MovieQuota; return !!q && q.Remaining <= 0; }
         function openSpent(access) { return !!access.MaxOpenRequests && (access.OpenRequests || 0) >= access.MaxOpenRequests; }
@@ -3925,19 +3713,19 @@
             var facts = group ? [group.count === 1 ? str('RequestsCollectionToRequestOne') : str('RequestsCollectionToRequest', group.count)]
                 : [series ? seasonCount(r) : runtime(r.RuntimeMinutes), r.Certification, score(r) ? '\u2605 ' + score(r) : ''].filter(Boolean);
             var body = '<div class="requestHeader">'
-                + WC.posterCard('portrait', r.PosterUrl, r.Title, r.Type, 'requestPoster', ' aria-hidden="true"')
+                + S.webPosterCard('portrait', r.PosterUrl, r.Title, r.Type, 'requestPoster')
                 + '<div class="requestInfo"><h2 class="requestTitle">' + esc(r.Title) + (r.Year ? ' (' + esc(r.Year) + ')' : '') + '</h2>'
-                + (facts.length ? WC.secondaryText(facts.join(' \u00b7 '), 'requestFacts') : '')
-                + (r.Genres && r.Genres.length ? WC.secondaryText(r.Genres.slice(0, 3).join(', '), 'requestFacts') : '')
+                + (facts.length ? S.webSecondaryText(facts.join(' \u00b7 '), 'requestFacts') : '')
+                + (r.Genres && r.Genres.length ? S.webSecondaryText(r.Genres.slice(0, 3).join(', '), 'requestFacts') : '')
                 + (r.Overview ? '<p class="requestOverview">' + esc(r.Overview) + '</p>' : '')
                 + '</div></div>'
-                + (me.IsAdministrator && !editing ? WC.selectField('dialogFor', str('RequestsLabelRequestFor'), [{ value: me.UserId, text: me.UserName }]) : '')
-                + (profiles.length ? WC.selectField('dialogProfile', WC.tr('Profile', 'Profile'), profiles.map(function (p) { return { value: p.Id, text: p.Name }; })) : '')
-                + (series && !specialsOnly ? WC.checkboxListContainer(WC.tr('HeaderSeasons', 'Seasons'), 'dialogSeasons', '…') : '')
-                + (series && !editing ? '<div id="dialogSpecialsWrap">' + WC.checkboxListContainer(str('OptionSpecialEpisode'), 'dialogSpecials', '…') + '</div>' : '')
+                + (me.IsAdministrator && !editing ? S.webSelectField('dialogFor', str('RequestsLabelRequestFor'), [{ value: me.UserId, text: me.UserName }]) : '')
+                + (profiles.length ? S.webSelectField('dialogProfile', WC.tr('Profile', 'Profile'), profiles.map(function (p) { return { value: p.Id, text: p.Name }; })) : '')
+                + (series && !specialsOnly ? S.webCheckboxListContainer(WC.tr('HeaderSeasons', 'Seasons'), 'dialogSeasons', '…') : '')
+                + (series && !editing ? '<div id="dialogSpecialsWrap">' + S.webCheckboxListContainer(str('OptionSpecialEpisode'), 'dialogSpecials', '…') + '</div>' : '')
                 + (editing ? '' : '<div id="dialogLimits"></div>')
-                + WC.textareaField({ id: 'dialogNote', label: str('LabelNotes'), rows: 3, maxLength: 500, placeholder: str('PlaceholderOptional'), descriptions: after })
-                + '<div class="formError" id="dialogError" role="alert"></div>';
+                + S.webTextareaField({ id: 'dialogNote', label: str('RequestsLabelRequestNote'), rows: 3, maxLength: 500, descriptions: after })
+                + '<div class="stolon-web-error" id="dialogError" role="alert"></div>';
             var mine = editing
                 ? openDialog(str('RequestsHeaderEditRequest'), body, { text: WC.tr('Save', 'Save'), action: function (btn) { submit(btn); } })
                 : openDialog(str(group ? 'RequestsButtonRequestAll' : specialsOnly ? 'RequestsButtonRequestSpecials' : 'RequestsButtonRequest'), body, { text: str(group ? 'RequestsButtonRequestAll' : specialsOnly ? 'RequestsButtonRequestSpecials' : 'RequestsButtonRequest'), action: function (btn) { submit(btn); } });
@@ -3967,7 +3755,7 @@
                     // Everyone who can sign in, the administrator first; picking one reads their rules and profiles.
                     (usersRead = usersRead || call('/Users').catch(function (err) { usersRead = null; throw err; })).then(function (users) {
                         if (!dialogLive(mine)) return;
-                        el('dialogFor').innerHTML = WC.selectOptions([{ value: me.UserId, text: me.UserName }].concat((users || []).filter(function (u) {
+                        el('dialogFor').innerHTML = S.webSelectOptions([{ value: me.UserId, text: me.UserName }].concat((users || []).filter(function (u) {
                             return u.Id !== me.UserId && !(u.Policy && u.Policy.IsDisabled);
                         }).map(function (u) { return { value: u.Id, text: u.Name }; })));
                     }).catch(function () { /* only the administrator to pick */ });
@@ -3978,7 +3766,7 @@
                             target = access;
                             var list = (series ? access.ShowProfiles : access.MovieProfiles) || [], select = el('dialogProfile'), was = select && select.value;
                             if (select) {
-                                select.innerHTML = WC.selectOptions(list.map(function (p) { return { value: p.Id, text: p.Name }; }));
+                                select.innerHTML = S.webSelectOptions(list.map(function (p) { return { value: p.Id, text: p.Name }; }));
                                 if (list.some(function (p) { return p.Id === was; })) select.value = was;
                             }
                             syncTarget();
@@ -4023,16 +3811,16 @@
                     if (!open.length) { box.textContent = str('RequestsRequestNoSeasonsLeft'); seasons = Object.assign({}, details, { CanPickSeasons: false }); syncWhole(); return; }
                     // A checkbox list, as the web client's; seasons already here or asked for are ticked and fixed. Editing,
                     // the request's own seasons are ticked and free, and the rest start unticked.
-                    box.className = WC.CHECKBOX_LIST;
+                    box.className = S.WEB_CHECKBOX_LIST;
                     box.innerHTML = details.Seasons.map(function (s) {
                         var taken = s.InLibrary || (s.Requested && !ours(s));
                         var note = s.InLibrary ? str('RequestsRequestStatusInLibrary') : taken ? str('RequestsRequestStatusRequested') : s.EpisodeCount === 1 ? WC.tr('ValueOneEpisode', '1 episode') : s.EpisodeCount ? WC.format(WC.tr('ValueEpisodeCount', '{0} episodes'), s.EpisodeCount) : '';
-                        return WC.checkbox(' data-season="' + s.Number + '"', str('NameSeasonNumber', s.Number), note, !editing || taken || ours(s), taken);
-                    }).join('') + '<div class="checkboxListTools">' + WC.linkButton(' data-all="1"', WC.tr('SelectAll', 'Select All')) + WC.linkButton(' data-all="0"', str('RequestsButtonSelectNone')) + '</div>';
+                        return S.webCheckbox({ 'data-season': s.Number }, str('NameSeasonNumber', s.Number), note, !editing || taken || ours(s), taken);
+                    }).join('') + '<div class="checkboxListTools">' + S.webLinkButton({ 'data-all': '1' }, WC.tr('SelectAll', 'Select All')) + S.webLinkButton({ 'data-all': '0' }, str('RequestsButtonSelectNone')) + '</div>';
                     syncSeasons();
                 }).catch(function (err) {
                     var box = el('dialogSeasons');
-                    if (box && dialogLive(mine)) setHtml(box, '<div>' + esc(err.message) + '</div>' + WC.raisedButton('dialogSeasonsRetry', WC.tr('Retry', 'Retry'), 'margin-top:0.5em'));
+                    if (box && dialogLive(mine)) setHtml(box, '<div>' + esc(err.message) + '</div>' + S.webRaisedButton('dialogSeasonsRetry', WC.tr('Retry', 'Retry')));
                 });
             }
             if (series) loadDialogSeasons();
@@ -4045,11 +3833,11 @@
                 if (!list.length) { wrap.classList.toggle('hide', !specialsOnly); box.textContent = str('RequestsRequestNoSpecialsLeft'); return; }
                 wrap.classList.remove('hide');
                 if (!list.some(function (x) { return !x.InLibrary && !x.Requested; })) { box.textContent = str('RequestsRequestNoSpecialsLeft'); return; }
-                box.className = WC.CHECKBOX_LIST;
+                box.className = S.WEB_CHECKBOX_LIST;
                 box.innerHTML = list.map(function (x) {
                     var taken = x.InLibrary || x.Requested;
                     var note = x.InLibrary ? str('RequestsRequestStatusInLibrary') : taken ? str('RequestsRequestStatusRequested') : x.AirDate ? longDate(x.AirDate) : '';
-                    return WC.checkbox(' data-special="' + x.Number + '"', x.Name || str('RequestsSpecialNumber', x.Number), note, taken, taken);
+                    return S.webCheckbox({ 'data-special': x.Number }, x.Name || str('RequestsSpecialNumber', x.Number), note, taken, taken);
                 }).join('');
             }
             function pickingSeasons() { return !!(seasons && seasons.CanPickSeasons && el('dialogSeasons')); }
@@ -4074,7 +3862,7 @@
                 var n = chips().filter(function (c) { return c.checked; }).length, all = chips().length, max = target.MaxSeasonsPerShow || 0;
                 var cap = el('dialogSeasonCap'), said = max ? (max === 1 ? str('RequestsRequestSeasonCapOne') : str('RequestsRequestSeasonCap', max)) : '';
                 if (cap && cap.textContent !== said) { cap.parentNode.removeChild(cap); cap = null; }
-                if (said && !cap && el('dialogSeasons')) el('dialogSeasons').insertAdjacentHTML('afterend', WC.fieldDescription(said, 'dialogSeasonCap'));
+                if (said && !cap && el('dialogSeasons')) el('dialogSeasons').insertAdjacentHTML('afterend', S.webFieldDescription(said, 'dialogSeasonCap'));
                 var sp = specialsOn().length;
                 submitButton.disabled = sending || blocked || !(n || sp) || (max > 0 && n > max);
                 if (!editing) submitButton.innerHTML = '<span>' + esc(!n ? (sp ? specialsLabel(sp) : str('RequestsButtonRequest')) : n === all ? str('RequestsButtonRequestAll') : n === 1 ? str('RequestsButtonRequestSeason') : str('RequestsButtonRequestSeasons', n)) + '</span>';
@@ -4277,8 +4065,8 @@
 
         function openDeclineDialog(id, title, r, after) {
             var mine = openDialog(str('RequestsButtonReject'), '<p>' + esc(str('RequestsRejectRequestConfirm', title)) + '</p>'
-                + WC.textareaField({ id: 'dialogReason', label: str('RequestsLabelRequestReason'), rows: 3, maxLength: 500, descriptions: [str('RequestsRequestReasonHelp')] })
-                + '<div class="formError" id="dialogError" role="alert"></div>', {
+                + S.webTextareaField({ id: 'dialogReason', label: str('RequestsLabelRequestReason'), rows: 3, maxLength: 500, descriptions: [str('RequestsRequestReasonHelp')] })
+                + '<div class="stolon-web-error" id="dialogError" role="alert"></div>', {
                     text: str('RequestsButtonReject'), type: 'delete', action: function (btn) {
                         btn.disabled = true;
                         call(id + '/Decline', 'POST', { Reason: el('dialogReason').value }).then(requestOf).then(function (updated) {
@@ -4345,7 +4133,7 @@
             };
             if (action === 'decline') { openDeclineDialog(req.Id, req.Title, null, after); return; }
             // Both of the card's buttons wait on the approval, and repeat clicks are ignored.
-            var buttons = Array.prototype.slice.call(btn.closest('.card').querySelectorAll('[data-quick]'));
+            var buttons = Array.prototype.slice.call(btn.closest('.card').querySelectorAll('[data-stolon-action]'));
             if (buttons.some(function (b) { return b.disabled; })) return;
             buttons.forEach(function (b) { b.disabled = true; });
             approve(req.Id, null, null).then(function (updated) {
@@ -4359,17 +4147,17 @@
         // The web client's external links line: IMDb, TMDB, TVDB.
         function renderLinks(r) {
             var ids = r.ProviderIds || {}, links = [];
-            if (ids.Imdb && /^tt\d+$/.test(ids.Imdb)) links.push(['IMDb', 'https://www.imdb.com/title/' + ids.Imdb]);
-            if (ids.Tmdb && /^\d+$/.test(ids.Tmdb)) links.push(['TMDB', 'https://www.themoviedb.org/' + (r.Type === 'Series' ? 'tv' : 'movie') + '/' + ids.Tmdb]);
-            if (ids.Tvdb && /^\d+$/.test(ids.Tvdb)) links.push(['TVDB', 'https://www.thetvdb.com/?tab=series&id=' + ids.Tvdb]);
-            el('detailLinks').innerHTML = WC.externalLinks(links);
+            if (ids.Imdb && /^tt\d+$/.test(ids.Imdb)) links.push({ text: 'IMDb', href: 'https://www.imdb.com/title/' + ids.Imdb });
+            if (ids.Tmdb && /^\d+$/.test(ids.Tmdb)) links.push({ text: 'TMDB', href: 'https://www.themoviedb.org/' + (r.Type === 'Series' ? 'tv' : 'movie') + '/' + ids.Tmdb });
+            if (ids.Tvdb && /^\d+$/.test(ids.Tvdb)) links.push({ text: 'TVDB', href: 'https://www.thetvdb.com/?tab=series&id=' + ids.Tvdb });
+            el('detailLinks').innerHTML = S.webExternalLinks(links);
             el('detailLinks').classList.toggle('hide', !links.length);
         }
 
         // Director, Writers, Studios, Genres, as the web client lists them; people open their page.
         function renderTitleRows(r, d) {
             function people(list) {
-                return WC.personLinks(list.map(function (p) {
+                return S.webPersonLinks(list.map(function (p) {
                     var key = 'p' + (++cardSeq);
                     cards[key] = { type: 'person', person: p };
                     return { href: personHash(p), key: key, name: p.Name };
@@ -4392,18 +4180,18 @@
             var places = browse(r.Type === 'Series' ? 'Network' : 'Company');
             var studios = places.length ? places : named((d && d.Studios && d.Studios.length) ? d.Studios : (r.Studio ? [r.Studio] : []));
             var studioLabel = r.Type === 'Series' ? str(studios.length > 1 ? 'RequestsLabelNetworks' : 'RequestsLabelNetwork') : (studios.length > 1 ? tr('Studios', 'Studios') : tr('Studio', 'Studio'));
-            if (studios.length) rows += places.length ? row(studioLabel, WC.listLinks(places), true) : row(studioLabel, studios.join(', '));
+            if (studios.length) rows += places.length ? row(studioLabel, S.webListLinks(places), true) : row(studioLabel, studios.join(', '));
             var kinds = browse('Genre');
             var genres = kinds.length ? kinds : named((r.Genres && r.Genres.length) ? r.Genres : (d && d.Genres) || []);
             var genreLabel = genres.length > 1 ? tr('Genres', 'Genres') : tr('Genre', 'Genre');
-            if (genres.length) rows += kinds.length ? row(genreLabel, WC.listLinks(kinds), true) : row(genreLabel, genres.join(', '));
+            if (genres.length) rows += kinds.length ? row(genreLabel, S.webListLinks(kinds), true) : row(genreLabel, genres.join(', '));
             if (r.ReleaseDate && longDate(r.ReleaseDate)) rows += row(str(r.Type === 'Series' ? 'RequestsLabelFirstAired' : 'RequestsLabelReleased'), longDate(r.ReleaseDate));
             if (r.Language) rows += row(tr('LabelLanguage', 'Language'), languageName(r.Language));
             // A movie in a TMDb collection opens the collection's page, with the rest of it.
             if (d && d.Collection && d.Collection.Id && me.Movies) {
                 var setKey = 'b' + (++cardSeq), setSpec = { collection: String(d.Collection.Id), name: d.Collection.Name };
                 lists[setKey] = collectionList(setSpec);
-                rows += row(tr('LabelCollection', 'Collection'), WC.listLinks([{ href: '#/search?' + toQuery(setSpec), key: setKey, name: d.Collection.Name }]), true);
+                rows += row(tr('LabelCollection', 'Collection'), S.webListLinks([{ href: '#/search?' + toQuery(setSpec), key: setKey, name: d.Collection.Name }]), true);
             }
             setHtml(el('detailGroup'), rows);
         }
@@ -4471,14 +4259,14 @@
                 if (match) renderFavorite(match.Id, !!(match.UserData && match.UserData.IsFavorite));
             }).catch(function () { /* no button without the library */ });
 
-            setChildren(WC.placeholderGrid(12, GRID));
+            setChildren(S.webPlaceholderGrid(12, GRID));
             call('Persons/Details', 'POST', { Name: p.Name, TmdbId: p.TmdbId, ImageUrl: p.ImageUrl }).then(function (d) {
                 if (seq !== renderSeq) return;
                 if (d.ImageUrl && d.ImageUrl !== p.ImageUrl) setPoster(d.ImageUrl, p.Name, 'Person');
                 setOverview(d.Overview);
                 setLifeDates(d);
                 if (d.TmdbId && /^\d+$/.test(d.TmdbId)) {
-                    el('detailLinks').innerHTML = WC.externalLinks([['TMDB', 'https://www.themoviedb.org/person/' + d.TmdbId]]);
+                    el('detailLinks').innerHTML = S.webExternalLinks([{ text: 'TMDB', href: 'https://www.themoviedb.org/person/' + d.TmdbId }]);
                     show('detailLinks');
                 }
                 // Beside the photo, as the web client lists a person's titles (itemDetails renderChildren): a heading and
@@ -4488,7 +4276,7 @@
                     var mine = (d.LibraryTitles || []).filter(function (t) { return t.Type === type; });
                     var more = (d.Credits || []).filter(function (t) { return t.Type === type; }).slice(0, 24);
                     var items = mine.concat(more);
-                    return items.length ? WC.detailGrid(title, cardsHtml(items, titleCard)) : '';
+                    return items.length ? S.webDetailGrid(title, cardsHtml(items, titleCard)) : '';
                 };
                 setChildren(grid('Movie', WC.tr('Movies', 'Movies')) + grid('Series', WC.tr('Shows', 'Shows')));
             }).catch(function (err) { if (seq === renderSeq) { setOverview(''); setChildren(emptyState(str('RequestsErrorLoadPerson'), err.message)); } });
@@ -4497,7 +4285,7 @@
         // The web client's favourite button (emby-ratingbutton): the heart, red once a favourite, titled as the web
         // client titles it; a click sets it on the server and the button follows the answer.
         function renderFavorite(itemId, isFavorite) {
-            el('detailButtons').innerHTML = WC.favoriteButton('favoriteButton', isFavorite);
+            el('detailButtons').innerHTML = S.webFavoriteButton('favoriteButton', isFavorite);
             el('favoriteButton').addEventListener('click', function () {
                 var btn = el('favoriteButton'), seq = renderSeq;
                 btn.disabled = true;
@@ -4534,7 +4322,7 @@
             appWorker().catch(function () { });
             pushWorker().catch(function () { });
         }
-    })();
+    });
 </script>
 </body>
 </html>

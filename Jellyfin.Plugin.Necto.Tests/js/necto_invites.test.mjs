@@ -42,21 +42,34 @@ async function openPage(answers) {
     return { page: page, view: view, dom: dom };
 }
 
-test('the list shows each invite with its group, uses, state, PIN, and maker', async function () {
+test('the list shows each invite with its group, uses, PIN, and maker, and its state badge at the row end', async function () {
     var opened = await openPage();
     var rows = opened.view.querySelectorAll('.stolon-record-list-row');
 
     assert.equal(rows.length, 2);
-    assert.match(rows[0].textContent, /Family[\s\S]*2 of 5 uses[\s\S]*Never expires[\s\S]*Active[\s\S]*PIN/);
-    assert.match(rows[1].textContent, /Untitled invite[\s\S]*Used up[\s\S]*viewer/);
+    assert.match(rows[0].textContent, /Family[\s\S]*2 of 5 uses[\s\S]*Never expires[\s\S]*PIN/);
+    assert.match(rows[1].textContent, /Untitled invite[\s\S]*viewer/);
+    var states = Array.prototype.map.call(opened.view.querySelectorAll('[data-role="invite-state"]'), function (n) { return n.innerHTML; });
+    assert.match(states[0], /stolon-green[\s\S]*Active/);
+    assert.match(states[1], /Used up/);
 });
 
-test('each invite row holds its link in a copy field with a QR button', async function () {
+test('each invite row ends with Copy and Show QR code for its link, and Copy copies the link', async function () {
     var opened = await openPage();
-    var rows = opened.view.querySelectorAll('.stolon-record-list-row');
+    var copied = [];
+    var clipboard = globalThis.navigator.clipboard;
+    Object.defineProperty(globalThis.navigator, 'clipboard', { configurable: true, value: { writeText: function (text) { copied.push(text); return Promise.resolve(); } } });
+    var asides = opened.view.querySelectorAll('[data-role="invite-aside"]');
 
-    assert.match(rows[0].textContent + rows[0].innerHTML, /https:\/\/media\.example\.com\/invites\/abc123/);
-    assert.match(rows[1].textContent + rows[1].innerHTML, /https:\/\/media\.example\.com\/invites\/def/);
+    assert.equal(asides.length, 2);
+    assert.ok(asides[0].querySelector('[data-action="copy-link"]'));
+    assert.ok(asides[0].querySelector('[data-action="show-qr"]'));
+    assert.equal(asides[0].querySelector('.stolon-copy-field'), null);
+    asides[0].querySelector('[data-action="copy-link"]').click();
+    await settle(50);
+    assert.deepEqual(copied, ['https://media.example.com/invites/abc123']);
+    assert.match(opened.view.querySelector('#invitesStatus').textContent, /Invite link copied/);
+    Object.defineProperty(globalThis.navigator, 'clipboard', { configurable: true, value: clipboard });
 });
 
 test('an invite opens with its link, its fields, and Turn off, Duplicate, Delete, Cancel, and Save', async function () {
@@ -70,6 +83,17 @@ test('an invite opens with its link, its fields, and Turn off, Duplicate, Delete
     assert.equal(sidecar.querySelector('[data-field="GroupId"]').value, FAMILY);
     assert.deepEqual(texts(sidecar.querySelector('[data-field="GroupId"]'), 'option'), ['Group for new users', 'Everyone', 'Family']);
     assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Delete', 'Turn off', 'Duplicate', 'Cancel', 'Save']);
+});
+
+test('the editor sets out its steps under icon tiles, never uppercase headings', async function () {
+    var opened = await openPage();
+    opened.view.querySelectorAll('.stolon-record-list-row')[0].click();
+    await settle(50);
+    var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
+
+    assert.deepEqual(texts(sidecar, '.stolon-collapsible-title'), ['Link', 'Invite', 'Links for new users']);
+    assert.equal(sidecar.querySelectorAll('.stolon-collapsible-tile').length, 3);
+    assert.equal(sidecar.querySelector('.stolon-subsection-title'), null);
 });
 
 test('Save keeps a stored PIN, and Turn off posts to the invite', async function () {

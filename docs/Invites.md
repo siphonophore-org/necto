@@ -4,7 +4,7 @@ Invites are links anyone may use to make their own account on the server, in the
 
 ## The Invites Tool
 
-**Invites** counts the invites in each state at the top, then lists every invite, oldest first, with its group, its uses, its expiry, its state, and its link with **Copy** and a QR button. A PIN tag marks an invite that asks for a PIN, and a person tag names the member who made it. Select **Add invite** to make one, or select a row to open it in a sidecar.
+**Invites** counts the invites in each state at the top, then lists every invite, oldest first, with its group, its uses, and its expiry, and at the row's end its state, **Copy link**, and **Show QR code**. A PIN tag marks an invite that asks for a PIN, and a person tag names the member who made it. Select **Add invite** to make one, or select a row to open it in a sidecar.
 
 | Invites | Invites on a phone |
 | :---: | :---: |
@@ -20,14 +20,14 @@ Invites are links anyone may use to make their own account on the server, in the
 | **Group expired** | The group a new account would join has expired |
 | **Used up** | The invite made as many accounts as it may |
 
-The sidecar of an invite shows its link with **Copy** and a QR button, which opens the QR code with **Copy image** and **Download**. Its shelf holds **Delete**, **Turn off** or **Turn on**, **Duplicate**, **Cancel**, and **Save**.
+The sidecar of an invite sets it out in three steps, **Link**, **Invite**, and **Links for new users**, each led by its icon. **Link** shows the link with **Copy** and a QR button, which opens the QR code with **Copy image** and **Download**. Its shelf holds **Delete**, **Turn off** or **Turn on**, **Duplicate**, **Cancel**, and **Save**.
 
 * **Name** names the invite in the Invites tool. The sign-up page never shows it.
 * **Welcome message** shows under the sign-up page's heading.
-* **Group** sets the group a new account joins. **Group for new users** follows **Settings > Groups > Group for new users** at the moment the link is used, and **Everyone** joins no group. A group that disallows password changes cannot take invites, so it is not listed. A warning shows while the picked group has expired, since signups into it are refused.
-* **Accounts it may make** sets how many accounts the link makes. 0 is no limit.
-* **Expiry date** stops the link on that day. Leave it blank to keep the link.
-* **PIN** asks for six digits on the sign-up page. A stored PIN stays hidden, and **Remove PIN** clears it on save.
+* **Group** sets the group a new account joins. **Group for new users** follows **Settings > Groups > Group for new users** at the moment the link is used, and **Everyone** joins no group. A group that disallows password changes cannot take invites, so it is not listed. A warning shows while the picked group has expired, since sign-ups into it are refused.
+* **Uses** sets how many accounts the link makes. 0 is no limit.
+* **Expiry date** stops the link on that day. Leave it blank to keep the link until it is used up.
+* **PIN** asks for six digits on the sign-up page. A stored PIN stays hidden, and **Remove PIN** beside the field clears it on save.
 * **Links for new users** shows each link as a button once the account is made, such as a guide. Each needs button text and a full http or https address.
 
 **Turn on** clears an invite's wrong PINs. It is refused while the expiry date has passed or the group disallows password changes. Moving the expiry date ahead turns an invite back on. **Duplicate** makes a new link with the same settings and PIN. **Delete** asks first, and the accounts the invite made stay.
@@ -40,11 +40,11 @@ An invite link opens `/invites/{token}`, drawn as the web client's sign in page 
 | :---: | :---: |
 | ![Sign-up page](screenshots/Sign-up%20Page.png) | ![Sign-up page on a phone](screenshots/Sign-up%20Page%20Phone.png) |
 
-The account joins the invite's group, takes that group's password rules and template, and never takes the group for new users on the way. It is held disabled until its password is set, so it can never be signed in to without one, and it stays disabled when its group's template disables accounts. A sign-up that fails partway removes the account, so the user name can be tried again.
+The account joins the invite's group, takes that group's password rules and Jellyfin settings, and never takes the group for new users on the way. It is held disabled until its password is set, so it can never be signed in to without one, and it stays disabled when its group's Jellyfin settings disable accounts. A sign-up that fails partway removes the account, so the user name can be tried again.
 
 ## Members' Invites
 
-A member whose groups allow invites makes and shares their own at `/invites`, in the web client with its header, libraries, and user menu. **Your invites** lists each invite with its state, group, and uses, and **Copy link**, **Show QR code**, and **Delete** buttons. **New invite** makes one with **Name**, **Group**, **Accounts it may make**, and **Expiry date**, and **Add invite** adds it. **Groups > Invites** sets who may do this.
+A member whose groups allow invites makes and shares their own at `/invites`, in the web client with its header, libraries, and user menu. **Your invites** lists each invite with its state, group, and uses, and **Copy link**, **Show QR code**, and **Delete** buttons. **New invite** makes one with **Name**, **Group**, **Uses**, and **Expiry date**, and **Add invite** adds it. **Groups > Invites** sets who may do this.
 
 ![Members' invites](screenshots/Member%20Invites.png)
 
@@ -61,7 +61,7 @@ A member deletes only their own invites. **Browser notifications** holds **Notif
 
 * **Wrong PINs before a lock** locks an invite after that many wrong PINs in a row, from anyone, until an administrator turns it on.
 * **Sign-ups before a pause** and **Pause window (minutes)** pause an invite once it has made that many accounts in the window. 0 in either is no limit.
-* Each network address may open 60 invite pages and make 10 signup attempts every 15 minutes, across all invites. Every attempt counts. Past that the server answers "Too many attempts from your network. Wait a few minutes and try again." IPv6 visitors are counted per /64. These limits reset when the server restarts.
+* Each network address may open 60 invite pages and make 10 sign-up attempts every 15 minutes, across all invites. Every attempt counts. Past that the server answers "Too many attempts from your network. Wait a few minutes and try again." IPv6 visitors are counted per /64. These limits reset when the server restarts.
 * A taken user name gets "Could not create the account. Check the details and try again.", so the page cannot be used to find out who has an account.
 
 ## Settings

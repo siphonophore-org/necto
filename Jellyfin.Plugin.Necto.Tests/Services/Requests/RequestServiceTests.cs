@@ -588,6 +588,22 @@ public sealed class RequestServiceTests : IDisposable
     }
 
     /// <summary>
+    /// The access says whether the user has a profile image.
+    /// True: the request page asks for an avatar only when there is one, so no lookup fails.
+    /// False: every page load would ask for an image that is not there and log a 404.
+    /// </summary>
+    [Fact]
+    public void GetAccess_ProfileImage_SaysWhetherThereIsOne()
+    {
+        var plain = H.AddUser("plain");
+        var pictured = H.AddUser("pictured");
+        pictured.ProfileImage = new Jellyfin.Database.Implementations.Entities.ImageInfo("/config/users/pictured.png");
+
+        Assert.False(H.Access(plain).HasImage);
+        Assert.True(H.Access(pictured).HasImage);
+    }
+
+    /// <summary>
     /// Members of a group that may manage requests act as administrators within Requests, and one that may manage
     /// issues manages issues, each apart.
     /// True: a moderator group approves requests without being a server administrator.
