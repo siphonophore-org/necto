@@ -121,10 +121,11 @@
 /* A column of a tool's blocks, such as an intro, a notice, cards, and a list, kept apart by the standard gap. */
 /* Example: <div class="necto-stack"><div class="fieldDescription"></div><div class="stolon-cards"></div></div> */
 .necto-stack { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
-.necto-stack > .fieldDescription,
+/* Stolon gives every description margins with !important, so the stack's own gap needs it too. */
+.pluginConfigurationPage .necto-stack > .fieldDescription,
 .necto-stack > .stolon-info,
 .necto-stack > .stolon-cards,
-.necto-stack > .stolon-button-row { margin-top: 0; margin-bottom: 0; }
+.necto-stack > .stolon-button-row { margin-top: 0 !important; margin-bottom: 0 !important; }
 
 /* necto-card-fit */
 /* A balanced card row keeps every card inside its column, and a card whose value is a word, such as Running, ends it
@@ -139,3 +140,4 @@
 /* Example: <div class="stolon-cards necto-word-cards"><div class="stolon-card"><span class="stolon-card-count">Running</span></div></div> */
 .necto-word-cards .stolon-card-count { font-size: var(--stolon-font-large); white-space: normal; overflow-wrap: anywhere; }
 .necto-word-cards .stolon-card-label { white-space: normal; }
+.pluginConfigurationPage .necto-stack > .fieldDescription { padding-left: 0; }
