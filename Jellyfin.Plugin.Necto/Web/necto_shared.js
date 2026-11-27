@@ -273,6 +273,7 @@ export function createNectoPage(view, opts) {
         },
         load: function () {
             bound.then(function () { if (opts.load) opts.load(bag, page); });
+            followToolsOff(view);
         },
         onHide: pass(opts.onHide)
     });
@@ -282,6 +283,20 @@ export function createNectoPage(view, opts) {
     // Sets the heading over the tool, which is the tool's name by default.
     bag.setPageTitle = function (text) { setToolTitle(view, text); };
     return { shared: bag, page: page };
+}
+
+// followToolsOff
+// Reads again which tools are on each time a tool shows, so a tool turned on or off elsewhere, such as from another
+// browser, joins or leaves the sidebar without a reload.
+//
+// Inputs
+// view [HTMLElement]: The tool's view.
+function followToolsOff(view) {
+    if (typeof ApiClient === 'undefined' || !ApiClient.getPluginConfiguration) return;
+    var was = JSON.stringify(toolsOff);
+    ApiClient.getPluginConfiguration(PLUGIN_ID).then(function (config) {
+        if (JSON.stringify(setToolsOff(config)) !== was) refreshTools(view);
+    }, function () { /* the sidebar stays as it is */ });
 }
 
 // createNectoShared
