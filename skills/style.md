@@ -72,6 +72,7 @@ Pick the word on the left every time.
 | Run now | Start, Trigger | Starts a scheduled task right away |
 | Select | Pick, Choose, Tick, Click | Any instruction to make a choice |
 | Turn on, Turn off | Enable, Disable, Tick, Untick | An instruction about a checkbox or toggle |
+| Enable, Disable | Turn on, Turn off | A button that switches a record, such as an invite, on or off, with Enabled and Disabled in its messages |
 | Leave blank | Leave empty | An empty field means the default |
 | Could not | Failed to, Unable to | An error message |
 

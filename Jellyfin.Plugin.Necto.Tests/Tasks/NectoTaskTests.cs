@@ -38,7 +38,7 @@ public sealed class NectoTaskTests : IDisposable
         await task.ExecuteAsync(new Progress<double>(), default);
 
         Assert.Equal("NectoInviteExpiry", task.Key);
-        Assert.Equal("Turn off expired invites", task.Name);
+        Assert.Equal("Disable expired invites", task.Name);
         Assert.Equal(TaskTriggerInfoType.DailyTrigger, Assert.Single(task.GetDefaultTriggers()).Type);
         Assert.False(_h.Config.Configuration.Invites.Single().Enabled);
     }

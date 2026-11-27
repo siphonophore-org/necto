@@ -33,6 +33,7 @@ public class PluginConfigurationTests
         Assert.Null(accounts.Expiry.ExpiresOn);
         Assert.Equal(ExpiryAction.Disable, accounts.Expiry.Action);
         Assert.False(accounts.Inactivity.Enabled);
+        Assert.False(accounts.Resets.ShowCodes);
         Assert.Equal(30, accounts.Inactivity.Days);
         Assert.False(accounts.Sessions.Enabled);
         Assert.False(config.Everyone.Permissions.Requests.MayRequest);

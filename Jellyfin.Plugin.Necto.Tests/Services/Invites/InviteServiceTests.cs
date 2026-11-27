@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Configuration.Accounts;
 using Jellyfin.Plugin.Necto.Configuration.Groups;
 using Jellyfin.Plugin.Necto.Configuration.Invites;
@@ -253,7 +254,7 @@ public sealed class InviteServiceTests : IDisposable
 
     /// <summary>
     /// The summaries carry each invite's state, use count, and group, without its PIN hash.
-    /// True: the Invites tool shows each invite as Active, Locked, Expired, Group expired, or Used up.
+    /// True: the Invites tool shows each invite as Active, Locked, Expired, or Used up.
     /// False: a used up invite would read as Active.
     /// </summary>
     [Fact]
@@ -267,6 +268,47 @@ public sealed class InviteServiceTests : IDisposable
         Assert.Equal(InviteState.UsedUp, row.State);
         Assert.Equal(2, row.UsedCount);
         Assert.Equal("Everyone", row.GroupName);
+    }
+
+    /// <summary>
+    /// A disabled invite reads as Disabled, and one the wrong PINs disabled reads as Locked.
+    /// True: the Invites tool tells an invite an administrator disabled from one a PIN guesser locked.
+    /// False: both would read as Locked, under one color.
+    /// </summary>
+    [Fact]
+    public void StateOf_DisabledAndLocked_AreTold()
+    {
+        var config = new PluginConfiguration();
+        config.InviteSettings.MaxPinAttempts = 3;
+        var invite = new Invite { Enabled = false };
+        var now = DateTime.UtcNow;
+
+        Assert.Equal(InviteState.Disabled, InviteService.StateOf(config, invite, null, now));
+        Assert.Equal(InviteState.Disabled, InviteService.StateOf(config, invite, new InviteStatus { FailedPinAttempts = 2 }, now));
+        Assert.Equal(InviteState.Locked, InviteService.StateOf(config, invite, new InviteStatus { FailedPinAttempts = 3 }, now));
+        invite.Enabled = true;
+        Assert.Equal(InviteState.Active, InviteService.StateOf(config, invite, new InviteStatus { FailedPinAttempts = 3 }, now));
+    }
+
+    /// <summary>
+    /// An invite whose group has expired reads as Expired, and says its group expired, even while it is on and unused.
+    /// True: an expired group expires its invites, with one Expired state for both.
+    /// False: an invite into an expired group would read as Active or under a state of its own.
+    /// </summary>
+    [Fact]
+    public void Summaries_GroupExpired_ReadsAsExpired()
+    {
+        var group = TestGroups.Make("Kids");
+        group.Permissions.Accounts.Expiry.ExpiresOn = _h.Time.GetUtcNow().UtcDateTime.Date;
+        _h.Config.Configuration.Groups.Add(group);
+        _h.Service.Create(new InviteRequest { GroupId = group.Id, MaxUses = 2 }, Guid.Empty, null);
+        _h.Service.Create(new InviteRequest { MaxUses = 2 }, Guid.Empty, null);
+
+        var rows = _h.Service.Summaries();
+
+        Assert.Equal(new[] { InviteState.Expired, InviteState.Active }, rows.Select(r => r.State));
+        Assert.Equal(new[] { true, false }, rows.Select(r => r.GroupExpired));
+        Assert.Equal(5, Enum.GetValues<InviteState>().Length);
     }
 
     /// <summary>
@@ -358,6 +400,7 @@ public sealed class InviteServiceTests : IDisposable
         Assert.Equal(new[] { "Family", "Cousins" }, InviteService.PageOf(all, new() { Search = "fam" }).Items.Select(i => i.Label));
         Assert.Equal(new[] { "Book club" }, InviteService.PageOf(all, new() { Search = "VIEWER" }).Items.Select(i => i.Label));
         Assert.Equal(new[] { "Cousins" }, InviteService.PageOf(all, new() { Filter = "UsedUp", Search = "family" }).Items.Select(i => i.Label));
+        Assert.Equal(new[] { "Old" }, InviteService.PageOf(all, new() { Filter = "GroupExpired" }).Items.Select(i => i.Label));
 
         var page = InviteService.PageOf(all, new() { Skip = 2, Take = 1 });
         Assert.Equal("Book club", Assert.Single(page.Items).Label);

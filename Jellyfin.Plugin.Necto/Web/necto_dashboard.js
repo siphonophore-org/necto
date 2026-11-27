@@ -372,14 +372,20 @@ export function ddnsCard(t, answer) {
         else records.push(entry.Record);
     });
     var off = { label: t.tr('Off'), color: 'gray' };
-    // Every good result reads Up to date, so Updated and Up to date share one part.
+    // Every good result reads Up to date, so Updated and Up to date share one part. The warnings share a part, and so do
+    // the errors, so each part of the bar has its own color.
     var good = { label: t.tr('DdnsResultUnchanged'), color: 'green' };
+    var warned = { label: t.tr('LogLevel.Warning'), color: 'orange' };
+    var failed = { label: t.tr('LabelFailed'), color: 'red' };
     var tags = records.map(function (r) {
         if (r.Enabled === false) return off;
         var tag = recordTag(r, t);
-        return !tag || tag.color === 'green' ? good : tag;
+        if (!tag || tag.color === 'green') return good;
+        if (tag.color === 'orange') return warned;
+        if (tag.color === 'red') return failed;
+        return tag;
     });
-    var order = ['green', 'orange', 'red', 'gray'];
+    var order = ['green', 'purple', 'orange', 'red', 'gray'];
     var segments = tally(tags.filter(function (tag) { return tag !== off; })).sort(function (a, b) { return order.indexOf(a.color) - order.indexOf(b.color); });
     var offCount = tags.filter(function (tag) { return tag === off; }).length;
     if (offCount) segments.push({ label: off.label, value: offCount, color: off.color });
@@ -412,10 +418,10 @@ export function wireGuardCard(t, map) {
     var connected = ends.filter(function (e) { return e.Connected; }).length;
     card.value = connected;
     card.valueLabel = t.tr('StateConnected').toLowerCase();
-    var order = ['green', 'orange', 'red', 'gray'];
+    var order = ['green', 'orange', 'yellow', 'pink', 'red', 'teal', 'gray'];
     var segments = tally(ends.map(function (e) {
         var tag = tunnelTag(t, e.State);
-        return { label: tag.label, color: tag.off ? 'gray' : tag.color };
+        return { label: tag.label, color: tag.color };
     })).sort(function (a, b) { return order.indexOf(a.color) - order.indexOf(b.color); });
     withBar(card, t, segments, 'DashboardEmptyTunnels');
     var failed = (host && host.State === 'Failed') || ends.some(function (e) { return e.State === 'Failed'; });
@@ -425,7 +431,8 @@ export function wireGuardCard(t, map) {
 }
 
 // scriptsCard
-// Sums up the scripts: the failed runs of the last 14 days as the number, and the runs that succeeded and failed.
+// Sums up the scripts: the runs of the last 14 days as the number, and a column per day as tall as its runs, red on a
+// day with a failed run and green otherwise. The line under the title counts the failed runs.
 //
 // Inputs
 // t [object]: The strings.
@@ -438,14 +445,43 @@ export function scriptsCard(t, days) {
     if (!days) return failedCard(t, card);
     var ok = sum(days.Succeeded);
     var failed = sum(days.Failed);
-    card.value = failed;
-    card.valueLabel = t.tr('LabelFailed').toLowerCase();
-    withBar(card, t, [
-        { label: t.tr('ScriptsStatusSucceeded'), value: ok, color: 'green' },
-        { label: t.tr('LabelFailed'), value: failed, color: 'red' }
-    ], 'DashboardEmptyRuns');
+    card.value = ok + failed;
+    card.valueLabel = t.tr('DashboardValueRuns');
+    card.bars = dayBars(t, days);
+    card.segments = null;
+    card.legend = false;
+    card.detail = failed > 0 ? t.format('ScheduledTaskFailedWithName', failed) : (ok > 0 ? '' : t.tr('DashboardEmptyRuns'));
     if (failed > 0) return setState(card, t, 'failed');
     return setState(card, t, ok > 0 ? 'active' : 'idle');
+}
+
+// RUN_DAYS
+// How many days the Scripts card charts.
+var RUN_DAYS = 14;
+
+// dayBars
+// Turns the runs per day into the Scripts card's columns, oldest first, always 14 of them so an idle fortnight still
+// shows its baseline.
+//
+// Inputs
+// t [object]: The strings.
+// days [object]: Days, Succeeded, and Failed, one entry per day, oldest first.
+//
+// Output
+// [object[]]: One { label, value, color } per day.
+export function dayBars(t, days) {
+    var labels = (days.Days || []).slice(-RUN_DAYS);
+    var ok = (days.Succeeded || []).slice(-RUN_DAYS);
+    var bad = (days.Failed || []).slice(-RUN_DAYS);
+    var count = Math.max(labels.length, ok.length, bad.length);
+    var bars = [];
+    for (var i = 0; i < count; i++) {
+        var failed = Number(bad[i]) || 0;
+        var runs = (Number(ok[i]) || 0) + failed;
+        bars.push({ label: t.format('DashboardRunsOnDay', labels[i] || '', runs, failed), value: runs, color: failed > 0 ? 'red' : 'green' });
+    }
+    while (bars.length < RUN_DAYS) bars.unshift({ label: '', value: 0, color: 'green' });
+    return bars;
 }
 
 // pagesCard
@@ -471,6 +507,10 @@ export function pagesCard(t, config) {
     return setState(card, t, pages.length ? 'off' : 'idle');
 }
 
+// ATTENTION_COLORS
+// The disk state colors that ask for attention: missing, full, failing, unresponsive, or nearly full.
+var ATTENTION_COLORS = ['red', 'pink', 'yellow', 'teal', 'orange'];
+
 // storageCard
 // Sums up the disks Jellyfin uses, as the Storage tool counts them: how many there are, and a part per state.
 //
@@ -485,12 +525,12 @@ export function storageCard(t, disks) {
     if (!Array.isArray(disks)) return failedCard(t, card);
     var used = disks.filter(function (d) { return d.InUse; });
     var states = used.map(function (d) { return diskState(t, d); });
-    var order = ['green', 'orange', 'red', 'blue', 'gray'];
+    var order = ['green', 'orange', 'teal', 'yellow', 'pink', 'red', 'blue', 'gray'];
     card.value = used.length;
     card.valueLabel = t.tr('DashboardInUse');
     withBar(card, t, tally(states).sort(function (a, b) { return order.indexOf(a.color) - order.indexOf(b.color); }), 'DashboardEmptyDisks');
     var colors = states.map(function (s) { return s.color; });
-    if (colors.indexOf('red') >= 0 || colors.indexOf('orange') >= 0) return setState(card, t, 'attention');
+    if (colors.some(function (c) { return ATTENTION_COLORS.indexOf(c) >= 0; })) return setState(card, t, 'attention');
     return setState(card, t, used.length ? 'active' : 'idle');
 }
 
@@ -928,7 +968,7 @@ export default function (view) {
     }
 
     function buildActivity(t) {
-        timeline = nectoModule.createTimeline({ items: [], emptyText: t.tr('DashboardEmptyActivity'), maxHeight: '32rem' });
+        timeline = nectoModule.createTimeline({ items: [], emptyText: t.tr('DashboardEmptyActivity') });
         var section = nectoModule.createCollapsibleSection({ title: t.tr('DashboardHeaderActivity'), icon: 'history', collapsible: false, content: timeline.element });
         getEl('dashboardActivity').appendChild(section.element);
     }

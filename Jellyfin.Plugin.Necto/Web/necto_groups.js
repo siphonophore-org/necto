@@ -1,6 +1,6 @@
 // necto_groups.js
 // The Groups tool. It lists the groups, Everyone first, and opens each in an editor sidecar with its name, its
-// members, its account rules, its Jellyfin access and preferences, and a collapsible section per tool, with Remove
+// members, its account rules, its access and preferences, and a collapsible section per tool, with Remove
 // and Save on the shelf.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
@@ -148,6 +148,7 @@ export function accountTags(group, t) {
     if (a.Expiry && a.Expiry.ExpiresOn) tags.push({ label: t.tr('HeaderExpiry'), icon: 'event_busy' });
     if (a.Inactivity && a.Inactivity.Enabled) tags.push({ label: t.tr('HeaderInactivity'), icon: 'bedtime' });
     if (a.Sessions && a.Sessions.Enabled) tags.push({ label: t.tr('HeaderSessionManagement'), icon: 'logout' });
+    if (a.Resets && a.Resets.ShowCodes) tags.push({ label: t.tr('HeaderPasswordResets'), icon: 'lock_reset' });
     return tags;
 }
 
@@ -299,8 +300,8 @@ export function sectionSpecs() {
 }
 
 // accountSpecs
-// Describes the Account rules sections: password requirements, expiry, inactivity, and session management. The first
-// field of each turns the rule on.
+// Describes the Account rules sections: password requirements, expiry, inactivity, session management, and password
+// resets. The first field of each turns the rule on.
 //
 // Output
 // [object[]]: Each section's key, icon, title key, and fields.
@@ -338,6 +339,11 @@ export function accountSpecs() {
                 { path: 'Accounts.Sessions.Enabled', kind: 'check', label: 'LabelCleanUpOldSessions', help: 'CleanUpOldSessionsHelp', reveals: [
                     { path: 'Accounts.Sessions.Rules', kind: 'sessions', help: 'SessionRulesHelp' }
                 ] }
+            ]
+        },
+        {
+            key: 'resets', icon: 'lock_reset', title: 'HeaderPasswordResets', fields: [
+                { path: 'Accounts.Resets.ShowCodes', kind: 'check', label: 'LabelShowResetCodes', help: 'ShowResetCodesHelp' }
             ]
         }
     ];
@@ -459,7 +465,7 @@ export function otherGroupName(user, group, groups, t) {
 }
 
 // createGroupEditor
-// Builds the body of a group's sidecar: its name, its members, Account rules, Jellyfin access, Jellyfin preferences,
+// Builds the body of a group's sidecar: its name, its members, Account rules, Access, Preferences,
 // and a section per tool.
 //
 // Inputs
@@ -701,8 +707,8 @@ export function createGroupEditor(group, ctx) {
         var grid = nectoModule.createMatrixGrid({
             rows: rows,
             columns: [
-                { key: 'browser', label: t.tr('LabelBrowserNotifications'), icon: 'notifications_active', type: 'toggle' },
-                { key: 'message', label: t.tr('NotificationsChannelApps'), icon: 'chat', type: 'toggle' }
+                { key: 'browser', label: t.tr('NotificationsMethodBrowser'), icon: 'notifications_active', type: 'toggle' },
+                { key: 'message', label: t.tr('LabelJellyfin'), icon: 'chat', type: 'toggle' }
             ],
             value: cells,
             rowHeader: t.tr('NotificationsGroupEvents'),

@@ -28,7 +28,7 @@ A test of **Browser notifications**, **Jellyfin messages**, or **Administrators*
 
 ## Who Gets an Event
 
-* **Groups > Notifications** lists the events for users, those about a member such as a request's or an invite's, under the tool that sends each. Each has a switch for **Browser notifications** and one for **Jellyfin messages**, and an event with both off is off for members.
+* **Groups > Notifications** lists the events for users, those about a member such as a request's or an invite's, under the tool that sends each. Each has a **Browser** switch for browser notifications and a **Jellyfin** switch for Jellyfin messages, and an event with both off is off for members.
 * An event for users goes only to the user it is about, when the account is on, by the methods their group turns on for it. Administrators get every event about them.
 * Any other event, such as a proxy ban or a missing disk, is for administrators only. It goes only to the channels on this page that pick it, such as **Administrators**.
 * Every event goes to each administrators' channel that picks it, or takes every event.

@@ -206,15 +206,15 @@ public class GroupsControllerTests
     }
 
     /// <summary>
-    /// Reset codes are listed only while Settings shows them.
-    /// True: codes never leave the server unless an administrator turned them on.
+    /// Reset codes are listed only while a group shows them.
+    /// True: codes never leave the server unless an administrator turned them on for a group.
     /// False: every administrator page load would carry the codes.
     /// </summary>
     [Fact]
     public void ListResetCodes_OnlyWhileShown()
     {
         var off = Assert.IsType<ResetCodes>(Assert.IsType<OkObjectResult>(Controller().ListResetCodes().Result).Value);
-        _config.Configuration.AccountSettings.ShowResetCodes = true;
+        _config.Configuration.Everyone.Permissions.Accounts.Resets.ShowCodes = true;
         var on = Assert.IsType<ResetCodes>(Assert.IsType<OkObjectResult>(Controller().ListResetCodes().Result).Value);
 
         Assert.False(off.Enabled);

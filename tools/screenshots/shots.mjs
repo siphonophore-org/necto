@@ -92,10 +92,10 @@ const sidecars = {
     await section(p, 'Requests');
     return panel;
   }],
-  'Group Jellyfin Access': ['groups', 1300, async (p) => {
+  'Group Access': ['groups', 1300, async (p) => {
     const panel = await row(p, 'Kids');
     await section(p, 'Members');
-    await section(p, 'Jellyfin access');
+    await section(p, 'Access');
     await section(p, 'Parental control');
     return panel;
   }],

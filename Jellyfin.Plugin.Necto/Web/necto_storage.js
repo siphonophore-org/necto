@@ -41,14 +41,15 @@ export function serverText(t, key) {
 // disk [object]: One disk from GET Storage/Disks.
 //
 // Output
-// [object]: { label, color }.
+// [object]: { label, color }. Each state a disk in use can have takes its own color, so the Dashboard's bar tells them
+// apart.
 export function stateOf(t, disk) {
     if (disk.State === 'Missing') return { label: t.tr('StorageStateMissing'), color: 'red' };
-    if (disk.State === 'Unresponsive') return { label: t.tr('StorageStateUnresponsive'), color: 'orange' };
+    if (disk.State === 'Unresponsive') return { label: t.tr('StorageStateUnresponsive'), color: 'teal' };
     if (disk.State === 'Unformatted') return { label: t.tr('StorageStateUnformatted'), color: 'blue' };
     if (disk.State === 'NotMounted') return { label: t.tr('StorageStateNotMounted'), color: 'gray' };
-    if (disk.Health === 'Failing') return { label: t.tr('StorageHealthFailing'), color: 'red' };
-    if (disk.Level === 'Error') return { label: t.tr('StorageLevelFull'), color: 'red' };
+    if (disk.Health === 'Failing') return { label: t.tr('StorageHealthFailing'), color: 'yellow' };
+    if (disk.Level === 'Error') return { label: t.tr('StorageLevelFull'), color: 'pink' };
     if (disk.Level === 'Warning') return { label: t.tr('DashboardStateAttention'), color: 'orange' };
     if (!disk.InUse) return { label: t.tr('StorageStateUnused'), color: 'gray' };
     return { label: t.tr('LabelAvailable'), color: 'green' };

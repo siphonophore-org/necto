@@ -50,29 +50,28 @@ test('nectoSections lists the tools that registered a section, in sidebar order,
 });
 
 test('Settings draws a collapsible section per tool, with the Groups section filled', async function () {
-    var opened = await openTool('settings', { config: { Groups: [{ Id: FAMILY, Name: 'Family' }], GroupSettings: { NewUserGroupId: FAMILY }, AccountSettings: { ShowResetCodes: true } } });
+    var opened = await openTool('settings', { config: { Groups: [{ Id: FAMILY, Name: 'Family' }], GroupSettings: { NewUserGroupId: FAMILY } } });
 
     var titles = texts(opened.view, '.stolon-collapsible-title');
     assert.deepEqual(titles.filter(function (t) { return TOOLS.indexOf(t) >= 0; }), TOOLS);
     var groups = opened.section('groups');
-    assert.deepEqual(texts(groups, '.stolon-subsection-title'), ['New users', 'Accounts']);
+    assert.deepEqual(texts(groups, '.stolon-subsection-title'), ['New users']);
     assert.equal(groups.querySelector('[data-field="NewUserGroupId"]').value, FAMILY);
     assert.deepEqual(texts(groups.querySelector('[data-field="NewUserGroupId"]'), 'option'), ['Everyone', 'Family']);
-    assert.equal(groups.querySelector('[data-field="ShowResetCodes"]').checked, true);
+    assert.equal(groups.querySelector('[data-field="ShowResetCodes"]'), null);
 });
 
 test('the Groups section of Settings saves its own fields into the config', async function () {
     var opened = await openTool('settings', { config: { Groups: [{ Id: FAMILY, Name: 'Family' }], GroupSettings: { NewUserGroupId: FAMILY }, AccountSettings: { ShowResetCodes: false }, Other: 'kept' } });
     var groups = opened.section('groups');
     groups.querySelector('[data-field="NewUserGroupId"]').value = '';
-    groups.querySelector('[data-field="ShowResetCodes"]').checked = true;
 
     assert.equal(clickButton(groups, 'Save'), true);
     await settle(50);
 
     var config = opened.saved[0];
     assert.equal(config.GroupSettings.NewUserGroupId, null);
-    assert.equal(config.AccountSettings.ShowResetCodes, true);
+    assert.equal(config.AccountSettings.ShowResetCodes, false);
     assert.equal(config.Other, 'kept');
 });
 
@@ -83,7 +82,7 @@ test('Troubleshooting draws a section per tool, Groups with its repairs', async 
     var groups = opened.section('groups');
     assert.deepEqual(texts(groups, '.stolon-subsection-title'), ['Password requirements', 'Jellyfin settings', 'Scheduled checks', 'Password resets']);
     assert.deepEqual(texts(groups, '[data-action]'), ['Apply', 'Apply', 'Run now', 'Run now']);
-    assert.match(groups.textContent, /Reset codes are off\. Turn on Show reset codes in Settings to list them\./);
+    assert.match(groups.textContent, /Reset codes are off\. Turn on Show reset codes in a group's Password resets to list them\./);
 });
 
 test('Apply rules posts to the password rules route and reports how many users moved', async function () {

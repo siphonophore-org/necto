@@ -143,7 +143,7 @@ test('the Issues card counts the open reports, and the Invites card puts a used 
     var invites = dashboard.invitesCard(t, [{ State: 'Active' }, { State: 'Active' }, { State: 'Expired' }, { State: 'GroupExpired' }, { State: 'UsedUp' }]);
     assert.equal(invites.value, 2);
     assert.equal(invites.status, 'Active');
-    assert.deepEqual([invites.detail, shown(invites)], ['', 'Active 2, Expired 1, Group expired 1, Used up 1']);
+    assert.deepEqual([invites.detail, shown(invites)], ['', 'Active 2, Expired 2, Used up 1']);
     var usedUp = dashboard.invitesCard(t, [{ State: 'UsedUp' }]);
     assert.equal(usedUp.value, 0);
     assert.deepEqual([usedUp.detail, shown(usedUp)], ['', 'Used up 1']);
@@ -255,12 +255,16 @@ test('the Scripts, Storage, and Notifications cards show failures first', async 
     installPage({});
     var dashboard = await loadScript('necto_dashboard.js');
 
-    var scripts = dashboard.scriptsCard(t, { Days: ['a', 'b'], Succeeded: [3, 1], Failed: [0, 2] });
-    assert.equal(scripts.value, 2);
-    assert.deepEqual([scripts.detail, shown(scripts)], ['', 'Succeeded 4, Failed 2']);
+    var scripts = dashboard.scriptsCard(t, { Days: ['2026-11-26', '2026-11-27'], Succeeded: [3, 1], Failed: [0, 2] });
+    assert.deepEqual([scripts.value, scripts.valueLabel, scripts.detail, scripts.segments], [6, 'runs', t.format('ScheduledTaskFailedWithName', 2), null]);
+    assert.equal(scripts.bars.length, 14);
+    assert.deepEqual(scripts.bars.slice(-2).map(function (b) { return [b.value, b.color]; }), [[3, 'green'], [3, 'red']]);
+    assert.equal(scripts.bars[13].label, '2026-11-27: 3 runs, 2 failed');
     assert.equal(scripts.status, 'Failed');
-    assert.equal(dashboard.scriptsCard(t, { Succeeded: [1], Failed: [0] }).status, 'Active');
-    assert.equal(dashboard.scriptsCard(t, { Succeeded: [], Failed: [] }).detail, 'No runs in 14 days');
+    var quiet = dashboard.scriptsCard(t, { Succeeded: [1], Failed: [0] });
+    assert.deepEqual([quiet.status, quiet.detail], ['Active', '']);
+    var idle = dashboard.scriptsCard(t, { Succeeded: [], Failed: [] });
+    assert.deepEqual([idle.detail, idle.value, idle.bars.length, idle.bars.every(function (b) { return b.value === 0; })], ['No runs in 14 days', 0, 14, true]);
 
     var storage = dashboard.storageCard(t, [
         { Name: 'media', State: 'Available', InUse: true, Health: 'Good', Level: 'None' },

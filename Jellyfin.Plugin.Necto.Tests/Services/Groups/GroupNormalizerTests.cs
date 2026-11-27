@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Configuration.Accounts;
 using Jellyfin.Plugin.Necto.Configuration.Groups;
@@ -30,6 +31,30 @@ public class GroupNormalizerTests
         Assert.Equal(Group.EveryoneId, config.Everyone.Id);
         Assert.Equal("Everyone", config.Everyone.Name);
         Assert.NotNull(config.Everyone.Permissions.Accounts.Sessions);
+    }
+
+    /// <summary>
+    /// A stored setting that listed every reset code turns Show reset codes on for every group, Everyone too, and clears.
+    /// True: a server that showed reset codes keeps showing them for every member after the setting moved to groups.
+    /// False: the codes would vanish, or the old setting would keep overriding the groups.
+    /// </summary>
+    [Fact]
+    public void Normalize_StoredShowResetCodes_MovesOntoEveryGroup()
+    {
+        var config = new PluginConfiguration();
+        config.Groups.Add(new Group { Id = Guid.NewGuid(), Name = "Kids" });
+        config.Groups.Add(new Group { Id = Guid.NewGuid(), Name = "Adults" });
+        config.Groups[1].Permissions.Accounts.Resets = null!;
+        config.AccountSettings.ShowResetCodes = true;
+
+        Assert.True(GroupNormalizer.Normalize(config));
+
+        Assert.False(config.AccountSettings.ShowResetCodes);
+        Assert.All(config.Groups.Append(config.Everyone), g => Assert.True(g.Permissions.Accounts.Resets.ShowCodes));
+
+        config.Groups[0].Permissions.Accounts.Resets.ShowCodes = false;
+        GroupNormalizer.Normalize(config);
+        Assert.False(config.Groups[0].Permissions.Accounts.Resets.ShowCodes);
     }
 
     /// <summary>

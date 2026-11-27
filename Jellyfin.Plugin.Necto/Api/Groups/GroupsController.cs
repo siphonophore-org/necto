@@ -242,15 +242,25 @@ public class GroupsController : ControllerBase
     }
 
     /// <summary>
-    /// Lists the pending password resets with their codes, while Settings shows reset codes.
+    /// Lists the pending password resets with their codes, for the members whose group shows reset codes.
     /// </summary>
-    /// <returns>Whether codes are shown, and the resets when they are.</returns>
+    /// <returns>Whether any group shows codes, and the resets shown.</returns>
     [HttpGet("ResetCodes")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<ResetCodes> ListResetCodes()
     {
-        var enabled = _store.Read(c => c.AccountSettings?.ShowResetCodes == true);
-        return Ok(new ResetCodes { Enabled = enabled, Codes = enabled ? _resetCodes.ReadAll() : new List<ResetCode>() });
+        if (!_store.Read(ResetCodeFilter.AnyShown))
+        {
+            return Ok(new ResetCodes { Enabled = false });
+        }
+
+        var all = _resetCodes.ReadAll();
+        var users = all.Select(r => r.UserName).Distinct(StringComparer.Ordinal).ToDictionary(
+            name => name,
+            name => _userManager.GetUserByName(name) is { } user ? ((Guid Id, bool IsAdministrator)?)(user.Id, user.HasPermission(PermissionKind.IsAdministrator)) : null,
+            StringComparer.Ordinal);
+        var codes = _store.Read(c => ResetCodeFilter.Shown(c, all, name => users.GetValueOrDefault(name)));
+        return Ok(new ResetCodes { Enabled = true, Codes = codes });
     }
 
     private ApiError Error(GroupChangeError error)

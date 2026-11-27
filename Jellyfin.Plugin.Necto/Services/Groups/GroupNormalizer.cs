@@ -66,6 +66,17 @@ public static class GroupNormalizer
 
         config.Groups = kept;
 
+        // A stored setting that listed every reset code turns the codes on for every group.
+        if (config.AccountSettings.ShowResetCodes)
+        {
+            foreach (var group in config.Groups.Append(config.Everyone))
+            {
+                group.Permissions.Accounts.Resets.ShowCodes = true;
+            }
+
+            config.AccountSettings.ShowResetCodes = false;
+        }
+
         var known = knownUsers is { Count: > 0 } ? knownUsers.ToHashSet() : null;
         var admins = administrators?.ToHashSet() ?? new HashSet<Guid>();
         foreach (var group in config.Groups)
@@ -128,6 +139,7 @@ public static class GroupNormalizer
         accounts.Password ??= new PasswordRules();
         accounts.Expiry ??= new ExpiryRule();
         accounts.Inactivity ??= new InactivityRule();
+        accounts.Resets ??= new ResetRules();
         var sessions = accounts.Sessions ??= new SessionRules();
         sessions.Rules = (sessions.Rules ?? new List<SessionCleanupRule>()).Where(r => r is not null).ToList();
         foreach (var rule in sessions.Rules)

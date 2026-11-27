@@ -76,7 +76,7 @@ test('statCards counts each state in its color, Rescinded included', async funct
 
     assert.deepEqual(cards.map(function (c) { return c.label; }), ['Reported', 'Confirmed', 'Resolved', 'Declined', 'Rescinded']);
     assert.deepEqual(cards.map(function (c) { return c.count; }), [2, 1, 4, 1, 3]);
-    assert.deepEqual(cards.map(function (c) { return c.color; }), ['orange', 'red', 'green', 'gray', 'gray']);
+    assert.deepEqual(cards.map(function (c) { return c.color; }), ['orange', 'red', 'green', 'gray', 'blue']);
     assert.equal(mod.totalOf({ Reported: 2, Confirmed: 1, Resolved: 4, Declined: 1, Rescinded: 3 }), 11);
     assert.equal(mod.totalOf(null), 0);
 });

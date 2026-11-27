@@ -118,7 +118,7 @@ def groups(api, ids):
             {'MayCreate': False, 'MaxInvites': 1, 'AnyGroup': False, 'TargetGroupIds': []},
             {'MayHavePeers': False, 'MaxPeers': 1, 'DataLimit': 0, 'DataPeriod': 'Month'})),
     ]
-    # Kids sets some of Jellyfin's own settings, so the Jellyfin access shot has rows on Group.
+    # Kids sets some of Jellyfin's own settings, so the Group Access shot has rows on Group.
     templates = {'Kids': {
         'Access': {'ManageMaxParentalRating': True, 'MaxParentalRating': 10, 'MaxParentalSubRating': 0,
                    'ManageRemoteClientBitrateLimit': True, 'RemoteClientBitrateLimit': 8000000,

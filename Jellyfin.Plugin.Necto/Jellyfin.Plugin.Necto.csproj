@@ -92,6 +92,9 @@
     <JellyfinString Include="ButtonSignIn" />
     <JellyfinString Include="Custom" />
     <JellyfinString Include="Disabled" />
+    <JellyfinString Include="DisablePlugin" />
+    <JellyfinString Include="TabAccess" />
+    <JellyfinString Include="EnablePlugin" />
     <JellyfinString Include="Images" />
     <JellyfinString Include="LabelPath" />
     <JellyfinString Include="LabelSource" />

@@ -23,7 +23,7 @@ export var ISSUE_STATES = {
     Confirmed: { key: 'StateConfirmed', color: 'red' },
     Resolved: { key: 'StateResolved', color: 'green' },
     Declined: { key: 'StateDeclined', color: 'gray' },
-    Rescinded: { key: 'StateRescinded', color: 'gray' }
+    Rescinded: { key: 'StateRescinded', color: 'blue' }
 };
 
 // The verbs an administrator decides an issue with, each with its button, its prompt's title, and its result.

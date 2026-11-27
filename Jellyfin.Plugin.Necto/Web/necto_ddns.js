@@ -81,7 +81,7 @@ export function recordName(record, providers) {
 // [object|null]: The tag.
 export function resultTag(record, t) {
     var action = ACTIONS[record.LastAction];
-    if (!action) return record.LastCheckedUtc ? null : { label: t.tr('DdnsResultNotChecked'), color: 'gray' };
+    if (!action) return record.LastCheckedUtc ? null : { label: t.tr('DdnsResultNotChecked'), color: 'purple' };
     var colors = { success: 'green', warning: 'orange', error: 'red' };
     return { label: t.tr(action.key), color: colors[action.state] };
 }

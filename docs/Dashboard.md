@@ -10,7 +10,7 @@
 
 A status card sums up each tool that is on, in sidebar order, at most two to a row, every card the same width and every card in a row the same height. On a phone they stack one to a row. Select a card to open its tool. **Issues** has a card only with **Enable issues** on, and **Proxy** and **VPN** only while each is on. A card whose tool could not be read shows **Error** and "Could not read this tool".
 
-Each card leads with one number and the word for what it counts, such as "1 pending". Under it, one bar split into parts shows the states that hold anything, in the colors the tool's own page uses, and a legend names each of those parts with a dot in its color and its count. A state at 0 is left out. A bar of one part that says what the number already says, such as **Published** under "2 published", takes no legend. While nothing holds anything, the card shows no bar, only a line that says the tool has nothing yet, such as "No requests yet". The pill uses the same words and colors across Necto.
+Each card leads with one number and the word for what it counts, such as "1 pending". Under it, one bar split into parts shows the states that hold anything, in the colors the tool's own page uses, each part in a color of its own, and a legend names each of those parts with a dot in its color and its count. A state at 0 is left out. A bar of one part that says what the number already says, such as **Published** under "2 published", takes no legend. **Scripts** draws a column per day instead, for the last 14 days, as tall as that day's runs, red on a day with a failed run and green otherwise. Its number counts the runs, and the line under its title counts the failed ones. With no runs it shows the 14 empty columns and "No runs in 14 days". While nothing holds anything, the card shows no bar, only a line that says the tool has nothing yet, such as "No requests yet". The pill uses the same words and colors across Necto.
 
 | Pill | Color | Means |
 | :--- | :--- | :--- |
@@ -29,9 +29,9 @@ Each card leads with one number and the word for what it counts, such as "1 pend
 | **Issues** | Open issue reports, reported or confirmed | A part per issue state |
 | **Invites** | Active invites | A part per invite state |
 | **Proxy** | Active routes | Active, failed, and off routes. A certificate that expires within 14 days names its date in place of the line |
-| **DDNS** | Records up to date, counting each name a record follows | A part per last result, and the records that are off |
+| **DDNS** | Records up to date, counting each name a record follows | Up to date, not checked yet, warning, failed, and off records |
 | **VPN** | Connected peers and connections | A part per peer and connection state |
-| **Scripts** | Runs that failed in the last 14 days | Runs that succeeded and failed |
+| **Scripts** | Runs in the last 14 days | A column per day, red on a day with a failed run |
 | **Pages** | Published pages | Published and unpublished pages |
 | **Storage** | Disks Jellyfin uses, as the **Storage** tool counts them | A part per disk state |
 | **Notifications** | Sends in the send log that went | Sends that went and that failed |
@@ -59,7 +59,7 @@ Places come from the location database the proxy uses, DB-IP's free database, ke
 
 ## Recent Activity
 
-**Recent activity** lists Necto's newest activity log entries, newest first, each with how long ago it happened and its tool's icon. An error is marked red and a warning orange, and other entries take no mark. It reads the latest 500 entries of Jellyfin's activity log and lists up to 20 of Necto's.
+**Recent activity** lists Necto's newest activity log entries, newest first, each with how long ago it happened and its tool's icon. An error is marked red and a warning orange, and other entries take no mark. It reads the latest 500 entries of Jellyfin's activity log and lists up to 20 of Necto's. The section grows to fit them, with no scroll of its own.
 
 The map and **Recent activity** are read again every minute while the page is open, and the cards each time it opens.
 

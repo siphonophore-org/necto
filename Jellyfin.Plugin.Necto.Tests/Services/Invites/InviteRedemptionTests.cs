@@ -222,6 +222,10 @@ public sealed class InviteRedemptionTests : IDisposable
         Assert.False(result.Success);
         Assert.NotEmpty(result.Message);
         Assert.Empty(_h.Users.Users);
+        if (why is "groupExpired" or "expired")
+        {
+            Assert.Equal("This invite has expired.", result.Message);
+        }
     }
 
     /// <summary>

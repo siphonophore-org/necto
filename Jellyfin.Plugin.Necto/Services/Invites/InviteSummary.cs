@@ -48,6 +48,9 @@ public class InviteSummary
     /// <summary>Gets or sets where the invite stands.</summary>
     public InviteState State { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the group a new account would join has expired, which expires the invite.</summary>
+    public bool GroupExpired { get; set; }
+
     /// <summary>Gets or sets when the invite was made, in UTC.</summary>
     public DateTime CreatedAt { get; set; }
 

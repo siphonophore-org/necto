@@ -47,7 +47,7 @@ export function groupOptions(config, t) {
 }
 
 // buildSettings
-// Fills the Groups section of Settings: the group a new user joins, and whether reset codes show.
+// Fills the Groups section of Settings: the group a new user joins.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -58,20 +58,13 @@ export function groupOptions(config, t) {
 function buildSettings(content, ctx) {
     var t = ctx.shared.t;
     var selectId = fieldId('new-user-group');
-    var resetId = fieldId('show-reset-codes');
     var select = h('select', { is: 'emby-select', id: selectId, 'data-field': 'NewUserGroupId' });
-    var resets = h('input', { type: 'checkbox', is: 'emby-checkbox', id: resetId, 'data-field': 'ShowResetCodes' });
 
     content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderNewUsers') }));
     content.appendChild(h('div', { class: 'selectContainer' }, [
         h('label', { class: 'selectLabel', for: selectId, text: t.tr('LabelNewUserGroup') }),
         select,
         h('div', { class: 'fieldDescription', text: t.tr('NewUserGroupHelp') })
-    ]));
-    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderAccounts') }));
-    content.appendChild(h('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
-        h('label', {}, [resets, h('span', { text: t.tr('LabelShowResetCodes') })]),
-        h('div', { class: 'fieldDescription checkboxFieldDescription', text: t.tr('ShowResetCodesHelp') })
     ]));
 
     return {
@@ -82,13 +75,10 @@ function buildSettings(content, ctx) {
                 select.appendChild(h('option', { value: o.value, text: o.label }));
             });
             select.value = chosen;
-            resets.checked = !!(config.AccountSettings && config.AccountSettings.ShowResetCodes);
         },
         apply: function (config) {
             config.GroupSettings = config.GroupSettings || {};
             config.GroupSettings.NewUserGroupId = select.value || null;
-            config.AccountSettings = config.AccountSettings || {};
-            config.AccountSettings.ShowResetCodes = !!resets.checked;
         }
     };
 }

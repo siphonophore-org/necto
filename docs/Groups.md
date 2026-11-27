@@ -19,9 +19,9 @@ The sidecar holds the group's name, then a collapsible section for each part, cl
 | Section | What it holds |
 | :--- | :--- |
 | **Members** | The users in the group |
-| **Account rules** | **Password requirements**, **Expiry**, **Inactivity**, and **Session management**, each its own section |
-| **Jellyfin access** | **Library access**, **Device access**, **Media deletion**, **Media playback**, **Live TV**, **Remote control**, **Parental control**, and **Profile**, as on Jellyfin's user pages |
-| **Jellyfin preferences** | **Subtitles**, **Playback**, **Display**, and **Home**, as on a user's own preference pages |
+| **Account rules** | **Password requirements**, **Expiry**, **Inactivity**, **Session management**, and **Password resets**, each its own section |
+| **Access** | **Library access**, **Device access**, **Media deletion**, **Media playback**, **Live TV**, **Remote control**, **Parental control**, and **Profile**, as on Jellyfin's user pages |
+| **Preferences** | **Subtitles**, **Playback**, **Display**, and **Home**, as on a user's own preference pages |
 | **Requests**, **Issues**, **Invites**, **VPN**, **Pages**, **Notifications** | What members may do in each tool that is on |
 
 A section's tile is green while the group gives members anything in it, such as a rule turned on, a row set by the group, or **Allow requests**, and gray while it gives nothing. The shelf holds **Remove** and **Save**, and the close button leaves, asking first when there are unsaved edits. **Save** asks first while the group has an expiry date and **Delete the account** as its method, since those members cannot come back. **Remove** asks first, with the group's name in the title, such as "Remove Family". Its members keep their accounts and take **Everyone**.
@@ -77,11 +77,16 @@ A refused change shows the reason on the password form, and writes "Password cha
 * **Clients** lists the clients seen on the server, from its devices and sessions, and the common Jellyfin clients, to pick from. **Other clients** takes any other name.
 * Where several rules of one group cover a client, the shortest window wins, and the editor names the clients that overlap.
 
+### Password Resets
+
+* **Show reset codes** lists the codes of members' pending password resets in **Troubleshooting**. Use HTTPS so they cannot be read in transit.
+* An administrator is in no group, so an administrator's reset code never shows.
+
 ## Jellyfin Settings
 
-**Jellyfin access** and **Jellyfin preferences** write Jellyfin's own user settings onto members, with Jellyfin's own words.
+**Access** and **Preferences** write Jellyfin's own user settings onto members, with Jellyfin's own words.
 
-![Jellyfin access](screenshots/Group%20Jellyfin%20Access.png)
+![Group access](screenshots/Group%20Access.png)
 
 * Each setting is a row with **Member** and **Group**. **Member** leaves the setting as each member has it, and the row shows the group's own value dimmed. **Group** writes the row's value onto every member.
 * Each section's header counts its rows on **Group**, such as **2 set by group**, and so does the header of the part above it.
@@ -89,7 +94,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 * **Maximum allowed parental rating** lists each rating once per score and sub score, and keeps both, as Jellyfin does.
 * **Subtitle mode** explains the picked mode under it.
 * While the group sets **Library access** to some libraries, the library order and the library lists of **Home** leave out the libraries members cannot see. A library left out keeps its place and its choices.
-* **Jellyfin preferences** starts with when the preferences are written. **Maintain** writes them on every save and sync, so members always match the group. **On join only** writes them once, as a user joins the group, and leaves members free to change them after.
+* **Preferences** starts with when the preferences are written. **Maintain** writes them on every save and sync, so members always match the group. **On join only** writes them once, as a user joins the group, and leaves members free to change them after.
 * The settings are written when a group is saved, when a user is created or joins through an invite, when the server starts, and daily, with the **Apply group Jellyfin settings** task. A setting changed by hand on a member's Jellyfin page goes back to the group's on the next sync, while a row on **Member** is never touched.
 * A group that sets **Disable this user** off never turns on an account its expiry or inactivity turned off.
 * A group stored with **Set Jellyfin settings** off loads with every row on **Member**, so nothing it never wrote starts being written.
@@ -103,7 +108,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 | **Invites** | **Allow invites**, **Open invites**, and **Invite groups** as **Permissive** for any group or **Selective** for the groups picked. See [Invites](Invites.md#members-invites) |
 | **VPN** | **Allow peers**, **Peers per member**, **Data per member (GB)**, **Period**. See [VPN](VPN.md#permissions) |
 | **Pages** | **Permissive** for every signed in page, pages added later too, or **Selective** for the pages picked |
-| **Notifications** | Each event about a member, under the tool that sends it, with a **Browser notifications** and a **Jellyfin messages** switch. Events for administrators are set in Notifications. See [Notifications](Notifications.md#who-gets-an-event) |
+| **Notifications** | Each event about a member, under the tool that sends it, with a **Browser** switch for browser notifications and a **Jellyfin** switch for Jellyfin messages. Events for administrators are set in Notifications. See [Notifications](Notifications.md#who-gets-an-event) |
 
 Which users a script runs for is set on the script, in its editor's **Groups** section. See [Scripts](Scripts.md#groups).
 
@@ -123,7 +128,6 @@ Which users a script runs for is set on the script, in its editor's **Groups** s
 ![Groups settings](screenshots/settings/Groups.png)
 
 * **Group for new users** sets the group a new user joins.
-* **Show reset codes** lists the codes of pending password resets in **Troubleshooting**. Use HTTPS so they cannot be read in transit.
 
 ## Troubleshooting
 
@@ -135,12 +139,12 @@ Which users a script runs for is set on the script, in its editor's **Groups** s
 * **Apply** beside **Apply group Jellyfin settings** writes each user's group Jellyfin settings onto them, and reports how many took them.
 * **Run now** beside **Process expired and inactive users** asks first, then runs the task. A deleted user cannot come back.
 * **Run now** beside **Clean expired sessions** runs the task.
-* **Password resets** counts the pending resets that are **Active**, **Expiring** within 5 minutes, and **Expired**, warns to use HTTPS, and lists each with its user, its state, and its code, expired ones last, while **Show reset codes** is on.
+* **Password resets** counts the pending resets that are **Active**, **Expiring** within 5 minutes, and **Expired**, warns to use HTTPS, and lists each with its user, its state, and its code, expired ones last. It lists the resets of members whose group has **Show reset codes** on.
 
 | Reason | What to do |
 | :--- | :--- |
 | A member is not held to the group's password rules | Check that the member signs in with Jellyfin's own provider, then select **Apply** beside **Apply password rules** |
-| "Reset codes are off. Turn on Show reset codes in Settings to list them." | Turn on **Show reset codes** in **Settings > Groups** |
+| "Reset codes are off. Turn on Show reset codes in a group's Password resets to list them." | Turn on **Show reset codes** under **Account rules > Password resets** in the group's editor |
 
 ## Activity Log
 
@@ -168,7 +172,7 @@ Every route is for administrators.
 | `GET /Groups/Users` | Lists the users with the groups that apply to each, and the expiry date and inactivity window those groups give |
 | `GET /Groups/Users/{userId}/Permissions` | Gives what a user may do in every tool |
 | `POST /Groups/PasswordRules/Apply` | Moves users onto or off password rules |
-| `GET /Groups/ResetCodes` | Lists the pending password resets while **Show reset codes** is on |
+| `GET /Groups/ResetCodes` | Lists the pending password resets of members whose group has **Show reset codes** on |
 | `POST /Groups/Templates/Apply` | Writes each user's group Jellyfin settings, and gives how many took them |
 
 A refused change answers `400` with `{ "Error": "..." }`, and a missing group or user answers `404`.

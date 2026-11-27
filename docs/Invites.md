@@ -4,12 +4,12 @@ Invites are links anyone may use to make their own account on the server, in the
 
 ## The Invites Tool
 
-**Invites** counts the invites in each state at the top, then lists every invite, oldest first, in a table. Each row holds the invite's name, its link, and its group, uses, and expiry, with "Asks for a PIN" when it has a PIN and "Made by" and the member's name when a member made it. At the row's end sit its state badge, **Copy link**, and **Show QR code**, which opens the code with **Copy image** and **Download** in a sidecar. Select a row to open the invite in a sidecar.
+**Invites** counts the invites in each state at the top, then lists every invite, oldest first, in a table. Each row holds the invite's name, its link, and its group, uses, and expiry, with "Group expired" when its group has expired, "Asks for a PIN" when it has a PIN and "Made by" and the member's name when a member made it. At the row's end sit its state badge, **Copy link**, and **Show QR code**, which opens the code with **Copy image** and **Download** in a sidecar. Select a row to open the invite in a sidecar.
 
 * **Search invites** finds invites by name, group, or the member who made them.
 * The state filter shows **All** or one state, in the same words as the counts.
 * **Add invite** at the end of the toolbar opens a new invite.
-* Ticking rows shows **Turn on**, **Turn off**, and **Remove** for them. **Turn on** skips the invites already on and **Turn off** the ones already off, and **Remove** asks first.
+* Ticking rows shows **Enable**, **Disable**, and **Remove** for them. **Enable** skips the invites already enabled and **Disable** the ones already disabled, and **Remove** asks first.
 * With no invites the table says "No invites yet.", and "No invites match." while a search or filter finds none.
 
 | Invites | Invites on a phone |
@@ -18,25 +18,27 @@ Invites are links anyone may use to make their own account on the server, in the
 
 ![Invite editor](screenshots/Invite%20Editor.png)
 
-| State | Means |
-| :--- | :--- |
-| **Active** | The link works |
-| **Locked** | The invite was turned off, or locked itself after too many wrong PINs |
-| **Expired** | The invite's expiry date has come |
-| **Group expired** | The group a new account would join has expired |
-| **Used up** | The invite made as many accounts as it may |
+| State | Color | Means |
+| :--- | :--- | :--- |
+| **Active** | Green | The link works |
+| **Locked** | Purple | The invite locked itself after too many wrong PINs |
+| **Disabled** | Red | An administrator disabled the invite |
+| **Expired** | Orange | The invite's expiry date has come, or the group a new account would join has expired |
+| **Used up** | Gray | The invite made as many accounts as it may |
 
-The sidecar of an invite sets it out in three steps, **Link**, **Invite**, and **Links for new users**, each led by its icon. **Link** shows the link with **Copy** and a QR button, which opens the QR code with **Copy image** and **Download**. Its shelf holds **Remove**, **Turn off** or **Turn on**, **Duplicate**, **Cancel**, and **Save**.
+Each state has its own color on the cards, the badges, and the Dashboard's bar.
+
+The sidecar of an invite sets it out in three steps, **Link**, **Invite**, and **Links for new users**, each led by its icon. **Link** shows the link with **Copy** and a QR button, which opens the QR code with **Copy image** and **Download**. Its shelf holds **Remove**, **Disable** or **Enable**, **Duplicate**, **Cancel**, and **Save**.
 
 * **Name** names the invite in the Invites tool. The sign-up page never shows it.
 * **Welcome message** shows under the sign-up page's heading.
-* **Group** sets the group a new account joins. **Group for new users** follows **Settings > Groups > Group for new users** at the moment the link is used, and **Everyone** joins no group. A group that disallows password changes cannot take invites, so it is not listed. A warning shows while the picked group has expired, since sign-ups into it are refused.
+* **Group** sets the group a new account joins. **Group for new users** follows **Settings > Groups > Group for new users** at the moment the link is used, and **Everyone** joins no group. A group that disallows password changes cannot take invites, so it is not listed. A warning shows while the picked group has expired, since that expires the invite.
 * **Uses** sets how many accounts the link makes. 0 is no limit.
 * **Expiry date** stops the link on that day. Leave it blank to keep the link until it is used up.
 * **PIN** asks for six digits on the sign-up page. A stored PIN stays hidden, and **Remove PIN** beside the field clears it on save.
 * **Links for new users** shows each link as a button once the account is made, such as a guide. Each needs button text and a full http or https address.
 
-**Turn on** clears an invite's wrong PINs. It is refused while the expiry date has passed or the group disallows password changes. Moving the expiry date ahead turns an invite back on. **Duplicate** makes a new link with the same settings and PIN. **Remove** asks first, with the invite's name in the title, such as "Remove Family", and the accounts the invite made stay.
+**Enable** clears an invite's wrong PINs. It is refused while the expiry date has passed or the group disallows password changes. Moving the expiry date ahead enables an invite again, and moving or clearing its group's expiry date makes it work again. **Duplicate** makes a new link with the same settings and PIN. **Remove** asks first, with the invite's name in the title, such as "Remove Family", and the accounts the invite made stay.
 
 ## The Sign-up Page
 
@@ -65,7 +67,7 @@ A member removes only their own invites, and **Remove** asks first. A viewer who
 !!! warning "Reverse proxy users: add your proxy to Known proxies"
     The address limits count each visitor by the address Jellyfin sees. Behind a reverse proxy, Jellyfin sees the real visitor only when the proxy is listed under **Dashboard > Networking > Known proxies**. Otherwise every visitor shares the proxy's address and one budget. The server log warns once when invite calls look like they come through an untrusted proxy.
 
-* **Wrong PINs before a lock** locks an invite after that many wrong PINs in a row, from anyone, until an administrator turns it on.
+* **Wrong PINs before a lock** locks an invite after that many wrong PINs in a row, from anyone, until an administrator enables it.
 * **Sign-ups before a pause** and **Pause window (minutes)** pause an invite once it has made that many accounts in the window. 0 in either is no limit.
 * Each network address may open 60 invite pages and make 10 sign-up attempts every 15 minutes, across all invites. Every attempt counts. Past that the server answers "Too many attempts from your network. Wait a few minutes and try again." IPv6 visitors are counted per /64. These limits reset when the server restarts.
 * A taken user name gets "Could not create the account. Check the details and try again.", so the page cannot be used to find out who has an account.
@@ -86,23 +88,23 @@ A member removes only their own invites, and **Remove** asks first. A viewer who
 
 ## Troubleshooting
 
-**Troubleshooting > Invites** holds **Run now** beside **Turn off expired invites**.
+**Troubleshooting > Invites** holds **Run now** beside **Disable expired invites**.
 
 ![Invites troubleshooting](screenshots/troubleshooting/Invites.png)
 
 | Reason | What to do |
 | :--- | :--- |
-| "Too many wrong PINs. This invite is locked." | Open the invite and select **Turn on** |
+| "Too many wrong PINs. This invite is locked." | Open the invite and select **Enable** |
 | "This invite was used recently. Try again later." | Wait for the pause window, or raise **Sign-ups before a pause** |
-| "This invite's group has expired. Ask the server's administrator for a new invite." | Move or clear the group's expiry date |
-| "This invite's expiry date has passed. Move the date forward to turn it on." | Set a new **Expiry date** |
+| "This invite has expired." | Move the invite's **Expiry date** forward, or move or clear its group's expiry date |
+| "This invite's expiry date has passed. Move the date forward to enable it." | Set a new **Expiry date** |
 | "The group disallows password changes, so it cannot take invites." | Pick another group, or change the group's **Password changes** |
 
 ## Scheduled Tasks
 
 | Task | What it does | Runs |
 | :--- | :--- | :--- |
-| **Turn off expired invites** | Turns off every invite whose expiry date has come | Daily at midnight |
+| **Disable expired invites** | Disables every invite whose expiry date has come | Daily at midnight |
 
 An invite stops working on its expiry date before the task runs.
 
@@ -115,7 +117,7 @@ An invite stops working on its expiry date before the task runs.
 | "Invite reached its limit" | An invite makes its last account | `invites.usedUp` |
 | "Invite locked by PIN" | Wrong PINs lock an invite | `invites.locked` |
 | "Wrong invite PIN", "Wrong invite PINs" | Wrong PINs, summed in a burst | None |
-| "Invite expired", "Expired invites" | The expiry task turns invites off | `invites.expired` |
+| "Invite expired", "Expired invites" | The expiry task disables invites | `invites.expired` |
 
 See [Notifications](Notifications.md#events) for who gets each event.
 
@@ -128,7 +130,7 @@ See [Notifications](Notifications.md#events) for who gets each event.
 | `POST /Invites` | Administrators | Makes an invite |
 | `PUT /Invites/{id}` | Administrators | Changes an invite. A `Pin` of `null` keeps it, and an empty one removes it |
 | `POST /Invites/{id}/Duplicate` | Administrators | Makes a copy with a new link |
-| `POST /Invites/{id}/Enabled` | Administrators | Turns an invite on or off |
+| `POST /Invites/{id}/Enabled` | Administrators | Enables or disables an invite |
 | `POST /Invites/{id}/Expiry` | Administrators | Moves an invite's expiry date |
 | `DELETE /Invites/{id}` | Administrators | Deletes an invite |
 | `GET /Invites/Mine` | Signed in users | Gives the caller's invites, limits, and groups |

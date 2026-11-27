@@ -244,13 +244,14 @@ export function safeFileName(name) {
 // state [string]: Connected, Offline, Disabled, OverLimit, NotAllowed, OverPeerCount, or Failed.
 //
 // Output
-// [object]: { label, icon, color, off } for a record list tag.
+// [object]: { label, icon, color, off } for a record list tag. Each state has its own color, so the Dashboard's bar
+// tells them apart.
 export function stateTag(t, state) {
-    if (state === 'OverLimit') return { label: t.tr('WireGuardTagOverLimit'), icon: 'block', color: 'red' };
+    if (state === 'OverLimit') return { label: t.tr('WireGuardTagOverLimit'), icon: 'block', color: 'pink' };
     if (state === 'NotAllowed') return { label: t.tr('WireGuardTagNotAllowed'), icon: 'block', color: 'orange' };
-    if (state === 'OverPeerCount') return { label: t.tr('WireGuardTagOverPeerCount'), icon: 'block', color: 'orange' };
+    if (state === 'OverPeerCount') return { label: t.tr('WireGuardTagOverPeerCount'), icon: 'block', color: 'yellow' };
     if (state === 'Failed') return { label: t.tr('LabelFailed'), icon: 'error', color: 'red' };
-    if (state === 'Disabled') return { label: t.tr('Disabled'), icon: 'pause', off: true };
+    if (state === 'Disabled') return { label: t.tr('Disabled'), icon: 'pause', color: 'teal', off: true };
     return state === 'Connected'
         ? { label: t.tr('StateConnected'), icon: 'link', color: 'green' }
         : { label: t.tr('StateOffline'), icon: 'link_off', color: 'gray' };

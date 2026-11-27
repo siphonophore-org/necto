@@ -1,7 +1,7 @@
 // necto_invites.js
 // The Invites tool. It counts the invites by state and lists them with search and a state filter, each row with its
-// state, Copy link, and its QR code, and turns on, turns off, or removes the rows picked. Each invite opens in an editor
-// sidecar with its link, its group, limits, PIN, message, and links, with Turn on or Turn off, Duplicate, and Remove.
+// state, Copy link, and its QR code, and enables, disables, or removes the rows picked. Each invite opens in an editor
+// sidecar with its link, its group, limits, PIN, message, and links, with Enable or Disable, Duplicate, and Remove.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
@@ -12,19 +12,23 @@ var esc = nectoModule.escapeHtml;
 // The id of the Everyone group, which an invite names for no group.
 var EVERYONE_ID = '5a1f0c7e-0000-4000-8000-000000000001';
 
-// The state of each invite, by the number the server keeps it as, with its badge.
-var STATES = ['Active', 'Locked', 'Expired', 'GroupExpired', 'UsedUp'];
-var STATE_COLORS = { Active: 'green', Locked: 'gray', Expired: 'orange', GroupExpired: 'orange', UsedUp: 'gray' };
+// The state of each invite, by the number the server keeps it as, with its badge. Expired covers an invite past its
+// own expiry date and one whose group has expired. Each state has its own color, from Stolon's badge states where it
+// has one, so the count cards and the Dashboard's bar tell them apart.
+var STATES = ['Active', 'Locked', 'Expired', 'UsedUp', 'Disabled'];
+var STATE_ORDER = ['Active', 'Locked', 'Disabled', 'Expired', 'UsedUp'];
+var BADGE_COLORS = nectoModule.BADGE_STATES.stateColors;
+var STATE_COLORS = { Active: BADGE_COLORS.Active, Locked: BADGE_COLORS.Locked, Expired: BADGE_COLORS.Expired, UsedUp: 'gray', Disabled: BADGE_COLORS.Disabled };
 
 // STATE_KEYS
 // The string key of each state's badge.
-export var STATE_KEYS = { Active: 'StateActive', Locked: 'StateLocked', Expired: 'StateExpired', GroupExpired: 'StateGroupExpired', UsedUp: 'StateUsedUp' };
+export var STATE_KEYS = { Active: 'StateActive', Locked: 'StateLocked', Expired: 'StateExpired', UsedUp: 'StateUsedUp', Disabled: 'Disabled' };
 
 // Ids for the editor's fields, so each label names its own field.
 var fieldSeq = 0;
 
 // stateName
-// Reads an invite's state, which the server may send as its number or its name.
+// Reads an invite's state, which the server may send as its number or its name. GroupExpired reads as Expired.
 //
 // Inputs
 // state [number|string]: The state.
@@ -32,6 +36,7 @@ var fieldSeq = 0;
 // Output
 // [string]: The state's name.
 export function stateName(state) {
+    if (state === 'GroupExpired') return 'Expired';
     return typeof state === 'number' ? (STATES[state] || 'Active') : (STATES.indexOf(state) >= 0 ? state : 'Active');
 }
 
@@ -82,7 +87,7 @@ export function expiryDay(iso) {
 }
 
 // inviteLine
-// Writes the line under an invite's link: its group, uses, expiry, PIN, and maker.
+// Writes the line under an invite's link: its group, whether the group has expired, uses, expiry, PIN, and maker.
 //
 // Inputs
 // invite [object]: The invite.
@@ -94,6 +99,7 @@ export function inviteLine(invite, shared) {
     var t = shared.t;
     return [
         invite.GroupName,
+        invite.GroupExpired ? t.tr('InvitesValueGroupExpired') : '',
         usesText(invite, t),
         invite.ExpiresAt ? t.format('ExpiresOnDate', expiryDay(invite.ExpiresAt)) : t.tr('InvitesNeverExpires'),
         invite.HasPin ? t.tr('InvitesValueHasPin') : '',
@@ -110,7 +116,7 @@ export function inviteLine(invite, shared) {
 // Output
 // [object[]]: Each choice's value and label.
 export function stateFilters(t) {
-    return STATES.map(function (state) { return { value: state, label: t.tr(STATE_KEYS[state]) }; });
+    return STATE_ORDER.map(function (state) { return { value: state, label: t.tr(STATE_KEYS[state]) }; });
 }
 
 // stateCell
@@ -136,20 +142,21 @@ export function stateCell(invite, shared) {
 
 // BULK_VERBS
 // The changes the bulk bar offers, each with its button's string key and class.
-export var BULK_VERBS = [['on', 'ButtonTurnOn', 'stolon-primary'], ['off', 'ButtonTurnOff', 'stolon-secondary'], ['remove', 'ButtonRemove', 'stolon-destructive']];
+export var BULK_VERBS = [['enable', 'EnablePlugin', 'stolon-primary'], ['disable', 'DisablePlugin', 'stolon-secondary'], ['remove', 'ButtonRemove', 'stolon-destructive']];
 
 // canChange
-// Tells whether a bulk change applies to an invite, so Turn on skips the invites already on and Turn off the ones off.
+// Tells whether a bulk change applies to an invite, so Enable skips the invites already enabled and Disable the ones
+// already disabled.
 //
 // Inputs
 // invite [object]: The invite.
-// verb [string]: on, off, or remove.
+// verb [string]: enable, disable, or remove.
 //
 // Output
 // [boolean]: Whether the invite takes it.
 export function canChange(invite, verb) {
-    if (verb === 'on') return !invite.Enabled;
-    if (verb === 'off') return !!invite.Enabled;
+    if (verb === 'enable') return !invite.Enabled;
+    if (verb === 'disable') return !!invite.Enabled;
     return true;
 }
 
@@ -157,19 +164,19 @@ export function canChange(invite, verb) {
 // Words what a bulk change did, a sentence for each outcome.
 //
 // Inputs
-// verb [string]: on, off, or remove.
+// verb [string]: enable, disable, or remove.
 // done [number]: How many it changed.
 // failed [number]: How many the server refused.
-// skipped [number]: How many were already on or off.
+// skipped [number]: How many were already enabled or disabled.
 // t [object]: The strings.
 //
 // Output
 // [object]: text, the sentences, and isError, true when some failed.
 export function bulkResultText(verb, done, failed, skipped, t) {
-    var keys = { on: ['InvitesBulkTurnedOnOne', 'InvitesBulkTurnedOnMany'], off: ['InvitesBulkTurnedOffOne', 'InvitesBulkTurnedOffMany'], remove: ['InvitesBulkRemovedOne', 'InvitesBulkRemovedMany'] }[verb];
+    var keys = { enable: ['InvitesBulkEnabledOne', 'InvitesBulkEnabledMany'], disable: ['InvitesBulkDisabledOne', 'InvitesBulkDisabledMany'], remove: ['InvitesBulkRemovedOne', 'InvitesBulkRemovedMany'] }[verb];
     var text = [t.plural(done, keys[0], keys[1])];
     if (failed) text.push(t.plural(failed, 'InvitesBulkFailedOne', 'InvitesBulkFailedMany'));
-    if (skipped) text.push(t.plural(skipped, verb === 'on' ? 'InvitesBulkSkippedOnOne' : 'InvitesBulkSkippedOffOne', verb === 'on' ? 'InvitesBulkSkippedOnMany' : 'InvitesBulkSkippedOffMany'));
+    if (skipped) text.push(t.plural(skipped, verb === 'enable' ? 'InvitesBulkSkippedEnableOne' : 'InvitesBulkSkippedDisableOne', verb === 'enable' ? 'InvitesBulkSkippedEnableMany' : 'InvitesBulkSkippedDisableMany'));
     return { text: text.join(' '), isError: !!failed };
 }
 
@@ -183,14 +190,14 @@ export function bulkResultText(verb, done, failed, skipped, t) {
 // Output
 // [object[]]: One card per state, with its count, label, and color.
 export function stateCards(invites, t) {
-    return STATES.map(function (state) {
+    return STATE_ORDER.map(function (state) {
         var count = (invites || []).filter(function (i) { return stateName(i.State) === state; }).length;
         return { count: count, label: t.tr(STATE_KEYS[state]), color: STATE_COLORS[state] };
     });
 }
 
 // groupExpired
-// Tells whether a group's expiry date has come, so signups into it are refused.
+// Tells whether a group's expiry date has come, which expires the invites into it.
 //
 // Inputs
 // group [object]: The group, or null.
@@ -494,7 +501,7 @@ export default function (view) {
     }
 
     // onSelection
-    // Turns the bulk actions on while rows are picked.
+    // Enables the bulk actions while rows are picked.
     function onSelection(ids) {
         view.querySelectorAll('[data-bulk]').forEach(function (btn) { btn.disabled = !ids.length; });
     }
@@ -518,7 +525,7 @@ export default function (view) {
     }
 
     // bulk
-    // Turns on, turns off, or removes every row picked that takes it, asking first before a removal, and says how
+    // Enables, disables, or removes every row picked that takes it, asking first before a removal, and says how
     // many it changed.
     function bulk(verb) {
         var t = shared.t;
@@ -537,7 +544,7 @@ export default function (view) {
                 return chain.then(function () {
                     var call = verb === 'remove'
                         ? shared.request('Invites/' + invite.Id, 'DELETE')
-                        : shared.request('Invites/' + invite.Id + '/Enabled', 'POST', { Enabled: verb === 'on' });
+                        : shared.request('Invites/' + invite.Id + '/Enabled', 'POST', { Enabled: verb === 'enable' });
                     return call.then(function () { done += 1; }, function () { failedCount += 1; });
                 });
             }, Promise.resolve()).then(function () {
@@ -563,10 +570,10 @@ export default function (view) {
         var isNew = !invite;
         var editor = createInviteEditor(invite || { MaxUses: 1 }, { shared: shared, groups: groups, newUserGroupId: newUserGroupId, link: isNew ? '' : linkOf(invite) });
         var actions = isNew ? [] : [
-            { text: t.tr(invite.Enabled ? 'ButtonTurnOff' : 'ButtonTurnOn'), onClick: function (handle) {
+            { text: t.tr(invite.Enabled ? 'DisablePlugin' : 'EnablePlugin'), onClick: function (handle) {
                 shared.request('Invites/' + invite.Id + '/Enabled', 'POST', { Enabled: !invite.Enabled }).then(function () {
                     handle.close('saved');
-                    report(t.tr(invite.Enabled ? 'InvitesTurnedOff' : 'InvitesTurnedOn'), false);
+                    report(t.tr(invite.Enabled ? 'InvitesDisabled' : 'InvitesEnabled'), false);
                     loadInvites();
                 }).catch(fail(editor, 'InvitesErrorSave'));
             } },

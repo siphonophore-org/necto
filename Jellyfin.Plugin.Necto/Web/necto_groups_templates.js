@@ -87,7 +87,7 @@ export var HOME_SECTION_COUNT = 10;
 export var DEFAULT_HOME_SECTIONS = ['smalllibrarytiles', 'resume', 'resumeaudio', 'resumebook', 'livetv', 'nextup', 'latestmedia', 'none', 'none', 'none'];
 
 // accessSpecs
-// Describes the Jellyfin access rows, by section, with Jellyfin's own labels.
+// Describes the Access rows, by section, with Jellyfin's own labels.
 //
 // Inputs
 // t [object]: The strings.
@@ -390,7 +390,7 @@ export function setByGroupBadge(count, t) {
 }
 
 // drawTemplateSections
-// Adds Jellyfin access and Jellyfin preferences to a group editor. Each holds a collapsible section per area, as on
+// Adds Access and Preferences to a group editor. Each holds a collapsible section per area, as on
 // Jellyfin's own user pages, and each row is left to the member or set by the group. A header counts the rows the
 // group sets, and its tile is green while it sets any.
 //
@@ -414,7 +414,7 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
 
     var accessBody = h('div', { class: 'stolon-stack' }, [h('div', { class: 'fieldDescription', text: t.tr('GroupsTemplateAccessHelp') })]);
     var prefsBody = h('div', { class: 'stolon-stack' }, [h('div', { class: 'fieldDescription', text: t.tr('GroupsTemplatePreferencesHelp') })]);
-    var access = section(t.tr('GroupsTemplateAccessTitle'), 'admin_panel_settings', accessBody);
+    var access = section(t.tr('TabAccess'), 'admin_panel_settings', accessBody);
     access.element.setAttribute('data-section', 'template-access');
     var prefs = section(t.tr('GroupsTemplatePreferencesTitle'), 'tune', prefsBody);
     prefs.element.setAttribute('data-section', 'template-preferences');

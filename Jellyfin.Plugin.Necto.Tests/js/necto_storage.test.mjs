@@ -49,8 +49,8 @@ test('a disk state reads as its badge, most serious first, in the colors the sty
     var storage = await loadScript('necto_storage.js');
 
     assert.deepEqual(storage.stateOf(t, disk({ State: 'Missing' })), { label: 'Missing', color: 'red' });
-    assert.deepEqual(storage.stateOf(t, disk({ State: 'Unresponsive' })), { label: 'Unresponsive', color: 'orange' });
-    assert.deepEqual(storage.stateOf(t, disk({ Health: 'Failing', Level: 'Warning' })), { label: 'Failing', color: 'red' });
+    assert.deepEqual(storage.stateOf(t, disk({ State: 'Unresponsive' })), { label: 'Unresponsive', color: 'teal' });
+    assert.deepEqual(storage.stateOf(t, disk({ Health: 'Failing', Level: 'Warning' })), { label: 'Failing', color: 'yellow' });
     assert.deepEqual(storage.stateOf(t, disk({ Level: 'Warning' })), { label: 'Needs attention', color: 'orange' });
     assert.deepEqual(storage.stateOf(t, disk({ InUse: false })), { label: 'Unused', color: 'gray' });
     assert.equal(storage.stateOf(t, disk()).color, 'green');

@@ -87,8 +87,8 @@ test('the toolbar has search, a state filter in the count cards\' words, and Add
     var controls = opened.view.querySelector('.stolon-table-controls');
 
     assert.equal(controls.querySelector('input').getAttribute('placeholder'), 'Search invites');
-    assert.deepEqual(texts(controls, 'select option'), ['All', 'Active', 'Locked', 'Expired', 'Group expired', 'Used up']);
-    assert.match(opened.view.querySelector('#inviteCards').innerHTML + opened.view.querySelector('#inviteCards').textContent, /Active[\s\S]*Locked[\s\S]*Expired[\s\S]*Group expired[\s\S]*Used up/);
+    assert.deepEqual(texts(controls, 'select option'), ['All', 'Active', 'Locked', 'Disabled', 'Expired', 'Used up']);
+    assert.match(opened.view.querySelector('#inviteCards').innerHTML + opened.view.querySelector('#inviteCards').textContent, /Active[\s\S]*Locked[\s\S]*Disabled[\s\S]*Expired[\s\S]*Used up/);
     assert.ok(controls.querySelector('#btnAddInvite'));
     assert.match(controls.querySelector('#btnAddInvite').textContent, /Add invite/);
 });
@@ -136,7 +136,7 @@ test('Show QR code opens the invite link\'s code in a sidecar, not the editor', 
     assert.equal(sidecar.querySelector('[data-field="Label"]'), null);
 });
 
-test('an invite opens with its link, its fields, and Turn off, Duplicate, Remove, and Save', async function () {
+test('an invite opens with its link, its fields, and Disable, Duplicate, Remove, and Save', async function () {
     var opened = await openPage();
     rowsOf(opened)[0].click();
     await settle(50);
@@ -146,7 +146,7 @@ test('an invite opens with its link, its fields, and Turn off, Duplicate, Remove
     assert.equal(sidecar.querySelector('[data-field="Label"]').value, 'Family');
     assert.equal(sidecar.querySelector('[data-field="GroupId"]').value, FAMILY);
     assert.deepEqual(texts(sidecar.querySelector('[data-field="GroupId"]'), 'option'), ['Group for new users', 'Everyone', 'Family']);
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Turn off', 'Duplicate', 'Save']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Disable', 'Duplicate', 'Save']);
 });
 
 test('the editor sets out its steps under icon tiles, never uppercase headings', async function () {
@@ -160,7 +160,7 @@ test('the editor sets out its steps under icon tiles, never uppercase headings',
     assert.equal(sidecar.querySelector('.stolon-subsection-title'), null);
 });
 
-test('Save keeps a stored PIN, and Turn off posts to the invite', async function () {
+test('Save keeps a stored PIN, and Disable posts to the invite', async function () {
     var opened = await openPage({ ['PUT Invites/' + INVITE]: {}, ['POST Invites/' + INVITE + '/Enabled']: {} });
     rowsOf(opened)[0].click();
     await settle(50);
@@ -177,7 +177,7 @@ test('Save keeps a stored PIN, and Turn off posts to the invite', async function
 
     rowsOf(opened)[0].click();
     await settle(50);
-    clickButton(opened.dom.document.querySelector('.stolon-sidecar .stolon-sidecar-shelf'), 'Turn off');
+    clickButton(opened.dom.document.querySelector('.stolon-sidecar .stolon-sidecar-shelf'), 'Disable');
     await settle(50);
     var off = opened.page.requests.find(function (r) { return r.type === 'POST' && r.url === 'Invites/' + INVITE + '/Enabled'; });
     assert.deepEqual(JSON.parse(off.data), { Enabled: false });
@@ -215,19 +215,19 @@ test('Remove asks first, then removes the invite', async function () {
     assert.ok(opened.page.requests.some(function (r) { return r.type === 'DELETE' && r.url === 'Invites/' + INVITE; }));
 });
 
-test('the bulk bar offers Turn on, Turn off, and Remove, and Turn on skips the invites already on', async function () {
+test('the bulk bar offers Enable, Disable, and Remove, and Enable skips the invites already enabled', async function () {
     var list = invites().concat([{ Id: '99999999-0000-0000-0000-000000000003', Token: 'ghi', Label: 'Off', GroupName: 'Family', MaxUses: 0, UsedCount: 0, Enabled: false, State: 'Locked' }]);
     var opened = await openPage({}, list);
 
-    assert.deepEqual(texts(opened.view.querySelector('.stolon-table-bulk-actions'), '[data-bulk]'), ['Turn on', 'Turn off', 'Remove']);
+    assert.deepEqual(texts(opened.view.querySelector('.stolon-table-bulk-actions'), '[data-bulk]'), ['Enable', 'Disable', 'Remove']);
     pick(opened, [0, 2]);
-    await opened.handle.bulk('on');
+    await opened.handle.bulk('enable');
     await settle(50);
 
     var posts = opened.page.requests.filter(function (r) { return r.type === 'POST'; });
     assert.deepEqual(posts.map(function (r) { return r.url; }), ['Invites/99999999-0000-0000-0000-000000000003/Enabled']);
     assert.deepEqual(JSON.parse(posts[0].data), { Enabled: true });
-    assert.match(opened.view.querySelector('#invitesStatus').textContent, /Turned on 1 invite\. Skipped 1 invite already on\./);
+    assert.match(opened.view.querySelector('#invitesStatus').textContent, /Enabled 1 invite\. Skipped 1 invite already enabled\./);
 });
 
 test('bulk Remove asks first, then removes every invite picked', async function () {
@@ -249,11 +249,11 @@ test('bulkResultText and canChange say what a bulk change did and which invites 
     var mod = await loadScript('necto_invites.js');
     var t = { plural: function (n, one, many) { return (n === 1 ? one : many) + ':' + n; } };
 
-    assert.deepEqual(mod.bulkResultText('off', 2, 1, 1, t), { text: 'InvitesBulkTurnedOffMany:2 InvitesBulkFailedOne:1 InvitesBulkSkippedOffOne:1', isError: true });
+    assert.deepEqual(mod.bulkResultText('disable', 2, 1, 1, t), { text: 'InvitesBulkDisabledMany:2 InvitesBulkFailedOne:1 InvitesBulkSkippedDisableOne:1', isError: true });
     assert.deepEqual(mod.bulkResultText('remove', 1, 0, 0, t), { text: 'InvitesBulkRemovedOne:1', isError: false });
-    assert.equal(mod.canChange({ Enabled: true }, 'on'), false);
-    assert.equal(mod.canChange({ Enabled: false }, 'on'), true);
-    assert.equal(mod.canChange({ Enabled: false }, 'off'), false);
+    assert.equal(mod.canChange({ Enabled: true }, 'enable'), false);
+    assert.equal(mod.canChange({ Enabled: false }, 'enable'), true);
+    assert.equal(mod.canChange({ Enabled: false }, 'disable'), false);
     assert.equal(mod.canChange({ Enabled: false }, 'remove'), true);
     assert.equal(mod.expiryDay('2026-01-01T00:00:00.0000000Z'), new Date('2026-01-01T00:00:00').toLocaleDateString());
 });
@@ -266,7 +266,10 @@ test('inviteRequest and inviteLink build what the server and the invitee get', a
     assert.equal(mod.inviteLink('t', 'https://proxy.example.com/', 'http://10.0.0.2:8096'), 'https://proxy.example.com/invites/t');
     assert.deepEqual(mod.inviteRequest({ label: ' Family ', group: '', uses: '-3', expiry: '2026-12-31', pin: '', pinKept: true, resources: [{ title: '', url: '' }] }),
         { Label: 'Family', Message: '', GroupId: null, ExpiresAt: '2026-12-31T00:00:00', MaxUses: 0, Pin: null, Resources: [] });
-    assert.equal(mod.stateName(4), 'UsedUp');
+    assert.equal(mod.stateName(3), 'UsedUp');
+    assert.equal(mod.stateName('GroupExpired'), 'Expired');
+    var t = { tr: function (k) { return k; }, format: function (k, a, b) { return k + ':' + a + (b === undefined ? '' : ':' + b); } };
+    assert.equal(mod.inviteLine({ GroupName: 'Kids', GroupExpired: true, MaxUses: 0, UsedCount: 1 }, { t: t }), 'Kids · InvitesValueGroupExpired · InvitesUses:1 · InvitesNeverExpires');
 });
 
 test('the Invites section of Settings saves the link address and the limits into the config', async function () {
@@ -335,6 +338,9 @@ test('the counts, the expired group warning, and the http warning follow the inv
 
     var cards = mod.stateCards(invites(), t);
     assert.deepEqual(cards.map(function (c) { return c.count; }), [1, 0, 0, 0, 1]);
+    assert.deepEqual(cards.map(function (c) { return c.color; }), ['green', 'purple', 'red', 'orange', 'gray']);
+    assert.equal(new Set(cards.map(function (c) { return c.color; })).size, cards.length);
+    assert.equal(mod.stateName(4), 'Disabled');
     assert.equal(cards[0].color, 'green');
     var now = new Date('2026-11-26T12:00:00Z');
     assert.equal(mod.groupExpired({ Permissions: { Accounts: { Expiry: { ExpiresOn: '2026-11-26T00:00:00' } } } }, now), true);

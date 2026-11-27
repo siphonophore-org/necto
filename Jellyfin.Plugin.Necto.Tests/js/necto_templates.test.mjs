@@ -170,8 +170,8 @@ test('the editor draws the Jellyfin sections and saves the template, the prefere
     await settle(80);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
 
-    assert.ok(texts(sidecar, '.stolon-collapsible-title').indexOf('Jellyfin access') >= 0);
-    assert.ok(texts(sidecar, '.stolon-collapsible-title').indexOf('Jellyfin preferences') >= 0);
+    assert.ok(texts(sidecar, '.stolon-collapsible-title').indexOf('Access') >= 0);
+    assert.ok(texts(sidecar, '.stolon-collapsible-title').indexOf('Preferences') >= 0);
     assert.equal(sidecar.querySelector('[data-field="Template.Enabled"]'), null);
     assert.ok(sidecar.querySelector('[data-field="Access.EnableRemoteAccess"]'));
     assert.match(sidecar.querySelector('[data-section="template-access"] > .stolon-collapsible-header').textContent, /1 set by group/);

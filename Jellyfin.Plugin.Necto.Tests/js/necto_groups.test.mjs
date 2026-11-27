@@ -94,8 +94,8 @@ test('a group opens in a sidecar named for it, with its sections, and Remove and
     assert.equal((sidecar.textContent.match(/administrators are never in one/g) || []).length, 1);
     assert.match(sidecar.querySelector('[data-section="members"]').textContent, /administrators are never in one/);
     assert.deepEqual(texts(sidecar, '.stolon-sidecar-body > * > .stolon-collapsible-section > .stolon-collapsible-header .stolon-collapsible-title, [data-role="group-editor"] > .stolon-collapsible-section > .stolon-collapsible-header .stolon-collapsible-title'),
-        ['Members', 'Account rules', 'Jellyfin access', 'Jellyfin preferences', 'Requests', 'Issues', 'Invites', 'VPN', 'Pages', 'Notifications']);
-    assert.deepEqual(texts(sidecar, '[data-section="accounts"] .stolon-collapsible-section .stolon-collapsible-title'), ['Password requirements', 'Expiry', 'Inactivity', 'Session management']);
+        ['Members', 'Account rules', 'Access', 'Preferences', 'Requests', 'Issues', 'Invites', 'VPN', 'Pages', 'Notifications']);
+    assert.deepEqual(texts(sidecar, '[data-section="accounts"] .stolon-collapsible-section .stolon-collapsible-title'), ['Password requirements', 'Expiry', 'Inactivity', 'Session management', 'Password resets']);
     assert.deepEqual(texts(sidecar, '[data-section="template-access"] .stolon-collapsible-section .stolon-collapsible-title').map(function (x) { return x.toLowerCase(); }),
         ['library access', 'device access', 'media deletion', 'media playback', 'live tv', 'remote control', 'parental control', 'profile']);
     assert.deepEqual(texts(sidecar, '[data-section="template-preferences"] .stolon-collapsible-section .stolon-collapsible-title'), ['Subtitles', 'Playback', 'Display', 'Home']);
@@ -134,6 +134,7 @@ test('each tool section tile is green while the group gives members the tool and
     assert.equal(tile(sidecar, 'accounts-expiry'), 'gray');
     assert.equal(tile(sidecar, 'accounts-inactivity'), 'green');
     assert.equal(tile(sidecar, 'accounts-sessions'), 'gray');
+    assert.equal(tile(sidecar, 'accounts-resets'), 'gray');
     assert.equal(sidecar.querySelector('[data-section="scripts"]'), null);
     assert.equal(tile(sidecar, 'requests'), 'green');
     assert.equal(tile(sidecar, 'issues'), 'gray');
@@ -254,6 +255,7 @@ test('Save puts the edited group to its own route with the fields the editor sho
     sidecar.querySelector('[data-field="Name"]').value = 'Friends';
     sidecar.querySelector('[data-field="Accounts.Password.MinLength"]').value = '12';
     sidecar.querySelector('[data-field="Issues.MayReport"]').checked = true;
+    sidecar.querySelector('[data-field="Accounts.Resets.ShowCodes"]').checked = true;
 
     assert.equal(clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Save'), true);
     await settle(50);
@@ -268,6 +270,7 @@ test('Save puts the edited group to its own route with the fields the editor sho
     assert.equal(body.Permissions.Accounts.Password.ChangeMode, 'InitialOnly');
     assert.equal(body.Permissions.Accounts.Inactivity.Days, 45);
     assert.equal(body.Permissions.Accounts.Expiry.ExpiresOn, null);
+    assert.equal(body.Permissions.Accounts.Resets.ShowCodes, true);
     assert.equal(body.Permissions.Issues.MayReport, true);
     assert.equal(body.Permissions.Requests.MovieQuota, 3);
 });

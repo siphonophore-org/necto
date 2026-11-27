@@ -135,7 +135,7 @@ public sealed class InviteService : IDisposable
     /// <summary>
     /// Works out where an invite stands.
     /// </summary>
-    /// <param name="config">The configuration, for the group.</param>
+    /// <param name="config">The configuration, for the group and the PIN limit.</param>
     /// <param name="invite">The invite.</param>
     /// <param name="status">Its counters, or <c>null</c> when it was never used.</param>
     /// <param name="now">The time now, in UTC.</param>
@@ -143,14 +143,16 @@ public sealed class InviteService : IDisposable
     public static InviteState StateOf(PluginConfiguration config, Invite invite, InviteStatus? status, DateTime now)
     {
         ArgumentNullException.ThrowIfNull(invite);
-        if (IsExpired(invite, now))
+        if (IsExpired(invite, now) || InviteNormalizer.HasExpired(InviteNormalizer.TargetGroup(config, invite), now))
         {
             return InviteState.Expired;
         }
 
         if (!invite.Enabled)
         {
-            return InviteState.Locked;
+            // An invite the wrong PINs disabled stays Locked until it is enabled, which clears the count.
+            var limit = Math.Max(1, config?.InviteSettings?.MaxPinAttempts ?? 5);
+            return (status?.FailedPinAttempts ?? 0) >= limit ? InviteState.Locked : InviteState.Disabled;
         }
 
         if (invite.MaxUses > 0 && (status?.UsedCount ?? 0) >= invite.MaxUses)
@@ -158,7 +160,7 @@ public sealed class InviteService : IDisposable
             return InviteState.UsedUp;
         }
 
-        return InviteNormalizer.HasExpired(InviteNormalizer.TargetGroup(config, invite), now) ? InviteState.GroupExpired : InviteState.Active;
+        return InviteState.Active;
     }
 
     /// <summary>
@@ -179,9 +181,12 @@ public sealed class InviteService : IDisposable
         query ??= new PagedQuery();
         var filter = (query.Filter ?? string.Empty).Trim();
         var every = filter.Length == 0 || filter.Equals("All", StringComparison.OrdinalIgnoreCase);
-        InviteState? state = !every && !int.TryParse(filter, out _) && Enum.TryParse<InviteState>(filter, true, out var named) && Enum.IsDefined(named)
-            ? named
-            : null;
+        // A filter saved as GroupExpired lists the expired invites, since an expired group expires its invites.
+        InviteState? state = filter.Equals("GroupExpired", StringComparison.OrdinalIgnoreCase)
+            ? InviteState.Expired
+            : !every && !int.TryParse(filter, out _) && Enum.TryParse<InviteState>(filter, true, out var named) && Enum.IsDefined(named)
+                ? named
+                : null;
         var search = (query.Search ?? string.Empty).Trim();
         var matching = all
             .Where(i => every || i.State == state)
@@ -631,7 +636,7 @@ public sealed class InviteService : IDisposable
         // An account in an expired group would be disabled or deleted on the next run, so it is never made.
         if (InviteNormalizer.HasExpired(group, Now))
         {
-            return InviteRedeemResult.Fail(StolonTranslations.Get(TranslationKeys.InvitesErrorGroupExpired, language));
+            return InviteRedeemResult.Fail(StolonTranslations.Get(TranslationKeys.InvitesErrorExpired, language));
         }
 
         var errors = PasswordValidator.Validate(password, AccountRuleMerger.Password(new[] { group }), language);
@@ -974,6 +979,7 @@ public sealed class InviteService : IDisposable
                 UsedCount = counters?.UsedCount ?? 0,
                 Enabled = i.Enabled,
                 State = StateOf(c, i, counters, now),
+                GroupExpired = InviteNormalizer.HasExpired(group, now),
                 CreatedAt = i.CreatedAt,
                 CreatedBy = i.CreatedBy
             };
