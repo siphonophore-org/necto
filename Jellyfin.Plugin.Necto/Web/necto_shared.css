@@ -141,3 +141,34 @@
 .necto-word-cards .stolon-card-count { font-size: var(--stolon-font-large); white-space: normal; overflow-wrap: anywhere; }
 .necto-word-cards .stolon-card-label { white-space: normal; }
 .pluginConfigurationPage .necto-stack > .fieldDescription { padding-left: 0; }
+
+/* necto-section-flow */
+/* Each Settings and Troubleshooting section lays its blocks out as one column with the standard gap, so every field,
+   checkbox, card row, and panel sits the same distance from the next. Stolon and Jellyfin give fields their own
+   margins, some with !important, which stack unevenly, so the column takes them over. A subsection title gets extra
+   room above, so it groups with what follows. A description right after a field hugs that field. */
+/* Example: <div id="settingsSections"><div class="stolon-collapsible-section"><div class="stolon-collapsible-content"><div>…</div></div></div></div> */
+#settingsSections .stolon-collapsible-content > div,
+#troubleshootingSections .stolon-collapsible-content > div { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
+#settingsSections .stolon-collapsible-content > div > *,
+#troubleshootingSections .stolon-collapsible-content > div > * { flex: none; margin-top: 0 !important; margin-bottom: 0 !important; }
+#settingsSections .stolon-collapsible-content > div > .stolon-subsection-title:not(:first-child),
+#troubleshootingSections .stolon-collapsible-content > div > .stolon-subsection-title:not(:first-child) { margin-top: var(--stolon-gap-wide) !important; }
+#settingsSections .stolon-collapsible-content > div > :not(.stolon-subsection-title) + .fieldDescription,
+#troubleshootingSections .stolon-collapsible-content > div > :not(.stolon-subsection-title) + .fieldDescription { margin-top: calc(var(--stolon-gap-narrow) - var(--stolon-gap-wide)) !important; }
+#settingsSections .stolon-collapsible-content > div > .stolon-status-text:empty,
+#troubleshootingSections .stolon-collapsible-content > div > .stolon-status-text:empty { display: none; }
+#settingsSections .selectContainer > .fieldDescription,
+#settingsSections .inputContainer > .fieldDescription,
+#settingsSections .checkboxContainer > .fieldDescription,
+#troubleshootingSections .selectContainer > .fieldDescription,
+#troubleshootingSections .inputContainer > .fieldDescription { margin-bottom: 0 !important; }
+#settingsSections .stolon-field,
+#troubleshootingSections .stolon-field { gap: var(--stolon-gap-narrow); }
+#settingsSections .stolon-field > *,
+#troubleshootingSections .stolon-field > * { margin-top: 0 !important; margin-bottom: 0 !important; }
+#settingsSections .stolon-field-row > .stolon-panel { margin: 0 !important; }
+#settingsSections .stolon-panel-body > .stolon-slider { margin-bottom: 0 !important; }
+#settingsSections .stolon-panel-body > .fieldDescription { margin: var(--stolon-gap-narrow) 0 0 !important; }
+#settingsSections .necto-storage-alert-editor { gap: var(--stolon-gap-wide); }
+#settingsSections .necto-storage-alert-editor > * { flex: none; margin-top: 0 !important; margin-bottom: 0 !important; }
