@@ -100,36 +100,53 @@ function recordState(entry) {
     return r.FollowProxyHosts && (entry.Followed || []).length ? worst(entry.Followed) : r;
 }
 
-// recordItems
-// Turns the records into rows for the record list. Each row names the record once, shows its provider and, for a
-// record that follows the proxy, how many names it covers, and ends with its state, Off or its last result.
+// STATE_KEYS
+// The string key of each state the table's filter offers, in the words of the count cards.
+var STATE_KEYS = { UpToDate: 'DdnsResultUnchanged', Attention: 'DashboardStateAttention', NotChecked: 'DdnsResultNotChecked', Off: 'Off' };
+
+// stateFilters
+// Lists the state filter's choices: Up to date, Needs attention, Not checked yet, and Off.
 //
 // Inputs
-// entries [object[]]: The Records from Ddns/Records, each { Record, Followed }.
+// t [object]: The strings.
+//
+// Output
+// [object[]]: Each choice's value and label.
+export function stateFilters(t) {
+    return Object.keys(STATE_KEYS).map(function (state) { return { value: state, label: t.tr(STATE_KEYS[state]) }; });
+}
+
+// recordLine
+// Writes the line under a record's name: its provider and, for a record that follows the proxy, how many names it
+// covers, or its host name when the name is another.
+//
+// Inputs
+// entry [object]: One row from Ddns/Records/All, as { Record, Followed }.
 // providers [object[]]: The providers.
 // t [object]: The strings.
 //
 // Output
-// [object[]]: The rows, each carrying its record.
-export function recordItems(entries, providers, t) {
-    return (entries || []).map(function (entry) {
-        var r = entry.Record;
-        var title = recordName(r, providers);
-        var where = r.FollowProxyHosts
-            ? t.plural((entry.Followed || []).length, 'DdnsFollowsHostsOne', 'DdnsFollowsHostsMany')
-            : ((r.Hostname || '').trim() !== title ? (r.Hostname || '').trim() : '');
-        var state = r.Enabled ? resultTag(recordState(entry), t) : { label: t.tr('Off'), color: 'gray' };
-        return {
-            id: r.Id,
-            title: title,
-            secondary: [providerLabel(providers, r.Provider), where].filter(function (x) { return x; }).join(' · '),
-            tags: [],
-            state: state,
-            aside: state ? nectoModule.rowBadge(state) : null,
-            record: r,
-            followed: entry.Followed || []
-        };
-    });
+// [string]: The line, such as "Cloudflare · home.example.com".
+export function recordLine(entry, providers, t) {
+    var r = entry.Record;
+    var title = recordName(r, providers);
+    var where = r.FollowProxyHosts
+        ? t.plural((entry.Followed || []).length, 'DdnsFollowsHostsOne', 'DdnsFollowsHostsMany')
+        : ((r.Hostname || '').trim() !== title ? (r.Hostname || '').trim() : '');
+    return [providerLabel(providers, r.Provider), where].filter(function (x) { return x; }).join(' · ');
+}
+
+// recordBadge
+// Gives the badge a record's row ends with: Off while it is off, else its last result, or none before its first run.
+//
+// Inputs
+// entry [object]: One row from Ddns/Records/All, as { Record, Followed }.
+// t [object]: The strings.
+//
+// Output
+// [object|null]: label and color.
+export function recordBadge(entry, t) {
+    return entry.Record.Enabled ? resultTag(recordState(entry), t) : { label: t.tr('Off'), color: 'gray' };
 }
 
 // countCards
@@ -411,7 +428,7 @@ export default function (view) {
 
     var shared = null;
     var page = null;
-    var list = null;
+    var table = null;
     var providers = [];
     var proxyOn = true;
     var loadSeq = 0;
@@ -437,32 +454,71 @@ export default function (view) {
     }
 
     // loadRecords
-    // Reads the providers once and the records each time, then draws them. A late answer is dropped.
+    // Reads the providers once and the records each time, then draws the cards and the table. A late answer is
+    // dropped.
     function loadRecords() {
         var mine = ++loadSeq;
         var ready = providers.length ? Promise.resolve(providers) : shared.request('Ddns/Providers');
         var config = shared.getConfig().catch(function () { return null; });
         return Promise.all([ready, shared.request('Ddns/Records'), config]).then(function (answers) {
-            if (mine !== loadSeq) return;
+            if (mine !== loadSeq) return null;
             providers = answers[0] || [];
-            var data = answers[1] || {};
             if (answers[2]) proxyOn = nectoModule.toolIsOn(answers[2], 'proxy');
-            showSummary(data);
-            var items = recordItems(data.Records, providers, shared.t);
-            if (list) list.setItems(items);
-            else {
-                list = nectoModule.createRecordList({
-                    items: items,
-                    label: shared.t.tr('TabDdns'),
-                    emptyText: shared.t.tr('DdnsEmptyRecords'),
-                    onOpen: function (item) { openRecord(item.record, item.followed); }
-                });
-                view.querySelector('#ddnsRecords').appendChild(list.element);
-            }
+            showSummary(answers[1] || {});
+            if (!table) { createTable(); return table.load(); }
+            return table.refresh();
         }).catch(function (err) {
             if (mine !== loadSeq) return;
             shared.errorText(err, shared.t.tr('DdnsErrorLoadRecords')).then(function (text) { report(text, true); });
         });
+    }
+
+    // createTable
+    // Builds the records' table with its search, its state filter, Add record and Update now, and its bulk actions.
+    function createTable() {
+        var t = shared.t;
+        table = nectoModule.createToolTable(view, shared, {
+            containerId: 'ddnsRecords',
+            endpoint: 'Ddns/Records/All',
+            idKey: function (entry) { return entry.Record.Id; },
+            search: t.tr('DdnsSearchRecords'),
+            filters: [{ label: t.tr('HeaderStatus'), options: stateFilters(t) }],
+            empty: { message: t.tr('DdnsEmptyRecords'), filteredMessage: t.tr('DdnsEmptyRecordsMatch') },
+            title: function (entry) { return recordName(entry.Record, providers); },
+            lines: function (entry) { return [recordLine(entry, providers, t)]; },
+            status: function (entry) { return recordBadge(entry, t); },
+            add: [
+                { id: 'btnAddRecord', icon: 'add', text: t.tr('DdnsButtonAddRecord'), onClick: function () { openRecord(null); } },
+                { id: 'btnUpdateNow', icon: 'refresh', text: t.tr('DdnsButtonUpdateNow'), variant: 'secondary', onClick: updateNow }
+            ],
+            bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
+            onBulk: bulk,
+            onRowClick: function (entry) { openRecord(entry.Record, entry.Followed); },
+            onReload: function () { loadRecords(); }
+        });
+        page.addCleanup(function () { if (table) { table.destroy(); table = null; } });
+    }
+
+    // bulk
+    // Enables, disables, or removes the records picked, asking first before a removal. Each DNS name stays at its
+    // provider.
+    //
+    // Output
+    // [Promise]: Resolves once the records are read again.
+    function bulk(verb, picked) {
+        var t = shared.t;
+        return nectoModule.runBulk(shared, {
+            verb: verb,
+            rows: picked,
+            prefix: 'DdnsBulk',
+            enabled: function (entry) { return !!entry.Record.Enabled; },
+            confirm: verb === 'remove' ? { text: t.tr('DdnsConfirmRemoveRecord'), title: t.plural(picked.length, 'DdnsHeaderRemoveOne', 'DdnsHeaderRemoveMany') } : null,
+            call: function (entry) {
+                var route = 'Ddns/Records/' + encodeURIComponent(entry.Record.Id);
+                return verb === 'remove' ? shared.request(route, 'DELETE') : shared.request(route, 'PUT', Object.assign({}, entry.Record, { Enabled: verb === 'enable' }));
+            },
+            report: report
+        }).then(function (done) { if (done !== null) return loadRecords(); });
     }
 
     // saveRecord
@@ -533,7 +589,7 @@ export default function (view) {
     // updateNow
     // Checks every enabled record now and sums the run on the status line.
     function updateNow() {
-        var btn = view.querySelector('#btnUpdateNow');
+        var btn = table.addButton('btnUpdateNow');
         btn.disabled = true;
         report(shared.t.tr('DdnsUpdating'), false);
         return shared.request('Ddns/Update', 'POST').then(function (outcome) {
@@ -547,10 +603,6 @@ export default function (view) {
 
     var made = nectoModule.createNectoPage(view, {
         page: 'necto_ddns',
-        bind: function () {
-            view.querySelector('#btnAddRecord').addEventListener('click', function () { openRecord(null); });
-            view.querySelector('#btnUpdateNow').addEventListener('click', updateNow);
-        },
         load: function () { loadRecords(); }
     });
     shared = made.shared;

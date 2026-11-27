@@ -260,6 +260,37 @@ export function routeApi(page, answers) {
     };
 }
 
+// routeApiByPath
+// Answers each request by its method and path whatever its query, such as a table's GET Ddns/Records/All?skip=0.
+//
+// Inputs
+// page [object]: The page from installPage.
+// answers [object]: Each answer by method and path. A function is called with the request.
+export function routeApiByPath(page, answers) {
+    globalThis.ApiClient.fetch = function (options) {
+        page.requests.push(options);
+        var answer = answers[(options.type || 'GET') + ' ' + String(options.url).split('?')[0]];
+        if (typeof answer === 'function') answer = answer(options);
+        if (answer instanceof Error) return Promise.reject(answer);
+        return Promise.resolve(answer === undefined ? {} : answer);
+    };
+}
+
+// pickRows
+// Ticks the checkbox of each table row at these places under a root.
+//
+// Inputs
+// root [object]: Where the table is.
+// places [number[]]: The rows' places, from 0.
+export function pickRows(root, places) {
+    var rows = root.querySelectorAll('.stolon-table-row');
+    places.forEach(function (i) {
+        var box = rows[i].querySelector('.stolon-table-row-checkbox');
+        box.checked = true;
+        box.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    });
+}
+
 // texts
 // Reads the text of every element a selector matches under a root.
 //

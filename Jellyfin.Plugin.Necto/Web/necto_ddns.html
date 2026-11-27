@@ -1,5 +1,5 @@
 <!-- necto_ddns.html -->
-<!-- The DDNS tool. It counts the records beside the public addresses the last run found and lists the records, each opening an editor sidecar. -->
+<!-- The DDNS tool. It counts the records beside the public addresses the last run found and lists the records in a table, each opening an editor sidecar. -->
 
 <div id="NectoDdnsPage" data-role="page" class="page type-interior pluginConfigurationPage"
      data-require="emby-input,emby-button,emby-select,emby-checkbox"
@@ -18,20 +18,11 @@
                 <!-- The addresses the last run found, shared by every record. -->
                 <div id="ddnsAddress"></div>
 
+                <div id="ddnsStatus" class="stolon-status-text" role="status"></div>
+
                 <!-- Records -->
-                <!-- Every record, each opening its editor. -->
+                <!-- Every record, with search, a state filter, Add record and Update now, and bulk actions on the rows picked. -->
                 <div id="ddnsRecords"></div>
-                <div class="stolon-card-list-actions">
-                    <button is="emby-button" type="button" id="btnAddRecord" class="raised stolon-button stolon-primary">
-                        <span class="material-icons" aria-hidden="true">add</span>
-                        <span data-str="DdnsButtonAddRecord">Add record</span>
-                    </button>
-                    <button is="emby-button" type="button" id="btnUpdateNow" class="raised stolon-button stolon-secondary">
-                        <span class="material-icons" aria-hidden="true">refresh</span>
-                        <span data-str="DdnsButtonUpdateNow">Update now</span>
-                    </button>
-                    <span id="ddnsStatus" class="stolon-status-text" role="status"></span>
-                </div>
             </div>
         </div>
     </div>

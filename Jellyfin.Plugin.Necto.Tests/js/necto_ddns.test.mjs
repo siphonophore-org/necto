@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton } from './support.mjs';
+import { installPage, loadScript, pageView, settle, routeApi, routeApiByPath, pickRows, texts, clickButton, clickDialogButton, dialogText } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
@@ -27,22 +27,19 @@ async function strings() {
     return bag.translations.then(function () { return bag; });
 }
 
-test('recordItems names each record once, with its provider, and ends it with its state, Off or its last result', async function () {
+test('a record row names it once, with its provider, and ends with its state, Off or its last result', async function () {
     var bag = await strings();
     var ddns = await loadScript('necto_ddns.js');
-    var items = ddns.recordItems([
-        { Record: { Id: 'a', Name: '', Hostname: 'home.example.com', Provider: 'Cloudflare', Enabled: true, LastAction: 'Updated', LastCheckedUtc: '2026-11-26T10:00:00Z' }, Followed: [] },
-        { Record: { Id: 'b', Name: 'Office', Hostname: '', Provider: 'DynDns2', Enabled: false, FollowProxyHosts: true }, Followed: [{ Hostname: 'media.example.com', LastAction: 'Failed' }, { Hostname: 'x.example.com', LastAction: 'Updated' }] }
-    ], PROVIDERS, bag.t);
+    var first = { Record: { Id: 'a', Name: '', Hostname: 'home.example.com', Provider: 'Cloudflare', Enabled: true, LastAction: 'Updated', LastCheckedUtc: '2026-11-26T10:00:00Z' }, Followed: [] };
+    var second = { Record: { Id: 'b', Name: 'Office', Hostname: '', Provider: 'DynDns2', Enabled: false, FollowProxyHosts: true }, Followed: [{ Hostname: 'media.example.com', LastAction: 'Failed' }, { Hostname: 'x.example.com', LastAction: 'Updated' }] };
 
-    assert.equal(items[0].title, 'home.example.com');
-    assert.equal(items[0].secondary, 'Cloudflare');
-    assert.deepEqual(items[0].tags, []);
-    assert.deepEqual(items[0].state, { label: 'Updated', color: 'green' });
-    assert.match(items[0].aside.innerHTML, /Updated/);
-    assert.equal(items[1].title, 'Office');
-    assert.equal(items[1].secondary, 'DynDNS v2 · Follows 2 proxy names');
-    assert.deepEqual(items[1].state, { label: 'Off', color: 'gray' });
+    assert.equal(ddns.recordName(first.Record, PROVIDERS), 'home.example.com');
+    assert.equal(ddns.recordLine(first, PROVIDERS, bag.t), 'Cloudflare');
+    assert.deepEqual(ddns.recordBadge(first, bag.t), { label: 'Updated', color: 'green' });
+    assert.equal(ddns.recordName(second.Record, PROVIDERS), 'Office');
+    assert.equal(ddns.recordLine(second, PROVIDERS, bag.t), 'DynDNS v2 · Follows 2 proxy names');
+    assert.deepEqual(ddns.recordBadge(second, bag.t), { label: 'Off', color: 'gray' });
+    assert.deepEqual(ddns.stateFilters(bag.t).map(function (f) { return f.label; }), ['Up to date', 'Needs attention', 'Not checked yet', 'Off']);
 });
 
 test('resultTag says a record that never ran is not checked yet', async function () {
@@ -184,26 +181,86 @@ test('outcomeMessage counts the records updated and failed', async function () {
     assert.equal(ddns.outcomeMessage({ Records: [], Warnings: [] }, bag).text, 'No records to update.');
 });
 
-test('the page draws the cards with the public address and a row per record', async function () {
+// openDdns
+// Shows the DDNS tool over its markup with these records.
+async function openDdns(entries) {
     var page = installPage({});
     var dom = page.dom;
-    var view = pageView(dom, [
-        dom.el('div', { id: 'ddnsNotices' }), dom.el('div', { id: 'ddnsCards' }), dom.el('div', { id: 'ddnsAddress' }), dom.el('div', { id: 'ddnsRecords' }),
-        dom.el('button', { id: 'btnAddRecord' }), dom.el('button', { id: 'btnUpdateNow' }), dom.el('span', { id: 'ddnsStatus' })
-    ]);
+    var view = pageView(dom, [dom.el('div', { id: 'ddnsNotices' }), dom.el('div', { id: 'ddnsCards' }), dom.el('div', { id: 'ddnsAddress' }), dom.el('div', { id: 'ddnsStatus' }), dom.el('div', { id: 'ddnsRecords' })]);
     dom.document.documentElement.appendChild(view);
-    routeApi(page, {
+    routeApiByPath(page, {
         'GET Ddns/Providers': PROVIDERS,
-        'GET Ddns/Records': { Records: [{ Record: { Id: 'a', Hostname: 'home.example.com', Provider: 'Cloudflare', Enabled: true }, Followed: [] }], DetectedIPv4: '203.0.113.10', DetectedIPv6: '', SecretsPlaintext: true }
+        'GET Ddns/Records': { Records: entries, DetectedIPv4: '203.0.113.10', DetectedIPv6: '', SecretsPlaintext: true },
+        'GET Ddns/Records/All': { Items: entries, TotalCount: entries.length },
+        'POST Ddns/Update': { Records: [] }
     });
     var mod = await loadScript('necto_ddns.js');
     mod.default(view);
     view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
-    await settle();
+    await settle(50);
+    return { page: page, view: view, dom: dom };
+}
+
+var RECORDS = [
+    { Record: { Id: 'a', Hostname: 'home.example.com', Provider: 'Cloudflare', Enabled: true, LastAction: 'Updated' }, Followed: [], State: 'UpToDate' },
+    { Record: { Id: 'b', Name: 'Cabin', Hostname: 'cabin.example.com', Provider: 'DynDns2', Enabled: false }, Followed: [], State: 'Off' }
+];
+
+test('the page draws the cards with the public address and a table row per record', async function () {
+    var opened = await openDdns(RECORDS);
+    var view = opened.view;
 
     assert.ok(view.querySelector('#ddnsAddress').textContent.indexOf('203.0.113.10') >= 0);
-    assert.ok(view.querySelector('#ddnsRecords').textContent.indexOf('home.example.com') >= 0);
+    var rows = view.querySelectorAll('#ddnsRecords .stolon-table-row');
+    assert.equal(rows.length, 2);
+    assert.match(rows[0].innerHTML, /home\.example\.com[\s\S]*Cloudflare[\s\S]*Updated/);
+    assert.match(rows[1].innerHTML, /Cabin[\s\S]*Off/);
     assert.equal(view.querySelectorAll('#ddnsNotices .stolon-warn').length, 1);
+    assert.ok(opened.page.requests.some(function (r) { return /^Ddns\/Records\/All\?/.test(r.url); }));
+});
+
+test('the toolbar has search, the state filter, Add record, and Update now, and the bulk bar Enable, Disable, and Remove', async function () {
+    var opened = await openDdns(RECORDS);
+    var controls = opened.view.querySelector('#ddnsRecords .stolon-table-controls');
+
+    assert.equal(controls.querySelector('input').getAttribute('placeholder'), 'Search records');
+    assert.deepEqual(texts(controls, 'select option'), ['All', 'Up to date', 'Needs attention', 'Not checked yet', 'Off']);
+    assert.deepEqual(texts(controls, 'button.stolon-button'), ['addAdd record', 'refreshUpdate now']);
+    assert.deepEqual(texts(opened.view.querySelector('.stolon-table-bulk-actions'), '[data-bulk]'), ['Enable', 'Disable', 'Remove']);
+});
+
+test('with no records the table frame says No records yet, with no loose line or second Add record', async function () {
+    var opened = await openDdns([]);
+    var view = opened.view;
+
+    assert.match(view.querySelector('#ddnsRecords').textContent, /No records yet\./);
+    assert.doesNotMatch(view.textContent, /Select Add record/);
+    assert.equal(view.querySelectorAll('#btnAddRecord').length, 1);
+    assert.ok(view.querySelector('.stolon-table-controls #btnAddRecord'));
+});
+
+test('bulk Disable puts each record picked with Enabled off, skipping the one already off', async function () {
+    var opened = await openDdns(RECORDS);
+    pickRows(opened.view, [0, 1]);
+    opened.view.querySelector('[data-bulk="disable"]').click();
+    await settle(50);
+
+    var puts = opened.page.requests.filter(function (r) { return r.type === 'PUT'; });
+    assert.deepEqual(puts.map(function (r) { return r.url; }), ['Ddns/Records/a']);
+    assert.equal(JSON.parse(puts[0].data).Enabled, false);
+    assert.match(opened.view.querySelector('#ddnsStatus').textContent, /Disabled 1 record\. Skipped 1 record already disabled\./);
+});
+
+test('bulk Remove asks first, then removes every record picked', async function () {
+    var opened = await openDdns(RECORDS);
+    pickRows(opened.view, [0, 1]);
+    opened.view.querySelector('[data-bulk="remove"]').click();
+    await settle(50);
+    assert.equal(dialogText(opened.dom).title, 'Remove 2 records');
+    clickDialogButton(opened.dom, 'Remove');
+    await settle(50);
+
+    assert.equal(opened.page.requests.filter(function (r) { return r.type === 'DELETE'; }).length, 2);
 });
 
 test('the DDNS Settings section fills from its route and saves through it', async function () {

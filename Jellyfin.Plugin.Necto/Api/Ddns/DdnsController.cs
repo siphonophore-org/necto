@@ -87,24 +87,26 @@ public class DdnsController : ControllerBase
     public ActionResult<object> ListRecords()
     {
         var status = _statusStore.Load();
-        var (records, proxy) = Plugin.Instance?.ReadConfiguration(c => (c.Ddns.Records.Select(r => r.Clone()).ToList(), ProxyRuntimeFactory.Clone(c.Proxy)))
-            ?? (new List<DNSRecord>(), new ProxySettings());
-        var hosts = RecordExpansion.HostsOf(proxy);
         return Ok(new
         {
-            Records = records.Select(r => new
-            {
-                Record = Redact(r, status.Records.GetValueOrDefault(r.Id)),
-                Followed = r.FollowProxyHosts
-                    ? RecordExpansion.Covered(r, hosts).Select(h => Redact(Followed(r, h), status.Records.GetValueOrDefault(r.Id + RecordExpansion.Separator + h))).ToList()
-                    : new List<DNSRecord>()
-            }).ToList(),
+            Records = Rows(status),
             DetectedIPv4 = status.DetectedIPv4,
             DetectedIPv6 = status.DetectedIPv6,
             DetectionMessage = status.DetectionMessage,
             SecretsPlaintext = !_secrets.IsAvailable
         });
     }
+
+    /// <summary>
+    /// Lists one page of records for the DDNS tool's table, in their order.
+    /// </summary>
+    /// <param name="query">The page, the search over each name, host name, and provider, and a state in the filter,
+    /// Off, NotChecked, UpToDate, or Attention, or All.</param>
+    /// <returns>The page.</returns>
+    [HttpGet("Records/All")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult<PagedResult<RecordRow>> AllRecords([FromQuery] PagedQuery? query)
+        => Ok(TablePage.Of(Rows(_statusStore.Load()), query, r => r.State, r => new[] { r.Record.Name, r.Record.Hostname, ProviderLabel(r.Record.Provider) }));
 
     /// <summary>
     /// Adds a record. Typed credentials are encrypted before they are saved.
@@ -428,6 +430,33 @@ public class DdnsController : ControllerBase
         BackoffHours = settings.BackoffHours,
         RequestTimeoutSeconds = settings.RequestTimeoutSeconds
     };
+
+    /// <summary>
+    /// Builds every record's row, with its status and, for a record that follows the proxy, each host it covers.
+    /// </summary>
+    /// <param name="status">The stored status.</param>
+    /// <returns>The rows, in the records' order.</returns>
+    private static List<RecordRow> Rows(StatusData status)
+    {
+        var (records, proxy) = Plugin.Instance?.ReadConfiguration(c => (c.Ddns.Records.Select(r => r.Clone()).ToList(), ProxyRuntimeFactory.Clone(c.Proxy)))
+            ?? (new List<DNSRecord>(), new ProxySettings());
+        var hosts = RecordExpansion.HostsOf(proxy);
+        return records.Select(r =>
+        {
+            var record = Redact(r, status.Records.GetValueOrDefault(r.Id));
+            var followed = r.FollowProxyHosts
+                ? RecordExpansion.Covered(r, hosts).Select(h => Redact(Followed(r, h), status.Records.GetValueOrDefault(r.Id + RecordExpansion.Separator + h))).ToList()
+                : new List<DNSRecord>();
+            return new RecordRow(record, followed, RecordRow.StateOf(record, followed));
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Names a provider as the provider list does, or by its kind when none is registered.
+    /// </summary>
+    /// <param name="kind">The provider's kind.</param>
+    /// <returns>The name.</returns>
+    private string ProviderLabel(DNSProviderKind kind) => _providers.FirstOrDefault(p => p.Kind == kind)?.Label ?? kind.ToString();
 
     /// <summary>
     /// Copies a record for the page, with each stored credential replaced by the kept marker and its status filled in.

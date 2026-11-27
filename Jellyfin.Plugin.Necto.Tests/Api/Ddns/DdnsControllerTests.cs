@@ -411,6 +411,37 @@ public class DdnsControllerTests
     }
 
     /// <summary>
+    /// The table's route pages the records with their state, keeps those in the state its filter names, and searches
+    /// each name, host name, and provider, with credentials kept hidden.
+    /// True: the DDNS table shows the right records and never a stored password.
+    /// False: a filter could list a failing record under Up to date, or the route leak a credential.
+    /// </summary>
+    [Fact]
+    public void AllRecords_PagesFiltersAndSearches()
+    {
+        using var h = new OrchestratorHarness();
+        var off = OrchestratorHarness.DynDnsRecord("off", "off.example.com");
+        off.Enabled = false;
+        var home = OrchestratorHarness.DynDnsRecord();
+        home.Password = "secret";
+        h.SetRecords(home, OrchestratorHarness.DynDnsRecord("cabin", "cabin.example.org"), off);
+        h.SeedStatus("rec1", new RecordStatus { LastAction = "IP Unchanged", LastCheckedUtc = DateTime.UtcNow, LastSuccess = true });
+        h.SeedStatus("cabin", PausedStatus());
+        var controller = Controller(h);
+
+        Siphonophore.Stolon.PagedResult<RecordRow> Page(Siphonophore.Stolon.PagedQuery q) => (Siphonophore.Stolon.PagedResult<RecordRow>)((OkObjectResult)controller.AllRecords(q).Result!).Value!;
+
+        var all = Page(new());
+        Assert.Equal(3, all.TotalCount);
+        Assert.Equal(new[] { RecordRow.UpToDate, RecordRow.NotChecked, RecordRow.Off }, all.Items.Select(r => r.State));
+        Assert.Equal(Kept, all.Items[0].Record.Password);
+        Assert.Equal(new[] { "off" }, Page(new() { Filter = "Off" }).Items.Select(r => r.Record.Id));
+        Assert.Equal(new[] { "cabin" }, Page(new() { Search = "example.org" }).Items.Select(r => r.Record.Id));
+        Assert.Equal(3, Page(new() { Search = "dyn" }).TotalCount);
+        Assert.Single(Page(new() { Skip = 2, Take = 1 }).Items);
+    }
+
+    /// <summary>
     /// Update now is not tied to the request's abort token.
     /// True: leaving the page mid run never forgets a push that landed.
     /// False: a push could land and be sent again.
