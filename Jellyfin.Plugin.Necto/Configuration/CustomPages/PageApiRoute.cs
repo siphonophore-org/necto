@@ -17,5 +17,6 @@ public class PageApiRoute
     public string Username { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the HTTP Basic password, stored encrypted, or empty.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string Password { get; set; } = string.Empty;
 }

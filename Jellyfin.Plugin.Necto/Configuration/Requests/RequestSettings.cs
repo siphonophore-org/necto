@@ -75,6 +75,7 @@ public class RequestSettings
     /// Gets or sets a TMDb API key of the server's own for discovery (trending, upcoming, browsing, More Like This),
     /// encrypted. Empty uses Jellyfin's.
     /// </summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string TmdbApiKey { get; set; } = string.Empty;
 
     /// <summary>Gets or sets home rows of the server's own, after the built-in ones: TMDb's titles with a genre, keyword, studio, network or streaming service.</summary>

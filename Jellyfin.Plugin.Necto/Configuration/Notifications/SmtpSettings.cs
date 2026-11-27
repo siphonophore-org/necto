@@ -17,7 +17,8 @@ public class SmtpSettings
     /// <summary>Gets or sets the user name to sign in with, or empty to send without one.</summary>
     public string Username { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the password, encrypted at rest.</summary>
+    /// <summary>Gets or sets the password. It lives in the Notifications secrets file and reaches a page only as kept.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string Password { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the address email comes from.</summary>

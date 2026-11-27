@@ -24,6 +24,7 @@ public class WireGuardSettings
     public string TunnelSubnet { get; set; } = "10.66.0.0/24";
 
     /// <summary>Gets or sets the host's private key, encrypted at rest.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string HostPrivateKey { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the host's public key.</summary>

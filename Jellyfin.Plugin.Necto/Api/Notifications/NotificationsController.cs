@@ -29,6 +29,7 @@ public class NotificationsController : ControllerBase
     private readonly Notifier _notifier;
     private readonly StolonNotifier _stolon;
     private readonly NotificationSettingsService _settings;
+    private readonly NotificationSecretStore _kept;
     private readonly NotificationLog _log;
     private readonly IConfigurationStore _store;
     private readonly IUserManager _userManager;
@@ -41,16 +42,18 @@ public class NotificationsController : ControllerBase
     /// <param name="notifier">Sends tests.</param>
     /// <param name="stolon">Builds previews and keeps subscriptions.</param>
     /// <param name="settings">Reads and saves the settings.</param>
+    /// <param name="kept">Holds the channels' addresses, which say whether a channel is ready.</param>
     /// <param name="log">The send log.</param>
     /// <param name="store">Reads the configuration.</param>
     /// <param name="userManager">Names the users with browsers.</param>
     /// <param name="push">The browsers users turned notifications on in.</param>
     /// <param name="held">The held Jellyfin messages.</param>
-    public NotificationsController(INotifier notifier, StolonNotifier stolon, NotificationSettingsService settings, NotificationLog log, IConfigurationStore store, IUserManager userManager, IWebPushStore push, INotifyHeldStore held)
+    public NotificationsController(INotifier notifier, StolonNotifier stolon, NotificationSettingsService settings, NotificationSecretStore kept, NotificationLog log, IConfigurationStore store, IUserManager userManager, IWebPushStore push, INotifyHeldStore held)
     {
         _notifier = notifier as Notifier ?? throw new ArgumentException("Notifications needs its own notifier.", nameof(notifier));
         _stolon = stolon ?? throw new ArgumentNullException(nameof(stolon));
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        _kept = kept ?? throw new ArgumentNullException(nameof(kept));
         _log = log ?? throw new ArgumentNullException(nameof(log));
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
@@ -80,7 +83,7 @@ public class NotificationsController : ControllerBase
     public ActionResult<IEnumerable<NotificationChannelView>> Channels()
     {
         var settings = _store.Read(c => NotificationNormalizer.Normalize(ConfigurationCopy.Of(c.Notifications ?? new NotificationSettings())));
-        return Ok(NotificationChannelView.List(settings));
+        return Ok(NotificationChannelView.List(_kept.Fill(settings)));
     }
 
     /// <summary>

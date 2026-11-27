@@ -30,6 +30,7 @@ public sealed class Notifier : INotifier
     private readonly IEmailSender _email;
     private readonly ActivityLogger _activity;
     private readonly SecretProtector _secrets;
+    private readonly NotificationSecretStore _kept;
     private readonly NotificationLog _log;
     private readonly IServerConfigurationManager _serverConfig;
     private readonly IWebPushStore? _push;
@@ -45,6 +46,7 @@ public sealed class Notifier : INotifier
     /// <param name="email">Sends email.</param>
     /// <param name="activity">Writes the activity log channel.</param>
     /// <param name="secrets">Reads the SMTP password.</param>
+    /// <param name="kept">Holds the channels' addresses and the SMTP password.</param>
     /// <param name="log">Keeps each send for Troubleshooting.</param>
     /// <param name="serverConfig">Gives the server's language for the event names.</param>
     /// <param name="logger">Writes the server log.</param>
@@ -57,6 +59,7 @@ public sealed class Notifier : INotifier
         IEmailSender email,
         ActivityLogger activity,
         SecretProtector secrets,
+        NotificationSecretStore kept,
         NotificationLog log,
         IServerConfigurationManager serverConfig,
         ILogger<Notifier> logger,
@@ -69,6 +72,7 @@ public sealed class Notifier : INotifier
         _email = email ?? throw new ArgumentNullException(nameof(email));
         _activity = activity ?? throw new ArgumentNullException(nameof(activity));
         _secrets = secrets ?? throw new ArgumentNullException(nameof(secrets));
+        _kept = kept ?? throw new ArgumentNullException(nameof(kept));
         _log = log ?? throw new ArgumentNullException(nameof(log));
         _serverConfig = serverConfig ?? throw new ArgumentNullException(nameof(serverConfig));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -83,7 +87,7 @@ public sealed class Notifier : INotifier
         try
         {
             var config = _store.Read(ConfigurationCopy.Of);
-            config.Notifications = NotificationNormalizer.Normalize(config.Notifications);
+            config.Notifications = _kept.Fill(NotificationNormalizer.Normalize(config.Notifications));
             if (NectoEventCatalog.Find(nectoEvent.Key) is null)
             {
                 _logger.LogDebug("Event {Key} is in no event list, so only channels that take every event get it", FormatUtilities.SanitizeForLog(nectoEvent.Key));
@@ -114,7 +118,7 @@ public sealed class Notifier : INotifier
     public async Task<NotificationResult?> TestAsync(string channelId, Guid userId, string? language, CancellationToken cancellationToken)
     {
         var config = _store.Read(ConfigurationCopy.Of);
-        config.Notifications = NotificationNormalizer.Normalize(config.Notifications);
+        config.Notifications = _kept.Fill(NotificationNormalizer.Normalize(config.Notifications));
         var test = TestEvent(userId, language);
         NotificationSend? send = channelId switch
         {

@@ -7,7 +7,6 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -2385,5 +2384,5 @@ public partial class RequestsController : ControllerBase, IActionFilter
     // A deep copy through JSON, so changing it leaves the original (the stored configuration, a cached request) alone.
     private static T Clone<T>(T value)
         where T : class, new()
-        => JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(value)) ?? new T();
+        => Jellyfin.Plugin.Necto.Configuration.ConfigurationCopy.Of(value);
 }

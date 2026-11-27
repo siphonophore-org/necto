@@ -15,6 +15,7 @@ public class ScriptSecret
     /// Gets or sets the value. Stored configuration holds only the kept sentinel, or an empty string when the
     /// secret has no value. Incoming, it is the sentinel for an untouched secret or a new value to encrypt.
     /// </summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string Value { get; set; } = string.Empty;
 
     /// <summary>

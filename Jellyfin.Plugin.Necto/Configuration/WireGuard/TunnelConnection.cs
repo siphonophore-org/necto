@@ -24,9 +24,11 @@ public class TunnelConnection
     public string PeerPublicKey { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the optional preshared key, encrypted at rest.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string PresharedKey { get; set; } = string.Empty;
 
     /// <summary>Gets or sets this server's private key on the connection, encrypted at rest.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string PrivateKey { get; set; } = string.Empty;
 
     /// <summary>Gets or sets this server's public key on the connection, to give the remote host.</summary>

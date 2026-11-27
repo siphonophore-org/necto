@@ -46,9 +46,11 @@ public class DNSRecord
     // --- Generic credentials (meaning is provider-specific) ---
 
     /// <summary>Gets or sets the login / username / API key / email (provider-specific).</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string Login { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the password / API token / secret (provider-specific).</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string Password { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the DNS zone name or zone ID, for providers that need it.</summary>

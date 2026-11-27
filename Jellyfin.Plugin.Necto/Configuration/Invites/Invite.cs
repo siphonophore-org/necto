@@ -25,6 +25,7 @@ public class Invite
     public List<InviteResource> Resources { get; set; } = new();
 
     /// <summary>Gets or sets the salted hash of the PIN, in Jellyfin's password hash format, or empty for none.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(KeptSecretConverter))]
     public string PinHash { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the group a new account joins, Everyone's id for no group, or <c>null</c> for the group set for new users when the link is used.</summary>

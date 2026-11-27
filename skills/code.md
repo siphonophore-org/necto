@@ -209,6 +209,7 @@ export function createRouteTable(view, shared) {
 
 * Store every credential with `SecretProtector`, built by `AddPluginSecretProtector`. Never write a secret to the config, a file, or a log in plain text.
 * Send a stored secret to the browser only as `SECRET_KEPT`. Read it back with `readSecretField` and resolve it with `SecretProtector.ResolveIncoming`.
+* Keep secrets out of Jellyfin's configuration read, `GET /Plugins/{id}/Configuration`, which returns the whole `PluginConfiguration`. See [Secrets in the configuration](#secrets-in-the-configuration).
 * Pass every value from a request or a file through `FormatUtilities.SanitizeForLog` before logging it.
 * Check every address a user supplies with `SsrfGuard` before calling it, and never follow a redirect to another host.
 * Compare a secret a caller presents with `SecretCompare.FixedTimeEquals`, never `==`.
@@ -219,6 +220,20 @@ export function createRouteTable(view, shared) {
 * Keep files inside the folders they belong to with `PathContainment` and `FileNameSanitizer`.
 * Escape every value placed in HTML with `escapeHtml`.
 * Never put a secret or a user's data in a URL.
+
+### Secrets in the Configuration
+
+Every secret takes one of two places, and no JSON the server sends ever carries one.
+
+| Where | When | How |
+| :--- | :--- | :--- |
+| The tool's own encrypted file beside the configuration | Only the tool's own routes change it | The configuration holds nothing, or `SECRET_KEPT` where a page needs to know one is set. The file is written with `AtomicFile` and `ownerOnly: true`. Notifications keeps `NotificationSecretStore` and Scripts keeps `SecretVault`. |
+| The configuration, encrypted | A page saves it with the whole configuration, or a tool reads it from a copy | The property carries `[JsonConverter(typeof(KeptSecretConverter))]`, so any JSON writes `SECRET_KEPT`, or empty when none is set. |
+
+* Copy a part of the configuration with `ConfigurationCopy.Of`, or serialize it with `ConfigurationCopy.Json`. They alone keep a secret's value, so a server-side copy still signs in.
+* Never deep copy a configuration type with plain `JsonSerializer` options. The copy would hold `SECRET_KEPT` in place of every secret.
+* A whole configuration save brings each secret back as `SECRET_KEPT`. `OnConfigurationSaving` resolves it against the stored value, or takes the stored part whole, so a save from any page never wipes a secret.
+* A new secret property gets the converter, or a store, in the same change, and a line in `KeptSecretConverterTests`.
 
 ## Tests
 
