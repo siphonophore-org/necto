@@ -183,25 +183,6 @@ public class PolicyTemplateServiceTests
     }
 
     /// <summary>
-    /// Reordering needs every group once.
-    /// True: a bad post leaves the order as it was.
-    /// False: a post could drop or double a group.
-    /// </summary>
-    [Fact]
-    public void GroupOrder_NeedsEveryGroupOnce()
-    {
-        var a = TestGroups.Make("A");
-        var b = TestGroups.Make("B");
-        var groups = new List<Group> { a, b };
-
-        Assert.False(GroupOrder.Apply(groups, new[] { a.Id }));
-        Assert.False(GroupOrder.Apply(groups, new[] { a.Id, a.Id }));
-        Assert.False(GroupOrder.Apply(groups, new[] { a.Id, Guid.NewGuid() }));
-        Assert.True(GroupOrder.Apply(groups, new[] { b.Id, a.Id }));
-        Assert.Equal(new[] { b.Id, a.Id }, groups.Select(g => g.Id));
-    }
-
-    /// <summary>
     /// A template writes its managed policy and settings onto a member.
     /// True: a member gets the group's access, features, and preferences.
     /// False: the template would change nothing.
@@ -222,6 +203,32 @@ public class PolicyTemplateServiceTests
         Assert.True(await Service().ApplyAsync(viewer));
 
         Assert.False(_users.Policies[viewer.Id].EnableRemoteAccess);
+        Assert.Equal(SubtitlePlaybackMode.Always, _users.Configurations[viewer.Id].SubtitleMode);
+    }
+
+    /// <summary>
+    /// Preferences on join only are written when the user joins, and left alone on later syncs, while access still is.
+    /// True: a member may change preferences the group gave them once.
+    /// False: every sync would undo a member's own choices, or a new member would never get them.
+    /// </summary>
+    [Fact]
+    public async Task ApplyAsync_OnJoinPreferences_WrittenOnlyWhenJoining()
+    {
+        var viewer = _users.Add("viewer");
+        _config.Configuration.Groups.Add(WithTemplate("Kids", t =>
+        {
+            t.PreferencesMode = Jellyfin.Plugin.Necto.Configuration.Policies.PreferencesMode.OnJoin;
+            t.Access.ManageIsHidden = true;
+            t.Access.IsHidden = true;
+            t.Preferences.ManageSubtitleMode = true;
+            t.Preferences.SubtitleMode = "Always";
+        }, viewer.Id));
+
+        Assert.True(await Service().ApplyAsync(viewer));
+        Assert.True(_users.Policies[viewer.Id].IsHidden);
+        Assert.False(_users.Configurations.ContainsKey(viewer.Id));
+
+        await Service().ApplyAllAsync(null, default, new[] { viewer.Id });
         Assert.Equal(SubtitlePlaybackMode.Always, _users.Configurations[viewer.Id].SubtitleMode);
     }
 

@@ -69,13 +69,15 @@ public class PluginConfiguration : BasePluginConfiguration
     public static Group NewEveryone()
     {
         var everyone = new Group { Id = Group.EveryoneId, Name = "Everyone" };
-        everyone.Permissions.Notifications.EventKeys.AddRange(new[]
+        var updates = new[]
         {
             Services.Notifications.RequestEvents.Approved,
             Services.Notifications.RequestEvents.Declined,
             Services.Notifications.RequestEvents.Available,
             Services.Notifications.IssueEvents.Updated
-        });
+        };
+        everyone.Permissions.Notifications.BrowserEventKeys = new List<string>(updates);
+        everyone.Permissions.Notifications.MessageEventKeys = new List<string>(updates);
         return everyone;
     }
 }

@@ -413,6 +413,20 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
     prefs.element.setAttribute('data-section', 'template-preferences');
     readers.push(function (out) { out.Template = out.Template || {}; out.Template.Enabled = true; });
 
+    // When the preferences reach members: on every save and sync, or once as a user joins.
+    var mode = nectoModule.createChoiceGroup(null, {
+        label: t.tr('GroupsTemplatePreferencesMode'),
+        value: template.PreferencesMode === 'OnJoin' || template.PreferencesMode === 1 ? 'OnJoin' : 'Maintain',
+        choices: [
+            { value: 'Maintain', name: t.tr('GroupsPreferencesMaintain'), text: t.tr('GroupsPreferencesMaintainHelp') },
+            { value: 'OnJoin', name: t.tr('GroupsPreferencesOnJoin'), text: t.tr('GroupsPreferencesOnJoinHelp') }
+        ]
+    });
+    mode.element.setAttribute('data-field', 'Template.PreferencesMode');
+    prefsBody.appendChild(mode.element);
+    handles.push(mode);
+    readers.push(function (out) { out.Template = out.Template || {}; out.Template.PreferencesMode = mode.get() || 'Maintain'; });
+
     var parts = [];
     var libraryAccess = null;
     var viewRefreshers = [];

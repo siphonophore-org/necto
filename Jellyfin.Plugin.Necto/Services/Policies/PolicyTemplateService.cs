@@ -58,8 +58,9 @@ public sealed class PolicyTemplateService
     /// Writes the template a user takes onto them.
     /// </summary>
     /// <param name="user">The user.</param>
+    /// <param name="joined">Whether the user just joined their group, so preferences written on join only are written too.</param>
     /// <returns><c>true</c> when a template was written, <c>false</c> for an administrator or a user with none.</returns>
-    public async Task<bool> ApplyAsync(User user)
+    public async Task<bool> ApplyAsync(User user, bool joined = false)
     {
         ArgumentNullException.ThrowIfNull(user);
         if (user.HasPermission(PermissionKind.IsAdministrator))
@@ -84,14 +85,16 @@ public sealed class PolicyTemplateService
 
         await _userManager.UpdatePolicyAsync(user.Id, policy).ConfigureAwait(false);
 
-        if (template.Preferences.ManagesAnything())
+        // A group that writes preferences on join only leaves a member's own choices alone after that.
+        var writePreferences = joined || template.PreferencesMode == PreferencesMode.Maintain;
+        if (writePreferences && template.Preferences.ManagesAnything())
         {
             var settings = dto.Configuration;
             template.Preferences.ApplyTo(settings);
             await _userManager.UpdateConfigurationAsync(user.Id, settings).ConfigureAwait(false);
         }
 
-        if (template.Preferences.ManageHomeSections)
+        if (writePreferences && template.Preferences.ManageHomeSections)
         {
             ApplyHomeSections(user.Id, template.Preferences.HomeSections);
         }
@@ -105,8 +108,9 @@ public sealed class PolicyTemplateService
     /// </summary>
     /// <param name="progress">Takes the progress, from 0 to 100.</param>
     /// <param name="cancellationToken">Stops the run between users.</param>
+    /// <param name="joined">The users who just joined their group, who take preferences written on join only. [optional]</param>
     /// <returns>How many users took a template.</returns>
-    public async Task<int> ApplyAllAsync(IProgress<double>? progress, CancellationToken cancellationToken)
+    public async Task<int> ApplyAllAsync(IProgress<double>? progress, CancellationToken cancellationToken, IReadOnlyCollection<Guid>? joined = null)
     {
         var users = _userManager.GetUsers().Where(u => !u.HasPermission(PermissionKind.IsAdministrator)).ToList();
         var applied = 0;
@@ -115,7 +119,7 @@ public sealed class PolicyTemplateService
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                if (await ApplyAsync(users[i]).ConfigureAwait(false))
+                if (await ApplyAsync(users[i], joined?.Contains(users[i].Id) == true).ConfigureAwait(false))
                 {
                     applied++;
                 }

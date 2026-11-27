@@ -92,37 +92,42 @@ public class PermissionMergerTests
     {
         var target = Guid.NewGuid();
         var a = TestGroups.Make("A", p => { p.CustomPages.PageIds.Add("news"); p.Invites.MayCreate = true; p.Invites.TargetGroupIds.Add(target); }, User);
-        var b = TestGroups.Make("B", p => { p.CustomPages.PageIds.Add("news"); p.CustomPages.PageIds.Add("rules"); p.Notifications.EventKeys.Add("request.new"); }, User);
+        var b = TestGroups.Make("B", p => { p.CustomPages.PageIds.Add("news"); p.CustomPages.PageIds.Add("rules"); p.Notifications.BrowserEventKeys = new() { "requests.created" }; }, User);
 
         var merged = PermissionMerger.Merge(User, new[] { a, b });
 
         Assert.Equal(new[] { "news", "rules" }, merged.CustomPages.PageIds);
         Assert.True(merged.MayOpenPage("rules"));
         Assert.False(merged.MayOpenPage("other"));
-        Assert.True(merged.Receives("request.new"));
+        Assert.True(merged.GetsInBrowsers("requests.created"));
+        Assert.False(merged.GetsAsMessage("requests.created"));
         Assert.True(merged.MayInviteTo(target));
         Assert.False(merged.MayInviteTo(Guid.NewGuid()));
     }
 
     /// <summary>
-    /// A member gets their events on each channel one of their groups that gives events turns on.
-    /// True: a group that gives events with browsers off and one with no events never add browsers between them.
-    /// False: a group with no events could turn a channel on for events another group gives.
+    /// A stored group's events read as its methods allowed them, and only events about users count.
+    /// True: a group stored with browsers off keeps its events as messages only after the upgrade.
+    /// False: an upgrade would start or stop notifications members had.
     /// </summary>
     [Fact]
-    public void Merge_NotificationChannels_ComeFromGroupsThatGiveEvents()
+    public void Merge_StoredNotifications_ReadByMethod()
     {
-        var quiet = TestGroups.Make("Quiet", p => { p.Notifications.EventKeys.Add("requests.approved"); p.Notifications.BrowserNotifications = false; }, User);
-        var none = TestGroups.Make("None", _ => { }, User);
+        var quiet = TestGroups.Make("Quiet", p => { p.Notifications.EventKeys.Add("requests.approved"); p.Notifications.EventKeys.Add("proxy.banned"); p.Notifications.BrowserNotifications = false; }, User);
         var loud = TestGroups.Make("Loud", p => p.Notifications.AllEvents = true, User);
 
-        var merged = PermissionMerger.Merge(User, new[] { quiet, none });
-        var both = PermissionMerger.Merge(User, new[] { quiet, loud });
+        var merged = PermissionMerger.Merge(User, new[] { quiet });
+        var all = PermissionMerger.Merge(User, new[] { loud });
 
-        Assert.False(merged.Notifications.BrowserNotifications);
-        Assert.True(merged.Notifications.JellyfinMessages);
-        Assert.True(both.Notifications.BrowserNotifications);
-        Assert.True(PermissionMerger.Administrator(User).Notifications.BrowserNotifications);
+        Assert.False(merged.GetsInBrowsers("requests.approved"));
+        Assert.True(merged.GetsAsMessage("requests.approved"));
+        Assert.True(all.GetsInBrowsers("issues.updated"));
+        Assert.True(PermissionMerger.Administrator(User).GetsInBrowsers("proxy.banned"));
+
+        Jellyfin.Plugin.Necto.Services.Groups.GroupNormalizer.Complete(quiet);
+        Assert.Empty(quiet.Permissions.Notifications.BrowserEventKeys!);
+        Assert.Equal(new[] { "requests.approved" }, quiet.Permissions.Notifications.MessageEventKeys);
+        Assert.Empty(quiet.Permissions.Notifications.EventKeys);
     }
 
     /// <summary>
@@ -178,7 +183,7 @@ public class PermissionMergerTests
         Assert.True(merged.Issues.MayReport && merged.Issues.MayManage);
         Assert.True(merged.WireGuard.MayHavePeers);
         Assert.Equal(0, merged.WireGuard.MaxPeers);
-        Assert.True(merged.MayOpenPage("any") && merged.Receives("any") && merged.MayInviteTo(Guid.NewGuid()));
+        Assert.True(merged.MayOpenPage("any") && merged.GetsInBrowsers("any") && merged.MayInviteTo(Guid.NewGuid()));
         Assert.Null(merged.Accounts.Password);
     }
 

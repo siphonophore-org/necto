@@ -43,7 +43,8 @@ public static class PolicyTemplateRows
     }
 
     /// <summary>
-    /// Builds one template from several, taking each row from the first template that sets it.
+    /// Builds one template from several, taking each row from the first template that sets it, and the preferences mode
+    /// from the first.
     /// </summary>
     /// <param name="templates">The templates, in group order.</param>
     /// <returns>A new template with every row some template sets.</returns>
@@ -51,7 +52,7 @@ public static class PolicyTemplateRows
     {
         ArgumentNullException.ThrowIfNull(templates);
         var list = templates.Where(t => t is { Enabled: true }).ToList();
-        var merged = new PolicyTemplate();
+        var merged = new PolicyTemplate { PreferencesMode = list.Count > 0 ? list[0].PreferencesMode : PreferencesMode.Maintain };
         MergePart(list.Select(t => (object)t.Access), merged.Access);
         MergePart(list.Select(t => (object)t.Preferences), merged.Preferences);
         return merged;

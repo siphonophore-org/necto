@@ -49,10 +49,9 @@ public class PluginConfigurationTests
     {
         var notifications = new PluginConfiguration().Everyone.Permissions.Notifications;
 
-        Assert.False(notifications.AllEvents);
-        Assert.Equal(new[] { "requests.approved", "requests.declined", "requests.available", "issues.updated" }, notifications.EventKeys);
-        Assert.True(notifications.BrowserNotifications);
-        Assert.True(notifications.JellyfinMessages);
-        Assert.Empty(new Group().Permissions.Notifications.EventKeys);
+        var updates = new[] { "requests.approved", "requests.declined", "requests.available", "issues.updated" };
+        Assert.Equal(updates, notifications.BrowserEventKeys);
+        Assert.Equal(updates, notifications.MessageEventKeys);
+        Assert.Null(new Group().Permissions.Notifications.BrowserEventKeys);
     }
 }

@@ -106,7 +106,7 @@ public class GroupsController : ControllerBase
         }
 
         await _enrollment.ReconcileAsync(CancellationToken.None).ConfigureAwait(false);
-        await _templates.ApplyAllAsync(null, CancellationToken.None).ConfigureAwait(false);
+        await _templates.ApplyAllAsync(null, CancellationToken.None, change.Group!.MemberIds).ConfigureAwait(false);
         return Ok(change.Group);
     }
 
@@ -127,6 +127,7 @@ public class GroupsController : ControllerBase
             return BadRequest(Error(GroupChangeError.NameRequired));
         }
 
+        var before = _groups.Get(id)?.MemberIds ?? new List<Guid>();
         var change = _groups.Update(id, group);
         if (change.Error == GroupChangeError.NotFound)
         {
@@ -139,13 +140,14 @@ public class GroupsController : ControllerBase
         }
 
         await _enrollment.ReconcileAsync(CancellationToken.None).ConfigureAwait(false);
-        await _templates.ApplyAllAsync(null, CancellationToken.None).ConfigureAwait(false);
+        var joined = change.Group!.MemberIds.Except(before).ToList();
+        await _templates.ApplyAllAsync(null, CancellationToken.None, joined).ConfigureAwait(false);
         return Ok(change.Group);
     }
 
     /// <summary>
-    /// Deletes a group, then moves users onto or off password rules and writes their templates. Its members keep their other groups, and a
-    /// member in no other group takes Everyone.
+    /// Deletes a group, then moves users onto or off password rules and writes their templates. Its members take
+    /// Everyone.
     /// </summary>
     /// <param name="id">The group's id.</param>
     /// <returns>204 when deleted, 400 for Everyone, or 404 when none has the id.</returns>

@@ -67,12 +67,8 @@ public static class PermissionMerger
             },
             Notifications = new NotificationPermissions
             {
-                AllEvents = p.Any(x => x.Notifications.AllEvents),
-                EventKeys = Union(p.SelectMany(x => x.Notifications.EventKeys)),
-
-                // A channel counts only from a group that gives events, so a group with none cannot add one.
-                BrowserNotifications = p.Any(x => x.Notifications.ReceivesAny() && x.Notifications.BrowserNotifications),
-                JellyfinMessages = p.Any(x => x.Notifications.ReceivesAny() && x.Notifications.JellyfinMessages)
+                BrowserEventKeys = Union(p.SelectMany(x => Notifications.NotificationDelivery.Browser(x.Notifications))),
+                MessageEventKeys = Union(p.SelectMany(x => Notifications.NotificationDelivery.Messages(x.Notifications)))
             }
         };
     }
@@ -95,7 +91,7 @@ public static class PermissionMerger
         WireGuard = new WireGuardPermissions { MayHavePeers = true, MaxPeers = 0 },
         Scripts = new ScriptPermissions { AllScripts = true },
         CustomPages = new CustomPagePermissions { AllPages = true },
-        Notifications = new NotificationPermissions { AllEvents = true }
+        Notifications = new NotificationPermissions { AllEvents = true, BrowserEventKeys = new List<string>(), MessageEventKeys = new List<string>() }
     };
 
     /// <summary>

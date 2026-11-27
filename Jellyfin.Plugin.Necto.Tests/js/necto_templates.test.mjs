@@ -163,7 +163,7 @@ test('every template row names a field the server keeps, with its Manage switch'
     assert.deepEqual(keys.slice().sort(), server.slice().sort());
 });
 
-test('the editor draws the template sections and saves the template, the notification events, and their channels', async function () {
+test('the editor draws the Jellyfin sections and saves the template, the preferences mode, and the notification methods', async function () {
     var opened = await openPage({ ['PUT Groups/' + FAMILY]: function (o) { return JSON.parse(o.data); } });
     opened.view.querySelectorAll('.stolon-record-list-row')[1].click();
     await settle(80);
@@ -176,11 +176,13 @@ test('the editor draws the template sections and saves the template, the notific
     assert.match(sidecar.querySelector('[data-section="template-access"] > .stolon-collapsible-header').textContent, /1 set by group/);
     assert.match(sidecar.querySelector('[data-section="access-profile"] > .stolon-collapsible-header').textContent, /1 set by group/);
     assert.equal(sidecar.querySelector('[data-section="access-playback"] > .stolon-collapsible-header').textContent.indexOf('set by group'), -1);
-    assert.match(sidecar.querySelector('[data-field="Notifications.EventKeys"]').textContent, /Invite used/);
-    assert.match(sidecar.querySelector('[data-field="Notifications.EventKeys"]').textContent, /Invites expired/);
-    assert.equal(sidecar.querySelector('[data-field="Notifications.BrowserNotifications"]').checked, true);
-    assert.equal(sidecar.querySelector('[data-field="Notifications.JellyfinMessages"]').checked, true);
-    sidecar.querySelector('[data-field="Notifications.BrowserNotifications"]').checked = false;
+    var delivery = sidecar.querySelector('[data-field="Notifications.Delivery"]');
+    assert.match(delivery.textContent, /Invite used/);
+    assert.doesNotMatch(delivery.textContent, /Invites expired/);
+    var browser = delivery.querySelectorAll('input[type="checkbox"]')[0];
+    browser.checked = false;
+    browser.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    assert.equal(sidecar.querySelector('[data-field="Template.PreferencesMode"] input[value="Maintain"]').checked, true);
 
     clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Save');
     await settle(80);
@@ -191,9 +193,9 @@ test('the editor draws the template sections and saves the template, the notific
     assert.equal(body.Template.Access.ManageEnableRemoteAccess, true);
     assert.equal(body.Template.Access.EnableRemoteAccess, false);
     assert.equal(body.Template.Access.ManageIsHidden, false);
-    assert.deepEqual(body.Permissions.Notifications.EventKeys, ['invites.used']);
-    assert.equal(body.Permissions.Notifications.BrowserNotifications, false);
-    assert.equal(body.Permissions.Notifications.JellyfinMessages, true);
+    assert.deepEqual(body.Permissions.Notifications.BrowserEventKeys, []);
+    assert.deepEqual(body.Permissions.Notifications.MessageEventKeys, ['invites.used']);
+    assert.equal(body.Template.PreferencesMode, 'Maintain');
 });
 
 test('a template stored with its rows off shows every row as the member\'s, and saves them so', async function () {

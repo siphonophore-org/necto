@@ -324,7 +324,7 @@ test('the Pages tool holds no settings, and a page saves only after the server c
     assert.match(sidecar.querySelector('[data-role="status"]').textContent, /Two pages use the slug rules\./);
 });
 
-test('the group editor offers the pages from the Pages route, hidden while Open every page is on', async function () {
+test('the group editor offers the pages from the Pages route under Selective, hidden under Permissive', async function () {
     var page = installPage({ config: allToolsOn() });
     routeApi(page, { 'GET Pages': [{ Id: 'p1', Title: 'Rules', Slug: 'rules' }] });
     var groups = await loadScript('necto_groups.js');
@@ -338,10 +338,12 @@ test('the group editor offers the pages from the Pages route, hidden while Open 
     var field = section.querySelector('[data-field="CustomPages.PageIds"]');
     assert.equal(field.className.indexOf('stolon-hidden') < 0, true);
     assert.deepEqual(editor.getValue().Permissions.CustomPages.PageIds, ['p1']);
-    var every = section.querySelector('[data-field="CustomPages.AllPages"]');
-    every.checked = true;
-    every.dispatchEvent(new globalThis.Event('change'));
-    assert.equal(field.className.indexOf('stolon-hidden') >= 0, true);
+    var scope = section.querySelector('[data-field="CustomPages.AllPages"]');
+    assert.equal(scope.querySelector('input[value="some"]').checked, true);
+    var permissive = scope.querySelector('input[value="all"]');
+    permissive.checked = true;
+    permissive.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    assert.equal(field.parentNode.className.indexOf('stolon-hidden') >= 0, true);
     assert.equal(editor.getValue().Permissions.CustomPages.AllPages, true);
     editor.destroy();
 });

@@ -61,7 +61,7 @@ export {
     createResetGroup, createSaveBars, createInputField, createSelectField, createTextareaField, createCheckboxField,
     createSecretField, readNumber, readLines, createWebPushToggle, WEB_SPINNER, webSelectOptions, webSettingsCheckbox,
     copyToClipboard, createSignIn, createUnauthorized, createNotFound, showScreen, BADGE_STATES, stopWebClientShell, webConfirm,
-    openWebDialog, webEmptyState, badgeHtml
+    openWebDialog, webEmptyState, badgeHtml, createMatrixGrid
 } from './configurationpage?name=necto_stolon.js';
 
 var PLUGIN_ID = 'a8b5ecb0-fc00-428b-85e8-74b85820166d';

@@ -15,6 +15,9 @@ public class PolicyTemplate
     /// <summary>Gets or sets the Access and features template.</summary>
     public AccessTemplate Access { get; set; } = new();
 
+    /// <summary>Gets or sets when the group writes its preferences onto members.</summary>
+    public PreferencesMode PreferencesMode { get; set; }
+
     /// <summary>Gets or sets the Preferences template.</summary>
     public PreferencesTemplate Preferences { get; set; } = new();
 }

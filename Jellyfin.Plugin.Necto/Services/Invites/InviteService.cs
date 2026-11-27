@@ -780,7 +780,7 @@ public sealed class InviteService : IDisposable
         }
 
         await WithUserRetryAsync(userId, async u => await _enrollment.ReconcileUserAsync(u).ConfigureAwait(false)).ConfigureAwait(false);
-        await WithUserRetryAsync(userId, async u => await _templates.ApplyAsync(u).ConfigureAwait(false)).ConfigureAwait(false);
+        await WithUserRetryAsync(userId, async u => await _templates.ApplyAsync(u, joined: true).ConfigureAwait(false)).ConfigureAwait(false);
 
         // The hold ends only now, with the password set and the group applied. A template that disables accounts keeps it.
         var template = _store.Read(c => PolicyTemplateMerger.For(c, userId));

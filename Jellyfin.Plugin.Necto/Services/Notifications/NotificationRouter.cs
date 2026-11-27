@@ -8,9 +8,8 @@ using Jellyfin.Plugin.Necto.Services.Groups;
 namespace Jellyfin.Plugin.Necto.Services.Notifications;
 
 /// <summary>
-/// Decides where an event goes. An event for users goes to each user it is about, and any other event to the members
-/// of the groups that pick it, in their browsers and on their Jellyfin apps as their groups allow. Every
-/// administrators' channel that picks the event gets it too.
+/// Decides where an event goes. An event for users goes to each user it is about, in their browsers and on their
+/// Jellyfin apps as their group picks for that event. Every administrators' channel that picks the event gets it too.
 /// </summary>
 public static class NotificationRouter
 {
@@ -38,10 +37,10 @@ public static class NotificationRouter
 
         if (nectoEvent.Audience != NectoEventAudience.Channels)
         {
-            var people = UserRecipients(config, nectoEvent, users).Concat(GroupRecipients(config, nectoEvent, users)).Distinct().ToList();
-            var permissions = people.ToDictionary(id => id, id => PermissionService.Resolve(config, id, users.First(u => u.Id == id).IsAdministrator).Notifications);
-            var browsers = people.Where(id => permissions[id].BrowserNotifications).ToList();
-            var apps = people.Where(id => permissions[id].JellyfinMessages).ToList();
+            var people = UserRecipients(config, nectoEvent, users).Distinct().ToList();
+            var permissions = people.ToDictionary(id => id, id => PermissionService.Resolve(config, id, users.First(u => u.Id == id).IsAdministrator));
+            var browsers = people.Where(id => permissions[id].GetsInBrowsers(nectoEvent.Key)).ToList();
+            var apps = people.Where(id => permissions[id].GetsAsMessage(nectoEvent.Key)).ToList();
             if (settings.BrowserNotifications && browsers.Count > 0)
             {
                 sends.Add(new NotificationSend(NotificationTarget.UserBrowsers, BrowsersId, browsers));
@@ -93,8 +92,8 @@ public static class NotificationRouter
     }
 
     /// <summary>
-    /// Finds the users an event for users goes to: each user it is about, when the account works and their groups give
-    /// them the event.
+    /// Finds the users an event for users goes to: each user it is about, when the account works and their group sends
+    /// them the event by any method.
     /// </summary>
     /// <param name="config">The configuration, for the groups.</param>
     /// <param name="nectoEvent">The event.</param>
@@ -105,33 +104,6 @@ public static class NotificationRouter
         ArgumentNullException.ThrowIfNull(nectoEvent);
         var ids = (nectoEvent.UserId is { } first ? new[] { first } : Array.Empty<Guid>()).Concat(nectoEvent.OtherUserIds ?? Array.Empty<Guid>()).Distinct();
         return ids.Select(id => UserRecipient(config, nectoEvent with { UserId = id }, users)).OfType<Guid>().ToList();
-    }
-
-    /// <summary>
-    /// Finds the members an event that is not for users goes to: each member who is not an administrator, whose account
-    /// works, and whose groups pick the event. Administrators get such events through the Administrators channel.
-    /// </summary>
-    /// <param name="config">The configuration, for the groups.</param>
-    /// <param name="nectoEvent">The event.</param>
-    /// <param name="users">Every user on the server.</param>
-    /// <returns>The members, each once, in the server's order.</returns>
-    public static IReadOnlyList<Guid> GroupRecipients(PluginConfiguration config, NectoEvent nectoEvent, IReadOnlyCollection<NotificationUser> users)
-    {
-        ArgumentNullException.ThrowIfNull(config);
-        ArgumentNullException.ThrowIfNull(nectoEvent);
-        ArgumentNullException.ThrowIfNull(users);
-        if (nectoEvent.Audience != NectoEventAudience.All || NectoEventCatalog.Find(nectoEvent.Key) is not { ForUsers: false })
-        {
-            return Array.Empty<Guid>();
-        }
-
-        var except = nectoEvent.ExceptUserIds ?? Array.Empty<Guid>();
-        return users
-            .Where(u => !u.IsAdministrator && !u.IsDisabled && u.Id != Guid.Empty && !except.Contains(u.Id))
-            .Where(u => PermissionService.Resolve(config, u.Id, false).Receives(nectoEvent.Key))
-            .Select(u => u.Id)
-            .Distinct()
-            .ToList();
     }
 
     /// <summary>
@@ -159,6 +131,7 @@ public static class NotificationRouter
             return null;
         }
 
-        return PermissionService.Resolve(config, id, user.IsAdministrator).Receives(nectoEvent.Key) ? id : null;
+        var permissions = PermissionService.Resolve(config, id, user.IsAdministrator);
+        return permissions.GetsInBrowsers(nectoEvent.Key) || permissions.GetsAsMessage(nectoEvent.Key) ? id : null;
     }
 }

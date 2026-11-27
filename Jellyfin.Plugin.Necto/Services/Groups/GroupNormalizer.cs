@@ -144,8 +144,7 @@ public static class GroupNormalizer
         scripts.ScriptIds = Clean(scripts.ScriptIds);
         var pages = p.CustomPages ??= new CustomPagePermissions();
         pages.PageIds = Clean(pages.PageIds);
-        var notifications = p.Notifications ??= new NotificationPermissions();
-        notifications.EventKeys = Clean(notifications.EventKeys);
+        Notifications.NotificationDelivery.Complete(p.Notifications ??= new NotificationPermissions());
         Policies.PolicyTemplateNormalizer.Complete(group.Template ??= new Jellyfin.Plugin.Necto.Configuration.Policies.PolicyTemplate());
     }
 

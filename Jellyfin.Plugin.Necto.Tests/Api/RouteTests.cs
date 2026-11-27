@@ -109,16 +109,15 @@ public sealed class RouteTests : IDisposable
     /// False: a user could reorder the groups.
     /// </summary>
     [Theory]
-    [InlineData(nameof(GroupOrderController.SetOrder), "PUT", "Order")]
-    [InlineData(nameof(GroupOrderController.ApplyTemplates), "POST", "Templates/Apply")]
+    [InlineData(nameof(GroupTemplatesController.ApplyTemplates), "POST", "Templates/Apply")]
     public void GroupOrder_AnswersAtItsRoutes(string action, string verb, string template)
     {
-        var attribute = Verb(typeof(GroupOrderController), action);
+        var attribute = Verb(typeof(GroupTemplatesController), action);
 
-        Assert.Equal("Groups", typeof(GroupOrderController).GetCustomAttribute<RouteAttribute>()!.Template);
+        Assert.Equal("Groups", typeof(GroupTemplatesController).GetCustomAttribute<RouteAttribute>()!.Template);
         Assert.Equal(new[] { verb }, attribute.HttpMethods);
         Assert.Equal(template, attribute.Template);
-        Assert.Equal("administrator", Access(typeof(GroupOrderController), action));
+        Assert.Equal("administrator", Access(typeof(GroupTemplatesController), action));
     }
 
     private MemberInvitesController MemberInvites(Guid user)

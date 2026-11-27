@@ -269,8 +269,9 @@ export function sectionSpecs() {
             key: 'invites', title: 'TabInvites', icon: 'mail', grants: ['Invites.MayCreate'], fields: [
                 { path: 'Invites.MayCreate', kind: 'check', label: 'LabelMayCreateInvites', reveals: [
                     { path: 'Invites.MaxInvites', kind: 'number', label: 'LabelMaxInvites', help: 'MaxInvitesHelp', min: 0 },
-                    { path: 'Invites.AnyGroup', kind: 'check', label: 'LabelAnyGroup' },
-                    { path: 'Invites.TargetGroupIds', kind: 'groups', label: 'LabelInviteGroups', help: 'InviteGroupsHelp' }
+                    { path: 'Invites.AnyGroup', kind: 'scope', label: 'LabelInviteGroups', allText: 'GroupsInvitesPermissiveHelp', someText: 'GroupsInvitesSelectiveHelp', picks: [
+                        { path: 'Invites.TargetGroupIds', kind: 'groups', label: 'LabelInviteGroups' }
+                    ] }
                 ] }
             ]
         },
@@ -285,15 +286,13 @@ export function sectionSpecs() {
         },
         {
             key: 'pages', title: 'TabPages', icon: 'web', grants: ['CustomPages.AllPages', 'CustomPages.PageIds'], fields: [
-                { path: 'CustomPages.AllPages', kind: 'check', label: 'LabelAllPages', help: 'PagesAllPagesHelp' },
-                { path: 'CustomPages.PageIds', kind: 'pages', label: 'PagesLabelGroupPages', help: 'PagesGroupPagesHelp', hiddenBy: 'CustomPages.AllPages' }
+                { path: 'CustomPages.AllPages', kind: 'scope', label: 'PagesLabelGroupPages', allText: 'GroupsPagesPermissiveHelp', someText: 'GroupsPagesSelectiveHelp', picks: [
+                    { path: 'CustomPages.PageIds', kind: 'pages', label: 'PagesLabelGroupPages' }
+                ] }
             ]
         },
-        { key: 'notifications', title: 'TabNotifications', icon: 'notifications', grants: ['Notifications.AllEvents', 'Notifications.EventKeys'], fields: [
-            { path: 'Notifications.AllEvents', kind: 'check', label: 'LabelAllEvents', help: 'NotificationsAllEventsHelp' },
-            { path: 'Notifications.EventKeys', kind: 'events', label: 'NotificationsGroupEvents', help: 'NotificationsGroupEventsHelp', hiddenBy: 'Notifications.AllEvents' },
-            { path: 'Notifications.BrowserNotifications', kind: 'check', label: 'LabelBrowserNotifications', help: 'NotificationsGroupBrowsersHelp', fallback: true },
-            { path: 'Notifications.JellyfinMessages', kind: 'check', label: 'NotificationsChannelApps', help: 'NotificationsGroupAppsHelp', fallback: true }
+        { key: 'notifications', title: 'TabNotifications', icon: 'notifications', grants: ['Notifications.BrowserEventKeys', 'Notifications.MessageEventKeys'], fields: [
+            { path: 'Notifications', kind: 'delivery', help: 'NotificationsGroupDeliveryHelp' }
         ] }
     ];
 }
@@ -376,22 +375,30 @@ export function eventGroups(events, config) {
     }).filter(function (group) { return group.events.length > 0; });
 }
 
+// COMMON_CLIENTS
+// The names Jellyfin's own and the most used clients sign in with, listed even before one has a device here.
+var COMMON_CLIENTS = ['Jellyfin Web', 'Jellyfin Android', 'Jellyfin Android TV', 'Jellyfin iOS', 'Jellyfin Media Player', 'Jellyfin Roku', 'Swiftfin iOS', 'Swiftfin tvOS', 'Findroid', 'Finamp', 'Infuse', 'Kodi', 'Streamyfin'];
+
 // knownClients
-// Lists the clients with a device on the server and the clients the rules name, so a saved client stays listed.
+// Lists the clients with a device or a session on the server, the common clients, and the clients the rules name, so
+// a saved client stays listed.
 //
 // Inputs
 // devices [object[]]: The server's devices.
 // rules [object[]]: The session rules.
+// sessions [object[]]: The server's sessions, each with Client. [optional]
 //
 // Output
 // [string[]]: The client names, sorted, each once whatever its case.
-export function knownClients(devices, rules) {
+export function knownClients(devices, rules, sessions) {
     var seen = {};
     var out = [];
     var add = function (name) {
         if (name && !seen[name.toLowerCase()]) { seen[name.toLowerCase()] = true; out.push(name); }
     };
     (devices || []).forEach(function (d) { add(d.AppName); });
+    (sessions || []).forEach(function (s) { add(s.Client); });
+    COMMON_CLIENTS.forEach(add);
     (rules || []).forEach(function (r) { (r.Clients || []).forEach(add); });
     return out.sort(function (a, b) { return a.localeCompare(b); });
 }
@@ -413,6 +420,24 @@ export function overlappingClients(clients, rules) {
             return r.Mode === 'Only' ? listed : !listed;
         }).length > 1;
     });
+}
+
+// deliveryLists
+// Reads a group's events by delivery method. A stored group with no lists yet reads its events by the methods it had,
+// as the server moves them.
+//
+// Inputs
+// notifications [object]: The group's Notifications permissions.
+// events [object[]]: The events from Notifications/Events, each with Key and ForUsers.
+//
+// Output
+// [object]: { browser, message }, each a list of event keys.
+export function deliveryLists(notifications, events) {
+    var n = notifications || {};
+    var forUsers = (events || []).filter(function (e) { return e.ForUsers; }).map(function (e) { return e.Key; });
+    var stored = n.AllEvents ? forUsers : (n.EventKeys || []);
+    var read = function (list, on) { return Array.isArray(list) ? list.slice() : (on === false ? [] : stored.slice()); };
+    return { browser: read(n.BrowserEventKeys, n.BrowserNotifications), message: read(n.MessageEventKeys, n.JellyfinMessages) };
 }
 
 // otherGroupName
@@ -568,7 +593,7 @@ export function createGroupEditor(group, ctx) {
                 value: value || [],
                 renderRow: function (g) { return { label: g.Name }; }
             });
-            into.appendChild(h('div', { 'data-field': spec.path }, [h('div', { class: 'selectLabel', text: t.tr(spec.label) }), list.element, describe(spec)]));
+            into.appendChild(h('div', { 'data-field': spec.path }, [list.element, describe(spec)]));
             handles.push(list);
             readers.push(function (out) { setPath(out.Permissions, spec.path, list.getValue()); });
         } else if (spec.kind === 'gigabytes') {
@@ -598,34 +623,27 @@ export function createGroupEditor(group, ctx) {
             drawProfiles(into, value || [], spec);
         } else if (spec.kind === 'sessions') {
             drawSessions(into, value || [], spec);
-        } else if (spec.kind === 'events') {
-            var groups = eventGroups(ctx.events, ctx.config);
-            var shownKeys = [];
-            var eventsRow = h('div', { 'data-field': spec.path }, [h('div', { class: 'selectLabel', text: t.tr(spec.label) }), describe(spec)]);
-            // Each tool's list holds only its own events, so clearing one in a list clears it from the group.
-            var lists = groups.map(function (group) {
-                var own = group.events.map(function (e) { return e.Key; });
-                var eventList = nectoModule.createCheckboxList({
-                    items: group.events,
-                    idKey: 'Key',
-                    value: (value || []).filter(function (key) { return own.indexOf(key) >= 0; }),
-                    search: false,
-                    renderRow: function (e) { return { label: e.Name }; }
-                });
-                group.events.forEach(function (e) { shownKeys.push(e.Key); });
-                eventsRow.appendChild(h('h3', { class: 'stolon-subsection-title', text: group.name }));
-                eventsRow.appendChild(eventList.element);
-                handles.push(eventList);
-                return eventList;
+        } else if (spec.kind === 'delivery') {
+            drawDelivery(into, value || {}, spec);
+        } else if (spec.kind === 'scope') {
+            var scope = nectoModule.createChoiceGroup(null, {
+                label: t.tr(spec.label),
+                value: (value == null ? !!spec.fallback : !!value) ? 'all' : 'some',
+                choices: [
+                    { value: 'all', name: t.tr('GroupsScopePermissive'), text: t.tr(spec.allText) },
+                    { value: 'some', name: t.tr('GroupsScopeSelective'), text: t.tr(spec.someText) }
+                ]
             });
-            if (!groups.length) eventsRow.appendChild(nectoModule.h('div', { class: 'fieldDescription', text: t.tr('NotificationsNoUserEvents') }));
-            into.appendChild(eventsRow);
-            // Events of a tool that is off keep their place, so turning it back on finds them picked.
-            readers.push(function (out) {
-                var kept = (value || []).filter(function (key) { return shownKeys.indexOf(key) < 0; });
-                setPath(out.Permissions, spec.path, kept.concat.apply(kept, lists.map(function (l) { return l.getValue(); })));
-            });
-            hideBy(spec, into, eventsRow);
+            scope.element.setAttribute('data-field', spec.path);
+            into.appendChild(scope.element);
+            handles.push(scope);
+            readers.push(function (out) { setPath(out.Permissions, spec.path, scope.get() === 'all'); });
+            var picks = h('div', { class: 'stolon-indent stolon-stack' });
+            spec.picks.forEach(function (child) { drawField(child, picks); });
+            into.appendChild(picks);
+            var showPicks = function () { picks.classList.toggle('stolon-hidden', scope.get() === 'all'); };
+            scope.element.addEventListener('change', showPicks);
+            showPicks();
         } else if (spec.kind === 'pages') {
             var pages = nectoModule.createCheckboxList({
                 fetchItems: function () { return shared.request('Pages').then(function (all) { return grantablePages(all, value); }).catch(function () { return []; }); },
@@ -635,12 +653,11 @@ export function createGroupEditor(group, ctx) {
                 emptyMessage: t.tr('PagesEmptyGroupPages'),
                 renderRow: function (p) { return { label: p.Title || ('/pages/' + p.Slug), sublabel: '/pages/' + p.Slug }; }
             });
-            var pagesRow = h('div', { 'data-field': spec.path }, [h('div', { class: 'selectLabel', text: t.tr(spec.label) }), pages.element, describe(spec)]);
+            var pagesRow = h('div', { 'data-field': spec.path }, [pages.element, describe(spec)]);
             into.appendChild(pagesRow);
             handles.push(pages);
             ready = Promise.all([ready, pages.ready]);
             readers.push(function (out) { setPath(out.Permissions, spec.path, pages.getValue()); });
-            hideBy(spec, into, pagesRow);
         }
 
         // Fields a checkbox hides while it is on, such as the scripts a group runs while it runs every script.
@@ -663,14 +680,45 @@ export function createGroupEditor(group, ctx) {
         }
     }
 
-    // hideBy
-    // Hides a field's row while the checkbox its spec names in hiddenBy is on.
-    function hideBy(spec, into, row) {
-        var every = spec.hiddenBy ? into.querySelector('[data-field="' + spec.hiddenBy + '"]') : null;
-        if (!every) return;
-        var hide = function () { row.classList.toggle('stolon-hidden', every.checked); };
-        every.addEventListener('change', hide);
-        hide();
+    // drawDelivery
+    // Draws the events members may get, under the tool that sends each, with a switch per delivery method. An event
+    // with both off is off for members. Events of a tool that is off keep their picks.
+    function drawDelivery(into, value, spec) {
+        var groups = eventGroups((ctx.events || []).filter(function (e) { return e.ForUsers; }), ctx.config);
+        var start = deliveryLists(value, ctx.events);
+        var rows = [];
+        groups.forEach(function (group) {
+            group.events.forEach(function (e) { rows.push({ key: e.Key, label: e.Name, hint: group.name }); });
+        });
+        var cells = {};
+        rows.forEach(function (row) {
+            cells[row.key] = { browser: start.browser.indexOf(row.key) >= 0, message: start.message.indexOf(row.key) >= 0 };
+        });
+        var grid = nectoModule.createMatrixGrid({
+            rows: rows,
+            columns: [
+                { key: 'browser', label: t.tr('LabelBrowserNotifications'), icon: 'notifications_active', type: 'toggle' },
+                { key: 'message', label: t.tr('NotificationsChannelApps'), icon: 'chat', type: 'toggle' }
+            ],
+            value: cells,
+            rowHeader: t.tr('NotificationsGroupEvents'),
+            label: t.tr('NotificationsGroupEvents'),
+            emptyText: t.tr('NotificationsNoUserEvents'),
+            onChange: function () { root.dispatchEvent(new Event('change')); }
+        });
+        handles.push(grid);
+        into.appendChild(h('div', { class: 'stolon-stack', 'data-field': 'Notifications.Delivery' }, [describe(spec), grid.element]));
+        var shown = rows.map(function (r) { return r.key; });
+        readers.push(function (out) {
+            var now = grid.getValue();
+            var pick = function (list, column) {
+                return list.filter(function (k) { return shown.indexOf(k) < 0; }).concat(shown.filter(function (k) { return now[k] && now[k][column] === true; }));
+            };
+            setPath(out.Permissions, 'Notifications.BrowserEventKeys', pick(start.browser, 'browser'));
+            setPath(out.Permissions, 'Notifications.MessageEventKeys', pick(start.message, 'message'));
+            setPath(out.Permissions, 'Notifications.AllEvents', false);
+            setPath(out.Permissions, 'Notifications.EventKeys', []);
+        });
     }
 
     // drawProfiles
@@ -709,16 +757,33 @@ export function createGroupEditor(group, ctx) {
     // drawSessions
     // Draws the session rules as a Repeater of cards, each with its clients, and the overlap warning under it.
     function drawSessions(into, rules, spec) {
-        var clients = knownClients(ctx.devices, rules);
+        var clients = knownClients(ctx.devices, rules, ctx.sessions);
         var warn = h('div', { class: 'stolon-warn stolon-hidden', 'data-role': 'overlap' });
+        // The clients seen on this server are listed to pick from, and any other name can be added under them.
         var clientField = function (value, change) {
-            var chips = nectoModule.createChipSelect({ options: clients, value: value || [], placeholder: t.tr('SearchClients'), noResultsText: t.tr('EmptyClientsMatch'), onChange: change });
+            var picked = (value || []).map(String);
+            var known = clients.concat(picked.filter(function (c) { return !clients.some(function (k) { return k.toLowerCase() === c.toLowerCase(); }); }));
+            var list = nectoModule.createCheckboxList({
+                items: known.map(function (c) { return { Id: c, Name: c }; }),
+                idKey: 'Id',
+                value: picked.filter(function (c) { return known.indexOf(c) >= 0; }),
+                search: known.length > 8,
+                emptyMessage: t.tr('GroupsNoClientsSeen'),
+                renderRow: function (c) { return { label: c.Name }; },
+                onChange: change
+            });
+            var other = nectoModule.createTagInput({ values: [], inputLabel: t.tr('GroupsLabelOtherClient'), placeholder: t.tr('GroupsPlaceholderOtherClient'), onChange: change });
+            var element = h('div', { class: 'stolon-stack' }, [list.element, other.element]);
             return {
-                element: chips.element,
-                input: chips.element.querySelector('input'),
-                getValue: function () { return chips.getValue().map(String); },
-                setValue: function (next) { chips.setValue(next || []); },
-                destroy: chips.destroy
+                element: element,
+                input: other.element.querySelector('input'),
+                getValue: function () {
+                    var all = list.getValue().map(String);
+                    other.getValue().forEach(function (c) { if (all.indexOf(c) < 0) all.push(c); });
+                    return all;
+                },
+                setValue: function (next) { list.setValue((next || []).filter(function (c) { return known.indexOf(c) >= 0; })); other.setValue((next || []).filter(function (c) { return known.indexOf(c) < 0; })); },
+                destroy: function () { list.destroy(); other.destroy(); }
             };
         };
         var read = null;
@@ -840,6 +905,7 @@ export default function (view) {
     var groups = [];
     var users = [];
     var devices = [];
+    var sessions = [];
     var events = [];
     var profiles = [];
     var config = null;
@@ -852,7 +918,7 @@ export default function (view) {
     }
 
     // loadGroups
-    // Reads the groups, the users, the devices, and the Radarr and Sonarr profiles, then draws the list. An answer that lands after a newer load is dropped.
+    // Reads the groups, the users, the devices and sessions, and the Radarr and Sonarr profiles, then draws the list. An answer that lands after a newer load is dropped.
     function loadGroups() {
         var mine = ++loadSeq;
         // The cards show a dash until the groups and users are read.
@@ -863,7 +929,8 @@ export default function (view) {
             shared.request('Devices').catch(function () { return { Items: [] }; }),
             shared.request('Notifications/Events').catch(function () { return []; }),
             shared.request('Requests/Profiles').catch(function () { return []; }),
-            shared.getConfig().catch(function () { return null; })
+            shared.getConfig().catch(function () { return null; }),
+            shared.request('Sessions').catch(function () { return []; })
         ]).then(function (answers) {
             if (mine !== loadSeq) return;
             groups = answers[0] || [];
@@ -872,6 +939,7 @@ export default function (view) {
             events = Array.isArray(answers[3]) ? answers[3] : [];
             profiles = Array.isArray(answers[4]) ? answers[4] : [];
             config = answers[5];
+            sessions = Array.isArray(answers[6]) ? answers[6] : [];
             shared.renderCards('groupCards', groupCards(groupCounts(groups, users, new Date()), shared.t));
             var items = groupItems(groups, users, shared);
             if (list) list.setItems(items);
@@ -964,7 +1032,7 @@ export default function (view) {
     function openGroup(group) {
         var t = shared.t;
         var isNew = !group;
-        var editor = createGroupEditor(group || newGroup(), { shared: shared, users: users, groups: groups, devices: devices, events: events, profiles: profiles, config: config });
+        var editor = createGroupEditor(group || newGroup(), { shared: shared, users: users, groups: groups, devices: devices, sessions: sessions, events: events, profiles: profiles, config: config });
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('TitleNewGroup') : groupName(group, t),
             body: editor.element,
@@ -991,6 +1059,10 @@ export default function (view) {
     page = made.page;
 }
 
+// OWN_UPDATES
+// The events about a member's own requests and issues, which a new group sends by both methods.
+var OWN_UPDATES = ['requests.approved', 'requests.declined', 'requests.available', 'issues.updated'];
+
 // newGroup
 // Starts a new group. Its members hear what happens to their own requests and issue reports, as Everyone's do on a
 // fresh install, and it gives nothing else until it is set.
@@ -1001,6 +1073,6 @@ export function newGroup() {
     return {
         Name: '',
         MemberIds: [],
-        Permissions: { Notifications: { AllEvents: false, EventKeys: ['requests.approved', 'requests.declined', 'requests.available', 'issues.updated'] } }
+        Permissions: { Notifications: { BrowserEventKeys: OWN_UPDATES.slice(), MessageEventKeys: OWN_UPDATES.slice() } }
     };
 }

@@ -54,11 +54,18 @@ public sealed class EffectivePermissions
     public bool MayOpenPage(string pageId) => IsAdministrator || CustomPages.AllPages || CustomPages.PageIds.Contains(pageId);
 
     /// <summary>
-    /// Works out whether the user receives an event.
+    /// Works out whether the user gets an event in their browsers.
     /// </summary>
     /// <param name="eventKey">The event.</param>
-    /// <returns><c>true</c> when an administrator, when any group gives every event, or when any group names it.</returns>
-    public bool Receives(string eventKey) => IsAdministrator || Notifications.AllEvents || Notifications.EventKeys.Contains(eventKey);
+    /// <returns><c>true</c> when an administrator, or when the user's group sends the event to browsers.</returns>
+    public bool GetsInBrowsers(string eventKey) => IsAdministrator || (Notifications.BrowserEventKeys?.Contains(eventKey) ?? false);
+
+    /// <summary>
+    /// Works out whether the user gets an event as a Jellyfin message.
+    /// </summary>
+    /// <param name="eventKey">The event.</param>
+    /// <returns><c>true</c> when an administrator, or when the user's group sends the event as a message.</returns>
+    public bool GetsAsMessage(string eventKey) => IsAdministrator || (Notifications.MessageEventKeys?.Contains(eventKey) ?? false);
 
     /// <summary>
     /// Works out whether the user's invites may target a group.

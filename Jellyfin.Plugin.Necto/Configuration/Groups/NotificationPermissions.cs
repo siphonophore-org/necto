@@ -3,25 +3,32 @@ using System.Collections.Generic;
 namespace Jellyfin.Plugin.Necto.Configuration.Groups;
 
 /// <summary>
-/// The events members receive from Notifications, and the channels they receive them on.
+/// How members get the events about them, by delivery method. Each list holds the keys of the events members get that
+/// way, and an event in neither list is off for members.
 /// </summary>
 public class NotificationPermissions
 {
-    /// <summary>Gets or sets a value indicating whether members receive every event.</summary>
-    public bool AllEvents { get; set; }
-
-    /// <summary>Gets or sets the keys of the events members receive.</summary>
-    public List<string> EventKeys { get; set; } = new();
-
-    /// <summary>Gets or sets a value indicating whether members receive their events in the browsers they turned notifications on in.</summary>
-    public bool BrowserNotifications { get; set; } = true;
-
-    /// <summary>Gets or sets a value indicating whether members receive their events as messages on their Jellyfin apps.</summary>
-    public bool JellyfinMessages { get; set; } = true;
+    /// <summary>
+    /// Gets or sets the events members get in the browsers they turned notifications on in. Null marks a stored group
+    /// whose events are still in <see cref="EventKeys"/>, which normalizing moves here.
+    /// </summary>
+    public List<string>? BrowserEventKeys { get; set; }
 
     /// <summary>
-    /// Works out whether members receive any event.
+    /// Gets or sets the events members get as messages on their Jellyfin apps. Null marks a stored group, as
+    /// <see cref="BrowserEventKeys"/> does.
     /// </summary>
-    /// <returns><c>true</c> when the group gives every event or names one.</returns>
-    public bool ReceivesAny() => AllEvents || (EventKeys?.Count ?? 0) > 0;
+    public List<string>? MessageEventKeys { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether a stored group gave every event, read only to move it.</summary>
+    public bool AllEvents { get; set; }
+
+    /// <summary>Gets or sets the events a stored group gave, read only to move them.</summary>
+    public List<string> EventKeys { get; set; } = new();
+
+    /// <summary>Gets or sets a value indicating whether a stored group sent its events to browsers, read only to move it.</summary>
+    public bool BrowserNotifications { get; set; } = true;
+
+    /// <summary>Gets or sets a value indicating whether a stored group sent its events as messages, read only to move it.</summary>
+    public bool JellyfinMessages { get; set; } = true;
 }

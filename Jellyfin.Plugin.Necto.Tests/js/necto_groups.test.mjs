@@ -154,29 +154,26 @@ function flip(box, on) {
     box.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
 }
 
-test('the Notifications tile follows the events each list holds, and clearing them saves none', async function () {
+test('the Notifications tile follows the methods turned on, and turning them all off saves none', async function () {
     var list = groups();
     list[1].Permissions.Notifications = { AllEvents: false, EventKeys: ['requests.approved', 'issues.updated'] };
-    var events = [{ Key: 'requests.approved', Name: 'Request approved', Tool: 'requests' }, { Key: 'issues.updated', Name: 'Issue resolved', Tool: 'issues' }];
+    var events = [{ Key: 'requests.approved', Name: 'Request approved', Tool: 'requests', ForUsers: true }, { Key: 'issues.updated', Name: 'Issue resolved', Tool: 'issues', ForUsers: true }];
     var opened = await openPage({ 'GET Groups': list, 'GET Notifications/Events': events, ['PUT Groups/' + FAMILY]: function (o) { return JSON.parse(o.data); } });
     var sidecar = await openRow(opened, 1);
-    var section = sidecar.querySelector('[data-section="notifications"]');
+    var grid = sidecar.querySelector('[data-field="Notifications.Delivery"]');
 
     assert.equal(tile(sidecar, 'notifications'), 'green');
-    ['requests.approved', 'issues.updated'].forEach(function (key) {
-        var picked = section.querySelector('.stolon-filtered-check[data-id="' + key + '"]');
-        assert.equal(picked.checked, true);
-        flip(picked, false);
-    });
-    assert.equal(tile(sidecar, 'notifications'), 'gray');
-    var every = section.querySelector('[data-field="Notifications.AllEvents"]');
-    flip(every, true);
-    assert.equal(tile(sidecar, 'notifications'), 'green');
-    flip(every, false);
+    var switches = Array.prototype.slice.call(grid.querySelectorAll('input[type="checkbox"]'));
+    assert.equal(switches.length, 4);
+    assert.ok(switches.every(function (box) { return box.checked; }));
+    switches.forEach(function (box) { flip(box, false); });
     assert.equal(tile(sidecar, 'notifications'), 'gray');
     clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Save');
     await settle(50);
-    assert.deepEqual(JSON.parse(sent(opened)[0].data).Permissions.Notifications.EventKeys, []);
+    var saved = JSON.parse(sent(opened)[0].data).Permissions.Notifications;
+    assert.deepEqual(saved.BrowserEventKeys, []);
+    assert.deepEqual(saved.MessageEventKeys, []);
+    assert.deepEqual(saved.EventKeys, []);
 });
 
 test('the Jellyfin tiles are gray until a row is set by the group, then green with the count in the header', async function () {
@@ -224,21 +221,30 @@ test('grantsAny holds while a switch is on or a list holds an entry, and eventGr
     assert.deepEqual(mod.eventGroups(events, { Requests: { Enabled: true } }).map(function (g) { return g.key; }), ['requests']);
 });
 
-test('the Notifications section lists events under their tool by name only, and hides them while every event goes', async function () {
+test('the Notifications section lists only events for users, under their tool, with a switch per method', async function () {
     var opened = await openPage({ 'GET Notifications/Events': [
-        { Key: 'requests.created', Name: 'New request', Tool: 'requests' },
-        { Key: 'storage.disk_missing', Name: 'Disk missing', Tool: 'storage' }
+        { Key: 'requests.created', Name: 'New request', Tool: 'requests', ForUsers: true },
+        { Key: 'issues.updated', Name: 'Issue resolved', Tool: 'issues', ForUsers: true },
+        { Key: 'storage.disk_missing', Name: 'Disk missing', Tool: 'storage', ForUsers: false }
     ] });
     var sidecar = await openRow(opened, 1);
     var section = sidecar.querySelector('[data-section="notifications"]');
-    var events = section.querySelector('[data-field="Notifications.EventKeys"]');
+    var grid = section.querySelector('[data-field="Notifications.Delivery"]');
 
-    assert.deepEqual(texts(events, '.stolon-subsection-title'), ['Requests', 'Storage']);
-    assert.doesNotMatch(events.textContent, /requests\.created|storage\.disk_missing/);
-    var every = section.querySelector('[data-field="Notifications.AllEvents"]');
-    every.checked = true;
-    every.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
-    assert.ok(events.classList.contains('stolon-hidden'));
+    assert.match(grid.textContent, /New request/);
+    assert.match(grid.textContent, /Issue resolved/);
+    assert.doesNotMatch(grid.textContent, /Disk missing|requests\.created/);
+    assert.equal(section.querySelector('[data-field="Notifications.AllEvents"]'), null);
+});
+
+test('deliveryLists reads a stored group by the methods it had, and lists as they are', async function () {
+    installPage({ config: allToolsOn() });
+    var mod = await loadScript('necto_groups.js');
+    var events = [{ Key: 'a', ForUsers: true }, { Key: 'b', ForUsers: true }, { Key: 'c', ForUsers: false }];
+
+    assert.deepEqual(mod.deliveryLists({ AllEvents: true, BrowserNotifications: false }, events), { browser: [], message: ['a', 'b'] });
+    assert.deepEqual(mod.deliveryLists({ EventKeys: ['a'] }, events), { browser: ['a'], message: ['a'] });
+    assert.deepEqual(mod.deliveryLists({ BrowserEventKeys: ['b'], MessageEventKeys: [] }, events), { browser: ['b'], message: [] });
 });
 
 test('Save puts the edited group to its own route with the fields the editor shows', async function () {
@@ -455,9 +461,10 @@ test('Save sends the Requests and Issues permissions the editor shows, the profi
 test('overlappingClients names a client more than one session rule covers', async function () {
     installPage({ config: allToolsOn() });
     var mod = await loadScript('necto_groups.js');
-    var clients = mod.knownClients([{ AppName: 'Infuse' }, { AppName: 'infuse' }], [{ Clients: ['Jellyfin Web'] }]);
+    var clients = mod.knownClients([{ AppName: 'Infuse' }, { AppName: 'infuse' }], [{ Clients: ['My Client'] }], [{ Client: 'Fladder' }]);
 
-    assert.deepEqual(clients, ['Infuse', 'Jellyfin Web']);
+    assert.ok(['Infuse', 'My Client', 'Fladder', 'Jellyfin Web', 'Swiftfin iOS'].every(function (c) { return clients.indexOf(c) >= 0; }));
+    assert.equal(clients.filter(function (c) { return c.toLowerCase() === 'infuse'; }).length, 1);
     assert.deepEqual(mod.overlappingClients(clients, [{ Mode: 'All', Clients: [] }, { Mode: 'Only', Clients: ['Infuse'] }]), ['Infuse']);
     assert.deepEqual(mod.overlappingClients(clients, [{ Mode: 'Only', Clients: ['Infuse'] }, { Mode: 'AllExcept', Clients: ['Infuse'] }]), []);
     assert.equal(mod.enumName(2, ['Allowed', 'InitialOnly', 'Disallowed']), 'Disallowed');
@@ -471,6 +478,6 @@ test('a new group starts with the updates about members own requests and issues,
 
     assert.equal(group.Name, '');
     assert.deepEqual(group.MemberIds, []);
-    assert.deepEqual(group.Permissions.Notifications.EventKeys, ['requests.approved', 'requests.declined', 'requests.available', 'issues.updated']);
-    assert.equal(group.Permissions.Notifications.AllEvents, false);
+    assert.deepEqual(group.Permissions.Notifications.BrowserEventKeys, ['requests.approved', 'requests.declined', 'requests.available', 'issues.updated']);
+    assert.deepEqual(group.Permissions.Notifications.MessageEventKeys, group.Permissions.Notifications.BrowserEventKeys);
 });

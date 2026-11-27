@@ -10,8 +10,8 @@ using Xunit;
 namespace Jellyfin.Plugin.Necto.Tests.Services.Notifications;
 
 /// <summary>
-/// An event for users goes to the users it is about when their groups give it to them, any other event to the
-/// members of the groups that pick it, and every event to each administrators' channel that picks it.
+/// An event for users goes to the users it is about by the methods their group picks for it, and every event to each
+/// administrators' channel that picks it. An event that is not for users never reaches a member.
 /// </summary>
 public class NotificationRouterTests
 {
@@ -73,37 +73,33 @@ public class NotificationRouterTests
     }
 
     /// <summary>
-    /// An event that is not for users goes to the members of the groups that pick it, and to no one else.
-    /// True: a group that picks Invites expired hears of it, and one that does not hears nothing.
-    /// False: tool events such as proxy bans could reach only the administrators.
+    /// An event that is not for users reaches no member, even from a stored group that picked it.
+    /// True: tool events such as proxy bans go only through the administrators' channels.
+    /// False: a member could get an event meant for administrators.
     /// </summary>
     [Fact]
-    public void Plan_EventNotForUsers_GoesToTheGroupsThatPickIt()
+    public void Plan_EventNotForUsers_ReachesNoMember()
     {
         var expired = new NectoEvent(InvitesEvents.Expired, "Invites expired", string.Empty);
 
-        var picked = NotificationRouter.Plan(Config(null, InvitesEvents.Expired), expired, Users());
-        var notPicked = NotificationRouter.Plan(Config(null, InvitesEvents.Used), expired, Users());
-
-        Assert.Equal(new[] { NotificationTarget.UserBrowsers, NotificationTarget.UserApps }, picked.Select(s => s.Target));
-        Assert.All(picked, s => Assert.Equal(new[] { Viewer }, s.Recipients));
-        Assert.Empty(notPicked);
+        Assert.Empty(NotificationRouter.Plan(Config(null, InvitesEvents.Expired), expired, Users()));
     }
 
     /// <summary>
-    /// A group's event goes to no administrator as a member, and to no one the event leaves out.
-    /// True: administrators get group events through the Administrators channel, and a deciding member is not told.
-    /// False: an administrator would get each event twice, or a member their own action.
+    /// Each method follows the group's pick for the event.
+    /// True: a group that sends an event only as a message never sends it to browsers.
+    /// False: one pick would turn on both methods.
     /// </summary>
     [Fact]
-    public void Plan_GroupEvent_LeavesOutAdministratorsAndExceptions()
+    public void Plan_UserEvent_FollowsTheMethodPicked()
     {
-        var expired = new NectoEvent(InvitesEvents.Expired, "Invites expired", string.Empty) { ExceptUserIds = new[] { Viewer } };
-        var config = Config(null, InvitesEvents.Expired);
-        config.Groups[0].MemberIds.Add(Admin);
+        var config = Config();
+        config.Groups[0].Permissions.Notifications.BrowserEventKeys = new();
+        config.Groups[0].Permissions.Notifications.MessageEventKeys = new() { InvitesEvents.Used };
 
-        Assert.Empty(NotificationRouter.Plan(config, expired, Users()));
-        Assert.Empty(NotificationRouter.GroupRecipients(config, expired with { ExceptUserIds = Array.Empty<Guid>() }, new[] { new NotificationUser(Admin, true, false) }));
+        var sends = NotificationRouter.Plan(config, Used(Viewer), Users());
+
+        Assert.Equal(NotificationTarget.UserApps, Assert.Single(sends).Target);
     }
 
     /// <summary>

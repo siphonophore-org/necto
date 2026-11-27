@@ -91,7 +91,7 @@ public sealed class UserCreatedConsumer : IEventConsumer<UserCreatedEventArgs>
 
         try
         {
-            await _templates.ApplyAsync(user).ConfigureAwait(false);
+            await _templates.ApplyAsync(user, joined: true).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
