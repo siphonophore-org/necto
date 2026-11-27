@@ -188,6 +188,7 @@ Storage never formats the system disk, a disk with something mounted or in use a
 
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
+| **Enabled** | Checks the disks on schedule, sends their alerts, and guards library scans. Off checks nothing, sends no alert, blocks no scan, and keeps every setting | Off |
 | **Storage low** | Writes a warning and sends an alert when a disk passes its point, and marks it **Low** | On, 90% used |
 | **Storage full** | Writes an error and sends an alert when a disk passes its point, and marks it **Full** | On, 95% used |
 | **Measurement** | Sets the points as a share of each disk in use, **Usage**, or as the free space left, **Size** | **Usage** |

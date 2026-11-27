@@ -59,6 +59,12 @@ Select a row to open the request in a sidecar, with **Approve** to the profile p
 
 ![Requests settings](screenshots/settings/Requests.png)
 
+| Setting | What it does | Default |
+| :--- | :--- | :--- |
+| **Enabled** | Serves the request page at `/requests/`, takes new requests, runs the scheduled tasks, and adds a **Requests** link to the web client's menu. Off hides the page and takes the link out, and keeps every request already made | Off |
+
+While **Enabled** is off, **Requests** leaves the sidebar, the Dashboard, and the group editor, `/requests/` answers 404, and a route that makes, changes, or joins a request answers 404 with "Requests are turned off." The issue page at `/issues/` follows its own switch.
+
 ### Rules
 
 | Setting | What it does | Default |

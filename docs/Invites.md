@@ -66,6 +66,7 @@ A member deletes only their own invites. The page also holds **Turn on notificat
 
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
+| **Enabled** | Lets invite links make accounts, and members make their own invites at `/invites`. Off says every invite is unavailable, answers 404 at `/invites` and its routes, stops the expiry task, and keeps every invite | Off |
 | **Invite link address** | Starts every invite link, such as your reverse proxy's address. Blank uses the address the page is open at. A warning shows while links would use plain http | Blank |
 | **Signups before a pause** | Pauses an invite after this many accounts in the window | 10 |
 | **Pause window (minutes)** | Sets the window the signups count over | 60 |

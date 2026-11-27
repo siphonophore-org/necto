@@ -78,7 +78,7 @@ The [Dashboard](Dashboard.md) map shows the same totals by country, through `GET
 
 ![Proxy settings](screenshots/settings/Proxy.png)
 
-* **Enable proxy** starts the proxy on its ports.
+* **Enable proxy** starts the proxy on its ports. It is off on a fresh install, and while it is off **Proxy** leaves the sidebar, the Dashboard, and the group editor.
 * **Accept the Let's Encrypt terms** lets Necto ask Let's Encrypt for certificates.
 * **Record visitors**, **Keep history (days)**, and **Locations** set the visitor history.
 * **Listener**: **HTTP port** (80), **HTTPS port** (443), **LAN address**, and **HTTP/2**.

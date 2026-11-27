@@ -22,6 +22,25 @@ Necto 12.4.0.0 is a first release. It reads nothing the old plugins stored, so a
 
 ## Tools
 
+### Turning Tools On and Off
+
+* Dashboard, Groups, Notifications, Settings, and Troubleshooting are always on. Requests, Issues, Invites, Proxy, DDNS, VPN, Scripts, Pages, and Storage each have an **Enabled** switch, the first checkbox of their Settings section. **Review**
+* A fresh install has all nine off, so a new server runs no optional tool until the administrator turns it on. Necto reads nothing from the old plugins, so no setting is carried over. **Review**
+* `ToolSwitches.All` lists the switches in C#, and `TOOL_SWITCHES` in `necto_shared.js` lists them for the pages. A test reads the script and checks the two agree. **Review**
+* A tool that is off leaves the sidebar, the Dashboard, the group editor, and Troubleshooting. Its pages answer as off, and its routes, tasks, and background work do nothing. Turning it off deletes nothing. **Review**
+* The switches of Issues, Proxy, and WireGuard keep their labels, **Enable issues**, **Enable proxy**, and **Enabled**. The new switches read **Enabled**, as WireGuard's does. **Review**
+* Issues does not need Requests. The issue page is the request page served at `/issues/`, with its own switch, so `/issues/` and the routes it calls answer while Requests is off. **Review**
+* While Requests is off, the request page and its assets answer 404, and the routes that make, change, or join a request answer 404 with "Requests are turned off." The routes Settings and the issue page call, such as `/Requests/Me`, still answer. **Review**
+* The Requests and Issues menu links are each added once when their tool is turned on, and taken out when it is turned off, so one removed by hand stays removed until its tool is turned off and on. **Review**
+
+### Menu Links
+
+* **Settings > Menu links** edits the `menuLinks` of the web client's `config.json`, found beside the web client as the Requests link always was, through `GET` and `PUT /Necto/MenuLinks` for administrators. **Review**
+* A save reads the file, replaces only `menuLinks`, and swaps the file in whole. Every other key keeps its value and its place, and a link's own keys beyond name, icon, and address stay on the link to the same address. **Review**
+* The Requests link is **Managed** while Requests is on, and the Issues link while Issues is on. It cannot be removed and keeps its address, and its name and icon are stored, so the link comes back with them after its tool is turned off and on. **Review**
+* Stolon has no icon picker, so the Icon field is a text field over a grid of about 70 common Material icons that the typed text narrows. Any Material icon name can be typed. **Review**
+* The address choices are written from the web client at `/web/`, such as `../requests/` and `../pages/rules`, so they work under a base path. **Review**
+
 The page is one Stolon tool app, as Zooid's is: a sidebar of the tools that are on, with **Dashboard** as home, and a title menu on a phone. Each tool has its own address. A tool that is turned off in **Settings** leaves the sidebar.
 
 | Tool | From | Holds |
@@ -45,7 +64,7 @@ The page is one Stolon tool app, as Zooid's is: a sidebar of the tools that are 
 
 A status card per tool that is on, one world map, the share card, and recent activity. See [Dashboard](Dashboard.md) for what is built.
 
-* A tool is on unless it has a switch that is off: **Enable issues**, **Enable proxy**, and **Enable WireGuard**. Every other tool always has a card. **Review**
+* A tool has a card while it is on. Dashboard, Groups, and Notifications are always on, and the nine optional tools each follow their **Enabled** switch. **Review**
 * The map comes from `GET /Dashboard/Map`, which joins the proxy's totals by country, the WireGuard tunnel ends, and this server's country on the server, rather than the page reading `GET /Proxy/Visitors` and `GET /WireGuard/Peers` itself. **Review**
 * The map's controller is named `NectoDashboardController` and answers at `/Dashboard`, since Jellyfin has a `DashboardController` of its own, whose routes are under `/web`. **Review**
 * While WireGuard is on, the location database stays loaded at country detail, even with **Record visitors** off, so the map can place the tunnel ends. The map loads it when it is missing, and looks up this server's own country while it is not known, each at most once every 10 minutes. **Review**

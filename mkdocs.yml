@@ -57,5 +57,6 @@ nav:
       - Pages: Pages.md
       - Storage: Storage.md
       - Notifications: Notifications.md
+      - Menu links: MenuLinks.md
   - Development:
       - Plan: Plan.md

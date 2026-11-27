@@ -54,6 +54,7 @@ Cloudflare and Duck DNS can also publish the TXT record Let's Encrypt checks, so
 
 | Setting | Default | What it does |
 | :--- | :--- | :--- |
+| **Enabled** | Off | Keeps each record pointed at the server's public IP. Off updates no record, on schedule or by **Update now**, and keeps every record. |
 | **IPv4 detection URLs** | ipify, icanhazip, Amazon, ident.me | Services that reply with the IPv4 address, one per line. Two must agree before an address is used, and plain http is refused. |
 | **IPv6 detection URLs** | ipify, icanhazip, ident.me | The same for IPv6. |
 | **Skip internal addresses** | On | Never publishes a private, loopback, or CGNAT address. |

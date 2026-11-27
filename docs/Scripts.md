@@ -8,6 +8,7 @@
 
 ![Scripts settings](screenshots/settings/Scripts.png)
 
+* **Enabled** runs scripts on their triggers, schedules, and webhooks. Off runs nothing, refuses **Run now**, **Test**, and webhooks, and keeps every script and its history. It is off on a fresh install.
 * **Runs**
     * **Runs at once** is a slider that sets how many scripts may run at the same time. Further runs wait their turn.
     * **Default command timeout** is a duration in minutes and seconds. A **Run command** step that sets no timeout of its own is stopped after this long.

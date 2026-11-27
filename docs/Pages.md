@@ -155,6 +155,7 @@ An API key reads and writes a store as an administrator with no user, so it owns
 
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
+| **Enabled** | Serves each page at its `/pages` address. Off answers 404 at every `/pages` address, stops retention, and keeps every page, image, and store | Off |
 | **Record limit** | Sets the record limit a new store starts with | 1000 |
 | **Retention (days)** | Sets how many days a new store keeps its records, where 0 keeps them forever | 0 |
 | **Notify administrators** | Starts a new store with Notify administrators on | Off |

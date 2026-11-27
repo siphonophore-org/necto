@@ -2,7 +2,7 @@
 
 Issues lets users report a problem with something they play, such as a movie whose sound drops out or an episode with the wrong subtitles, and lets managers confirm, resolve, or decline each report.
 
-Issues is off until **Enable issues** is turned on in **Settings > Issues**.
+Issues is off until **Enable issues** is turned on in **Settings > Issues**. It works on its own, with Requests on or off.
 
 ## The Issue Page
 

@@ -257,8 +257,9 @@ Every tool page uses Jellyfin's page shell. The tool app takes the page's view o
 * A page has no title of its own. The shell's heading names it, and `setPageTitle` changes the heading when a page needs another.
 * Entry names are short, each with a Material icon.
 * Keep the list in one place, `nectoTools` in the shared module, never copied into each page. `Plugin.ToolKeys` registers the same tools in the same order.
-* Order entries from what is used most to what is set once. Necto is **Dashboard**, **Requests**, **Issues**, **Invites**, **Groups**, **Proxy**, **DDNS**, **WireGuard**, **Scripts**, **Pages**, **Storage**, **Notifications**, **Settings**, **Troubleshooting**.
-* A tool turned off in **Settings** leaves the sidebar.
+* Order entries with what is always on first, then the tools in the order they are used. Necto is **Dashboard**, **Groups**, **Requests**, **Issues**, **Invites**, **Proxy**, **DDNS**, **VPN**, **Scripts**, **Pages**, **Storage**, **Notifications**, **Settings**, **Troubleshooting**.
+* **Dashboard**, **Groups**, **Notifications**, **Settings**, and **Troubleshooting** are always on. Every other tool has an **Enabled** switch, the first checkbox of its section in **Settings**, listed once in `ToolSwitches.All` in C# and `TOOL_SWITCHES` in `necto_shared.js`, which a test keeps in step.
+* A tool turned off in **Settings** leaves the sidebar, the Dashboard, the group editor, and Troubleshooting.
 * A tool page holds no settings and no permissions. Settings go in the tool's section of **Settings**, and permissions go on groups.
 
 ### Sections
@@ -278,7 +279,7 @@ Every tool page uses Jellyfin's page shell. The tool app takes the page's view o
 Every section on a Settings or Troubleshooting page leads with an icon tile, and so does every reset or action row. The tile names the topic at a glance, and makes a long page easy to scan.
 
 * A section header holds `<span class="stolon-collapsible-tile" aria-hidden="true"><span class="material-icons">…</span></span>` before its `stolon-collapsible-title`. A section built in script passes `icon` to `createCollapsibleSection`, which draws the same tile.
-* A reset or action row holds the same tile before its `stolon-reset-info`.
+* A reset or action row holds the same tile before its `stolon-reset-info`. Build it with `resetRow` in `necto_shared.js`, which draws the tile, and never by hand.
 * Pick the Material icon that names the topic, such as `movie_filter` for Requests, `vpn_lock` for WireGuard. A section and the tool it belongs to use the same icon as the sidebar.
 * The tile takes the accent color when its section has no on or off switch. A section that turns its feature on or off takes `stolon-green` while it is on and `stolon-gray` while it is off, and follows the switch as it changes. The most destructive row, such as a full reset, takes `stolon-red`.
 * Give each section its own icon. Two sections on one page never share one.
