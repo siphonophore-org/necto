@@ -137,10 +137,15 @@ def invites(api, made):
          'MaxUses': 4, 'ExpiresAt': soon(14), 'Resources': [{'Title': 'How to install the app', 'Url': 'https://example.com/apps'}]},
         {'Label': 'Book club', 'Message': 'Movie night picks live here.', 'GroupId': made['Friends']['Id'], 'MaxUses': 6, 'ExpiresAt': soon(30), 'Pin': '246810'},
         {'Label': 'Neighbor', 'Message': '', 'GroupId': made['Friends']['Id'], 'MaxUses': 1, 'ExpiresAt': soon(3)},
+        {'Label': 'Summer guests', 'Message': '', 'GroupId': made['Friends']['Id'], 'MaxUses': 3, 'ExpiresAt': soon(-20)},
+        {'Label': 'Old roommates', 'Message': '', 'GroupId': made['Friends']['Id'], 'MaxUses': 0, 'ExpiresAt': None, 'Off': True},
     ]
     for plan in plans:
         if plan['Label'] not in have:
-            api.post('/Invites', plan)
+            off = plan.pop('Off', False)
+            invite = api.post('/Invites', plan)
+            if off:
+                api.post('/Invites/%s/Enabled' % invite['Id'], {'Enabled': False})
 
 
 def member_invites(api_class, api, state, made):

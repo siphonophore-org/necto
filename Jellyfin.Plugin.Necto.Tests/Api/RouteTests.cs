@@ -83,6 +83,7 @@ public sealed class RouteTests : IDisposable
     /// </summary>
     [Theory]
     [InlineData(nameof(InvitesController.List), "GET", "List", "administrator")]
+    [InlineData(nameof(InvitesController.All), "GET", "All", "administrator")]
     [InlineData(nameof(InvitesController.Create), "POST", null, "administrator")]
     [InlineData(nameof(InvitesController.Update), "PUT", "{id:guid}", "administrator")]
     [InlineData(nameof(InvitesController.Duplicate), "POST", "{id:guid}/Duplicate", "administrator")]

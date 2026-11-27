@@ -168,6 +168,32 @@ public sealed class InviteService : IDisposable
     public List<InviteSummary> Summaries() => Summaries(_ => true);
 
     /// <summary>
+    /// Picks one page of invites for the Invites tool's list, in the state the filter names and matching the search.
+    /// </summary>
+    /// <param name="all">Every invite, oldest first.</param>
+    /// <param name="query">The page, the search over each name, group, and maker, and a state name, or All.</param>
+    /// <returns>The page, with how many invites match.</returns>
+    public static PagedResult<InviteSummary> PageOf(IEnumerable<InviteSummary> all, PagedQuery? query)
+    {
+        ArgumentNullException.ThrowIfNull(all);
+        query ??= new PagedQuery();
+        var filter = (query.Filter ?? string.Empty).Trim();
+        var every = filter.Length == 0 || filter.Equals("All", StringComparison.OrdinalIgnoreCase);
+        InviteState? state = !every && !int.TryParse(filter, out _) && Enum.TryParse<InviteState>(filter, true, out var named) && Enum.IsDefined(named)
+            ? named
+            : null;
+        var search = (query.Search ?? string.Empty).Trim();
+        var matching = all
+            .Where(i => every || i.State == state)
+            .Where(i => search.Length == 0
+                || i.Label.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || i.GroupName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || i.CreatedByName.Contains(search, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        return matching.ToPagedResult(query);
+    }
+
+    /// <summary>
     /// Lists the invites a member made.
     /// </summary>
     /// <param name="userId">The member.</param>

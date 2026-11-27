@@ -1,5 +1,5 @@
 // necto_invites.test.mjs
-// Tests for Invites: the list with each invite's state, the editor with its link and fields, the requests it sends,
+// Tests for Invites: the table with each invite's state, its filter, and its bulk actions, the editor with its link and fields, the requests it sends,
 // the Settings section, and the user pages' link and signup helpers.
 
 import { test } from 'node:test';
@@ -25,58 +25,120 @@ function invites() {
 }
 
 // openPage
-// Shows the Invites tool with its list and its Add invite button.
-async function openPage(answers) {
+// Shows the Invites tool over a view with its markup, answering each route by its path whatever its query.
+async function openPage(answers, list) {
     var page = installPage({ config: { InviteSettings: { LinkUrl: 'https://media.example.com' } } });
     var dom = page.dom;
-    var view = pageView(dom, [dom.el('div', { id: 'inviteList' }), dom.el('button', { id: 'btnAddInvite' }), dom.el('span', { id: 'invitesStatus' })]);
+    var view = pageView(dom, [dom.el('div', { id: 'inviteCards' }), dom.el('div', { id: 'invitesStatus' }), dom.el('div', { id: 'invitesTable' })]);
     dom.document.documentElement.appendChild(view);
-    routeApi(page, Object.assign({
-        'GET Invites/List': invites(),
+    var rows = list || invites();
+    var routes = Object.assign({
+        'GET Invites/List': rows,
+        'GET Invites/All': { Items: rows, TotalCount: rows.length },
         'GET Groups': [{ Id: EVERYONE, Name: 'Everyone', IsEveryone: true }, { Id: FAMILY, Name: 'Family', Permissions: {} }, { Id: 'blocked', Name: 'Managed', Permissions: { Accounts: { Password: { Enabled: true, ChangeMode: 'Disallowed' } } } }]
-    }, answers || {}));
+    }, answers || {});
+    globalThis.ApiClient.fetch = function (options) {
+        page.requests.push(options);
+        var answer = routes[(options.type || 'GET') + ' ' + String(options.url).split('?')[0]];
+        if (typeof answer === 'function') answer = answer(options);
+        if (answer instanceof Error) return Promise.reject(answer);
+        return Promise.resolve(answer === undefined ? {} : answer);
+    };
     var mod = await loadScript('necto_invites.js');
-    mod.default(view);
+    var handle = mod.default(view);
     view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
     await settle(50);
-    return { page: page, view: view, dom: dom };
+    return { page: page, view: view, dom: dom, handle: handle };
 }
 
-test('the list shows each invite with its group, uses, PIN, and maker, and its state badge at the row end', async function () {
+// rowsOf
+// Lists the table's rows.
+function rowsOf(opened) {
+    return opened.view.querySelectorAll('.stolon-table-row');
+}
+
+// pick
+// Ticks the checkbox of each row at these places.
+function pick(opened, places) {
+    places.forEach(function (i) {
+        var box = rowsOf(opened)[i].querySelector('.stolon-table-row-checkbox');
+        box.checked = true;
+        box.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+    });
+}
+
+test('the table shows each invite with its link, group, uses, PIN, and maker, and its state badge at the row end', async function () {
     var opened = await openPage();
-    var rows = opened.view.querySelectorAll('.stolon-record-list-row');
+    var rows = rowsOf(opened);
+    var cells = function (row) { return Array.prototype.map.call(row.querySelectorAll('.stolon-table-cell:not(.stolon-table-cell-checkbox)'), function (c) { return c.innerHTML; }); };
 
     assert.equal(rows.length, 2);
-    assert.match(rows[0].textContent, /Family[\s\S]*2 of 5 uses[\s\S]*Never expires[\s\S]*PIN/);
-    assert.match(rows[1].textContent, /Untitled invite[\s\S]*viewer/);
-    var states = Array.prototype.map.call(opened.view.querySelectorAll('[data-role="invite-state"]'), function (n) { return n.innerHTML; });
-    assert.match(states[0], /stolon-green[\s\S]*Active/);
-    assert.match(states[1], /Used up/);
+    var first = cells(rows[0]);
+    assert.match(first[0], /Family[\s\S]*https:\/\/media\.example\.com\/invites\/abc123[\s\S]*2 of 5 uses · Never expires · Asks for a PIN/);
+    assert.match(first[1], /data-role="invite-state"><span class="stolon-badge stolon-green[^"]*">Active/);
+    assert.match(first[1], /data-action="copy-link"[^>]*aria-label="Copy link"[\s\S]*data-action="show-qr"[^>]*aria-label="Show QR code"/);
+    assert.match(cells(rows[1])[0], /Untitled invite[\s\S]*Made by viewer/);
+    assert.match(cells(rows[1])[1], /Used up/);
+    assert.ok(opened.page.requests.some(function (r) { return /^Invites\/All\?/.test(r.url); }));
 });
 
-test('each invite row ends with Copy and Show QR code for its link, and Copy copies the link', async function () {
+test('the toolbar has search, a state filter in the count cards\' words, and Add invite', async function () {
+    var opened = await openPage();
+    var controls = opened.view.querySelector('.stolon-table-controls');
+
+    assert.equal(controls.querySelector('input').getAttribute('placeholder'), 'Search invites');
+    assert.deepEqual(texts(controls, 'select option'), ['All', 'Active', 'Locked', 'Expired', 'Group expired', 'Used up']);
+    assert.match(opened.view.querySelector('#inviteCards').innerHTML + opened.view.querySelector('#inviteCards').textContent, /Active[\s\S]*Locked[\s\S]*Expired[\s\S]*Group expired[\s\S]*Used up/);
+    assert.ok(controls.querySelector('#btnAddInvite'));
+    assert.match(controls.querySelector('#btnAddInvite').textContent, /Add invite/);
+});
+
+test('with no invites the table frame says No invites yet, and keeps its toolbar', async function () {
+    var opened = await openPage({}, []);
+
+    assert.equal(rowsOf(opened).length, 0);
+    assert.match(opened.view.querySelector('#invitesTable').textContent, /No invites yet\./);
+    assert.doesNotMatch(opened.view.querySelector('#invitesTable').textContent, /Select Add invite/);
+    assert.ok(opened.view.querySelector('.stolon-table-controls #btnAddInvite'));
+});
+
+// rowButton
+// Puts a row button, as the state cell draws it, into the table and clicks it.
+function clickRowButton(opened, action, id) {
+    var btn = opened.dom.el('button', { 'data-action': action, 'data-id': id });
+    opened.view.querySelector('.stolon-table-row').appendChild(btn);
+    btn.click();
+    return btn;
+}
+
+test('Copy link copies the invite link without opening the invite', async function () {
     var opened = await openPage();
     var copied = [];
     var clipboard = globalThis.navigator.clipboard;
     Object.defineProperty(globalThis.navigator, 'clipboard', { configurable: true, value: { writeText: function (text) { copied.push(text); return Promise.resolve(); } } });
-    var asides = opened.view.querySelectorAll('[data-role="invite-aside"]');
 
-    assert.equal(asides.length, 2);
-    assert.ok(asides[0].querySelector('[data-action="copy-link"]'));
-    var qr = asides[0].querySelector('.stolon-qr-code.stolon-button-only .stolon-qr-code-open');
-    assert.ok(qr);
-    assert.equal(qr.getAttribute('aria-label'), 'Show QR code');
-    assert.equal(asides[0].querySelector('.stolon-copy-field'), null);
-    asides[0].querySelector('[data-action="copy-link"]').click();
+    clickRowButton(opened, 'copy-link', INVITE);
     await settle(50);
     assert.deepEqual(copied, ['https://media.example.com/invites/abc123']);
     assert.match(opened.view.querySelector('#invitesStatus').textContent, /Invite link copied/);
+    assert.equal(opened.dom.document.querySelector('.stolon-sidecar'), null);
     Object.defineProperty(globalThis.navigator, 'clipboard', { configurable: true, value: clipboard });
+});
+
+test('Show QR code opens the invite link\'s code in a sidecar, not the editor', async function () {
+    var opened = await openPage();
+    clickRowButton(opened, 'show-qr', INVITE);
+    await settle(50);
+    var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
+
+    assert.ok(sidecar);
+    assert.ok(sidecar.querySelector('.stolon-qr-code'));
+    assert.equal(sidecar.querySelector('[data-field="Label"]'), null);
 });
 
 test('an invite opens with its link, its fields, and Turn off, Duplicate, Remove, Cancel, and Save', async function () {
     var opened = await openPage();
-    opened.view.querySelectorAll('.stolon-record-list-row')[0].click();
+    rowsOf(opened)[0].click();
     await settle(50);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
 
@@ -89,7 +151,7 @@ test('an invite opens with its link, its fields, and Turn off, Duplicate, Remove
 
 test('the editor sets out its steps under icon tiles, never uppercase headings', async function () {
     var opened = await openPage();
-    opened.view.querySelectorAll('.stolon-record-list-row')[0].click();
+    rowsOf(opened)[0].click();
     await settle(50);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
 
@@ -100,7 +162,7 @@ test('the editor sets out its steps under icon tiles, never uppercase headings',
 
 test('Save keeps a stored PIN, and Turn off posts to the invite', async function () {
     var opened = await openPage({ ['PUT Invites/' + INVITE]: {}, ['POST Invites/' + INVITE + '/Enabled']: {} });
-    opened.view.querySelectorAll('.stolon-record-list-row')[0].click();
+    rowsOf(opened)[0].click();
     await settle(50);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
     sidecar.querySelector('[data-field="MaxUses"]').value = '10';
@@ -113,7 +175,7 @@ test('Save keeps a stored PIN, and Turn off posts to the invite', async function
     assert.equal(body.Pin, null);
     assert.deepEqual(body.Resources, [{ Title: 'Guide', Url: 'https://example.com/guide' }]);
 
-    opened.view.querySelectorAll('.stolon-record-list-row')[0].click();
+    rowsOf(opened)[0].click();
     await settle(50);
     clickButton(opened.dom.document.querySelector('.stolon-sidecar .stolon-sidecar-shelf'), 'Turn off');
     await settle(50);
@@ -142,7 +204,7 @@ test('Add invite posts a new invite, and a short PIN keeps the sidecar open', as
 
 test('Remove asks first, then removes the invite', async function () {
     var opened = await openPage({ ['DELETE Invites/' + INVITE]: {} });
-    opened.view.querySelectorAll('.stolon-record-list-row')[0].click();
+    rowsOf(opened)[0].click();
     await settle(50);
     clickButton(opened.dom.document.querySelector('.stolon-sidecar .stolon-sidecar-shelf'), 'Remove');
     await settle(50);
@@ -151,6 +213,49 @@ test('Remove asks first, then removes the invite', async function () {
     await settle(50);
 
     assert.ok(opened.page.requests.some(function (r) { return r.type === 'DELETE' && r.url === 'Invites/' + INVITE; }));
+});
+
+test('the bulk bar offers Turn on, Turn off, and Remove, and Turn on skips the invites already on', async function () {
+    var list = invites().concat([{ Id: '99999999-0000-0000-0000-000000000003', Token: 'ghi', Label: 'Off', GroupName: 'Family', MaxUses: 0, UsedCount: 0, Enabled: false, State: 'Locked' }]);
+    var opened = await openPage({}, list);
+
+    assert.deepEqual(texts(opened.view.querySelector('.stolon-table-bulk-actions'), '[data-bulk]'), ['Turn on', 'Turn off', 'Remove']);
+    pick(opened, [0, 2]);
+    await opened.handle.bulk('on');
+    await settle(50);
+
+    var posts = opened.page.requests.filter(function (r) { return r.type === 'POST'; });
+    assert.deepEqual(posts.map(function (r) { return r.url; }), ['Invites/99999999-0000-0000-0000-000000000003/Enabled']);
+    assert.deepEqual(JSON.parse(posts[0].data), { Enabled: true });
+    assert.match(opened.view.querySelector('#invitesStatus').textContent, /Turned on 1 invite\. Skipped 1 invite already on\./);
+});
+
+test('bulk Remove asks first, then removes every invite picked', async function () {
+    var opened = await openPage({});
+    pick(opened, [0, 1]);
+    var done = opened.handle.bulk('remove');
+    await settle(50);
+    assert.equal(dialogText(opened.dom).title, 'Remove 2 invites');
+    clickDialogButton(opened.dom, 'Remove');
+    await done;
+    await settle(50);
+
+    assert.equal(opened.page.requests.filter(function (r) { return r.type === 'DELETE'; }).length, 2);
+    assert.match(opened.view.querySelector('#invitesStatus').textContent, /Removed 2 invites\./);
+});
+
+test('bulkResultText and canChange say what a bulk change did and which invites take it', async function () {
+    installPage({});
+    var mod = await loadScript('necto_invites.js');
+    var t = { plural: function (n, one, many) { return (n === 1 ? one : many) + ':' + n; } };
+
+    assert.deepEqual(mod.bulkResultText('off', 2, 1, 1, t), { text: 'InvitesBulkTurnedOffMany:2 InvitesBulkFailedOne:1 InvitesBulkSkippedOffOne:1', isError: true });
+    assert.deepEqual(mod.bulkResultText('remove', 1, 0, 0, t), { text: 'InvitesBulkRemovedOne:1', isError: false });
+    assert.equal(mod.canChange({ Enabled: true }, 'on'), false);
+    assert.equal(mod.canChange({ Enabled: false }, 'on'), true);
+    assert.equal(mod.canChange({ Enabled: false }, 'off'), false);
+    assert.equal(mod.canChange({ Enabled: false }, 'remove'), true);
+    assert.equal(mod.expiryDay('2026-01-01T00:00:00.0000000Z'), new Date('2026-01-01T00:00:00').toLocaleDateString());
 });
 
 test('inviteRequest and inviteLink build what the server and the invitee get', async function () {
