@@ -326,3 +326,34 @@ test('the group editor offers the pages from the Pages route, hidden while Open 
     assert.equal(editor.getValue().Permissions.CustomPages.AllPages, true);
     editor.destroy();
 });
+
+test('each image row draws Delete as a destructive row button', async function () {
+    var page = installPage({ config: { CustomPages: { Pages: [], Assets: [{ Name: 'logo.png', ContentType: 'image/png', DataBase64: 'AAAA', Visibility: 'Anonymous' }], Stores: [] } } });
+    var dom = page.dom;
+    routeApi(page, {});
+    var view = pageView(dom, [dom.el('div', { id: 'pagesStatus' }), dom.el('div', { id: 'pagesTabs' })]);
+    dom.document.documentElement.appendChild(view);
+    var mod = await loadScript('necto_pages.js');
+    mod.default(view);
+    view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
+    await settle();
+    clickButton(view, 'Images');
+    await settle(50);
+
+    var remove = view.querySelector('[data-asset="logo.png"] [data-action="delete-asset"]');
+    assert.ok(remove);
+    assert.match(remove.className, /stolon-row-btn/);
+    assert.match(remove.className, /stolon-destructive/);
+});
+
+test('the group editor offers only Signed in pages, and keeps a page the group already gives', async function () {
+    installPage({});
+    var groups = await loadScript('necto_groups.js');
+    var pages = [
+        { Id: 'open', Visibility: 'Anonymous' }, { Id: 'members', Visibility: 'User' }, { Id: 'staff', Visibility: 'Admin' },
+        { Id: 'numbered', Visibility: 1 }, { Id: 'moved', Visibility: 'Anonymous' }
+    ];
+
+    assert.deepEqual(groups.grantablePages(pages, ['moved']).map(function (p) { return p.Id; }), ['members', 'numbered', 'moved']);
+    assert.deepEqual(groups.grantablePages(null, []), []);
+});

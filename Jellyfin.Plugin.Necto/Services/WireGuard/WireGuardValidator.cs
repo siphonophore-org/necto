@@ -16,11 +16,12 @@ public static partial class WireGuardValidator
     /// <summary>
     /// Checks the WireGuard settings of a configuration save, and keeps the stored peers, connections, and host keys,
     /// which only the WireGuard routes change. A page that read the settings earlier never undoes a peer added since.
+    /// A tunnel subnet that would leave a stored peer outside it is refused.
     /// </summary>
     /// <param name="incoming">The settings about to be saved, or null.</param>
     /// <param name="stored">The settings in effect.</param>
     /// <returns>The settings to save.</returns>
-    /// <exception cref="ArgumentException">When a setting is not valid.</exception>
+    /// <exception cref="ArgumentException">When a setting is not valid, or a stored peer is outside the subnet.</exception>
     public static WireGuardSettings Saving(WireGuardSettings? incoming, WireGuardSettings? stored)
     {
         var result = incoming ?? new WireGuardSettings();
@@ -30,6 +31,7 @@ public static partial class WireGuardValidator
         result.HostPrivateKey = stored.HostPrivateKey;
         result.HostPublicKey = stored.HostPublicKey;
         Validate(result);
+        ValidateAddresses(result);
         return result;
     }
 

@@ -86,6 +86,26 @@ public sealed class InviteRedemptionTests : IDisposable
     }
 
     /// <summary>
+    /// An invite into Everyone keeps Everyone and signs users into no group, even with a group for new users set.
+    /// True: an administrator or member who picked Everyone gets accounts in no group.
+    /// False: the account would land in the group for new users.
+    /// </summary>
+    [Fact]
+    public async Task Redeem_IntoEveryone_JoinsNoGroup()
+    {
+        var family = TestGroups.Make("Family");
+        _h.Config.Configuration.Groups.Add(family);
+        _h.Config.Configuration.GroupSettings.NewUserGroupId = family.Id;
+        var invite = Make(new InviteRequest { GroupId = Jellyfin.Plugin.Necto.Configuration.Groups.Group.EveryoneId });
+
+        await _h.RedeemAsync(invite.Token);
+
+        Assert.Equal(Jellyfin.Plugin.Necto.Configuration.Groups.Group.EveryoneId, invite.GroupId);
+        Assert.Empty(family.MemberIds);
+        Assert.Equal("Everyone", Assert.Single(_h.Service.Summaries()).GroupName);
+    }
+
+    /// <summary>
     /// An invite with no group, or whose group was deleted, uses the group for new users.
     /// True: a default invite follows Settings at the moment it is used.
     /// False: the account would land in no group.

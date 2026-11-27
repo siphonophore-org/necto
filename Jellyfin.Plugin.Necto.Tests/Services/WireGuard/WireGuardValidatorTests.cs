@@ -18,7 +18,7 @@ public class WireGuardValidatorTests
     [Fact]
     public void Saving_KeepsTheStoredRecordsAndKeys()
     {
-        var stored = new WireGuardSettings { HostPrivateKey = "enc:v1:key", HostPublicKey = "public", Peers = { new TunnelPeer { Name = "Phone" } }, Connections = { new TunnelConnection { Name = "Friend" } } };
+        var stored = new WireGuardSettings { HostPrivateKey = "enc:v1:key", HostPublicKey = "public", Peers = { new TunnelPeer { Name = "Phone", Address = "10.66.0.2" } }, Connections = { new TunnelConnection { Name = "Friend" } } };
         var incoming = new WireGuardSettings { ListenPort = 51900 };
 
         var saved = WireGuardValidator.Saving(incoming, stored);
@@ -40,5 +40,20 @@ public class WireGuardValidatorTests
         Assert.Throws<ArgumentException>(() => WireGuardValidator.Saving(new WireGuardSettings { ListenPort = 0 }, new WireGuardSettings()));
 
         Assert.Equal(51820, WireGuardValidator.Saving(null, null).ListenPort);
+    }
+
+    /// <summary>
+    /// A Settings save whose tunnel subnet leaves a stored peer outside it is refused, and one that keeps it saves.
+    /// True: a subnet change can never strand a peer whose config would stop working.
+    /// False: every peer outside the new subnet loses its tunnel with no error.
+    /// </summary>
+    [Fact]
+    public void Saving_RefusesASubnetThatLeavesAPeerOutside()
+    {
+        var stored = new WireGuardSettings { Peers = { new TunnelPeer { Name = "Phone", Address = "10.66.0.2" } } };
+
+        Assert.Throws<ArgumentException>(() => WireGuardValidator.Saving(new WireGuardSettings { TunnelSubnet = "10.77.0.0/24" }, stored));
+
+        Assert.Equal("10.66.0.0/16", WireGuardValidator.Saving(new WireGuardSettings { TunnelSubnet = "10.66.0.0/16" }, stored).TunnelSubnet);
     }
 }

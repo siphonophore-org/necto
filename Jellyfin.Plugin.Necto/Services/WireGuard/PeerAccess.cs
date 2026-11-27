@@ -59,6 +59,19 @@ public static class PeerAccess
     }
 
     /// <summary>
+    /// Tells whether two sets of refused peers leave out the same peers for the same reasons.
+    /// </summary>
+    /// <param name="a">One set of refused peers.</param>
+    /// <param name="b">The other set.</param>
+    /// <returns><c>true</c> when both hold the same peers with the same reasons.</returns>
+    public static bool SameRefusals(IReadOnlyDictionary<Guid, PeerRefusal> a, IReadOnlyDictionary<Guid, PeerRefusal> b)
+    {
+        ArgumentNullException.ThrowIfNull(a);
+        ArgumentNullException.ThrowIfNull(b);
+        return a.Count == b.Count && a.All(p => b.TryGetValue(p.Key, out var reason) && reason == p.Value);
+    }
+
+    /// <summary>
     /// Gives the data limit of all of a user's peers together, from their groups.
     /// </summary>
     /// <param name="permissions">What the user may do.</param>

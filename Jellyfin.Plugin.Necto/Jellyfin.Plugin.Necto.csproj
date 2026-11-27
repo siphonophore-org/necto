@@ -155,6 +155,11 @@
     <JellyfinString Include="TabMusic" />
     <JellyfinString Include="TitlePlayback" />
     <JellyfinString Include="Trailers" />
+    <JellyfinString Include="DefaultSubtitlesHelp" />
+    <JellyfinString Include="SmartSubtitlesHelp" />
+    <JellyfinString Include="OnlyForcedSubtitlesHelp" />
+    <JellyfinString Include="AlwaysPlaySubtitlesHelp" />
+    <JellyfinString Include="NoSubtitlesHelp" />
     <JellyfinString Include="AlwaysPlaySubtitles" Case="sentence" />
     <JellyfinString Include="HeaderAccessSchedule" Case="sentence" />
     <JellyfinString Include="HeaderActiveRecordings" Case="sentence" />

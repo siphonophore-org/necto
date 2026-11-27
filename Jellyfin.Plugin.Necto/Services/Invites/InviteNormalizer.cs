@@ -64,8 +64,9 @@ public static class InviteNormalizer
     }
 
     /// <summary>
-    /// Finds the group a new account would join today: the invite's group, or the group set for new users when the
-    /// invite names none or its group was deleted. Everyone stands in when neither is set.
+    /// Finds the group a new account would join today: the invite's group, Everyone when the invite names Everyone, or
+    /// the group set for new users when the invite names none or its group was deleted. Everyone stands in when neither
+    /// is set.
     /// </summary>
     /// <param name="config">The configuration.</param>
     /// <param name="invite">The invite.</param>
@@ -74,10 +75,16 @@ public static class InviteNormalizer
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(invite);
+        var everyone = config.Everyone ?? PluginConfiguration.NewEveryone();
+        if (invite.GroupId == Group.EveryoneId)
+        {
+            return everyone;
+        }
+
         var groups = config.Groups ?? new List<Group>();
         var own = invite.GroupId is { } id ? groups.FirstOrDefault(g => g.Id == id) : null;
         var fallback = config.GroupSettings?.NewUserGroupId is { } newId ? groups.FirstOrDefault(g => g.Id == newId) : null;
-        return own ?? fallback ?? config.Everyone ?? PluginConfiguration.NewEveryone();
+        return own ?? fallback ?? everyone;
     }
 
     /// <summary>

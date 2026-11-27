@@ -51,6 +51,12 @@ public sealed class GroupStore
     }
 
     /// <summary>
+    /// Raised after a group is created, changed, or deleted, or a membership is dropped, so a tool that reads groups
+    /// can apply them at once.
+    /// </summary>
+    public event EventHandler? Changed;
+
+    /// <summary>
     /// Lists every group, Everyone first.
     /// </summary>
     /// <returns>Copies of the groups.</returns>
@@ -96,6 +102,7 @@ public sealed class GroupStore
 
         if (result!.Succeeded)
         {
+            Changed?.Invoke(this, EventArgs.Empty);
             LogActivity(TranslationKeys.ActivityGroupCreated, TranslationKeys.ActivityGroupCreatedOverview, "Necto.GroupCreated", group.Name);
         }
 
@@ -149,7 +156,12 @@ public sealed class GroupStore
             return true;
         });
 
-        return result!;
+        if (result!.Succeeded)
+        {
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -183,6 +195,7 @@ public sealed class GroupStore
             return GroupChange.Refused(GroupChangeError.NotFound);
         }
 
+        Changed?.Invoke(this, EventArgs.Empty);
         LogActivity(TranslationKeys.ActivityGroupDeleted, TranslationKeys.ActivityGroupDeletedOverview, "Necto.GroupDeleted", removed.Name);
         return new GroupChange(null, GroupChangeError.None);
     }
@@ -203,6 +216,7 @@ public sealed class GroupStore
 
         if (changed)
         {
+            Changed?.Invoke(this, EventArgs.Empty);
             _logger.LogDebug("Dropped administrators and deleted users from group membership");
         }
 

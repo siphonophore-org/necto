@@ -9,6 +9,9 @@ var el = nectoModule.el;
 export var ACCOUNT_RULES_TASK = 'NectoAccountRules';
 export var SESSION_CLEANUP_TASK = 'NectoSessionCleanup';
 
+// A reset code this close to its expiry shows as expiring.
+var RESET_SOON_MS = 5 * 60 * 1000;
+
 // Ids for fields, so two sections never share one.
 var fieldSeq = 0;
 
@@ -108,26 +111,72 @@ function resetRow(label, help, button, action) {
     ]);
 }
 
+// resetState
+// Says whether a password reset is active, expiring in the next five minutes, or expired.
+//
+// Inputs
+// code [object]: One reset from Groups/ResetCodes.
+// now [Date]: The time to compare against.
+//
+// Output
+// [string]: active, expiring, or expired.
+export function resetState(code, now) {
+    var due = code.ExpirationDate ? new Date(code.ExpirationDate) : null;
+    if (code.Expired || (due && due <= now)) return 'expired';
+    if (due && due - now <= RESET_SOON_MS) return 'expiring';
+    return 'active';
+}
+
 // resetItems
-// Turns the pending password resets into rows for a record list, each with the code in a masked copy field.
+// Turns the pending password resets into rows for a record list, each with its state tag and the code in a masked
+// copy field. Expired codes come last.
 //
 // Inputs
 // codes [object[]]: The resets from Groups/ResetCodes.
 // shared [object]: The Necto helper bag.
+// now [Date]: The time to compare against.
 //
 // Output
-// [object[]]: The rows.
-export function resetItems(codes, shared) {
+// [object[]]: The rows, each with its state.
+export function resetItems(codes, shared, now) {
     var t = shared.t;
-    return (codes || []).map(function (code, index) {
+    var tags = {
+        active: { label: t.tr('StateActive'), icon: 'schedule', color: 'green' },
+        expiring: { label: t.tr('GroupsCardExpiring'), icon: 'timer', color: 'orange' },
+        expired: { label: t.tr('StateExpired'), icon: 'timer_off', color: 'red' }
+    };
+    var items = (codes || []).map(function (code, index) {
+        var state = resetState(code, now);
         var field = nectoModule.createCopyField({ value: code.Pin, secret: true, allowExpose: true, inline: true, label: t.format('ResetCodeFor', code.UserName) });
         return {
             id: String(index),
             title: code.UserName,
-            secondary: t.format(code.Expired ? 'ExpiredOnDate' : 'ExpiresOnDate', shared.formatDate(code.ExpirationDate)),
+            secondary: t.format(state === 'expired' ? 'ExpiredOnDate' : 'ExpiresOnDate', shared.formatDate(code.ExpirationDate)),
+            tags: [tags[state]],
+            state: state,
             aside: field.element
         };
     });
+    return items.filter(function (i) { return i.state !== 'expired'; }).concat(items.filter(function (i) { return i.state === 'expired'; }));
+}
+
+// resetCards
+// Counts the password resets by state for the cards over their list.
+//
+// Inputs
+// items [object[]]: The rows resetItems gives.
+// t [object]: The strings.
+//
+// Output
+// [object[]]: The Active, Expiring, and Expired cards.
+export function resetCards(items, t) {
+    var counts = { active: 0, expiring: 0, expired: 0 };
+    (items || []).forEach(function (i) { counts[i.state]++; });
+    return [
+        { count: counts.active, label: t.tr('StateActive'), color: 'green' },
+        { count: counts.expiring, label: t.tr('GroupsCardExpiring'), color: 'orange' },
+        { count: counts.expired, label: t.tr('StateExpired'), color: 'red' }
+    ];
 }
 
 // buildTroubleshooting
@@ -218,11 +267,18 @@ function buildTroubleshooting(content, ctx) {
             resets.appendChild(el('div', { class: 'stolon-info', text: t.tr('ResetsDisabled') }));
             return;
         }
+        var warning = el('div', { class: 'stolon-warn', text: t.tr('ResetsHttpsWarning') });
         if (!(result.Codes || []).length) {
             resets.innerHTML = shared.emptySection(t.tr('EmptyPendingResets'), { inline: true });
+            resets.insertBefore(warning, resets.firstChild);
             return;
         }
-        resetList = nectoModule.createRecordList({ items: resetItems(result.Codes, shared), label: t.tr('HeaderPasswordResets') });
+        var items = resetItems(result.Codes, shared, new Date());
+        var cards = el('div', { class: 'stolon-cards compact', 'data-role': 'reset-cards' });
+        resets.appendChild(cards);
+        resets.appendChild(warning);
+        shared.renderCards(cards, resetCards(items, t));
+        resetList = nectoModule.createRecordList({ items: items, label: t.tr('HeaderPasswordResets') });
         resets.appendChild(resetList.element);
     }
 

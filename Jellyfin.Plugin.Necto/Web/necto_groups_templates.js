@@ -23,6 +23,61 @@ function sameId(a, b) {
     return clean(a) === clean(b);
 }
 
+// visibleViews
+// Leaves out the libraries a group's Library access hides from its members. Views that are not libraries, such as
+// Live TV and Collections, always stay.
+//
+// Inputs
+// views [object[]]: The views, each with Id and Name.
+// libraries [object[]]: The server's libraries, each with ItemId.
+// access [object]: The Library access row as { inherit, value: { all, ids } }, or null.
+//
+// Output
+// [object[]]: The views members can see.
+export function visibleViews(views, libraries, access) {
+    if (!access || access.inherit || !access.value || access.value.all) return (views || []).slice();
+    var ids = access.value.ids || [];
+    var libraryIds = (libraries || []).map(function (l) { return l.ItemId || l.Id; });
+    return (views || []).filter(function (v) {
+        var isLibrary = libraryIds.some(function (id) { return sameId(id, v.Id); });
+        return !isLibrary || ids.some(function (id) { return sameId(id, v.Id); });
+    });
+}
+
+// mergeOrder
+// Puts the order shown back together with the libraries the access row hides, so a hidden library keeps a place.
+//
+// Inputs
+// full [string[]]: Every view id in the last order.
+// shown [string[]]: The ids shown, in their order now.
+//
+// Output
+// [string[]]: The shown ids, then the hidden ones in their last order.
+export function mergeOrder(full, shown) {
+    var rest = (full || []).filter(function (id) { return !(shown || []).some(function (s) { return sameId(s, id); }); });
+    return (shown || []).concat(rest);
+}
+
+// mergeGrid
+// Reads a library checkbox row back with the libraries the access row hides, which keep what they had.
+//
+// Inputs
+// invert [boolean]: Whether the row saves what is left out.
+// all [string[]]: Every view id.
+// shown [string[]]: The view ids shown.
+// checked [string[]]: The ids checked among those shown.
+// previous [string[]]: The ids the row saved last.
+//
+// Output
+// [string[]]: The ids to save.
+export function mergeGrid(invert, all, shown, checked, previous) {
+    var has = function (list, id) { return (list || []).some(function (x) { return sameId(x, id); }); };
+    var hidden = (all || []).filter(function (id) { return !has(shown, id); });
+    var kept = hidden.filter(function (id) { return has(previous, id); });
+    var visible = invert ? (shown || []).filter(function (id) { return !has(checked, id); }) : (checked || []).slice();
+    return visible.concat(kept);
+}
+
 // HOME_SECTION_COUNT
 // How many home screen sections the web client shows.
 export var HOME_SECTION_COUNT = 10;
@@ -110,7 +165,10 @@ export function preferenceSpecs(t) {
         { title: t.tr('Subtitles'), rows: [
             { key: 'SubtitleMode', type: 'enum', label: t.tr('LabelSubtitlePlaybackMode'), options: [
                 ['Default', t.tr('Default')], ['Smart', t.tr('Smart')], ['OnlyForced', t.tr('OnlyForcedSubtitles')], ['Always', t.tr('AlwaysPlaySubtitles')], ['None', t.tr('None')]
-            ] },
+            ], optionHelp: {
+                Default: t.tr('DefaultSubtitlesHelp'), Smart: t.tr('SmartSubtitlesHelp'), OnlyForced: t.tr('OnlyForcedSubtitlesHelp'),
+                Always: t.tr('AlwaysPlaySubtitlesHelp'), None: t.tr('NoSubtitlesHelp')
+            } },
             { key: 'SubtitleLanguagePreference', type: 'culture', label: t.tr('LabelPreferredSubtitleLanguage') },
             { key: 'RememberSubtitleSelections', type: 'bool', label: t.tr('RememberSubtitleSelections') }
         ] },
@@ -182,7 +240,7 @@ export function rowValue(part, row) {
         case 'channels': value = { all: part.EnableAllChannels !== false, ids: (part.EnabledChannels || []).slice() }; break;
         case 'devices': value = { all: part.EnableAllDevices !== false, ids: (part.EnabledDevices || []).slice() }; break;
         case 'deletion': value = { all: part.EnableContentDeletion === true, ids: (part.EnableContentDeletionFromFolders || []).slice() }; break;
-        case 'rating': value = part.MaxParentalRating == null ? '' : String(part.MaxParentalRating); break;
+        case 'rating': value = ratingValue(part.MaxParentalRating, part.MaxParentalSubRating); break;
         case 'bitrate': value = part.RemoteClientBitrateLimit > 0 ? part.RemoteClientBitrateLimit / 1000000 : 0; break;
         case 'homesections': value = (part.HomeSections && part.HomeSections.length ? part.HomeSections : DEFAULT_HOME_SECTIONS).slice(); break;
         case 'bool': value = part[row.key] === true || (part[row.key] == null && row.fallback === true); break;
@@ -190,6 +248,63 @@ export function rowValue(part, row) {
         default: value = part[row.key] == null ? (Array.isArray(part[row.key]) ? [] : part[row.key]) : part[row.key];
     }
     return { manage: manage, value: value };
+}
+
+// ratingValue
+// Names a rating score and its sub score as one choice value, such as 13 or 13:1.
+//
+// Inputs
+// score [number]: The rating score, or null for none.
+// sub [number]: The sub score, or null.
+//
+// Output
+// [string]: The value, or an empty string for none.
+export function ratingValue(score, sub) {
+    if (score == null) return '';
+    return sub == null ? String(score) : score + ':' + sub;
+}
+
+// parseRating
+// Reads a choice value that ratingValue made back into its score and sub score.
+//
+// Inputs
+// value [string]: The choice value.
+//
+// Output
+// [object]: { score, sub }, each null when not set.
+export function parseRating(value) {
+    if (value === '' || value == null) return { score: null, sub: null };
+    var parts = String(value).split(':');
+    var score = parseInt(parts[0], 10);
+    var sub = parts.length > 1 ? parseInt(parts[1], 10) : NaN;
+    return { score: isNaN(score) ? null : score, sub: isNaN(sub) || isNaN(score) ? null : sub };
+}
+
+// ratingChoices
+// Lists the parental ratings as choices, one per score and sub score. Ratings that share both are one choice
+// named after each of them, as Jellyfin's own parental control page names them.
+//
+// Inputs
+// ratings [object[]]: The ratings from the server.
+//
+// Output
+// [string[][]]: Each choice as [value, name].
+export function ratingChoices(ratings) {
+    var list = [];
+    var byValue = {};
+    (ratings || []).forEach(function (r) {
+        var rs = r.RatingScore;
+        var score = rs ? rs.Score : r.Value;
+        if (score == null) return;
+        var value = ratingValue(score, rs && rs.SubScore != null ? rs.SubScore : null);
+        if (byValue[value]) {
+            byValue[value][1] += '/' + r.Name;
+            return;
+        }
+        byValue[value] = [value, r.Name];
+        list.push(byValue[value]);
+    });
+    return list;
 }
 
 // setRowValue
@@ -207,7 +322,12 @@ export function setRowValue(part, row, entry) {
         case 'channels': part.EnableAllChannels = !!v.all; part.EnabledChannels = v.all ? [] : (v.ids || []); break;
         case 'devices': part.EnableAllDevices = !!v.all; part.EnabledDevices = v.all ? [] : (v.ids || []); break;
         case 'deletion': part.EnableContentDeletion = !!v.all; part.EnableContentDeletionFromFolders = v.all ? [] : (v.ids || []); break;
-        case 'rating': part.MaxParentalRating = v === '' || v == null ? null : parseInt(v, 10); break;
+        case 'rating': {
+            var rating = parseRating(v);
+            part.MaxParentalRating = rating.score;
+            part.MaxParentalSubRating = rating.sub;
+            break;
+        }
         case 'bitrate': part.RemoteClientBitrateLimit = Math.max(0, Math.round((parseFloat(v) || 0) * 1000000)); break;
         case 'int': part[row.key] = isNaN(parseInt(v, 10)) ? 0 : Math.max(row.min || 0, parseInt(v, 10)); break;
         case 'bool': part[row.key] = !!v; break;
@@ -288,6 +408,11 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
     on.addEventListener('change', reflect);
     reflect();
 
+    var libraryAccess = null;
+    var viewRefreshers = [];
+    var refreshViews = function () { viewRefreshers.forEach(function (f) { f(); }); };
+    var shownViews = function (views, sources) { return visibleViews(views, sources.libraries, libraryAccess ? libraryAccess.getValue() : null); };
+
     return loadSources(shared).then(function (sources) {
         drawPart(accessBody, accessSpecs(t), 'Access', template.Access, sources);
         drawPart(prefsBody, preferenceSpecs(t), 'Preferences', template.Preferences, sources);
@@ -306,14 +431,20 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
                     value: { inherit: !start.manage, value: start.value },
                     inheritText: t.tr('GroupsTemplateMember'),
                     overrideText: t.tr('LabelGroup'),
-                    label: row.label
+                    label: row.label,
+                    onChange: row.type === 'library' ? refreshViews : undefined
                 });
                 handles.push(inherit);
-                into.appendChild(el('div', { class: 'necto-template-row', 'data-field': partName + '.' + row.key }, [
+                var rowElement = el('div', { class: 'necto-template-row', 'data-field': partName + '.' + row.key }, [
                     el('div', { class: 'selectLabel', text: row.label }),
                     inherit.element,
                     row.help ? el('div', { class: 'fieldDescription', text: row.help }) : null
-                ]));
+                ]);
+                if (row.type === 'library') {
+                    libraryAccess = inherit;
+                    rowElement.addEventListener('change', refreshViews);
+                }
+                into.appendChild(rowElement);
                 readers.push(function (out) {
                     out.Template = out.Template || {};
                     out.Template[partName] = out.Template[partName] || {};
@@ -347,7 +478,11 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
                 var select = el('select', { is: 'emby-select', id: id, 'aria-label': row.label });
                 choices(row, sources).forEach(function (o) { select.appendChild(el('option', { value: o[0], text: o[1] })); });
                 select.value = value == null ? '' : String(value);
-                return wrap(el('div', { class: 'selectContainer' }, [select]), function () { return select.value; }, function (v) { select.value = v == null ? '' : String(v); });
+                var optionHelp = row.optionHelp ? el('div', { class: 'fieldDescription', 'data-role': 'option-help' }) : null;
+                var showHelp = function () { if (optionHelp) optionHelp.textContent = row.optionHelp[select.value] || ''; };
+                select.addEventListener('change', showHelp);
+                showHelp();
+                return wrap(el('div', { class: 'selectContainer' }, [select, optionHelp]), function () { return select.value; }, function (v) { select.value = v == null ? '' : String(v); showHelp(); });
             }
             case 'tags': {
                 var tags = nectoModule.createTagInput({ values: value || [], inputLabel: row.label });
@@ -370,8 +505,8 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
                 return { element: unrated.element, getValue: function () { return unrated.getValue(); }, setValue: function (v) { unrated.setValue(v || []); } };
             }
             case 'homesections': return homeSections(value);
-            case 'order': return libraryOrder(value, sources.views);
-            case 'libgrid': return libraryGrid(row, value, row.source === 'groupable' ? sources.groupable : sources.views);
+            case 'order': return libraryOrder(value, sources);
+            case 'libgrid': return libraryGrid(row, value, row.source === 'groupable' ? sources.groupable : sources.views, sources);
             default: return allOrSome(row, value, sources);
         }
     }
@@ -392,13 +527,7 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
         if (row.type === 'cast') {
             return (sources.casts.length ? sources.casts : [{ Id: 'F007D354', Name: 'Stable' }, { Id: '6F511C87', Name: 'Unstable' }]).map(function (c) { return [c.Id, c.Name]; });
         }
-        var seen = {};
-        return [['', t.tr('None')]].concat((sources.ratings || []).filter(function (r) {
-            var score = r.RatingScore ? r.RatingScore.Score : r.Value;
-            if (score == null || seen[score]) return false;
-            seen[score] = true;
-            return true;
-        }).map(function (r) { return [String(r.RatingScore ? r.RatingScore.Score : r.Value), r.Name]; }));
+        return [['', t.tr('None')]].concat(ratingChoices(sources.ratings));
     }
 
     // allOrSome
@@ -442,35 +571,50 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
     }
 
     // libraryOrder
-    // Builds the home screen library order as an ordered list of the views.
-    function libraryOrder(value, views) {
+    // Builds the home screen library order as an ordered list of the views members can see. A hidden library keeps
+    // its place after the shown ones.
+    function libraryOrder(value, sources) {
+        var views = sources.views || [];
         var ordered = function (ids) {
-            var known = (views || []).slice();
-            var first = (ids || []).map(function (id) { return known.find(function (v) { return sameId(v.Id, id); }); }).filter(Boolean);
-            return first.concat(known.filter(function (v) { return first.indexOf(v) < 0; }));
+            var first = (ids || []).map(function (id) { return views.find(function (v) { return sameId(v.Id, id); }); }).filter(Boolean);
+            return first.concat(views.filter(function (v) { return first.indexOf(v) < 0; }));
         };
+        var full = ordered(value).map(function (v) { return v.Id; });
+        var shown = function (ids) { return shownViews(ordered(ids), sources); };
         var list = nectoModule.createOrderedList({
-            items: ordered(value),
+            items: shown(full),
             render: function (v) { return el('span', { text: v.Name }); },
             label: function (v) { return v.Name; }
         });
         handles.push(list);
-        return wrap(list.element, function () { return list.getItems().map(function (v) { return v.Id; }); }, function (v) { list.setItems(ordered(v)); });
+        var read = function () { return mergeOrder(full, list.getItems().map(function (v) { return v.Id; })); };
+        viewRefreshers.push(function () { full = read(); list.setItems(shown(full)); });
+        return wrap(list.element, read, function (v) { full = ordered(v).map(function (x) { return x.Id; }); list.setItems(shown(full)); });
     }
 
     // libraryGrid
-    // Builds a checkbox list of views. Inverted rows list what shows, and save what is left out.
-    function libraryGrid(row, value, views) {
+    // Builds a checkbox list of the views members can see. Inverted rows list what shows, and save what is left out.
+    // A hidden library keeps what it had.
+    function libraryGrid(row, value, views, sources) {
         var all = (views || []).map(function (v) { return { Id: v.Id, Name: v.Name }; });
+        var allIds = all.map(function (v) { return v.Id; });
+        var saved = (value || []).slice();
+        var shown = function () { return shownViews(all, sources).map(function (v) { return v.Id; }); };
+        var lastShown = shown();
         var toChecked = function (ids) {
             ids = ids || [];
             return row.invert ? all.filter(function (v) { return !ids.some(function (id) { return sameId(id, v.Id); }); }).map(function (v) { return v.Id; }) : ids;
         };
-        var grid = nectoModule.createCheckboxList({ items: all, idKey: 'Id', value: toChecked(value), renderRow: function (i) { return { label: i.Name }; }, emptyMessage: t.tr('GroupsTemplateNothingToList') });
+        var grid = nectoModule.createCheckboxList({ fetchItems: function () { return shownViews(all, sources); }, idKey: 'Id', value: toChecked(saved), renderRow: function (i) { return { label: i.Name }; }, emptyMessage: t.tr('GroupsTemplateNothingToList') });
         handles.push(grid);
-        return wrap(grid.element, function () {
-            var checked = grid.getValue();
-            return row.invert ? all.filter(function (v) { return checked.indexOf(v.Id) < 0; }).map(function (v) { return v.Id; }) : checked;
-        }, function (v) { grid.setValue(toChecked(v)); });
+        var read = function () {
+            return mergeGrid(row.invert, allIds, lastShown, grid.getValue(), saved);
+        };
+        viewRefreshers.push(function () {
+            saved = read();
+            lastShown = shown();
+            grid.refresh().then(function () { grid.setValue(toChecked(saved)); });
+        });
+        return wrap(grid.element, read, function (v) { saved = (v || []).slice(); grid.setValue(toChecked(saved)); });
     }
 }

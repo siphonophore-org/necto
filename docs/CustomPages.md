@@ -46,7 +46,7 @@ A page that needs a signed in viewer is served through a sign in shell. The shel
 | **Signed in** | Administrators, and members of a group that gives the page |
 | **Administrators** | Administrators only |
 
-A group gives pages in **Groups > Custom pages**, with **Open every page** or **Pages members may open**. A user in no group takes **Everyone**, which gives no page until you choose one. The check runs before the page is built, so a refused viewer never receives its HTML, CSS, or JavaScript. An API key carries no user, so it cannot open a **Signed in** page.
+A group gives pages in **Groups > Custom pages**, with **Open every page** or **Pages members may open**. **Pages members may open** lists the **Signed in** pages, since the other tiers ignore groups, and keeps a page the group already gives after it moves to another tier. A user in no group takes **Everyone**, which gives no page until you choose one. The check runs before the page is built, so a refused viewer never receives its HTML, CSS, or JavaScript. An API key carries no user, so it cannot open a **Signed in** page.
 
 !!! note "A viewer reads the source"
     Groups narrow who receives a page. Everyone who receives it can read its source, since a browser needs the source to show it.

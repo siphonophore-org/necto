@@ -25,16 +25,37 @@ public sealed class ScriptsEventTests
         var now = new DateTime(2026, 11, 20, 0, 0, 0, DateTimeKind.Utc);
         using var activity = new ScriptsActivity(new ActivitySummary(new FakeActivity().Logger), notifier, null, () => now);
 
-        activity.RunFailedFor("Notify", "Not an http or https URL");
-        activity.RunFailedFor("Notify", "Not an http or https URL");
-        activity.RunFailedFor("Backup", null);
+        var notify = Guid.NewGuid();
+        activity.RunFailedFor(notify, "Notify", "Not an http or https URL");
+        activity.RunFailedFor(notify, "Notify", "Not an http or https URL");
+        activity.RunFailedFor(Guid.NewGuid(), "Backup", null);
         now = now.AddMinutes(1);
-        activity.RunFailedFor("Notify", "again");
+        activity.RunFailedFor(notify, "Notify", "again");
 
         Assert.Equal(3, notifier.Events.Count);
         Assert.All(notifier.Events, e => Assert.Equal(ScriptsEvents.Failed, e.Key));
         Assert.All(notifier.Events, e => Assert.Equal(NectoEventLevel.Error, e.Level));
         Assert.Equal(new[] { "Notify", "Backup", "Notify" }, notifier.Events.Select(e => e.Data["script"]));
         Assert.Contains("Notify", notifier.Events[0].Body, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Two scripts with one name are spaced apart on their own, and a renamed script keeps its spacing.
+    /// True: one script's burst never hides another's alert, and a rename does not resend at once.
+    /// False: scripts that share a name share one alert a minute.
+    /// </summary>
+    [Fact]
+    public void RunFailedFor_SpacesEachScriptById()
+    {
+        var notifier = new FakeNotifier();
+        var now = new DateTime(2026, 11, 20, 0, 0, 0, DateTimeKind.Utc);
+        using var activity = new ScriptsActivity(new ActivitySummary(new FakeActivity().Logger), notifier, null, () => now);
+        var first = Guid.NewGuid();
+
+        activity.RunFailedFor(first, "Notify", null);
+        activity.RunFailedFor(Guid.NewGuid(), "Notify", null);
+        activity.RunFailedFor(first, "Notify renamed", null);
+
+        Assert.Equal(2, notifier.Events.Count);
     }
 }

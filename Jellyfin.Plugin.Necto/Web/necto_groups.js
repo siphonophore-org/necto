@@ -59,6 +59,35 @@ export function enumName(value, names) {
     return names.indexOf(value) >= 0 ? value : names[0];
 }
 
+// deletesOnExpiry
+// Tells whether a group deletes its members when it expires, so a save asks first.
+//
+// Inputs
+// group [object]: The group as the editor gives it.
+//
+// Output
+// [boolean]: True when the group has an expiry date and Delete as its method.
+export function deletesOnExpiry(group) {
+    var expiry = group && group.Permissions && group.Permissions.Accounts && group.Permissions.Accounts.Expiry;
+    return !!(expiry && expiry.ExpiresOn) && enumName(expiry.Action, EXPIRY_ACTIONS) === 'Delete';
+}
+
+// grantablePages
+// Lists the pages a group can give, the Signed in ones, as Anyone and Administrators pages ignore groups. A page
+// the group already gives stays, so a page moved to another tier keeps its grant.
+//
+// Inputs
+// pages [object[]]: The pages from the Pages route.
+// picked [string[]]: The ids the group gives now.
+//
+// Output
+// [object[]]: The pages to offer.
+export function grantablePages(pages, picked) {
+    return (pages || []).filter(function (p) {
+        return p.Visibility === 'User' || p.Visibility === 1 || (picked || []).some(function (id) { return sameId(id, p.Id); });
+    });
+}
+
 // getPath
 // Reads a value from an object by a dotted path, such as Accounts.Password.MinLength.
 //
@@ -119,6 +148,55 @@ export function accountTags(group, t) {
     if (a.Inactivity && a.Inactivity.Enabled) tags.push({ label: t.tr('HeaderInactivity'), icon: 'bedtime' });
     if (a.Sessions && a.Sessions.Enabled) tags.push({ label: t.tr('HeaderSessionManagement'), icon: 'devices' });
     return tags;
+}
+
+// userCounts
+// Counts the users for the cards over the list: administrators, active, inactive past their groups' window,
+// disabled, and those whose groups expire them within 7 days.
+//
+// Inputs
+// users [object[]]: The users from Groups/Users.
+// now [Date]: The time to count at.
+//
+// Output
+// [object]: { admins, active, inactive, disabled, expiring }.
+export function userCounts(users, now) {
+    var counts = { admins: 0, active: 0, inactive: 0, disabled: 0, expiring: 0 };
+    var today = new Date(now.getTime());
+    today.setHours(0, 0, 0, 0);
+    var soon = new Date(today.getTime());
+    soon.setDate(soon.getDate() + 7);
+    (users || []).forEach(function (u) {
+        if (u.IsAdministrator) { counts.admins++; return; }
+        if (u.ExpiresOn) {
+            var due = new Date(String(u.ExpiresOn).slice(0, 10) + 'T00:00:00');
+            if (due >= today && due <= soon) counts.expiring++;
+        }
+        if (u.IsDisabled) { counts.disabled++; return; }
+        var last = u.LastActivityDate ? new Date(u.LastActivityDate).getTime() : NaN;
+        if (u.InactiveDays > 0 && !isNaN(last) && last < now.getTime() - u.InactiveDays * 86400000) counts.inactive++;
+        else counts.active++;
+    });
+    return counts;
+}
+
+// userCards
+// Turns the user counts into the cards over the list.
+//
+// Inputs
+// counts [object]: What userCounts gives.
+// t [object]: The strings.
+//
+// Output
+// [object[]]: The cards.
+export function userCards(counts, t) {
+    return [
+        { count: counts.admins, label: t.tr('LabelAdministrators'), color: 'blue' },
+        { count: counts.active, label: t.tr('StateActive'), color: 'green' },
+        { count: counts.inactive, label: t.tr('StateInactive'), color: 'yellow' },
+        { count: counts.disabled, label: t.tr('Disabled'), color: 'red' },
+        { count: counts.expiring, label: t.tr('GroupsCardExpiring'), color: 'purple' }
+    ];
 }
 
 // groupItems
@@ -486,7 +564,7 @@ export function createGroupEditor(group, ctx) {
             readers.push(function (out) { setPath(out.Permissions, spec.path, events.getValue()); });
         } else if (spec.kind === 'pages') {
             var pages = nectoModule.createCheckboxList({
-                fetchItems: function () { return shared.request('Pages').catch(function () { return []; }); },
+                fetchItems: function () { return shared.request('Pages').then(function (all) { return grantablePages(all, value); }).catch(function () { return []; }); },
                 idKey: 'Id',
                 value: value || [],
                 searchKeys: ['Title', 'Slug'],
@@ -707,6 +785,7 @@ export default function (view) {
             devices = (answers[2] && answers[2].Items) || [];
             events = Array.isArray(answers[3]) ? answers[3] : [];
             profiles = Array.isArray(answers[4]) ? answers[4] : [];
+            shared.renderCards('groupUserCards', userCards(userCounts(users, new Date()), shared.t));
             var items = groupItems(groups, users, shared);
             if (list) list.setItems(items);
             else {
@@ -718,8 +797,24 @@ export default function (view) {
         });
     }
 
+    // confirmDeleteOnExpiry
+    // Asks first when the group deletes its members on expiry, since that cannot be undone.
+    //
+    // Output
+    // [Promise]: Resolves true to go on with the save.
+    function confirmDeleteOnExpiry(value) {
+        if (!deletesOnExpiry(value)) return Promise.resolve(true);
+        var t = shared.t;
+        return nectoModule.confirmDialog(t.format('GroupsConfirmSaveDeleteOnExpiry', String(value.Permissions.Accounts.Expiry.ExpiresOn).slice(0, 10)), {
+            title: t.format('GroupsSaveName', value.Name || t.tr('TitleNewGroup')),
+            confirmText: t.tr('Save'),
+            destructive: true
+        });
+    }
+
     // saveGroup
-    // Saves the editor's group, a new one by POST and an existing one by PUT.
+    // Saves the editor's group, a new one by POST and an existing one by PUT. A group that deletes its members on
+    // expiry asks first.
     //
     // Output
     // [Promise]: Resolves true once saved, and false to keep the sidecar open.
@@ -730,6 +825,17 @@ export default function (view) {
             return Promise.resolve(false);
         }
         var value = editor.getValue();
+        return confirmDeleteOnExpiry(value).then(function (confirmed) {
+            return confirmed ? sendGroup(editor, isNew, value) : false;
+        });
+    }
+
+    // sendGroup
+    // Sends the group to its route and reloads the list.
+    //
+    // Output
+    // [Promise]: Resolves true once saved, and false to keep the sidecar open.
+    function sendGroup(editor, isNew, value) {
         var request = isNew ? shared.request('Groups', 'POST', value) : shared.request('Groups/' + value.Id, 'PUT', value);
         return request.then(function () {
             report(shared.t.tr('ToastGroupSaved'), false);

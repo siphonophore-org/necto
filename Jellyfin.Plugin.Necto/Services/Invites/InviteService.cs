@@ -896,7 +896,7 @@ public sealed class InviteService : IDisposable
                 return StolonTranslations.Get(TranslationKeys.InvitesErrorGroupMissing, language);
             }
 
-            var target = InviteNormalizer.TargetGroup(c, new Invite { GroupId = request.GroupId == Group.EveryoneId ? null : request.GroupId });
+            var target = InviteNormalizer.TargetGroup(c, new Invite { GroupId = request.GroupId });
             return InviteNormalizer.BlocksInvites(target) ? StolonTranslations.Get(TranslationKeys.InvitesErrorGroupBlocks, language) : null;
         });
         if (error is not null)
@@ -907,7 +907,7 @@ public sealed class InviteService : IDisposable
         invite.Label = (request.Label ?? string.Empty).Trim();
         invite.Message = (request.Message ?? string.Empty).Trim();
         invite.Resources = resources;
-        invite.GroupId = request.GroupId == Group.EveryoneId ? null : request.GroupId;
+        invite.GroupId = request.GroupId;
         invite.ExpiresAt = request.ExpiresAt?.Date;
         invite.MaxUses = Math.Max(0, request.MaxUses);
         if (!keepPin)

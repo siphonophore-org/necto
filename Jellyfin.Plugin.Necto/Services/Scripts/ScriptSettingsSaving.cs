@@ -1,6 +1,7 @@
 using System;
 using Jellyfin.Plugin.Necto.Configuration.Scripts;
 using MediaBrowser.Common.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Siphonophore.Stolon;
 
@@ -14,6 +15,9 @@ public static class ScriptSettingsSaving
 {
     /// <summary>The name the secret protector is derived from. Changing it makes every stored secret unreadable.</summary>
     public const string SecretsName = "Jellyfin.Plugin.Necto";
+
+    /// <summary>Gets or sets the log a vault or key ring problem during a save is written to. It is the server log once the server starts.</summary>
+    public static ILogger Logger { get; set; } = NullLogger.Instance;
 
     /// <summary>
     /// Prepares the incoming Scripts settings.
@@ -31,8 +35,8 @@ public static class ScriptSettingsSaving
         ConfigurationValidator.Validate(result);
         if (paths is not null)
         {
-            var vault = new SecretVault(SecretVault.FileIn(paths), NullLogger.Instance);
-            var protector = StableSecretProtection.CreateProtector(paths, SecretsName, NullLogger.Instance);
+            var vault = new SecretVault(SecretVault.FileIn(paths), Logger);
+            var protector = StableSecretProtection.CreateProtector(paths, SecretsName, Logger);
             vault.Save(ScriptSecrets.Store(result, stored, vault.Load(), protector));
         }
 
