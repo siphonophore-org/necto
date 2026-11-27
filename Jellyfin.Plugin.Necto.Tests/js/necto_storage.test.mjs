@@ -312,6 +312,8 @@ test('a mounted disk shows its space, libraries, and folders, with the folder st
     var sidecar = opened.sidecar;
 
     assert.ok(sidecar.querySelector('[data-role="disk-space"] .stolon-pie-chart'));
+    assert.ok(sidecar.querySelector('.stolon-defs, [class*="stolon-def"]'));
+    assert.doesNotMatch(sidecar.querySelector('[data-role="disk"]').firstChild.textContent, /Status/);
     assert.equal(sidecar.querySelector('[data-role="disk-space"] .stolon-cards'), null);
     assert.match(sidecar.querySelector('[data-role="disk-alerts"]').textContent, /Storage low[\s\S]*50% used, at /);
     assert.deepEqual(texts(sidecar, '.stolon-tag'), ['Movies']);

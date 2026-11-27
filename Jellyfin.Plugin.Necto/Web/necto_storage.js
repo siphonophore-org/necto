@@ -743,7 +743,8 @@ export default function (view) {
         var body = h('div', { class: 'necto-storage-disk', 'data-role': 'disk' });
         var state = stateOf(t, disk);
         var health = healthFacts(disk);
-        var facts = [{ label: t.tr('LabelStatus'), value: { badge: { label: state.label, color: state.color } } }];
+        // The status shows as the sidecar's badge, so the facts start with its health.
+        var facts = [];
         if (health.length) facts.push(health.shift());
         facts.push({ label: t.tr('LabelType'), value: typeOf(t, disk).label });
         if (disk.FileSystem) facts.push({ label: t.tr('StorageLabelFileSystem'), value: sections.named(t, disk.FileSystem) });

@@ -510,6 +510,7 @@ function buildTroubleshooting(content, ctx) {
             (result.Nodes || []).forEach(function (n) { items.push({ label: n.Location || t.tr('Unknown'), value: n.Ok ? t.tr('StateConnected') : n.Error }); });
         }
         reach.setItems(items);
+        reach.element.classList.toggle('stolon-hidden', !items.length);
     }
 
     // load
@@ -528,12 +529,15 @@ function buildTroubleshooting(content, ctx) {
                 { label: t.tr('ProxyLabelServerCountry'), value: s.ServerCountry || t.tr('Unknown') },
                 { label: t.tr('ProxyLabelMemory'), value: t.format(d.IsLowMemory ? 'ProxyMemoryLow' : 'ProxyMemoryStandard', d.MemoryMb) }
             ];
-            if (s.CountryRefused) items.push({ label: t.tr('ProxyLabelRefusedByCountry'), value: refusedText(s.CountryRefused, t) });
+            if (s.CountryRefused && Object.keys(s.CountryRefused).length) items.push({ label: t.tr('ProxyLabelRefusedByCountry'), value: refusedText(s.CountryRefused, t) });
             items = items.concat(nameItems(s.Name, t));
             if (s.Error) items.push({ label: t.tr('LabelProblem'), value: s.Error });
             state.setItems(items);
             showReach(s.Reachability);
-            recovery.textContent = t.format('ProxyRecoveryHelp', s.DisableFlagPath || 'DISABLE');
+            var parts = t.tr('ProxyRecoveryHelp').split('{0}');
+            recovery.textContent = '';
+            [h('span', { text: parts[0] || '' }), h('span', { class: 'stolon-code', text: s.DisableFlagPath || 'DISABLE' }), h('span', { text: parts.slice(1).join('{0}') })]
+                .forEach(function (n) { recovery.appendChild(n); });
         }).catch(fail('ProxyErrorLoad'));
     }
 
