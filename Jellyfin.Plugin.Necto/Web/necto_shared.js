@@ -134,7 +134,8 @@ export function el(tag, attrs, children) {
 var toolsOff = {};
 
 // setToolsOff
-// Reads which tools are turned off in a config, so the sidebar leaves them out. Issues is off until Enable issues is on.
+// Reads which tools are turned off in a config, so the sidebar leaves them out. Each tool with an on switch, Issues,
+// Proxy, and WireGuard, is off until its switch is on.
 //
 // Inputs
 // config [object]: The plugin configuration.
@@ -142,7 +143,8 @@ var toolsOff = {};
 // Output
 // [object]: The tools turned off, by key.
 export function setToolsOff(config) {
-    toolsOff = { issues: !(config && config.Issues && config.Issues.Enabled) };
+    var on = function (section) { return !!(config && config[section] && config[section].Enabled); };
+    toolsOff = { issues: !on('Issues'), proxy: !on('Proxy'), wireguard: !on('WireGuard') };
     return toolsOff;
 }
 

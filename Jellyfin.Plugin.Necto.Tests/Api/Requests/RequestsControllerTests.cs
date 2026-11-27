@@ -1012,6 +1012,22 @@ public sealed class RequestsControllerTests : IDisposable
     }
 
     /// <summary>
+    /// In a browser, the page turns notifications on through the worker every user page shares, at the server's root,
+    /// and moves a subscription made through its own worker onto it. The installed app keeps its own worker.
+    /// True: one subscription serves /requests, /issues, and /invites in a browser, and an installed app still notifies.
+    /// False: a browser could hold two subscriptions and show each notification twice.
+    /// </summary>
+    [Fact]
+    public void Page_BrowserNotifications_UseTheSharedWorker()
+    {
+        var script = Script();
+
+        Assert.Contains("navigator.serviceWorker.register(prefix + '/Notifications/Push/Worker.js', { scope: prefix + '/' })", script, StringComparison.Ordinal);
+        Assert.Contains("installed() ? appWorker()", script, StringComparison.Ordinal);
+        Assert.Contains("dropAppSubscription()", script, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Every icon the app names is served, one of them maskable.
     /// True: the installed app shows its icon everywhere.
     /// False: an icon the manifest names would be missing.

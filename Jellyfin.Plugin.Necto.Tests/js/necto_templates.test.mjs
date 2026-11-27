@@ -82,7 +82,7 @@ test('every template row names a field the server keeps, with its Manage switch'
     assert.deepEqual(keys.slice().sort(), server.slice().sort());
 });
 
-test('the editor draws the template sections and saves the template and the notification events', async function () {
+test('the editor draws the template sections and saves the template, the notification events, and their channels', async function () {
     var opened = await openPage({ ['PUT Groups/' + FAMILY]: function (o) { return JSON.parse(o.data); } });
     opened.view.querySelectorAll('.stolon-record-list-row')[1].click();
     await settle(80);
@@ -93,7 +93,10 @@ test('the editor draws the template sections and saves the template and the noti
     assert.equal(sidecar.querySelector('[data-field="Template.Enabled"]').checked, true);
     assert.ok(sidecar.querySelector('[data-field="Access.EnableRemoteAccess"]'));
     assert.match(sidecar.querySelector('[data-field="Notifications.EventKeys"]').textContent, /Invite used/);
-    assert.doesNotMatch(sidecar.querySelector('[data-field="Notifications.EventKeys"]').textContent, /Invites expired/);
+    assert.match(sidecar.querySelector('[data-field="Notifications.EventKeys"]').textContent, /Invites expired/);
+    assert.equal(sidecar.querySelector('[data-field="Notifications.BrowserNotifications"]').checked, true);
+    assert.equal(sidecar.querySelector('[data-field="Notifications.JellyfinMessages"]').checked, true);
+    sidecar.querySelector('[data-field="Notifications.BrowserNotifications"]').checked = false;
 
     clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Save');
     await settle(80);
@@ -105,6 +108,8 @@ test('the editor draws the template sections and saves the template and the noti
     assert.equal(body.Template.Access.EnableRemoteAccess, false);
     assert.equal(body.Template.Access.ManageIsHidden, false);
     assert.deepEqual(body.Permissions.Notifications.EventKeys, ['invites.used']);
+    assert.equal(body.Permissions.Notifications.BrowserNotifications, false);
+    assert.equal(body.Permissions.Notifications.JellyfinMessages, true);
 });
 
 test('groupOrder lists the ids without Everyone, in order', async function () {

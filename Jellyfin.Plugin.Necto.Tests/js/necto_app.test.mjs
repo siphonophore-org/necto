@@ -15,7 +15,7 @@ var ICONS = ['dashboard', 'movie_filter', 'report_problem', 'mail', 'groups', 's
 // openApp
 // Builds the Necto page over a fresh view and returns the view.
 async function openApp(config) {
-    var page = installPage({ config: config || { Issues: { Enabled: true } } });
+    var page = installPage({ config: config || { Issues: { Enabled: true }, Proxy: { Enabled: true }, WireGuard: { Enabled: true } } });
     var view = pageView(page.dom, []);
     page.dom.document.documentElement.appendChild(view);
     var shared = await loadScript('necto_shared.js');
@@ -41,16 +41,22 @@ test('the sidebar lists the dashboard first, then every tool', async function ()
 });
 
 test('the sidebar leaves Issues out while Enable issues is off', async function () {
-    var view = await openApp({ Issues: { Enabled: false } });
+    var view = await openApp({ Issues: { Enabled: false }, Proxy: { Enabled: true }, WireGuard: { Enabled: true } });
     await settle();
     assert.deepEqual(sidebar(view).names, NAMES.filter(function (n) { return n !== 'Issues'; }));
 });
 
-test('setToolsOff turns Issues off until Enable issues is on', async function () {
+test('the sidebar leaves out Proxy and WireGuard while each is off', async function () {
+    var view = await openApp({ Issues: { Enabled: true }, Proxy: { Enabled: false }, WireGuard: { Enabled: false } });
+    await settle();
+    assert.deepEqual(sidebar(view).names, NAMES.filter(function (n) { return n !== 'Proxy' && n !== 'WireGuard'; }));
+});
+
+test('setToolsOff turns each tool with an on switch off until it is on', async function () {
     installPage({});
     var shared = await loadScript('necto_shared.js');
-    assert.deepEqual(shared.setToolsOff({}), { issues: true });
-    assert.deepEqual(shared.setToolsOff({ Issues: { Enabled: true } }), { issues: false });
+    assert.deepEqual(shared.setToolsOff({}), { issues: true, proxy: true, wireguard: true });
+    assert.deepEqual(shared.setToolsOff({ Issues: { Enabled: true }, Proxy: { Enabled: true }, WireGuard: { Enabled: false } }), { issues: false, proxy: false, wireguard: true });
 });
 
 test('the sidebar has its fold button', async function () {

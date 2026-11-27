@@ -143,6 +143,29 @@ test('the channel editor refuses a channel with no name', async function () {
     assert.equal(mod.isBuiltIn({ Kind: 4 }), true);
 });
 
+test('the channel editor offers what posts carry, the requester off on a new channel, and saves each switch', async function () {
+    installPage({});
+    var mod = await loadScript('necto_notifications_sections.js');
+    var shared = { t: { tr: function (k) { return k; }, format: function (k) { return k; } }, setStatus: function () {} };
+    var hook = mod.newChannel('Webhook', 'Hook');
+    var editor = mod.createChannelEditor(hook, { shared: shared, events: [], smtpSet: true });
+
+    assert.equal(hook.ShowRequester, false);
+    assert.equal(hook.ShowPoster, true);
+    assert.equal(editor.element.querySelector('[data-field="ShowRequester"]').checked, false);
+    assert.ok(editor.element.querySelector('[data-field="ShowRecord"]'));
+    editor.element.querySelector('[data-field="ShowRequester"]').checked = true;
+    editor.element.querySelector('[data-field="ShowSeasons"]').checked = false;
+    var saved = editor.getValue();
+    assert.equal(saved.ShowRequester, true);
+    assert.equal(saved.ShowSeasons, false);
+    assert.equal(saved.ShowNote, true);
+
+    assert.deepEqual(mod.postFields('Discord').map(function (f) { return f.key; }), ['ShowPoster', 'ShowOverview', 'ShowRequester', 'ShowJoined', 'ShowSeasons', 'ShowNote', 'ShowTime']);
+    assert.deepEqual(mod.postFields('Email').map(function (f) { return f.key; }), ['ShowRequester']);
+    assert.deepEqual(mod.postFields('Administrators'), []);
+});
+
 test('the Troubleshooting section lists the send log and the browsers, and asks before new push keys', async function () {
     var opened = await openTool('troubleshooting', { 'POST Notifications/Push/Keys': { Count: 1 } });
     var section = opened.section;

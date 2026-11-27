@@ -17,7 +17,7 @@ export var FILTERS_KEY = 'necto-issues-filters';
 // ISSUE_STATES
 // Each issue state by the name the server sends, with its string key and badge color.
 export var ISSUE_STATES = {
-    Reported: { key: 'StateReported', color: 'orange' },
+    Reported: { key: 'StateReported', color: 'yellow' },
     Confirmed: { key: 'StateConfirmed', color: 'red' },
     Resolved: { key: 'StateResolved', color: 'green' },
     Declined: { key: 'StateDeclined', color: 'gray' },

@@ -56,7 +56,7 @@ export function isBuiltIn(channel) {
 }
 
 // newChannel
-// Builds an added channel of a kind, on, with no events.
+// Builds an added channel of a kind, on, with no events, and its posts carrying what POST_FIELDS gives by default.
 //
 // Inputs
 // kind [string]: Discord, Webhook, or Email.
@@ -65,7 +65,9 @@ export function isBuiltIn(channel) {
 // Output
 // [object]: The channel.
 export function newChannel(kind, name) {
-    return { Id: '', Name: name, Kind: CHANNEL_KINDS[kind], Enabled: true, AllEvents: false, EventKeys: [], Url: '', Headers: '', Username: '', AvatarUrl: '', UseCustomBody: false, Body: '', Recipients: '' };
+    var channel = { Id: '', Name: name, Kind: CHANNEL_KINDS[kind], Enabled: true, AllEvents: false, EventKeys: [], Url: '', Headers: '', Username: '', AvatarUrl: '', UseCustomBody: false, Body: '', Recipients: '' };
+    POST_FIELDS.forEach(function (f) { channel[f.key] = f.fallback; });
+    return channel;
 }
 
 // channelTitle
@@ -350,6 +352,35 @@ var PLACEHOLDER_KEYS = {
     time: 'NotificationsPlaceholderTime', color: 'NotificationsPlaceholderColor', serverURL: 'NotificationsPlaceholderServer', userId: 'NotificationsPlaceholderUser'
 };
 
+// POST_FIELDS
+// What a post about a request or an issue can carry, each with its setting, its label key, and its default.
+export var POST_FIELDS = [
+    { key: 'ShowPoster', label: 'Poster', fallback: true },
+    { key: 'ShowOverview', label: 'Overview', fallback: true },
+    { key: 'ShowRequester', label: 'NotificationsFieldPerson', fallback: false },
+    { key: 'ShowJoined', label: 'RequestsLabelJoined', fallback: false },
+    { key: 'ShowSeasons', label: 'HeaderSeasons', fallback: true },
+    { key: 'ShowNote', label: 'LabelNotes', fallback: true },
+    { key: 'ShowTime', label: 'LabelTime', fallback: true },
+    { key: 'ShowRecord', label: 'NotificationsFieldRecord', fallback: true }
+];
+
+// postFields
+// Lists the post fields a kind of channel offers: every one for a webhook, all but the whole record for Discord, and
+// only the requester for email, which sends the event's words alone.
+//
+// Inputs
+// kind [string]: The channel's kind.
+//
+// Output
+// [object[]]: The fields, as POST_FIELDS lists them.
+export function postFields(kind) {
+    if (kind === 'Webhook') return POST_FIELDS.slice();
+    if (kind === 'Discord') return POST_FIELDS.filter(function (f) { return f.key !== 'ShowRecord'; });
+    if (kind === 'Email') return POST_FIELDS.filter(function (f) { return f.key === 'ShowRequester'; });
+    return [];
+}
+
 // createChannelEditor
 // Builds the body of an administrators' channel's sidecar: its name and switch, what it sends to, and its events.
 //
@@ -418,6 +449,17 @@ export function createChannelEditor(channel, ctx) {
         root.appendChild(el('div', { class: 'fieldDescription', text: t.tr('NotificationsAdministratorsHelp') }));
     } else {
         root.appendChild(el('div', { class: 'fieldDescription', text: t.tr('NotificationsActivityLogHelp') }));
+    }
+
+    var shows = postFields(kind);
+    if (shows.length > 0) {
+        root.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderPostFields') }));
+        root.appendChild(el('div', { class: 'fieldDescription', text: t.tr('NotificationsPostFieldsHelp') }));
+        shows.forEach(function (f) {
+            var box = check({ label: t.tr(f.label), checked: channel[f.key] == null ? f.fallback : channel[f.key], data: f.key });
+            root.appendChild(box.wrap);
+            readers.push(function (out) { out[f.key] = !!box.input.checked; });
+        });
     }
 
     root.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsGroupEvents') }));
