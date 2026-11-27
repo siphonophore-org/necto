@@ -350,10 +350,10 @@ export default function (view) {
     }
 
     // stateBadges
-    // Gives a row's state badge, and File changed when the file changed since the report.
+    // Gives a row's state badge.
     function stateBadges(issue) {
         var s = stateOf(issue.State, shared.t);
-        return [{ label: s.label, color: s.color }, issue.FileChanged ? { label: shared.t.tr('IssuesLabelFileChanged'), color: 'orange' } : null];
+        return { label: s.label, color: s.color };
     }
 
     // report
@@ -401,7 +401,7 @@ export default function (view) {
             image: posterOf,
             imageShape: 'portrait',
             title: function (issue) { return titleOf(issue, t); },
-            lines: function (issue) { return [subline(issue, t), reportersLine(issue, t)]; },
+            lines: function (issue) { return [subline(issue, t), reportersLine(issue, t), issue.FileChanged ? t.tr('IssuesLabelFileChanged') : '']; },
             status: stateBadges,
             bulk: BULK_VERBS.map(function (b) { return { verb: b[0], text: t.tr(b[1]), variant: b[2].replace('stolon-', '') }; }),
             onBulk: function (verb) { bulk(verb); },

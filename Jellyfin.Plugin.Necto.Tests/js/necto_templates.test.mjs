@@ -23,7 +23,7 @@ var KIDS = '11111111-2222-3333-4444-666666666666';
 async function openPage(answers) {
     var page = installPage({ config: { InviteSettings: { Enabled: true } } });
     var dom = page.dom;
-    var view = pageView(dom, [dom.el('div', { id: 'groupList' }), dom.el('button', { id: 'btnAddGroup' }), dom.el('span', { id: 'groupsStatus' })]);
+    var view = pageView(dom, [dom.el('div', { id: 'groupsStatus' }), dom.el('div', { id: 'groupList' })]);
     dom.document.documentElement.appendChild(view);
     routeApi(page, Object.assign({
         'GET Groups': [
@@ -120,7 +120,7 @@ test('the editor\'s library order shows only the libraries the template gives, a
         if (String(url).indexOf('/Views') >= 0) return Promise.resolve({ Items: [{ Id: 'aa', Name: 'Movies' }, { Id: 'bb', Name: 'Shows' }, { Id: 'tv', Name: 'Live TV' }] });
         return getJSON ? getJSON.apply(this, arguments) : Promise.resolve([]);
     };
-    opened.view.querySelectorAll('.stolon-record-list-row')[1].click();
+    opened.view.querySelectorAll('#groupList .stolon-table-row')[1].click();
     await settle(80);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
 
@@ -138,7 +138,7 @@ test('the editor\'s library order shows only the libraries the template gives, a
 test('the subtitle mode row explains the picked mode under its select', async function () {
     var family = { Id: FAMILY, Name: 'Family', MemberIds: [], Permissions: {}, Template: { Enabled: true, Access: {}, Preferences: { ManageSubtitleMode: true, SubtitleMode: 'Smart' } } };
     var opened = await openPage({ 'GET Groups': [{ Id: EVERYONE, Name: 'Everyone', IsEveryone: true, MemberIds: [], Permissions: {} }, family] });
-    opened.view.querySelectorAll('.stolon-record-list-row')[1].click();
+    opened.view.querySelectorAll('#groupList .stolon-table-row')[1].click();
     await settle(80);
     var row = opened.dom.document.querySelector('.stolon-sidecar [data-field="Preferences.SubtitleMode"]');
     var help = row.querySelector('[data-role="option-help"]');
@@ -166,7 +166,7 @@ test('every template row names a field the server keeps, with its Manage switch'
 
 test('the editor draws the Jellyfin sections and saves the template, the preferences mode, and the notification methods', async function () {
     var opened = await openPage({ ['PUT Groups/' + FAMILY]: function (o) { return JSON.parse(o.data); } });
-    opened.view.querySelectorAll('.stolon-record-list-row')[1].click();
+    opened.view.querySelectorAll('#groupList .stolon-table-row')[1].click();
     await settle(80);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
 
@@ -202,7 +202,7 @@ test('the editor draws the Jellyfin sections and saves the template, the prefere
 test('a template stored with its rows off shows every row as the member\'s, and saves them so', async function () {
     var family = { Id: FAMILY, Name: 'Family', MemberIds: [], Permissions: {}, Template: { Enabled: false, Access: { ManageIsHidden: true, IsHidden: true }, Preferences: {} } };
     var opened = await openPage({ 'GET Groups': [{ Id: EVERYONE, Name: 'Everyone', IsEveryone: true, MemberIds: [], Permissions: {} }, family], ['PUT Groups/' + FAMILY]: function (o) { return JSON.parse(o.data); } });
-    opened.view.querySelectorAll('.stolon-record-list-row')[1].click();
+    opened.view.querySelectorAll('#groupList .stolon-table-row')[1].click();
     await settle(80);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
 

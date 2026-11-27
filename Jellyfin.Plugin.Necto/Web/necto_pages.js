@@ -196,7 +196,8 @@ export function pageItems(pages, t) {
         if (p.Unsandboxed || (p.ApiRoutes || []).length) tags.push({ label: t.tr('PagesTagSystemAccess'), color: 'orange' });
         var address = '/pages/' + (p.Slug || '');
         var title = (p.Title || '').trim();
-        return { id: String(index), index: index, title: title || address, secondary: title ? address : '', tags: tags, state: state, aside: nectoModule.rowBadge(state) };
+        var tier = p.Enabled === false ? 'Unpublished' : normalizeVisibility(p.Visibility);
+        return { id: String(index), index: index, tier: tier, enabled: p.Enabled !== false, title: title || address, secondary: title ? address : '', tags: tags, state: state, aside: nectoModule.rowBadge(state) };
     });
 }
 
@@ -218,9 +219,9 @@ export function storeItems(stores, counts, t) {
             { label: t.format('PagesTagRead', tierLabel(normalizeVisibility(s.ReadAccess, 'Admin'), t)), color: 'blue' },
             { label: t.format('PagesTagWrite', tierLabel(normalizeVisibility(s.WriteAccess, 'User'), t)), color: normalizeVisibility(s.WriteAccess, 'User') === 'Anonymous' ? 'orange' : 'blue' }
         ];
-        var state = s.Enabled === false ? { label: t.tr('Off'), color: 'gray' } : null;
+        var state = s.Enabled === false ? { label: t.tr('Off'), color: 'gray' } : { label: t.tr('StateOn'), color: 'green' };
         var secondary = typeof count === 'number' ? t.format('PagesUsageRecords', count, s.MaxRecords || 1000) : '';
-        return { id: String(index), index: index, title: s.Name || '', secondary: secondary, tags: tags, state: state, aside: state ? nectoModule.rowBadge(state) : null };
+        return { id: String(index), index: index, enabled: s.Enabled !== false, title: s.Name || '', secondary: secondary, tags: tags, state: state, aside: nectoModule.rowBadge(state) };
     });
 }
 
@@ -398,6 +399,35 @@ function tierOptions(select, t) {
     ['Admin', 'User', 'Anonymous'].forEach(function (v) {
         select.appendChild(h('option', { value: v, text: tierLabel(v, t) }));
     });
+}
+
+// tierBadge
+// Gives a tier's badge: Anyone green, Signed in blue, and Administrators purple.
+//
+// Inputs
+// value [string]: The tier.
+// t [object]: The strings.
+//
+// Output
+// [object]: label and color.
+export function tierBadge(value, t) {
+    var tier = normalizeVisibility(value);
+    return { label: tierLabel(tier, t), color: tier === 'Anonymous' ? 'green' : (tier === 'User' ? 'blue' : 'purple') };
+}
+
+// tierFilters
+// Lists a tier filter's choices, the lowest tier first, with Unpublished for the pages when asked.
+//
+// Inputs
+// t [object]: The strings.
+// unpublished [boolean]: Whether Unpublished is a choice.
+//
+// Output
+// [object[]]: Each choice's value and label.
+export function tierFilters(t, unpublished) {
+    var out = ['Anonymous', 'User', 'Admin'].map(function (v) { return { value: v, label: tierLabel(v, t) }; });
+    if (unpublished) out.push({ value: 'Unpublished', label: t.tr('PagesStatusUnpublished') });
+    return out;
 }
 
 // setHidden
@@ -728,10 +758,7 @@ export default function (view) {
     var settings = { Pages: [], Assets: [], Stores: [] };
     var counts = {};
     var tabs = null;
-    var pageList = null;
-    var storeList = null;
-    var picker = null;
-    var assetFields = [];
+    var tables = {};
     var panels = {};
     var loadSeq = 0;
 
@@ -789,7 +816,7 @@ export default function (view) {
     }
 
     // drawPages
-    // Draws the page counts and the list of pages.
+    // Draws the page counts and the pages' table.
     function drawPages() {
         var panel = panels.pages;
         if (!panel) return;
@@ -801,16 +828,80 @@ export default function (view) {
             { count: c.admin, label: t.tr('LabelAdministrators'), color: 'purple' },
             { count: c.unpublished, label: t.tr('PagesStatusUnpublished'), color: 'gray' }
         ]);
-        var items = pageItems(settings.Pages, t);
-        if (pageList) pageList.setItems(items);
-        else {
-            pageList = nectoModule.createRecordList({ items: items, label: t.tr('TabPages'), emptyText: t.tr('PagesEmptyPages'), onOpen: function (item) { openPage(item.index); } });
-            panel.querySelector('[data-role="page-list"]').appendChild(pageList.element);
+        drawTable('pages', panel, function () {
+            return {
+                containerId: 'pagesTable',
+                rows: function () { return pageItems(settings.Pages, t); },
+                idKey: 'id',
+                search: t.tr('PagesSearchPages'),
+                filters: [{ label: t.tr('PagesLabelVisibility'), options: tierFilters(t, true), test: function (item, value) { return item.tier === value; } }],
+                empty: { message: t.tr('PagesEmptyPages'), filteredMessage: t.tr('PagesEmptyPagesMatch') },
+                title: function (item) { return item.title; },
+                icon: function () { return 'web'; },
+                lines: function (item) { return [item.secondary].concat(item.tags.map(function (tag) { return tag.label; })); },
+                status: function (item) { return item.state; },
+                add: [{ id: 'btnAddPage', icon: 'add', text: t.tr('PagesButtonAddPage'), onClick: function () { openPage(-1); } }],
+                bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
+                onBulk: function (verb, picked) { bulkRecords('Pages', verb, picked); },
+                onRowClick: function (item) { openPage(item.index); },
+                onReload: function () { loadPage(); }
+            };
+        });
+    }
+
+    // drawTable
+    // Builds a tab's table the first time, in the tab's panel, and draws its rows again after.
+    //
+    // Inputs
+    // key [string]: pages, assets, or stores.
+    // panel [HTMLElement]: The tab's panel.
+    // options [function]: Gives the table's options.
+    function drawTable(key, panel, options) {
+        if (!tables[key]) {
+            tables[key] = nectoModule.createToolTable(panel, shared, options());
+            tables[key].load();
+        } else {
+            tables[key].refresh();
         }
     }
 
+    // bulkRecords
+    // Publishes, unpublishes, or removes the pages or stores picked, asking first before a removal. Each change is
+    // saved on its own, so one that the server refuses leaves the others saved.
+    //
+    // Inputs
+    // kind [string]: Pages or Stores.
+    // verb [string]: enable, disable, or remove.
+    // picked [object[]]: The rows picked.
+    function bulkRecords(kind, verb, picked) {
+        var t = shared.t;
+        var list = settings[kind];
+        var same = function (a, b) {
+            return kind === 'Pages' ? (a.Id ? a.Id === b.Id : a.Slug === b.Slug) : (a.Name || '').toLowerCase() === (b.Name || '').toLowerCase();
+        };
+        var prefix = kind === 'Pages' ? 'PagesBulkPages' : 'PagesBulkStores';
+        return nectoModule.runBulk(shared, {
+            verb: verb,
+            rows: picked,
+            prefix: prefix,
+            enabled: function (item) { return item.enabled; },
+            confirm: verb === 'remove' ? {
+                text: t.tr(kind === 'Pages' ? 'PagesConfirmRemovePage' : 'PagesConfirmRemoveStore'),
+                title: t.plural(picked.length, prefix + 'HeaderRemoveOne', prefix + 'HeaderRemoveMany')
+            } : null,
+            call: function (item) {
+                var original = list[item.index];
+                return persist(function (s) {
+                    if (verb === 'remove') s[kind] = s[kind].filter(function (x) { return !same(x, original); });
+                    else s[kind].forEach(function (x) { if (same(x, original)) x.Enabled = verb === 'enable'; });
+                }, t.tr(kind === 'Pages' ? 'PagesErrorSavePage' : 'PagesErrorSaveStore'));
+            },
+            report: report
+        });
+    }
+
     // drawAssets
-    // Draws the image counts and one row per image, with its path, tier, and Remove.
+    // Draws the image counts and the images' table, each with its thumbnail, path, and tier.
     function drawAssets() {
         var panel = panels.assets;
         if (!panel) return;
@@ -829,42 +920,77 @@ export default function (view) {
             { count: other, label: t.tr('Other'), color: 'purple' },
             { count: shared.formatSize(bytes), label: t.tr('LabelSize'), color: 'gray' }
         ]);
-        var list = panel.querySelector('[data-role="asset-list"]');
-        assetFields.splice(0).forEach(function (f) { f.destroy(); });
-        list.textContent = '';
-        if (!assets.length) {
-            list.innerHTML = shared.emptySection(t.tr('PagesEmptyImages'), { inline: true });
-            return;
-        }
-        assets.forEach(function (a) { list.appendChild(assetRow(a)); });
+        drawTable('assets', panel, function () {
+            return {
+                containerId: 'assetsTable',
+                rows: function () { return settings.Assets || []; },
+                idKey: 'Name',
+                search: t.tr('PagesSearchImages'),
+                filters: [{ label: t.tr('PagesLabelVisibility'), options: tierFilters(t, false), test: function (a, value) { return normalizeVisibility(a.Visibility) === value; } }],
+                empty: { message: t.tr('PagesEmptyImages'), filteredMessage: t.tr('PagesEmptyImagesMatch') },
+                image: function (a) { return 'data:' + (a.ContentType || '') + ';base64,' + (a.DataBase64 || ''); },
+                imageShape: 'square',
+                title: function (a) { return a.Name; },
+                lines: function (a) { return ['asset/' + a.Name, shared.formatSize(base64Bytes(a.DataBase64))]; },
+                status: function (a) { return tierBadge(a.Visibility, t); },
+                add: [{ id: 'btnAddImages', icon: 'upload', text: t.tr('PagesButtonAddImages'), onClick: pickImages }],
+                bulk: [{ verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
+                onBulk: function (verb, picked) { removeAssets(picked); },
+                onRowClick: function (a) { openAsset(a); },
+                onReload: function () { loadPage(); }
+            };
+        });
     }
 
-    // assetRow
-    // Builds one image row: the thumbnail, the name over its path, the tier, and Remove.
-    function assetRow(a) {
+    // pickImages
+    // Asks for image files, and saves the ones under the size limit.
+    function pickImages() {
         var t = shared.t;
+        var input = h('input', { type: 'file', accept: 'image/*', multiple: true, class: 'stolon-hidden' });
+        input.addEventListener('change', function () {
+            var files = Array.prototype.slice.call(input.files || []);
+            var big = files.filter(function (f) { return f.size > MAX_ASSET_BYTES; });
+            var refused = big.map(function (f) { return t.tr('PagesErrorImageTooLarge').replace('{value}', f.name); }).join(' ');
+            addAssetFiles(files.filter(function (f) { return f.size <= MAX_ASSET_BYTES; }), refused);
+            if (!files.length || big.length === files.length) { if (refused) report(refused, true); }
+            input.remove();
+        });
+        view.appendChild(input);
+        input.click();
+    }
+
+    // openAsset
+    // Opens an image in a sidecar with its picture, its path to copy, and its tier, with Remove and Save.
+    function openAsset(a) {
+        var t = shared.t;
+        var picture = h('img', { class: 'stolon-asset-thumb', alt: a.Name });
         // Set as a property, never as markup, so a stored value cannot leave the attribute.
-        var thumb = h('img', { class: 'stolon-asset-thumb', alt: '' });
-        thumb.src = 'data:' + (a.ContentType || '') + ';base64,' + (a.DataBase64 || '');
-        var path = nectoModule.createCopyField({ value: 'asset/' + a.Name, inline: true, size: 'small', label: t.tr('LabelPath'), copyLabel: t.tr('PagesCopyPath') });
-        assetFields.push(path);
-        var select = h('select', { is: 'emby-select', title: t.tr('PagesLabelVisibility'), 'aria-label': t.tr('PagesLabelVisibility'), 'data-field': 'Visibility' });
+        picture.src = 'data:' + (a.ContentType || '') + ';base64,' + (a.DataBase64 || '');
+        var path = nectoModule.createCopyField({ value: 'asset/' + a.Name, label: t.tr('LabelPath'), copyLabel: t.tr('PagesCopyPath') });
+        var select = h('select', { is: 'emby-select', id: 'pagesAssetVisibility', 'data-field': 'Visibility' });
         tierOptions(select, t);
         select.value = normalizeVisibility(a.Visibility);
-        select.addEventListener('change', function () { setAssetVisibility(a.Name, select.value); });
-        var remove = h('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn stolon-destructive', title: t.tr('ButtonRemove'), 'aria-label': t.tr('ButtonRemove'), 'data-action': 'remove-asset' }, [
-            h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'delete' })
+        var body = h('div', { class: 'stolon-stack' }, [
+            picture,
+            path.element,
+            h('div', { class: 'selectContainer' }, [h('label', { class: 'selectLabel', for: 'pagesAssetVisibility', text: t.tr('PagesLabelVisibility') }), select])
         ]);
-        remove.addEventListener('click', function () { removeAsset(a.Name); });
-        return h('div', { class: 'stolon-asset-item', 'data-asset': a.Name }, [
-            thumb,
-            h('div', { class: 'stolon-asset-info' }, [h('div', { class: 'stolon-asset-name', text: a.Name }), path.element]),
-            h('div', { class: 'stolon-asset-actions' }, [select, remove])
-        ]);
+        nectoModule.openEditorSidecar({
+            title: a.Name,
+            body: body,
+            page: page,
+            size: 'medium',
+            serialize: function () { return select.value; },
+            saveText: t.tr('Save'),
+            deleteText: t.tr('ButtonRemove'),
+            onSave: function () { return setAssetVisibility(a.Name, select.value); },
+            onDelete: function (close) { removeAsset(a.Name, close); },
+            onClose: function () { path.destroy(); }
+        });
     }
 
     // drawStores
-    // Draws the store counts and the list of stores.
+    // Draws the store counts and the stores' table.
     function drawStores() {
         var panel = panels.stores;
         if (!panel) return;
@@ -875,12 +1001,25 @@ export default function (view) {
             { count: c.records, label: t.tr('LabelRecords'), color: 'green' },
             { count: c.open, label: t.tr('PagesCardOpenToWrites'), color: c.open > 0 ? 'orange' : 'gray' }
         ]);
-        var items = storeItems(settings.Stores, counts, t);
-        if (storeList) storeList.setItems(items);
-        else {
-            storeList = nectoModule.createRecordList({ items: items, label: t.tr('PagesTabStores'), emptyText: t.tr('PagesEmptyStores'), onOpen: function (item) { openStore(item.index); } });
-            panel.querySelector('[data-role="store-list"]').appendChild(storeList.element);
-        }
+        drawTable('stores', panel, function () {
+            return {
+                containerId: 'storesTable',
+                rows: function () { return storeItems(settings.Stores, counts, t); },
+                idKey: 'id',
+                search: t.tr('PagesSearchStores'),
+                filters: [{ label: t.tr('HeaderStatus'), options: [{ value: 'On', label: t.tr('StateOn') }, { value: 'Off', label: t.tr('Off') }], test: function (item, value) { return item.enabled === (value === 'On'); } }],
+                empty: { message: t.tr('PagesEmptyStores'), filteredMessage: t.tr('PagesEmptyStoresMatch') },
+                title: function (item) { return item.title; },
+                icon: function () { return 'storage'; },
+                lines: function (item) { return [item.secondary].concat(item.tags.map(function (tag) { return tag.label; })); },
+                status: function (item) { return item.state; },
+                add: [{ id: 'btnAddStore', icon: 'add', text: t.tr('PagesButtonAddStore'), onClick: function () { openStore(-1); } }],
+                bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
+                onBulk: function (verb, picked) { bulkRecords('Stores', verb, picked); },
+                onRowClick: function (item) { openStore(item.index); },
+                onReload: function () { loadPage(); }
+            };
+        });
     }
 
     // drawAll
@@ -983,8 +1122,8 @@ export default function (view) {
     }
 
     // removeAsset
-    // Asks first, then removes an image.
-    function removeAsset(name) {
+    // Asks first, then removes an image and closes its sidecar.
+    function removeAsset(name, close) {
         var t = shared.t;
         nectoModule.confirmDialog(t.tr('PagesConfirmRemoveAsset'), {
             title: t.format('TitleRemoveName', name),
@@ -995,20 +1134,47 @@ export default function (view) {
             persist(function (s) {
                 s.Assets = s.Assets.filter(function (a) { return a.Name !== name; });
             }, t.tr('PagesErrorSaveImages')).then(function () {
+                if (close) close('removed');
                 report(t.tr('PagesToastImageRemoved'), false);
             }, function (err) { report(err.message, true); });
         });
     }
 
+    // removeAssets
+    // Asks first, then removes every image picked in one save.
+    function removeAssets(picked) {
+        var t = shared.t;
+        var names = picked.map(function (a) { return a.Name; });
+        return nectoModule.runBulk(shared, {
+            verb: 'remove',
+            rows: [names],
+            prefix: 'PagesBulkImages',
+            confirm: { text: t.tr('PagesConfirmRemoveAsset'), title: t.plural(names.length, 'PagesBulkImagesHeaderRemoveOne', 'PagesBulkImagesHeaderRemoveMany') },
+            call: function () {
+                return persist(function (s) {
+                    s.Assets = s.Assets.filter(function (a) { return names.indexOf(a.Name) < 0; });
+                }, t.tr('PagesErrorSaveImages'));
+            },
+            report: function (text, isError) {
+                if (text === t.tr('TextWorking')) return report(text, isError);
+                report(isError ? t.tr('PagesErrorSaveImages') : t.plural(names.length, 'PagesBulkImagesRemovedOne', 'PagesBulkImagesRemovedMany'), isError);
+            }
+        });
+    }
+
     // setAssetVisibility
     // Saves an image's tier.
+    //
+    // Output
+    // [Promise]: Resolves true once saved, and false when the save failed.
     function setAssetVisibility(name, value) {
         var t = shared.t;
-        persist(function (s) {
+        return persist(function (s) {
             s.Assets.forEach(function (a) { if (a.Name === name) a.Visibility = normalizeVisibility(value); });
         }, t.tr('PagesErrorSaveImages')).then(function () {
             report(t.tr('PagesToastImageSaved'), false);
-        }, function (err) { report(err.message, true); });
+            return true;
+        }, function (err) { report(err.message, true); return false; });
     }
 
     // openStore
@@ -1028,7 +1194,7 @@ export default function (view) {
             isNew: isNew,
             serialize: function () { return JSON.stringify(editor.getValue()); },
             saveText: t.tr('Save'),
-            deleteText: t.tr('Delete'),
+            deleteText: t.tr('ButtonRemove'),
             onSave: function () {
                 var value = editor.getValue();
                 var problem = storeProblem(value, settings.Stores, index);
@@ -1074,54 +1240,23 @@ export default function (view) {
     }
 
     // renderTab
-    // Builds a tab's panel the first time it opens.
+    // Builds a tab's panel the first time it opens: its one help line, its count cards, and its table.
     function renderTab(tab, panel) {
         var t = shared.t;
         panels[tab.id] = panel;
         panel.classList.add('stolon-stack');
+        var intro = h('div', { class: 'fieldDescription' });
         if (tab.id === 'pages') {
-            var pagesIntro = h('div', { class: 'fieldDescription' });
-            fillWithCode(pagesIntro, t.tr('PagesPagesIntro'), ['/pages/{slug}']);
-            var addPage = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'add-page' }, [
-                h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }), h('span', { text: t.tr('PagesButtonAddPage') })
-            ]);
-            addPage.addEventListener('click', function () { openPage(-1); });
-            [pagesIntro, h('div', { class: 'stolon-cards stolon-even', 'data-role': 'page-counts' }), h('div', { 'data-role': 'page-list' }), h('div', { class: 'stolon-card-list-actions' }, [addPage])]
-                .forEach(function (n) { panel.appendChild(n); });
+            fillWithCode(intro, t.tr('PagesPagesIntro'), ['/pages/{slug}']);
+            [intro, h('div', { class: 'stolon-cards stolon-even', 'data-role': 'page-counts' }), h('div', { id: 'pagesTable' })].forEach(function (n) { panel.appendChild(n); });
             drawPages();
         } else if (tab.id === 'assets') {
-            var assetsIntro = h('div', { class: 'fieldDescription' });
-            fillWithCode(assetsIntro, t.tr('PagesAssetsIntro'), ['asset/logo.png']);
-            var refused = '';
-            picker = nectoModule.createFilePicker({
-                accept: 'image/*',
-                maxSize: MAX_ASSET_BYTES,
-                multiple: true,
-                dropText: t.tr('PagesDropImages'),
-                sizeLimitText: t.tr('PagesErrorImageTooLarge'),
-                onChange: function (files) {
-                    if (!files.length) return;
-                    addAssetFiles(files, refused);
-                    refused = '';
-                    picker.setValue([]);
-                },
-                onError: function (messages) {
-                    // The picker calls onChange in the same turn, so a refusal never outlives its pick.
-                    refused = messages.join(' ');
-                    setTimeout(function () { refused = ''; }, 0);
-                }
-            });
-            [assetsIntro, h('div', { class: 'stolon-cards stolon-even', 'data-role': 'asset-counts' }), h('div', { class: 'stolon-asset-list', 'data-role': 'asset-list' }), picker.element]
-                .forEach(function (n) { panel.appendChild(n); });
+            fillWithCode(intro, t.tr('PagesAssetsIntro'), ['asset/logo.png']);
+            [intro, h('div', { class: 'stolon-cards stolon-even', 'data-role': 'asset-counts' }), h('div', { id: 'assetsTable' })].forEach(function (n) { panel.appendChild(n); });
             drawAssets();
         } else if (tab.id === 'stores') {
-            var storesIntro = h('div', { class: 'fieldDescription', text: t.tr('PagesStoresIntro') });
-            var addStore = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'add-store' }, [
-                h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }), h('span', { text: t.tr('PagesButtonAddStore') })
-            ]);
-            addStore.addEventListener('click', function () { openStore(-1); });
-            [storesIntro, h('div', { class: 'stolon-cards stolon-even', 'data-role': 'store-counts' }), h('div', { 'data-role': 'store-list' }), h('div', { class: 'stolon-card-list-actions' }, [addStore])]
-                .forEach(function (n) { panel.appendChild(n); });
+            intro.textContent = t.tr('PagesStoresIntro');
+            [intro, h('div', { class: 'stolon-cards stolon-even', 'data-role': 'store-counts' }), h('div', { id: 'storesTable' })].forEach(function (n) { panel.appendChild(n); });
             drawStores();
         }
     }
@@ -1141,7 +1276,8 @@ export default function (view) {
         });
         view.querySelector('#pagesTabs').appendChild(tabs.element);
         page.addCleanup(function () {
-            assetFields.splice(0).forEach(function (f) { f.destroy(); });
+            Object.keys(tables).forEach(function (key) { tables[key].destroy(); });
+            tables = {};
         });
     }
 

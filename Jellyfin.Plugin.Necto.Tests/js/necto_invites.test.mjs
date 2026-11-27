@@ -67,14 +67,15 @@ function pick(opened, places) {
     });
 }
 
-test('the table shows each invite with its link, group, uses, PIN, and maker, and its state badge at the row end', async function () {
+test('the table shows each invite with its group, uses, PIN, and maker on one line, and its state badge and link buttons at the row end', async function () {
     var opened = await openPage();
     var rows = rowsOf(opened);
     var cells = function (row) { return Array.prototype.map.call(row.querySelectorAll('.stolon-table-cell:not(.stolon-table-cell-checkbox)'), function (c) { return c.innerHTML; }); };
 
     assert.equal(rows.length, 2);
     var first = cells(rows[0]);
-    assert.match(first[0], /Family[\s\S]*https:\/\/media\.example\.com\/invites\/abc123[\s\S]*2 of 5 uses · Never expires · Asks for a PIN/);
+    assert.match(first[0], /data-role="row-icon"[\s\S]*Family[\s\S]*Family · 2 of 5 uses · Never expires · Asks for a PIN/);
+    assert.equal((first[0].match(/stolon-table-item-sub/g) || []).length, 1);
     assert.match(first[1], /data-role="row-state"><span class="stolon-badge stolon-green[^"]*">Active/);
     assert.match(first[1], /data-row-action="copy-link"[^>]*aria-label="Copy link"[\s\S]*data-row-action="show-qr"[^>]*aria-label="Show QR code"/);
     assert.match(cells(rows[1])[0], /Untitled invite[\s\S]*Made by viewer/);

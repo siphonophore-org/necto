@@ -393,7 +393,8 @@ export default function (view) {
             pageSize: PAGE_SIZE,
             empty: { message: t.tr('InvitesEmpty'), filteredMessage: t.tr('InvitesEmptyMatch') },
             title: function (invite) { return invite.Label || t.tr('InvitesUntitled'); },
-            lines: function (invite) { return [invite.Token ? linkOf(invite) : '', inviteLine(invite, shared)]; },
+            icon: function () { return 'mail'; },
+            lines: function (invite) { return [inviteLine(invite, shared)]; },
             status: stateBadge,
             buttons: function (invite) {
                 return invite.Token ? [{ action: 'copy-link', icon: 'content_copy', label: t.tr('InvitesButtonCopyLink') }, { action: 'show-qr', icon: 'qr_code_2', label: t.tr('InvitesButtonShowQr') }] : [];

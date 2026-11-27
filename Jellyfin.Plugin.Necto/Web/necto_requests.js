@@ -549,9 +549,9 @@ export default function (view) {
             title: function (item) { return (item.Request || {}).Title; },
             lines: function (item) {
                 var r = item.Request || {};
-                return [subline(r, t), requesterLine(r, t), r.RequesterNote ? '“' + r.RequesterNote + '”' : ''];
+                return [subline(r, t), requesterLine(r, t), progressLine(r, t)];
             },
-            statusFooter: function (item) { return statusCell(item.Request || {}, shared); },
+            status: function (item) { var r = item.Request || {}; return { label: statusLabel(r.Status, t), color: statusColor(r.Status) }; },
             bulk: [{ verb: 'approve', text: t.tr('RequestsButtonApprove'), variant: 'primary' }, { verb: 'decline', text: t.tr('RequestsButtonReject') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
             onBulk: function (verb) { bulk(verb); },
             onRowClick: function (item) { if (item.Request) showRequest(item.Request); },

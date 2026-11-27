@@ -200,8 +200,8 @@ export function groupCards(counts, t) {
 }
 
 // groupItems
-// Turns the groups into rows for the record list, Everyone first, each with its member count and its rules.
-// Everyone counts the users no group holds.
+// Turns the groups into rows for the table, Everyone first, each with its member count, its rules, and Active, or
+// Expired once its expiry date has come. Everyone counts the users no group holds.
 //
 // Inputs
 // groups [object[]]: The groups from Groups, Everyone among them.
@@ -220,11 +220,14 @@ export function groupItems(groups, users, shared) {
         var secondary = isEveryone(group)
             ? shared.t.plural(loose, 'LabelLooseUsersOne', 'LabelLooseUsersMany')
             : shared.t.plural((group.MemberIds || []).length, 'LabelMemberCountOne', 'LabelMemberCountMany');
+        var due = getPath(group.Permissions, 'Accounts.Expiry.ExpiresOn');
+        var expired = !!due && String(due).slice(0, 10) <= new Date().toISOString().slice(0, 10);
         return {
             id: group.Id,
             title: groupName(group, t),
             secondary: secondary,
             tags: accountTags(group, t),
+            state: expired ? { label: t.tr('StateExpired'), color: 'red' } : { label: t.tr('StateActive'), color: 'green' },
             group: group
         };
     });
@@ -974,7 +977,9 @@ export default function (view) {
             search: t.tr('GroupsSearch'),
             empty: { message: t.tr('GroupsEmpty'), filteredMessage: t.tr('GroupsEmptyMatch') },
             title: function (item) { return item.title; },
-            lines: function (item) { return [item.secondary, item.tags.map(function (tag) { return tag.label; }).join(' · ')]; },
+            icon: function (item) { return isEveryone(item.group) ? 'public' : 'groups'; },
+            lines: function (item) { return [item.secondary].concat(item.tags.map(function (tag) { return tag.label; })); },
+            status: function (item) { return item.state; },
             add: [{ id: 'btnAddGroup', icon: 'add', text: t.tr('ButtonAddGroup'), onClick: function () { openGroup(null); } }],
             bulk: [{ verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
             onBulk: bulk,

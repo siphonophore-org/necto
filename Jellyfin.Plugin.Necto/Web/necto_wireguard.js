@@ -11,13 +11,9 @@ import {
 
 var h = nectoModule.h;
 
-// TYPE_BADGES
-// The color of each kind of row's type badge, and the key of its word.
-var TYPE_BADGES = {
-    Host: { key: 'LabelServerHost', color: 'gray' },
-    Peer: { key: 'WireGuardHeaderPeer', color: 'blue' },
-    Connection: { key: 'WireGuardHeaderConnection', color: 'purple' }
-};
+// TYPE_ICONS
+// The icon of each kind of row's tile: this server, a peer, or a connection.
+var TYPE_ICONS = { Host: 'dns', Peer: 'devices', Connection: 'link' };
 
 // tunnelRows
 // Turns the peers, the connections, and this server while it hosts into the table's rows, in that order: this server
@@ -241,13 +237,6 @@ export default function (view) {
         table.refresh();
     }
 
-    // typeBadge
-    // The badge that says whether a row is this server, a peer, or a connection.
-    function typeBadge(row) {
-        var type = TYPE_BADGES[row.Kind];
-        return { label: t.tr(type.key), color: type.color };
-    }
-
     // createTable
     // Builds the one table of this server, the peers, and the connections, with its search, its type filter, Add
     // peer and Add connection, and Enable, Disable, and Remove for the rows picked. The rows come from what the page
@@ -265,8 +254,9 @@ export default function (view) {
             }],
             empty: { message: t.tr('WireGuardEmptyNone'), filteredMessage: t.tr('WireGuardEmptyMatch') },
             title: function (row) { return row.Name; },
+            icon: function (row) { return TYPE_ICONS[row.Kind]; },
             lines: function (row) { return [row.Line, row.Detail]; },
-            status: function (row) { return [typeBadge(row), { label: row.State.label, color: row.State.color || 'gray' }]; },
+            status: function (row) { return { label: row.State.label, color: row.State.color || 'gray' }; },
             add: [
                 { id: 'btnAddPeer', icon: 'add', text: t.tr('WireGuardButtonAddPeer'), onClick: function () { editPeer(null); } },
                 { id: 'btnAddConnection', icon: 'add_link', text: t.tr('WireGuardButtonAddConnection'), variant: 'secondary', onClick: function () { editConnection(null); } }

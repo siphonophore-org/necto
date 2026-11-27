@@ -485,6 +485,7 @@ export default function (view) {
             filters: [{ label: t.tr('HeaderStatus'), options: stateFilters(t) }],
             empty: { message: t.tr('DdnsEmptyRecords'), filteredMessage: t.tr('DdnsEmptyRecordsMatch') },
             title: function (entry) { return recordName(entry.Record, providers); },
+            icon: function () { return 'dns'; },
             lines: function (entry) { return [recordLine(entry, providers, t)]; },
             status: function (entry) { return recordBadge(entry, t); },
             add: [

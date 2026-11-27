@@ -31,13 +31,13 @@ function routeRows() {
     return [{ Route: ROUTES[0], Status: null, State: 'Ready' }, { Route: ROUTES[1], Status: null, State: 'Off' }];
 }
 
-test('a route row ends with its state, then Local only for a route only your network may reach', async function () {
+test('a route row ends with its one state badge, and its line says where it forwards', async function () {
     var bag = await strings();
     var proxy = await loadScript('necto_proxy.js');
     var rows = routeRows();
 
-    assert.deepEqual(proxy.routeBadges(rows[0], bag.t), [{ label: 'HTTPS ready', color: 'green' }]);
-    assert.deepEqual(proxy.routeBadges(rows[1], bag.t), [{ label: 'Off', color: 'gray' }, { label: 'Local only', color: 'blue' }]);
+    assert.deepEqual(proxy.routeBadge(rows[0], bag.t), { label: 'HTTPS ready', color: 'green' });
+    assert.deepEqual(proxy.routeBadge(rows[1], bag.t), { label: 'Off', color: 'gray' });
     assert.equal(proxy.upstreamText(ROUTES[0], bag.t), 'Jellyfin');
     assert.equal(proxy.upstreamText(ROUTES[1], bag.t), 'http://192.168.1.20:8096');
     assert.deepEqual(proxy.routeFilters(bag.t).map(function (f) { return f.label; }), ['HTTPS ready', 'Expires soon', 'Requesting', 'No certificate yet', 'Certificate failed', 'HTTP only', 'Off']);

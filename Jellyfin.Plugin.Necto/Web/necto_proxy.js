@@ -92,20 +92,18 @@ var ROUTE_STATES = {
     Off: { key: 'Off', color: 'gray' }
 };
 
-// routeBadges
-// Gives the badges a route's row ends with: its state, then Local only for a route only your network may reach.
+// routeBadge
+// Gives the state badge a route's row ends with.
 //
 // Inputs
 // row [object]: One row from Proxy/Routes/All, as { Route, Status, State }.
 // t [object]: The strings.
 //
 // Output
-// [object[]]: Each badge's label and color.
-export function routeBadges(row, t) {
+// [object]: label and color.
+export function routeBadge(row, t) {
     var state = ROUTE_STATES[row.State] || ROUTE_STATES.Waiting;
-    var out = [{ label: t.tr(state.key), color: state.color }];
-    if (row.Route.LocalOnly) out.push({ label: t.tr('ProxyTagLocalOnly'), color: 'blue' });
-    return out;
+    return { label: t.tr(state.key), color: state.color };
 }
 
 // routeFilters
@@ -918,8 +916,9 @@ export default function (view) {
             filters: [{ label: t.tr('HeaderStatus'), options: routeFilters(t) }],
             empty: { message: t.tr('ProxyEmptyRoutes'), filteredMessage: t.tr('ProxyEmptyRoutesMatch') },
             title: function (row) { return row.Route.Host || t.tr('ProxyNoHost'); },
-            lines: function (row) { return [upstreamText(row.Route, t)]; },
-            status: function (row) { return routeBadges(row, t); },
+            icon: function () { return 'public'; },
+            lines: function (row) { return [upstreamText(row.Route, t), row.Route.LocalOnly ? t.tr('ProxyTagLocalOnly') : '']; },
+            status: function (row) { return routeBadge(row, t); },
             add: [{ id: 'btnAddRoute', icon: 'add', text: t.tr('ButtonAddRoute'), onClick: pickTemplate }],
             bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
             onBulk: bulk,
@@ -1220,6 +1219,7 @@ export default function (view) {
             idKey: 'Ip',
             search: t.tr('ProxySearchBanned'),
             empty: { message: t.tr('ProxyEmptyBanned'), filteredMessage: t.tr('ProxyEmptyBannedMatch') },
+            icon: function () { return 'block'; },
             title: function (b) { return b.Ip; },
             lines: function (b) {
                 return [
@@ -1249,6 +1249,7 @@ export default function (view) {
             ],
             pageSize: 25,
             empty: { message: t.tr('ProxyEmptyActivity'), filteredMessage: t.tr('ProxyEmptyActivityMatch') },
+            icon: function (r) { return { User: 'person', Failure: 'error', Blocked: 'block', Seen: 'visibility' }[r.kind] || 'visibility'; },
             title: function (r) { return r.User || r.Ip; },
             lines: function (r) {
                 var where = [place(r), data.ShowsCity && !r.IsLocal ? r.City : ''].filter(Boolean).join(', ');
@@ -1275,6 +1276,7 @@ export default function (view) {
             idKey: 'Code',
             search: t.tr('ProxySearchCountries'),
             empty: { message: t.tr('ProxyEmptyCountries'), filteredMessage: t.tr('ProxyEmptyCountriesMatch') },
+            icon: function () { return 'flag'; },
             title: function (c) { return c.Country; },
             lines: function (c) {
                 return [

@@ -453,22 +453,19 @@ export function tablePageOf(rows, query, textOf, filters) {
 }
 
 // tableStatusHtml
-// Draws a row's status cell: its badges, then its icon buttons, side by side.
+// Draws a row's status cell: its one state badge, then at most two icon buttons, side by side.
 //
 // Inputs
-// badges [object|object[]]: label and color for each badge, or none.
+// badge [object]: label and color of the state badge, or none.
 // buttons [object[]]: action, icon, and label for each button, with title for its tooltip, disabled, and destructive,
-//   or none.
+//   or none. Only the first two are drawn.
 // id [string]: The row's id, which each button carries.
 //
 // Output
 // [string]: The cell's HTML.
-export function tableStatusHtml(badges, buttons, id) {
-    var list = Array.isArray(badges) ? badges : (badges ? [badges] : []);
-    var html = list.filter(Boolean).map(function (b) {
-        return '<span data-role="row-state">' + badgeHtml(b.label, b.color) + '</span>';
-    }).join('');
-    (buttons || []).forEach(function (b) {
+export function tableStatusHtml(badge, buttons, id) {
+    var html = badge ? '<span data-role="row-state">' + badgeHtml(badge.label, badge.color) + '</span>' : '';
+    (buttons || []).slice(0, 2).forEach(function (b) {
         html += '<button is="emby-button" type="button" class="stolon-row-btn' + (b.destructive ? ' stolon-destructive' : '') + '" data-row-action="' + escapeHtml(b.action) + '" data-id="' + escapeHtml(id) + '" title="' + escapeHtml(b.title || b.label) + '" aria-label="' + escapeHtml(b.label) + '"' + (b.disabled ? ' disabled' : '') + '>'
             + '<span class="material-icons" aria-hidden="true">' + escapeHtml(b.icon) + '</span></button>';
     });
@@ -476,18 +473,32 @@ export function tableStatusHtml(badges, buttons, id) {
 }
 
 // tableInfoHtml
-// Draws a row's main cell: its name over its lines.
+// Draws a row's main cell: its icon tile, when it has no thumbnail, then its name over its one secondary line.
 //
 // Inputs
 // title [string]: The name.
-// lines [string[]]: The lines under it. Empty ones are left out.
+// line [string]: The line under it, or empty.
+// icon [string]: The Material icon of its tile, or empty for none.
 //
 // Output
 // [string]: The cell's HTML.
-export function tableInfoHtml(title, lines) {
-    return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + escapeHtml(title) + '</div>'
-        + (lines || []).filter(Boolean).map(function (line) { return '<div class="stolon-table-item-sub">' + escapeHtml(line) + '</div>'; }).join('')
+export function tableInfoHtml(title, line, icon) {
+    return (icon ? '<span class="stolon-thumb stolon-table-thumb stolon-round" data-role="row-icon"><span class="stolon-thumb-placeholder" aria-hidden="true"><span class="material-icons">' + escapeHtml(icon) + '</span></span></span>' : '')
+        + '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + escapeHtml(title) + '</div>'
+        + (line ? '<div class="stolon-table-item-sub">' + escapeHtml(line) + '</div>' : '')
         + '</div>';
+}
+
+// tableLine
+// Joins the parts of a row's secondary line, leaving out the empty ones.
+//
+// Inputs
+// parts [string[]]: The parts.
+//
+// Output
+// [string]: The line, such as "Cloudflare · home.example.com".
+export function tableLine(parts) {
+    return (parts || []).filter(Boolean).join(' · ');
 }
 
 // createToolTable
@@ -510,15 +521,15 @@ export function tableInfoHtml(title, lines) {
 //   textOf      : textOf(row) gives the text the search looks in, for rows the page holds (default name and lines)
 //   empty       : { message, filteredMessage }, such as No invites yet. and No invites match. [required]
 //   title       : title(row) gives the row's name [required]
-//   lines       : lines(row) gives the lines under the name
+//   lines       : lines(row) gives the parts of the one secondary line under the name, joined with a dot
 //   image       : image(row) gives the thumbnail's address, with imageShape, for a table with thumbnails
-//   status      : status(row) gives the badge, or badges, of the status cell
-//   buttons     : buttons(row) gives the icon buttons after the badges, each { action, icon, label, title, disabled,
-//                 destructive }
+//   icon        : icon(row) gives the Material icon of the row's tile, for a table without thumbnails
+//   status      : status(row) gives the one state badge of the status cell
+//   buttons     : buttons(row) gives at most two icon buttons after the badge, each { action, icon, label, title,
+//                 disabled, destructive }
 //   onButton    : onButton(action, row, button) runs when one is chosen
 //   add         : [{ id, icon, text, variant, onClick }] for the end of the toolbar. variant is primary by default
 //   bulk        : [{ verb, text, variant }] for the bulk bar, and onBulk(verb, rows) runs when one is chosen
-//   statusFooter: statusFooter(row) gives HTML under the badges, such as a progress bar
 //   onRowClick, onReload, rowClass, pageSize (default 50)
 //
 // Output
@@ -553,17 +564,15 @@ export function createToolTable(view, shared, o) {
     var idOfRow = function (row) { return String(typeof idKey === 'function' ? idKey(row) : row[idKey]); };
     var columns = [{
         key: 'Name', type: 'custom',
-        className: o.image ? 'stolon-table-cell-with-thumb' : '',
+        className: o.image || o.icon ? 'stolon-table-cell-with-thumb' : '',
         image: o.image,
         imageShape: o.imageShape,
-        render: function (row) { return tableInfoHtml(o.title(row), o.lines ? o.lines(row) : []); }
+        render: function (row) { return tableInfoHtml(o.title(row), tableLine(o.lines ? o.lines(row) : []), o.icon && !o.image ? o.icon(row) : ''); }
     }];
-    if (o.status || o.buttons || o.statusFooter) {
+    if (o.status || o.buttons) {
         columns.push({
             key: 'State', type: 'custom', className: 'stolon-table-cell-status',
-            render: function (row) {
-                return tableStatusHtml(o.status ? o.status(row) : null, o.buttons ? o.buttons(row) : null, idOfRow(row)) + (o.statusFooter ? o.statusFooter(row) || '' : '');
-            }
+            render: function (row) { return tableStatusHtml(o.status ? o.status(row) : null, o.buttons ? o.buttons(row) : null, idOfRow(row)); }
         });
     }
     var buttons = {};

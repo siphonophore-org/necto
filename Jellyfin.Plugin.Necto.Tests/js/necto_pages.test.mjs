@@ -5,7 +5,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton, clickDialogButton, dialogText, strings, allToolsOn } from './support.mjs';
+import { installPage, loadScript, pageView, settle, routeApi, rowHtml, texts, clickButton, clickDialogButton, dialogText, strings, allToolsOn } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
@@ -90,7 +90,7 @@ test('the store rows show who reads and writes and how full each store is, and t
     assert.equal(rows[0].secondary, '4 of 50 records');
     assert.deepEqual(rows[0].tags.map(function (g) { return g.label; }), ['Read by Signed in', 'Written by Anyone']);
     assert.equal(rows[0].tags[1].color, 'orange');
-    assert.equal(rows[0].aside, null);
+    assert.deepEqual(rows[0].state, { label: 'On', color: 'green' });
     assert.equal(rows[1].secondary, '');
     assert.deepEqual(rows[1].state, { label: 'Off', color: 'gray' });
     assert.deepEqual(pages.storeCounts(stores, { queue: 4 }), { stores: 2, records: 4, open: 1 });
@@ -307,9 +307,14 @@ test('the Pages tool holds no settings, and a page saves only after the server c
     await settle();
 
     assert.equal(view.querySelector('[data-tool]'), null);
-    var rows = view.querySelectorAll('#pagesTabs .stolon-record-list-row');
+    var rows = view.querySelectorAll('#pagesTable .stolon-table-row');
     assert.equal(rows.length, 1);
-    assert.match(rows[0].textContent, /\/pages\/rules/);
+    assert.match(rowHtml(rows[0]), /\/pages\/rules/);
+    var controls = view.querySelector('#pagesTable .stolon-table-controls');
+    assert.equal(controls.querySelector('input').getAttribute('placeholder'), 'Search pages');
+    assert.deepEqual(texts(controls, 'select option'), ['All', 'Anyone', 'Signed in', 'Administrators', 'Unpublished']);
+    assert.ok(controls.querySelector('#btnAddPage'));
+    assert.deepEqual(texts(view.querySelector('#pagesTable .stolon-table-bulk-actions'), '[data-bulk]'), ['Enable', 'Disable', 'Remove']);
 
     rows[0].click();
     await settle(50);
@@ -348,7 +353,7 @@ test('the group editor offers the pages from the Pages route under Restrictive, 
     editor.destroy();
 });
 
-test('each image row draws Remove as a destructive row button', async function () {
+test('each image is a table row with its thumbnail, path, and tier, and opens a sidecar with Remove and Save', async function () {
     var page = installPage({ config: { CustomPages: { Pages: [], Assets: [{ Name: 'logo.png', ContentType: 'image/png', DataBase64: 'AAAA', Visibility: 'Anonymous' }], Stores: [] } } });
     var dom = page.dom;
     routeApi(page, {});
@@ -361,11 +366,17 @@ test('each image row draws Remove as a destructive row button', async function (
     clickButton(view, 'Images');
     await settle(50);
 
-    var remove = view.querySelector('[data-asset="logo.png"] [data-action="remove-asset"]');
-    assert.ok(remove);
-    assert.match(remove.className, /stolon-row-btn/);
-    assert.match(remove.className, /stolon-destructive/);
-    assert.equal(remove.getAttribute('title'), 'Remove');
+    var row = view.querySelector('#assetsTable .stolon-table-row');
+    assert.ok(row.querySelector('.stolon-table-thumb'));
+    assert.match(rowHtml(row), /logo\.png[\s\S]*asset\/logo\.png[\s\S]*Anyone/);
+    assert.ok(view.querySelector('#assetsTable .stolon-table-controls #btnAddImages'));
+    assert.deepEqual(texts(view.querySelector('#assetsTable .stolon-table-bulk-actions'), '[data-bulk]'), ['Remove']);
+    assert.equal(view.querySelector('.stolon-file-picker'), null);
+    row.click();
+    await settle(50);
+    var sidecar = dom.document.querySelector('.stolon-sidecar');
+    assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'logo.png');
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Save']);
 });
 
 test('the group editor offers only Signed in pages, and keeps a page the group already gives', async function () {
