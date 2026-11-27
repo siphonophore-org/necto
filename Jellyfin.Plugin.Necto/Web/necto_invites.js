@@ -272,7 +272,7 @@ export function createInviteEditor(invite, ctx) {
     checkGroup();
 
     var uses = input(t.tr('InvitesLabelMaxUses'), 'number', invite.MaxUses == null ? 1 : invite.MaxUses, 'MaxUses', t.tr('HelpZeroNoLimit'));
-    var expiry = input(t.tr('LabelExpiryDate'), 'date', invite.ExpiresAt ? String(invite.ExpiresAt).slice(0, 10) : '', 'ExpiresAt', t.tr('InvitesExpiryHelp'));
+    var expiry = input(t.tr('LabelExpiryDate'), 'date', invite.ExpiresAt ? String(invite.ExpiresAt).slice(0, 10) : '', 'ExpiresAt', t.tr('InvitesExpiryAdminHelp'));
     var pinField = nectoModule.createSecretField({
         label: t.tr('InvitesLabelPin'), help: t.tr('InvitesPinHelp'), id: nextId('Pin'), field: 'Pin',
         stored: !!invite.HasPin, clearText: t.tr('InvitesButtonRemovePin'), allowExpose: true

@@ -156,6 +156,7 @@ public sealed partial class RequestService : IDisposable
             User = user,
             UserId = user.Id,
             UserName = user.Username,
+            HasImage = user.ProfileImage is not null,
             IsAdministrator = isAdmin || permissions.ManageRequests,
             IsServerAdministrator = isAdmin,
             ManagesIssues = isAdmin || permissions.ManageIssues,
