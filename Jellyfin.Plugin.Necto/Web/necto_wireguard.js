@@ -167,6 +167,8 @@ export default function (view) {
         var w = cfg;
         var on = !!w.Enabled;
         shared.setVisible('wireguardOff', !on);
+        // A tool that is off leaves the sidebar the heading takes its name from, so the heading names it itself.
+        if (shared.setPageTitle) shared.setPageTitle(on ? '' : t.tr('TabWireGuard'));
         $('wireguardOff').innerHTML = on ? '' : shared.emptySection(t.tr('WireGuardEmptyOff'));
         var noSidecar = $('wireguardNoSidecar');
         if (!noSidecar.querySelector('.stolon-banner')) {
@@ -278,7 +280,12 @@ export default function (view) {
         setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     }
 
-    function subsection(key) { return h('h3', { class: 'stolon-subsection-title', text: t.tr(key) }); }
+    // part
+    // A section of a detail sidecar, led by its icon tile and always open, holding the nodes given.
+    function part(key, icon, nodes) {
+        var content = h('div', { class: 'stolon-stack' }, nodes);
+        return nectoModule.createCollapsibleSection({ title: t.tr(key), icon: icon, collapsible: false, content: content }).element;
+    }
 
     // openPeer
     // Opens a peer's details in a sidecar: its state, owner, address, handshake, source, usage, and limits, its
@@ -289,9 +296,8 @@ export default function (view) {
         var state = peerState(peer);
         var end = endOf(peer.Id);
         var tag = stateTag(t, end.State || 'Offline');
-        var body = h('div');
-        body.appendChild(subsection('LabelDetails'));
-        body.appendChild(nectoModule.createDefinitionList({
+        var body = h('div', { class: 'stolon-stack' });
+        body.appendChild(part('LabelDetails', 'info', [nectoModule.createDefinitionList({
             emptyText: '-',
             items: [
                 { label: t.tr('LabelStatus'), value: { text: '', badge: { label: tag.label, color: tag.color || 'gray' } } },
@@ -303,20 +309,21 @@ export default function (view) {
                 { label: t.tr('LabelUsage'), value: usedText(peer.Id, peerLimit(cfg, peer)) },
                 { label: t.tr('WireGuardLabelSpeedLimit'), value: speedText(peer.DownloadMbps, cfg.PeerDownloadMbps, peer.UploadMbps, cfg.PeerUploadMbps) }
             ]
-        }).element);
+        }).element]));
         var qrHost = h('div');
         var configHost = h('div');
-        body.appendChild(subsection('WireGuardHeaderQrCode'));
-        body.appendChild(qrHost);
-        body.appendChild(subsection('WireGuardLabelConfigFile'));
-        body.appendChild(configHost);
+        var configPart = part('WireGuardLabelConfigFile', 'description', [configHost]);
+        body.appendChild(part('WireGuardHeaderQrCode', 'qr_code_2', [qrHost]));
+        body.appendChild(configPart);
         var configText = null;
         fetchPeerConfig(peer.Id).then(function (text) {
             configText = text;
             qrHost.appendChild(nectoModule.createQrCode({ value: text, showValue: false, label: t.tr('WireGuardQrLabel'), fileName: safeFileName(peer.Name) + '.png' }).element);
             configHost.appendChild(h('pre', { class: 'stolon-code stolon-code-block', text: text }));
         }, function () {
+            // With no config there is no file to show, so its section leaves and the QR code's says why.
             qrHost.innerHTML = shared.emptySection(t.tr('WireGuardErrorNoPeerConfig'));
+            configPart.classList.add('stolon-hidden');
         });
 
         nectoModule.openSidecar({
@@ -354,12 +361,6 @@ export default function (view) {
         return made;
     }
 
-    // labelled
-    // Puts a compound control, such as an Inherit Field, under its label, as a form field.
-    function labelled(labelKey, control) {
-        return h('div', { class: 'inputContainer' }, [h('label', { text: t.tr(labelKey) }), control]);
-    }
-
     // collapsible
     // A section of an editor's fields, led by its icon tile, its fields a wide gap apart, closed unless it is the first.
     function collapsible(titleKey, icon, children, open) {
@@ -372,16 +373,17 @@ export default function (view) {
     // inheritSpeed
     // A speed limit in Mbps that takes the default until it is overridden.
     function inheritSpeed(labelKey, own, inherited) {
-        var input = h('input', { is: 'emby-input', type: 'number', min: '0', 'aria-label': t.tr(labelKey) });
+        var input = h('input', { is: 'emby-input', type: 'number', min: '0' });
         var made = nectoModule.createInheritField({
             field: input,
             inheritedValue: inherited || 0,
             inheritedText: inherited > 0 ? limitText(null, inherited, 'Mbps') : t.tr('LabelNoLimit'),
             label: t.tr(labelKey),
+            fieldLabel: t.tr(labelKey),
             value: { inherit: own == null, value: own == null ? (inherited || 0) : own }
         });
         return {
-            element: labelled(labelKey, made.element),
+            element: made.element,
             read: function () {
                 var v = made.getValue();
                 if (v.inherit) return null;
@@ -400,10 +402,11 @@ export default function (view) {
             inheritedValue: inherited,
             inheritedText: inherited.bytes > 0 ? dataText(t, shared, inherited.bytes, inherited.period) : t.tr('LabelNoLimit'),
             label: t.tr('WireGuardLabelDataLimit'),
+            fieldLabel: t.tr('WireGuardLabelDataLimit'),
             value: { inherit: !own, value: own || inherited }
         });
         return {
-            element: labelled('WireGuardLabelDataLimit', made.element),
+            element: made.element,
             read: function () {
                 var v = made.getValue();
                 return v.inherit ? null : v.value;
@@ -529,9 +532,8 @@ export default function (view) {
         var state = connectionState(c);
         var end = endOf(c.Id);
         var tag = stateTag(t, end.State || 'Offline');
-        var body = h('div');
-        body.appendChild(subsection('LabelDetails'));
-        body.appendChild(nectoModule.createDefinitionList({
+        var body = h('div', { class: 'stolon-stack' });
+        body.appendChild(part('LabelDetails', 'info', [nectoModule.createDefinitionList({
             emptyText: '-',
             items: [
                 { label: t.tr('LabelStatus'), value: { text: '', badge: { label: tag.label, color: tag.color || 'gray' } } },
@@ -543,10 +545,11 @@ export default function (view) {
                 { label: t.tr('LabelUsage'), value: usedText(c.Id, connectionLimit(cfg, c)) },
                 { label: t.tr('WireGuardLabelSpeedLimit'), value: speedText(c.DownloadMbps, cfg.ConnectionDownloadMbps, c.UploadMbps, cfg.ConnectionUploadMbps) }
             ]
-        }).element);
-        body.appendChild(subsection('WireGuardLabelOurPublicKey'));
-        body.appendChild(nectoModule.createCopyField({ label: t.tr('WireGuardLabelOurPublicKey'), copyLabel: t.tr('WireGuardLabelOurPublicKey'), value: c.PublicKey || '', mono: true }).element);
-        body.appendChild(h('div', { class: 'fieldDescription', text: t.tr('WireGuardOurPublicKeyHelp') }));
+        }).element]));
+        body.appendChild(part('WireGuardLabelOurPublicKey', 'key', [
+            nectoModule.createCopyField({ label: t.tr('WireGuardLabelOurPublicKey'), copyLabel: t.tr('WireGuardLabelOurPublicKey'), value: c.PublicKey || '', mono: true }).element,
+            h('div', { class: 'fieldDescription', text: t.tr('WireGuardOurPublicKeyHelp') })
+        ]));
 
         nectoModule.openSidecar({
             title: c.Name || c.Endpoint,

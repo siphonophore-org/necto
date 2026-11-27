@@ -8,13 +8,16 @@
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding stolon-stack">
                 <div class="fieldDescription" data-str="ProxyHelpPage">Forwards each host name to its service, with HTTPS and protection in front.</div>
-                <div id="proxyNotices"></div>
+                <!-- Off -->
+                <!-- Says the proxy is off and where to turn it on, in place of its cards and sections. -->
+                <div id="proxyOff" class="stolon-hidden"></div>
+                <div id="proxyNotices" class="stolon-hidden"></div>
                 <div id="proxyCards" class="stolon-cards stolon-words"></div>
 
                 <!-- Routes -->
                 <!-- Every route, each opening its editor. -->
                 <div id="proxyRoutes"></div>
-                <div class="stolon-card-list-actions">
+                <div id="proxyActions" class="stolon-card-list-actions">
                     <button is="emby-button" type="button" id="btnAddRoute" class="raised stolon-button stolon-primary">
                         <span class="material-icons" aria-hidden="true">add</span>
                         <span data-str="ButtonAddRoute">Add route</span>

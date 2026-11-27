@@ -10,13 +10,13 @@ The page opens with notices that need a look, such as a port another program hol
 | :---: | :---: |
 | ![Proxy](screenshots/Proxy.png) | ![Proxy on a phone](screenshots/Proxy%20Phone.png) |
 
-The proxy is off until **Settings > Proxy > Enable proxy** is on. While it is off the page says so.
+The proxy is off until **Settings > Proxy > Enable proxy** is on. While it is off the page says so in place of its cards, **Add route**, **Jellyfin**, and **Visitors**, and lists any routes already added.
 
 The page reads the proxy's status and routes again every 10 seconds, and the visitors every 30 seconds, so a certificate being issued, Jellyfin restarting, and new visitors or bans show without a reload.
 
 ## Routes
 
-Each row shows the route's host name, where it forwards, and its certificate, such as **HTTPS ready**, **Expires soon**, or **Certificate failed**, with **Local only** and **Off** where they apply. Select a row to open the route in a sidecar. **Add route** starts from a template: **Jellyfin**, **Jellyfin LAN**, or **Blank**.
+Each row shows the route's host name, where it forwards, and **Local only** where it applies. Its state sits at the row's end, **Off** for a route that is off, else its certificate's, such as **HTTPS ready**, **Expires soon**, or **Certificate failed**. Select a row to open the route in a sidecar. **Add route** starts from a template: **Jellyfin**, **Jellyfin LAN**, or **Blank**.
 
 ![Route editor](screenshots/Route%20Editor.png)
 

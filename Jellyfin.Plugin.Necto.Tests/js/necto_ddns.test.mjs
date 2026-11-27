@@ -27,7 +27,7 @@ async function strings() {
     return bag.translations.then(function () { return bag; });
 }
 
-test('recordItems names each record once, with its provider and one tag, Off or its last result', async function () {
+test('recordItems names each record once, with its provider, and ends it with its state, Off or its last result', async function () {
     var bag = await strings();
     var ddns = await loadScript('necto_ddns.js');
     var items = ddns.recordItems([
@@ -37,11 +37,12 @@ test('recordItems names each record once, with its provider and one tag, Off or 
 
     assert.equal(items[0].title, 'home.example.com');
     assert.equal(items[0].secondary, 'Cloudflare');
-    assert.deepEqual(items[0].tags.map(function (t) { return t.label; }), ['Updated']);
+    assert.deepEqual(items[0].tags, []);
+    assert.deepEqual(items[0].state, { label: 'Updated', color: 'green' });
+    assert.match(items[0].aside.innerHTML, /Updated/);
     assert.equal(items[1].title, 'Office');
     assert.equal(items[1].secondary, 'DynDNS v2 · Follows 2 proxy names');
-    assert.deepEqual(items[1].tags.map(function (t) { return t.label; }), ['Off']);
-    assert.equal(items[1].tags[0].off, undefined);
+    assert.deepEqual(items[1].state, { label: 'Off', color: 'gray' });
 });
 
 test('resultTag says a record that never ran is not checked yet', async function () {

@@ -300,14 +300,22 @@ function posts(opened, url) {
 }
 
 // sectionTitled
-// Finds the sidecar section with this heading.
+// Finds the sidecar section with this title.
 function sectionTitled(sidecar, title) {
-    return Array.prototype.find.call(sidecar.querySelectorAll('.necto-storage-section'), function (s) {
-        return s.querySelector('.stolon-subsection-title').textContent === title;
+    return Array.prototype.find.call(sidecar.querySelectorAll('.stolon-collapsible-section'), function (s) {
+        return s.querySelector('.stolon-collapsible-title').textContent === title;
     });
 }
 
-test('a mounted disk shows its space, libraries, and folders, with the folder states', async function () {
+// shelfSave
+// Finds Save on the sidecar's shelf.
+function shelfSave(sidecar) {
+    return Array.prototype.find.call(sidecar.querySelectorAll('button'), function (b) {
+        return b.textContent === 'Save' && !b.closest('[data-role="disk"]');
+    });
+}
+
+test('a mounted disk shows its space, libraries, and folders in sections led by their tiles, with the folder states', async function () {
     var opened = await openStorage([disk({ Level: 'Warning', WarningPercent: 50, WarningStop: { Enabled: true, Value: 50, Unit: 'Percent' }, ReadOnlyFolders: ['/mnt/media/Movies'] })]);
     var sidecar = opened.sidecar;
 
@@ -317,16 +325,22 @@ test('a mounted disk shows its space, libraries, and folders, with the folder st
     assert.equal(sidecar.querySelector('[data-role="disk-space"] .stolon-cards'), null);
     assert.match(sidecar.querySelector('[data-role="disk-alerts"]').textContent, /Storage low[\s\S]*50% used, at /);
     assert.deepEqual(texts(sidecar, '.stolon-tag'), ['Movies']);
-    assert.match(sidecar.querySelector('.stolon-static-table-scroll').innerHTML, /Read only/);
+    var folders = sidecar.querySelector('[data-role="disk-folders"]');
+    assert.ok(folders.querySelector('.stolon-data-table, table'));
+    assert.match(Array.prototype.map.call(folders.querySelectorAll('[data-role="row-state"]'), function (b) { return b.innerHTML; }).join(' '), /Read only/);
     assert.ok(sectionTitled(sidecar, 'New folder'));
+    var tiles = texts(sidecar, '.stolon-collapsible-tile');
+    assert.equal(tiles.length, new Set(tiles).size);
+    assert.equal(sidecar.querySelector('.stolon-subsection-title'), null);
     assert.equal(sectionTitled(sidecar, 'Share address'), undefined);
 });
 
-test('turning on a disk own alerts and saving writes them for that disk only, then checks again', async function () {
+test('turning on a disk own alerts and selecting Save on the shelf writes them for that disk only, then checks again', async function () {
     var opened = await openStorage([disk()], { config: { Storage: { DiskOverrides: [{ MountPoint: '/mnt/other' }] } } });
     var part = opened.sidecar.querySelector('[data-role="disk-alerts"]');
-    var save = Array.prototype.find.call(part.querySelectorAll('button'), function (b) { return b.textContent === 'Save'; });
-    assert.ok(save.closest('.stolon-save-bar'));
+    assert.equal(opened.sidecar.querySelector('.stolon-save-bar'), null);
+    var save = shelfSave(opened.sidecar);
+    assert.ok(save);
     var toggle = part.querySelector('input[type="checkbox"]');
     toggle.checked = true;
     toggle.dispatchEvent(new globalThis.CustomEvent('change', { bubbles: true }));
@@ -347,7 +361,7 @@ test('a missing share takes a share address, saved for its mount point', async f
     input.value = 'smb://nas.example.com/Media';
     input.dispatchEvent(new globalThis.CustomEvent('input'));
 
-    assert.equal(clickButton(part, 'Save'), true);
+    shelfSave(opened.sidecar).click();
     await settle(50);
 
     assert.deepEqual(opened.saved[0].Storage.ShareAddresses, [{ MountPoint: '/mnt/media', Address: 'smb://nas.example.com/Media' }]);

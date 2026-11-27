@@ -87,7 +87,7 @@ The top of **Storage** names what needs a look, one line each. It is red when an
 
 The cards add up the size, used space, and free space of every disk Jellyfin uses that could be read. **Free** takes the color of the fullest disk's alert.
 
-The **Disks** section holds one row per disk or share, with its name, its mount point, its type, its status, and a bar of its used space. The bar turns orange and red at the disk's **Storage low** and **Storage full** alerts. Its **Jellyfin** sub-tab lists the disks that hold a library folder or one of Jellyfin's own folders. **All** also lists mounted disks Jellyfin does not use, disks with no file system, and on Linux, disks that hold data but are not mounted. **Refresh**, in the section's header, checks every disk again. Hover over it to see when the disks were last checked. On a phone, the notice, the cards, and the rows stack to fit. On Windows, disks show by drive letter and volume label, and shares by their `\\server\share` path.
+The **Disks** section holds one row per disk or share, with its name, its mount point, its type, its status, and a bar of its used space. The bar turns orange and red at the disk's **Storage low** and **Storage full** alerts. Its **Jellyfin** sub-tab lists the disks that hold a library folder or one of Jellyfin's own folders. **All** also lists mounted disks Jellyfin does not use, disks with no file system, and on Linux, disks that hold data but are not mounted. **Refresh**, under the rows, checks every disk again. Hover over it to see when the disks were last checked. On a phone, the notice, the cards, and the rows stack to fit, and each row's bar takes the row's full width. On Windows, disks show by drive letter and volume label, and shares by their `\\server\share` path.
 
 | Status | Meaning |
 | :--- | :--- |
@@ -113,7 +113,7 @@ The **Disks** section holds one row per disk or share, with its name, its mount 
 
 ## Disk Details
 
-Select a row to open the disk in a sidecar. It lists the disk's status, type, file system, size, mount point, device, and model. A disk that reports SMART data also shows its health, temperature, power-on time, and, for an SSD, its wear.
+Select a row to open the disk in a sidecar. It lists the disk's status, type, file system, size, mount point, device, and model, each label beside its value. Each part under the list is a section led by its own icon. A disk that reports SMART data also shows its health, temperature, power-on time, and, for an SSD, its wear.
 
 ![Disk details](screenshots/Disk%20Detail.png)
 
@@ -121,15 +121,15 @@ Select a row to open the disk in a sidecar. It lists the disk's status, type, fi
 
 ### Its Own Alerts
 
-A disk uses the alerts in **Settings > Storage** unless it has its own. Turn on **Use its own alerts** to set this disk's **Storage low** and **Storage full**, then select **Save** at the end of **Alerts**. Turn it off and select **Save** to use the alerts in **Settings** again. Saving closes the sidecar and checks the disks again.
+A disk uses the alerts in **Settings > Storage** unless it has its own. Turn on **Use its own alerts** to set this disk's **Storage low** and **Storage full**, then select **Save** at the foot of the sidecar. Turn it off and select **Save** to use the alerts in **Settings** again. **Save** writes the alerts and the **Share address** together, then closes the sidecar and checks the disks again. **Cancel** closes it without saving.
 
 ### Share Address
 
-A share, and a disk that is missing, shows its **Share address**, where it is mounted from, such as `smb://nas.example.com/Media`. Storage fills it in whenever it sees the share mounted. Set it by hand for a share that was already gone, then select **Save** under it. A missing share is mounted again from it at the next check.
+A share, and a disk that is missing, shows its **Share address**, where it is mounted from, such as `smb://nas.example.com/Media`. Storage fills it in whenever it sees the share mounted. Set it by hand for a share that was already gone, then select **Save** at the foot of the sidecar. A missing share is mounted again from it at the next check.
 
 ### Libraries and Folders
 
-**Libraries** lists each library with a folder on the disk. **Folders** lists every library folder and Jellyfin folder on it, with **Found**, **Not found**, or **Read only**. A **Read only** folder is one Jellyfin cannot write to, so NFO files and artwork saved next to the media fail there. Jellyfin's own folders show under the names the dashboard gives them, such as **Program data**, **Image cache**, and **Metadata**. Each one puts its disk in use, so it is alerted on and remounted like a library disk. They never block a library scan.
+**Libraries** lists each library with a folder on the disk. **Folders** is a table of every library folder and Jellyfin folder on it, with **Found**, **Not found**, or **Read only**. On a phone the table scrolls sideways inside its frame. A **Read only** folder is one Jellyfin cannot write to, so NFO files and artwork saved next to the media fail there. Jellyfin's own folders show under the names the dashboard gives them, such as **Program data**, **Image cache**, and **Metadata**. Each one puts its disk in use, so it is alerted on and remounted like a library disk. They never block a library scan.
 
 ### New Folder
 

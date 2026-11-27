@@ -178,7 +178,8 @@ export function pageCounts(pages) {
 }
 
 // pageItems
-// Turns the pages into record list rows, each named by its slug with its title and tier.
+// Turns the pages into record list rows, each named by its slug with its title, and ending with its tier, or
+// Unpublished while it is off.
 //
 // Inputs
 // pages [object[]]: The pages.
@@ -188,17 +189,20 @@ export function pageCounts(pages) {
 // [object[]]: The rows, each carrying its page's index.
 export function pageItems(pages, t) {
     return (pages || []).map(function (p, index) {
-        var tags = [{ label: tierLabel(p.Visibility, t), color: normalizeVisibility(p.Visibility) === 'Anonymous' ? 'green' : (normalizeVisibility(p.Visibility) === 'User' ? 'blue' : 'purple') }];
-        if (p.Enabled === false) tags.push({ label: t.tr('PagesStatusUnpublished'), color: 'gray' });
+        var state = p.Enabled === false
+            ? { label: t.tr('PagesStatusUnpublished'), color: 'gray' }
+            : { label: tierLabel(p.Visibility, t), color: normalizeVisibility(p.Visibility) === 'Anonymous' ? 'green' : (normalizeVisibility(p.Visibility) === 'User' ? 'blue' : 'purple') };
+        var tags = [];
         if (p.Unsandboxed || (p.ApiRoutes || []).length) tags.push({ label: t.tr('PagesTagSystemAccess'), color: 'orange' });
         var address = '/pages/' + (p.Slug || '');
         var title = (p.Title || '').trim();
-        return { id: String(index), index: index, title: title || address, secondary: title ? address : '', tags: tags };
+        return { id: String(index), index: index, title: title || address, secondary: title ? address : '', tags: tags, state: state, aside: nectoModule.rowBadge(state) };
     });
 }
 
 // storeItems
-// Turns the stores into record list rows, each with its access and, once known, its record count.
+// Turns the stores into record list rows, each with its access and, once known, its record count, and Off at its
+// end while it is off.
 //
 // Inputs
 // stores [object[]]: The stores.
@@ -214,9 +218,9 @@ export function storeItems(stores, counts, t) {
             { label: t.format('PagesTagRead', tierLabel(normalizeVisibility(s.ReadAccess, 'Admin'), t)), color: 'blue' },
             { label: t.format('PagesTagWrite', tierLabel(normalizeVisibility(s.WriteAccess, 'User'), t)), color: normalizeVisibility(s.WriteAccess, 'User') === 'Anonymous' ? 'orange' : 'blue' }
         ];
-        if (s.Enabled === false) tags.push({ label: t.tr('Disabled'), color: 'gray' });
+        var state = s.Enabled === false ? { label: t.tr('Off'), color: 'gray' } : null;
         var secondary = typeof count === 'number' ? t.format('PagesUsageRecords', count, s.MaxRecords || 1000) : '';
-        return { id: String(index), index: index, title: s.Name || '', secondary: secondary, tags: tags };
+        return { id: String(index), index: index, title: s.Name || '', secondary: secondary, tags: tags, state: state, aside: state ? nectoModule.rowBadge(state) : null };
     });
 }
 
@@ -806,7 +810,7 @@ export default function (view) {
     }
 
     // drawAssets
-    // Draws the image counts and one row per image, with its path, tier, and Delete.
+    // Draws the image counts and one row per image, with its path, tier, and Remove.
     function drawAssets() {
         var panel = panels.assets;
         if (!panel) return;
@@ -836,7 +840,7 @@ export default function (view) {
     }
 
     // assetRow
-    // Builds one image row: the thumbnail, the name over its path, the tier, and Delete.
+    // Builds one image row: the thumbnail, the name over its path, the tier, and Remove.
     function assetRow(a) {
         var t = shared.t;
         // Set as a property, never as markup, so a stored value cannot leave the attribute.
@@ -848,10 +852,10 @@ export default function (view) {
         tierOptions(select, t);
         select.value = normalizeVisibility(a.Visibility);
         select.addEventListener('change', function () { setAssetVisibility(a.Name, select.value); });
-        var remove = h('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn stolon-destructive', title: t.tr('Delete'), 'aria-label': t.tr('Delete'), 'data-action': 'delete-asset' }, [
+        var remove = h('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn stolon-destructive', title: t.tr('ButtonRemove'), 'aria-label': t.tr('ButtonRemove'), 'data-action': 'remove-asset' }, [
             h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'delete' })
         ]);
-        remove.addEventListener('click', function () { deleteAsset(a.Name); });
+        remove.addEventListener('click', function () { removeAsset(a.Name); });
         return h('div', { class: 'stolon-asset-item', 'data-asset': a.Name }, [
             thumb,
             h('div', { class: 'stolon-asset-info' }, [h('div', { class: 'stolon-asset-name', text: a.Name }), path.element]),
@@ -904,7 +908,7 @@ export default function (view) {
             isNew: isNew,
             serialize: function () { return JSON.stringify(editor.getValue()); },
             saveText: t.tr('Save'),
-            deleteText: t.tr('Delete'),
+            deleteText: t.tr('ButtonRemove'),
             onSave: function () {
                 var value = editor.getValue();
                 var problem = pageProblem(value, settings.Pages, index);
@@ -925,26 +929,26 @@ export default function (view) {
                     return false;
                 });
             },
-            onDelete: function (close) { deletePage(original, close); },
+            onDelete: function (close) { removePage(original, close); },
             onClose: function () { editor.destroy(); }
         });
     }
 
-    // deletePage
-    // Asks first, then deletes a page and closes its sidecar.
-    function deletePage(original, close) {
+    // removePage
+    // Asks first, then removes a page and closes its sidecar.
+    function removePage(original, close) {
         var t = shared.t;
-        nectoModule.confirmDialog(t.tr('PagesConfirmDeletePage'), {
-            title: t.format('DeleteName', '/pages/' + (original.Slug || '')),
-            confirmText: t.tr('Delete'),
+        nectoModule.confirmDialog(t.tr('PagesConfirmRemovePage'), {
+            title: t.format('TitleRemoveName', '/pages/' + (original.Slug || '')),
+            confirmText: t.tr('ButtonRemove'),
             destructive: true
         }).then(function (ok) {
             if (!ok) return;
             persist(function (s) {
                 s.Pages = s.Pages.filter(function (p) { return original.Id ? p.Id !== original.Id : p.Slug !== original.Slug; });
-            }, t.tr('PagesErrorDeletePage')).then(function () {
-                close('deleted');
-                report(t.tr('PagesToastPageDeleted'), false);
+            }, t.tr('PagesErrorRemovePage')).then(function () {
+                close('removed');
+                report(t.tr('PagesToastPageRemoved'), false);
             }, function (err) { report(err.message, true); });
         });
     }
@@ -978,20 +982,20 @@ export default function (view) {
         });
     }
 
-    // deleteAsset
-    // Asks first, then deletes an image.
-    function deleteAsset(name) {
+    // removeAsset
+    // Asks first, then removes an image.
+    function removeAsset(name) {
         var t = shared.t;
-        nectoModule.confirmDialog(t.tr('PagesConfirmDeleteAsset'), {
-            title: t.format('DeleteName', name),
-            confirmText: t.tr('Delete'),
+        nectoModule.confirmDialog(t.tr('PagesConfirmRemoveAsset'), {
+            title: t.format('TitleRemoveName', name),
+            confirmText: t.tr('ButtonRemove'),
             destructive: true
         }).then(function (ok) {
             if (!ok) return;
             persist(function (s) {
                 s.Assets = s.Assets.filter(function (a) { return a.Name !== name; });
             }, t.tr('PagesErrorSaveImages')).then(function () {
-                report(t.tr('PagesToastImageDeleted'), false);
+                report(t.tr('PagesToastImageRemoved'), false);
             }, function (err) { report(err.message, true); });
         });
     }

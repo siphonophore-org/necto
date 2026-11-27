@@ -21,15 +21,9 @@
 
 /* necto-storage-disk-aside */
 /* The end of a disk row: the state badge over a usage meter, right aligned, a fixed width so meters line up down the list. */
+/* The row's aside fills, so under the text on a phone it takes the row's full width. */
 /* Example: <div class="necto-storage-disk-aside"><span><span class="stolon-badge stolon-green">Available</span></span><div class="stolon-usage-meter"></div></div> */
-.necto-storage-disk-aside { display: flex; flex-direction: column; align-items: stretch; text-align: end; gap: var(--stolon-gap-narrow); width: 14rem; max-width: 35vw; }
-@media (max-width: 600px) { .necto-storage-disk-aside { width: 100%; max-width: none; } }
-
-/* necto-storage-disk */
-/* A disk sidecar's body: the facts, then each section, a field gap apart. */
-/* Example: <div class="necto-storage-disk"><div class="stolon-defs"></div><div class="necto-storage-section"></div></div> */
-.necto-storage-disk { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
-.necto-storage-section { display: flex; flex-direction: column; gap: var(--stolon-gap-narrow); }
+.necto-storage-disk-aside { display: flex; flex-direction: column; align-items: stretch; text-align: end; gap: var(--stolon-gap-narrow); width: 14rem; }
 
 /* necto-storage-alert-editor */
 /* The full disk and health alerts: the checkboxes, Measurement, and the panels, a field gap apart. */

@@ -92,7 +92,7 @@ Each peer shows its owner, with tags for its state, address, where it connects f
 
 ![Peer editor](screenshots/Peer%20Editor.png)
 
-Select a peer to open its details in a sidecar, with its status, owner, address, child networks, last handshake, source, usage, and speed limit. The sidecar shows the peer's config file and a QR code of it. **Download** saves the config file, and **Edit** opens the editor.
+Select a peer to open its details in a sidecar, with its status, owner, address, child networks, last handshake, source, usage, and speed limit. Its **QR code** and **Config file** sections show the peer's config file, and say why when the host has none to give yet. **Download** saves the config file, and **Edit** opens the editor.
 
 The peer editor has three sections, each led by an icon.
 

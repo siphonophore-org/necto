@@ -39,6 +39,7 @@ import {
     createSortableCardList,
     createTimeline,
     escapeHtml,
+    badgeHtml,
     SECRET_KEPT
 } from './configurationpage?name=necto_stolon.js';
 
@@ -59,7 +60,7 @@ export {
     createBanner, createWorldMap, linkWorldMap, createStatusCardGrid, h, bindTileToSwitch, createResetRow,
     createResetGroup, createSaveBars, createInputField, createSelectField, createTextareaField, createCheckboxField,
     createSecretField, readNumber, readLines, createWebPushToggle, WEB_SPINNER, webSelectOptions, webSettingsCheckbox,
-    copyToClipboard, createSignIn, createUnauthorized, createNotFound, showScreen, BADGE_STATES
+    copyToClipboard, createSignIn, createUnauthorized, createNotFound, showScreen, BADGE_STATES, badgeHtml
 } from './configurationpage?name=necto_stolon.js';
 
 var PLUGIN_ID = 'a8b5ecb0-fc00-428b-85e8-74b85820166d';
@@ -82,6 +83,20 @@ var tabStrings = null;
 // [string]: The entry's name.
 function tabName(key, english) {
     return tabStrings ? tabStrings.tr(key, english) : english;
+}
+
+// rowBadge
+// Builds the state badge at the end of a record row, so every tool shows a row's state in the same place.
+//
+// Inputs
+// state [object]: label and color, where color is a status color name.
+//
+// Output
+// [HTMLElement]: The badge, for the row's aside.
+export function rowBadge(state) {
+    var badge = h('span', { 'data-role': 'row-state' });
+    badge.innerHTML = badgeHtml(state.label, state.color);
+    return badge;
 }
 
 // toolName

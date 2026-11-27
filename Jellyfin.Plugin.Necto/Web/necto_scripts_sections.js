@@ -250,12 +250,12 @@ export function buildTroubleshooting(content, ctx) {
             emptyText: t.tr('ScriptsEmptyRuns'),
             widthKey: 'scripts-history',
             columns: [
-                { key: 'ScriptName', label: t.tr('ScriptsLabelRun'), width: '2fr', sortable: false, render: runName },
-                { key: 'Trigger', label: t.tr('ScriptsLabelTrigger'), width: '1.5fr', sortable: false, render: function (run) { return triggerLabel(run.Trigger); } },
-                { key: 'StartedUtc', label: t.tr('ScriptsLabelStarted'), width: '1.5fr', sortable: false, render: function (run) { return when(run.StartedUtc); } },
-                { key: 'DurationMs', label: t.tr('LabelDuration'), align: 'end', sortable: false, render: function (run) { return formatDuration(Shared, run.DurationMs); } },
+                { key: 'ScriptName', label: t.tr('ScriptsLabelRun'), icon: 'code', width: '2fr', sortable: false, render: runName },
+                { key: 'Trigger', label: t.tr('ScriptsLabelTrigger'), icon: 'bolt', width: '1.5fr', sortable: false, render: function (run) { return triggerLabel(run.Trigger); } },
+                { key: 'StartedUtc', label: t.tr('ScriptsLabelStarted'), icon: 'schedule', width: '1.5fr', sortable: false, render: function (run) { return when(run.StartedUtc); } },
+                { key: 'DurationMs', label: t.tr('LabelDuration'), icon: 'timer', align: 'end', sortable: false, render: function (run) { return formatDuration(Shared, run.DurationMs); } },
                 {
-                    key: 'Succeeded', label: t.tr('LabelResult'), width: '8rem', sortable: false, render: function (run) {
+                    key: 'Succeeded', label: t.tr('LabelResult'), icon: 'check_circle', width: '8rem', sortable: false, render: function (run) {
                         var cell = document.createElement('span');
                         cell.innerHTML = Shared.badge(run.Succeeded ? 'green' : 'red', run.Succeeded ? t.tr('ScriptsStatusSucceeded') : t.tr('LabelFailed'));
                         return cell;
