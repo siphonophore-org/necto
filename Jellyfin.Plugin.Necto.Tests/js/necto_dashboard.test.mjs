@@ -310,6 +310,7 @@ test('the map keeps only the layers of the tools that are on, and counts the ser
     assert.deepEqual(dashboard.mapCounts(map, layers), { US: { visitors: 4, failed: 1, server: 1 }, DE: { blocked: 7 } });
     assert.deepEqual(dashboard.mapLayers(t, { WireGuard: true }).map(function (l) { return l.key; }), ['peers', 'connections', 'server']);
     assert.deepEqual(dashboard.mapLayers(t, { Proxy: { Enabled: false }, WireGuard: { Enabled: true } }).map(function (l) { return l.key; }), ['peers', 'connections', 'server']);
+    assert.equal(dashboard.mapLayers(t, { WireGuard: true }).filter(function (l) { return l.key === 'server'; })[0].outline, true, 'this server is outlined, not filled');
     assert.deepEqual(dashboard.placeholderRow(dashboard.mapLayers(t, { WireGuard: true })), { code: '', name: '–', peers: '–', connections: '–' });
 
     var rows = dashboard.countryRows(map, layers, ['visitors', 'blocked'], function (code) { return code === 'DE' ? 'Germany' : ''; });

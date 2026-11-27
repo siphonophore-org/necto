@@ -713,7 +713,7 @@ export function mapLayers(t, map) {
         if (layer.tool === 'wireguard') return !!(map.WireGuard === true || (map.WireGuard && map.WireGuard.Enabled));
         return true;
     }).map(function (layer) {
-        return { key: layer.key, label: t.tr(layer.label), color: layer.color, field: layer.field, icon: layer.icon, column: layer.column !== false };
+        return { key: layer.key, label: t.tr(layer.label), color: layer.color, field: layer.field, icon: layer.icon, column: layer.column !== false, outline: !!layer.outline };
     });
 }
 
