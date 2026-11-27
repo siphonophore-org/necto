@@ -174,16 +174,48 @@ test('the tile of a tool turns green as its switch is turned on, and gray as it 
     assert.ok(tile.classList.contains('stolon-gray'));
 });
 
-test('each tool with a switch has Enabled as its first checkbox, and its tile is green while on and gray while off', async function () {
+test('each tool with a switch has Enable and its name as its first checkbox, and its tile is green while on and gray while off', async function () {
     var config = allToolsOn();
     config.Storage.Enabled = false;
     var opened = await openTool('settings', { config: config, answers: { 'GET Ddns/Settings': { Enabled: true }, 'GET Proxy/Defaults': {}, 'GET Proxy/Settings': { Enabled: true } } });
-    ['requests', 'issues', 'invites', 'proxy', 'ddns', 'wireguard', 'scripts', 'pages', 'storage'].forEach(function (key) {
+    var labels = { requests: 'Enable requests', issues: 'Enable issues', invites: 'Enable invites', proxy: 'Enable proxy', ddns: 'Enable DDNS', wireguard: 'Enable VPN', scripts: 'Enable scripts', pages: 'Enable pages', storage: 'Enable storage' };
+    Object.keys(labels).forEach(function (key) {
         var section = opened.section(key);
         var box = section.querySelector('input[type="checkbox"]');
-        assert.match(box.closest('label').textContent, /^Enable/, key);
+        assert.equal(box.closest('label').textContent.trim(), labels[key], key);
         var tile = section.querySelector('.stolon-collapsible-tile');
         assert.ok(tile.classList.contains(key === 'storage' ? 'stolon-gray' : 'stolon-green'), key);
     });
     assert.ok(!opened.section('groups').querySelector('.stolon-collapsible-tile').classList.contains('stolon-gray'));
+});
+
+test('the settings under a switch show only while it is on, and the Save Bar stays', async function () {
+    var config = allToolsOn();
+    config.Storage.Enabled = false;
+    var opened = await openTool('settings', { config: config, answers: { 'GET Ddns/Settings': { Enabled: true } } });
+    var section = opened.section('storage');
+    var block = section.querySelector('[data-role="switched"]');
+    var box = section.querySelector('input[type="checkbox"]');
+    assert.ok(block.querySelector('[data-field="ScanGuard"]'));
+    assert.ok(block.classList.contains('stolon-hidden'));
+    assert.equal(block.querySelector('.stolon-save-bar'), null);
+    assert.ok(section.querySelector('.stolon-save-bar'));
+
+    box.checked = true;
+    box.dispatchEvent(new globalThis.Event('change'));
+    assert.ok(!block.classList.contains('stolon-hidden'));
+    assert.ok(!opened.section('scripts').querySelector('[data-role="switched"]').classList.contains('stolon-hidden'));
+});
+
+test('no two sections or rows on Settings or Troubleshooting share an icon', async function () {
+    var answers = { 'GET Ddns/Settings': { Enabled: true }, 'GET Groups/ResetCodes': { Enabled: false }, 'GET Proxy/Defaults': {}, 'GET Proxy/Settings': { Enabled: true } };
+    var settings = await openTool('settings', { config: allToolsOn(), answers: answers });
+    var tiles = texts(settings.view, '.stolon-collapsible-section > .stolon-collapsible-header .stolon-collapsible-tile');
+    assert.deepEqual(tiles.filter(function (icon, i) { return tiles.indexOf(icon) !== i; }), []);
+
+    var trouble = await openTool('troubleshooting', { config: allToolsOn(), answers: answers });
+    var icons = texts(trouble.view, '.stolon-collapsible-section > .stolon-collapsible-header .stolon-collapsible-tile')
+        .concat(Array.prototype.map.call(trouble.view.querySelectorAll('.stolon-reset-row:not([data-store]) .stolon-collapsible-tile'), function (n) { return n.textContent; }));
+    assert.ok(icons.length > 20);
+    assert.deepEqual(icons.filter(function (icon, i) { return icons.indexOf(icon) !== i; }), []);
 });

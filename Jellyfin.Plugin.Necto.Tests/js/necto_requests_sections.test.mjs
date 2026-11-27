@@ -133,6 +133,7 @@ test('the Requests section of Settings fills every setting from the config', asy
     assert.deepEqual(texts(section, '[data-part] > .stolon-collapsible-header .stolon-collapsible-title'), ['Rules', 'Quota windows', 'Blocklist', 'Radarr and Sonarr', 'Discovery', 'Home rows', 'Imports']);
     assert.deepEqual(texts(section, '.stolon-subsection-title'), ['Blocked titles']);
     assert.equal(section.querySelectorAll('[data-part] .stolon-collapsible-tile').length, 7);
+
     assert.equal(section.querySelector('[data-field="AgingAfterDays"]').value, '3');
     assert.equal(section.querySelector('[data-field="AutoDeclineAfterDays"]').value, '14');
     assert.equal(section.querySelector('[data-field="AutoDeclineReason"]').value, 'Too slow.');
@@ -295,4 +296,16 @@ test('every Requests and Issues key the new pages name has a string', async func
         });
     });
     assert.deepEqual(missing, []);
+});
+
+test('each home row leads with an icon, a built-in row by its key and a row of the server own by what picks it', async function () {
+    installPage({});
+    var mod = await loadScript('necto_requests_sections.js');
+
+    assert.equal(mod.rowIcon('RecentlyAdded'), 'new_releases');
+    assert.equal(mod.rowIcon('PopularMovies'), 'whatshot');
+    assert.equal(mod.rowIcon('custom:row1', 'Keyword'), 'label');
+    assert.equal(mod.rowIcon('custom:row2', 'Network'), 'live_tv');
+    assert.equal(mod.rowIcon('custom:row3'), 'view_carousel');
+    mod.BUILT_IN_ROWS.forEach(function (row) { assert.ok(mod.ROW_ICONS[row[0]], row[0]); });
 });
