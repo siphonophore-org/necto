@@ -16,7 +16,7 @@ The page reads the proxy's status and routes again every 10 seconds, and the vis
 
 ## Routes
 
-Each row shows the route's host name, where it forwards with a Jellyfin route's local address, and **Local only** where it applies. Its state sits at the row's end, **Off** for a route that is off, else its certificate's, such as **HTTPS ready**, **Expires soon**, or **Certificate failed**. Select a row to open the route in a sidecar. **Add route** starts from a template: **Jellyfin**, with your domain for the internet and `home` under it as its local address, or **Blank**.
+Each row shows the route's host name, where it forwards with a Jellyfin route's local address, and **Local only** where it applies. Its state sits at the row's end, **Off** for a route that is off, else its certificate's, such as **HTTPS ready**, **Expires soon**, or **Certificate failed**. Select a row to open the route in a sidecar. **Add route** starts from a template: **Jellyfin**, with your domain for the internet and `home` under it as its local address, or **Other service**, for any other web app on your network.
 
 ![Route editor](screenshots/Route%20Editor.png)
 
