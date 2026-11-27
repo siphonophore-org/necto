@@ -165,4 +165,19 @@ public class NotificationRouterTests
 
         Assert.Equal(new[] { Viewer, Admin }, apps.Recipients);
     }
+
+    /// <summary>
+    /// The Administrators channel leaves out the users the event excepts.
+    /// True: the administrator who approved a request is not told about their own approval.
+    /// False: an administrator would be told what they just did.
+    /// </summary>
+    [Fact]
+    public void Plan_ExceptedAdministrator_IsLeftOut()
+    {
+        var config = Config(s => s.Channels[0].AllEvents = true);
+
+        var sends = NotificationRouter.Plan(config, Used(null) with { ExceptUserIds = new[] { Admin } }, Users());
+
+        Assert.DoesNotContain(sends, s => s.Target == NotificationTarget.Administrators);
+    }
 }

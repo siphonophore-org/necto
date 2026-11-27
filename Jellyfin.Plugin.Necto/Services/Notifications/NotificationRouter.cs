@@ -55,7 +55,7 @@ public static class NotificationRouter
             {
                 case NotificationChannelKind.Administrators:
                     // An administrator the event is about already has it as a user, so it comes once.
-                    var admins = users.Where(u => u.IsAdministrator && !u.IsDisabled && !reached.Contains(u.Id)).Select(u => u.Id).ToList();
+                    var admins = users.Where(u => u.IsAdministrator && !u.IsDisabled && !reached.Contains(u.Id) && !(nectoEvent.ExceptUserIds ?? Array.Empty<Guid>()).Contains(u.Id)).Select(u => u.Id).ToList();
                     if (admins.Count > 0)
                     {
                         sends.Add(new NotificationSend(NotificationTarget.Administrators, channel.Id, admins));

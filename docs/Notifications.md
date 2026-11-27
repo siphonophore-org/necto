@@ -85,7 +85,7 @@ Necto makes its VAPID key pair the first time a page needs it, and keeps the pri
 
 Each tool lists the events it sends in a static class named `<Tool>Events`, with `public static IReadOnlyList<NectoEventInfo> All`. Necto finds every list by reflection, so a tool's events show in every picker once its list exists.
 
-A tool sends each event through `INotifier.SendAsync` as a `NectoEvent`: its key, title, and text, with the user it is about, any `OtherUserIds`, the page it opens, its level, and its data. `Hold` set off sends a Jellyfin message only to apps online now, `OneDevice` shows it on each user's most recent app only, and `ImageUrl` adds a poster to Discord and browser notifications.
+A tool sends each event through `INotifier.SendAsync` as a `NectoEvent`: its key, title, and text, with the user it is about, any `OtherUserIds`, the `ExceptUserIds` the Administrators channel leaves out, the page it opens, its level, and its data. `Hold` set off sends a Jellyfin message only to apps online now, `OneDevice` shows it on each user's most recent app only, and `ImageUrl` adds a poster to Discord and browser notifications.
 
 | Key | Name | For users | Sent when |
 | :--- | :--- | :--- | :--- |

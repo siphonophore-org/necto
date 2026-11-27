@@ -26,6 +26,9 @@ public sealed record NectoEvent(string Key, string Title, string Body)
     /// <summary>Gets more users the event is about, such as those who joined a request. Each receives it if their groups allow.</summary>
     public IReadOnlyList<Guid> OtherUserIds { get; init; } = Array.Empty<Guid>();
 
+    /// <summary>Gets users the Administrators channel leaves out, such as the administrator who made a decision.</summary>
+    public IReadOnlyList<Guid> ExceptUserIds { get; init; } = Array.Empty<Guid>();
+
     /// <summary>Gets a value indicating whether a Jellyfin message for a user with no app online waits until one comes online.</summary>
     public bool Hold { get; init; } = true;
 
