@@ -299,6 +299,7 @@ export function groupsCard(t, config, users) {
     var people = users.filter(function (u) { return !u.IsAdministrator; });
     var grouped = people.filter(function (u) { return (u.GroupIds || []).some(function (id) { return !sameId(id, EVERYONE_ID); }); }).length;
     card.value = ((config && config.Groups) || []).filter(function (g) { return !sameId(g.Id, EVERYONE_ID); }).length;
+    card.valueLabel = t.tr('DashboardValueGroups');
     withBar(card, t, [
         { label: t.tr('HeaderMembers'), value: grouped, color: 'green' },
         { label: t.tr('ScriptsSummaryNoGroups'), value: people.length - grouped, color: 'gray' },
