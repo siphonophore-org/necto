@@ -278,7 +278,7 @@ Every tool page uses Jellyfin's page shell. The tool app takes the page's view o
 Every section on a Settings or Troubleshooting page leads with an icon tile, and so does every reset or action row. The tile names the topic at a glance, and makes a long page easy to scan.
 
 * A section header holds `<span class="stolon-collapsible-tile" aria-hidden="true"><span class="material-icons">…</span></span>` before its `stolon-collapsible-title`. A section built in script passes `icon` to `createCollapsibleSection`, which draws the same tile.
-* A reset or action row holds the same tile before its `stolon-reset-info`.
+* A reset or action row holds the same tile before its `stolon-reset-info`. A reset row's tile keeps the accent while there is something to reset, and turns `stolon-gray` while there is nothing, such as an empty table.
 * Pick the Material icon that names the topic, such as `movie_filter` for Requests, `vpn_lock` for WireGuard. A section and the tool it belongs to use the same icon as the sidebar.
 * The tile takes the accent color when its section has no on or off switch. A section that turns its feature on or off takes `stolon-green` while it is on and `stolon-gray` while it is off, and follows the switch as it changes. The most destructive row, such as a full reset, takes `stolon-red`.
 * Give each section its own icon. Two sections on one page never share one.
