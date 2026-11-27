@@ -63,7 +63,7 @@ public sealed class AcmePlan
             .Where(r => r.Enabled && supportsTxt(r.Provider))
             .Where(r => string.IsNullOrEmpty(recordId) || string.Equals(r.Id, recordId, StringComparison.Ordinal))
             .Select(r => (Record: r, Domain: Domain(r)))
-            .Where(r => r.Domain.Length > 0)
+            .Where(r => r.Domain.Length > 0 || !string.IsNullOrEmpty(recordId))
             .ToList();
 
         var byName = new Dictionary<string, DNSRecord>(StringComparer.Ordinal);

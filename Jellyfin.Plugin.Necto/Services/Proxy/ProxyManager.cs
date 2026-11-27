@@ -272,12 +272,13 @@ public sealed class ProxyManager : IAsyncDisposable
     /// The name people use from the internet, the one the name and outside checks look at.
     /// </summary>
     /// <param name="settings">The proxy settings.</param>
-    /// <returns>The first enabled internet route's exact public name, empty when there is none.</returns>
+    /// <returns>The first enabled internet route's exact public name, a Jellyfin route's first, empty when there is none.</returns>
     public static string PublicHostname(ProxySettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
         return settings.Routes
             .Where(r => r.Enabled && !r.LocalOnly)
+            .OrderByDescending(r => r.IsJellyfin)
             .Select(r => HostnameMatcher.Normalize(r.Host))
             .FirstOrDefault(h => h.Length > 0 && !h.StartsWith('*') && HostnameMatcher.IsPublicName(h)) ?? string.Empty;
     }
