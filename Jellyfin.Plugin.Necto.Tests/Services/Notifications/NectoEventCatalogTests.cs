@@ -116,6 +116,9 @@ public class NectoEventCatalogTests
         Assert.Empty(problems);
     }
 
+    // The sidebar's tools, then Notifications, which lives in Settings and sends its own test event.
+    private static readonly List<string> Order = Plugin.ToolKeys.Append("notifications").ToList();
+
     /// <summary>
     /// Every key is listed once, and every key starts with a tool's key.
     /// True: an event picked in a group or channel names one event.
@@ -127,7 +130,7 @@ public class NectoEventCatalogTests
         var keys = NectoEventCatalog.All.Select(e => e.Key).ToList();
 
         Assert.Equal(keys.Count, keys.Distinct().Count());
-        Assert.All(NectoEventCatalog.All, e => Assert.Contains(e.Tool, Plugin.ToolKeys));
+        Assert.All(NectoEventCatalog.All, e => Assert.Contains(e.Tool, Order));
     }
 
     /// <summary>
@@ -138,7 +141,7 @@ public class NectoEventCatalogTests
     [Fact]
     public void All_IsInSidebarOrder()
     {
-        var tools = NectoEventCatalog.All.Select(e => Plugin.ToolKeys.ToList().IndexOf(e.Tool)).ToList();
+        var tools = NectoEventCatalog.All.Select(e => Order.IndexOf(e.Tool)).ToList();
 
         Assert.Equal(tools.OrderBy(t => t), tools);
     }

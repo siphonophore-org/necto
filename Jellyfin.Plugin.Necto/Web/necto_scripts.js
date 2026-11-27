@@ -8,7 +8,6 @@ import {
     createCollapsibleSection, confirmDialog, promptSidecar, openSidecar, generateGuid, downloadJson, pickJsonFile, setFieldState, SECRET_KEPT,
     fieldGroups, fieldLabel, NUMERIC_FIELDS, operatorLabels, operationTypes, renderRunSummary, renderRunSteps, t
 } from './configurationpage?name=necto_scripts_common.js';
-import { templates, httpPresetLabels, HTTP_PRESETS } from './configurationpage?name=necto_scripts_templates.js';
 
 export default function (view) {
     'use strict';
@@ -940,11 +939,7 @@ export default function (view) {
                     input(op, 'WorkingDirectory', t.tr('ScriptsLabelWorkingFolder'), { placeholder: t.tr('ScriptsPlaceholderWorkingFolder'), help: t.tr('ScriptsHelpWorkingFolder') }) +
                     input(op, 'TimeoutSeconds', t.tr('ScriptsLabelTimeout'), { number: true, help: t.tr('ScriptsHelpStepTimeout') });
             case 'HttpRequest':
-                var presets = httpPresetLabels();
-                return select(op, '__preset', t.tr('ScriptsLabelPreset'), [{ value: '', label: t.tr('ScriptsOptionKeepRequest') }].concat(Object.keys(HTTP_PRESETS).map(function (k) {
-                        return { value: k, label: presets[k] };
-                    })), { help: t.tr('ScriptsHelpPreset') }) +
-                    select(op, 'Method', t.tr('ScriptsLabelMethod'), HTTP_METHODS.map(function (m) { return { value: m, label: m }; })) +
+                return select(op, 'Method', t.tr('ScriptsLabelMethod'), HTTP_METHODS.map(function (m) { return { value: m, label: m }; })) +
                     input(op, 'Url', t.tr('LabelUrl'), { placeholder: 'https://example.com/hook?item={{ITEM_NAME:url}}' }) +
                     input(op, 'Headers', t.tr('ScriptsLabelHeaders'), { textarea: true, rows: 2, placeholder: 'Authorization: Bearer {{SECRET_TOKEN}}' }) +
                     input(op, 'ContentType', t.tr('LabelContentType'), { placeholder: 'application/json', variables: false }) +
@@ -1070,14 +1065,6 @@ export default function (view) {
         var op = selectedOperation();
         if (!op) return null;
         var key = target.getAttribute('data-key');
-        if (key === '__preset') {
-            if (target.value && HTTP_PRESETS[target.value]) {
-                Object.assign(op, HTTP_PRESETS[target.value].fields);
-                renderOperationEditor(operationList.getSelected());
-            }
-            return key;
-        }
-
         if (target.getAttribute('data-upper')) {
             var caret = target.selectionStart;
             target.value = upperName(target.value);
@@ -1424,20 +1411,18 @@ export default function (view) {
         if (message) Shared.setStatus('transferStatus', message, false, { timeout: 0 });
     }
 
+    // newScript
+    // Asks for a name and a description in a sidecar, and adds a blank script with them.
     function newScript() {
-        var list = templates();
         promptSidecar([
             { name: 'name', label: t.tr('LabelName'), value: '', placeholder: t.tr('ScriptsPlaceholderNewName') },
-            { name: 'description', label: t.tr('ScriptsLabelDescription'), value: '', placeholder: t.tr('ScriptsPlaceholderNewDescription') },
-            { name: 'template', label: t.tr('ScriptsLabelStartFrom'), type: 'select', value: 'blank', options: list.map(function (item) { return { value: item.key, label: item.label }; }) }
+            { name: 'description', label: t.tr('ScriptsLabelDescription'), value: '', placeholder: t.tr('ScriptsPlaceholderNewDescription') }
         ], { title: t.tr('ScriptsScriptNewName'), submitText: t.tr('Create') }).then(function (values) {
             if (!values) return;
-            var template = list.find(function (item) { return item.key === values.template; }) || list[0];
-            var name = (values.name || '').trim() || (template.key === 'blank' ? t.tr('ScriptsScriptNewName') : template.label);
-            var script = sanitize(Object.assign({ Name: name }, template.build()), blankScript(name));
-            script.Name = name;
+            var name = (values.name || '').trim() || t.tr('ScriptsScriptNewName');
+            var script = sanitize({ Name: name }, blankScript(name));
             script.Description = (values.description || '').trim().slice(0, 500);
-            addScript(script, template.key === 'blank' ? '' : t.format('ScriptsStatusStartedFromTemplate', template.label));
+            addScript(script, '');
         });
     }
 

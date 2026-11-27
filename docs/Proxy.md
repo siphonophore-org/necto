@@ -54,6 +54,21 @@ A route to **Another service** shows its settings directly, and a new one starts
 * **Path prefix** puts a path in front of every request, such as `/radarr` for an app with a URL base.
 * **Request headers** and **Response headers** set headers on every request to the app and every answer to the visitor. The proxy refuses a header it sets itself, such as `Host`, `X-Forwarded-For`, or `Strict-Transport-Security`.
 
+### Examples for Other Services
+
+Each app below forwards well with these settings, after the reverse proxy guide the app publishes. Anything not named keeps its default.
+
+| App | Upload limit (MB) | Idle timeout (seconds) | Send the visitor's host name | Path prefix | Why |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Any web app | Blank | Blank | On | Blank | The proxy's own behavior suits most apps |
+| Jellyseerr, Seerr, or Overseerr | 20 | Blank | On | Blank | Avatars and settings imports are small |
+| Ombi | 20 | Blank | On | Blank | The same small uploads as Seerr |
+| Radarr, Sonarr, Lidarr, Prowlarr, or Bazarr | 500 | 300 | On | The app's URL base, such as `/radarr`, when it has one | Manual imports can take minutes to answer, and a backup restore is uploaded whole |
+| qBittorrent | 50 | Blank | Off | Blank | Its web UI refuses a host that is not its own, and it takes `.torrent` files |
+| Home Assistant | 0 | 3600 | On | Blank | The frontend holds one WebSocket open for hours, and backups are uploaded whole |
+
+Every example passes WebSockets and leaves **Buffer answers** off. Home Assistant also needs this server in its own `trusted_proxies`, with `use_x_forwarded_for` on.
+
 **Remove** asks first. The route's certificate files are deleted, and the service it forwarded to stays.
 
 A local client that asks by this server's address, or by a name no route has, reaches the first Jellyfin route. The internet must ask for a route's name, and the bare address or a scanner's guess gets nothing. Plain HTTP from the internet is sent on to HTTPS for a route's name once it has a certificate.

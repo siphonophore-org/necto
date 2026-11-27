@@ -1,5 +1,5 @@
 // necto_scripts.test.mjs
-// Tests for Scripts: the shared labels and templates, the Settings section, the run history in Troubleshooting, and
+// Tests for Scripts: the shared labels, the importable examples in the docs, the Settings section, the run history in Troubleshooting, and
 // the Scripts section of the group editor.
 
 import { test } from 'node:test';
@@ -56,17 +56,22 @@ test('every step type leads its card with an icon of its own, never a number', a
     assert.equal(new Set(icons).size, icons.length);
 });
 
-test('every template builds a script with a name and steps of known types', async function () {
+test('every importable example in the docs names its script and uses known triggers and step types', async function () {
     installPage({});
     var common = await loadScript('necto_scripts_common.js');
-    var templates = await loadScript('necto_scripts_templates.js');
+    var fs = await import('node:fs');
+    var path = await import('node:path');
+    var url = await import('node:url');
+    var docs = fs.readFileSync(path.join(path.dirname(url.fileURLToPath(import.meta.url)), '..', '..', 'docs', 'Scripts.md'), 'utf8');
     var types = common.operationTypes();
-    var list = templates.templates();
+    var blocks = docs.split('### Importable Examples')[1].split('```json').slice(1).map(function (b) { return JSON.parse(b.split('```')[0]); });
 
-    assert.ok(list.length > 1);
-    list.forEach(function (item) {
-        var built = item.build();
-        (built.Operations || []).forEach(function (op) { assert.ok(types[op.Type], item.key + ' ' + op.Type); });
+    assert.ok(blocks.length >= 17);
+    blocks.forEach(function (script) {
+        assert.ok(script.Name, JSON.stringify(script));
+        assert.ok((script.Triggers || []).length > 0, script.Name);
+        assert.ok((script.Operations || []).length > 0, script.Name);
+        script.Operations.forEach(function (op) { assert.ok(types[op.Type], script.Name + ' ' + op.Type); });
     });
 });
 

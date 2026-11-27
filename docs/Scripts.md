@@ -24,7 +24,7 @@ The counts at the top show how many scripts there are, and how many are enabled 
 | :---: | :---: |
 | ![Scripts](screenshots/Scripts.png) | ![Scripts on a phone](screenshots/Scripts%20Phone.png) |
 
-Each script has a **Name** and an optional **Description** saying what it is for. **New** asks for both and starts from a blank script or a template, such as stopping playback paused for 30 minutes, limiting the server to 3 transcodes, asking "Still watching?" after 3 hours, posting new items to Discord, or scanning every library nightly. **Rename** asks for the open script's new name, which is kept until you **Save**. **Remove** asks first, then removes the open script and saves that at once. Unsaved edits to other scripts stay unsaved.
+Each script has a **Name** and an optional **Description** saying what it is for. **New** asks for both and starts a blank script. The [importable examples](#importable-examples) give ready scripts to start from. **Rename** asks for the open script's new name, which is kept until you **Save**. **Remove** asks first, then removes the open script and saves that at once. Unsaved edits to other scripts stay unsaved.
 
 The editor's sections open and close from their headings, each led by an icon, and all start closed. **General** holds the **Description** and **Enabled**. Each heading says what its section holds, such as *1 trigger*, *2 steps*, *2 groups*, or *2 conditions, all must match*, **General** shows the script's description and whether it is **Enabled** or **Disabled**, and **Testing** names the trigger to test with. A section with a warning names it in an orange badge. **Groups** shows what ignores its groups, such as **Schedule ignored**. **Conditions** counts the conditions a selected trigger never matches, such as **1 never matches**. **Behavior** shows **No item kinds** when it runs for each library item with none chosen, or **For each ignored** when every trigger already has its own item or user.
 
@@ -120,7 +120,7 @@ Every playback trigger carries the user, session, and item, plus `ACTIVE_STREAMS
 * The task only runs on its triggers while the script is enabled. Run by hand while the script is disabled, it does nothing.
 * Renaming the script or editing its description changes the task at once.
 * A new script's task starts with no triggers. Add one under **Scheduled Tasks**.
-* A script from a template, or an imported one with a schedule of its own, starts its task on that schedule: every so many minutes, daily, or on the chosen days at the chosen time. Jellyfin has no monthly trigger, so a script that runs monthly starts with no trigger and needs one set.
+* An imported script with a schedule of its own starts its task on that schedule: every so many minutes, daily, or on the chosen days at the chosen time. Jellyfin has no monthly trigger, so a script that runs monthly starts with no trigger and needs one set.
 * Deleting the script, or removing **On a schedule** from it, hides and disables the task at once and removes the files Jellyfin kept for it. Jellyfin only drops the task itself when the server restarts.
 
 The script's conditions still apply to each run, and its steps see the event as **On a schedule**.
@@ -257,7 +257,7 @@ Under **Behavior**, **When this script fails, run** names another script to run 
 
 ### HTTP Request
 
-**Start from a preset** fills the request for a generic JSON webhook, Discord, Slack, ntfy, Gotify, or a Home Assistant service call. Replace the URL, and put tokens in the script's [secrets](#secrets). **Retries**, a slider, tries again up to 5 times and waiting longer each time, after no answer, a 5xx, or a 429.
+Fill in the method, URL, headers, content type, and body for the service, as in [Requests for Common Services](#requests-for-common-services). Put tokens in the script's [secrets](#secrets). **Retries**, a slider, tries again up to 5 times and waiting longer each time, after no answer, a 5xx, or a 429.
 
 ### Run Command
 
@@ -379,11 +379,11 @@ Every route is for administrators. A webhook caller sends a Jellyfin API key.
 
 ## Examples
 
-Each example lists what to set in the editor. Several are also offered as templates under **New**, marked *(template)*. Replace URLs, names, and tokens with your own, and keep tokens in the script's **Secrets**.
+Each example lists what to set in the editor. The [importable examples](#importable-examples) can be imported whole. Replace URLs, names, and tokens with your own, and keep tokens in the script's **Secrets**.
 
 ### Playback
 
-#### Stop Playback Left Paused *(template)*
+#### Stop Playback Left Paused
 
 Frees the stream when someone pauses and walks away.
 
@@ -392,7 +392,7 @@ Frees the stream when someone pauses and walks away.
 | Trigger | **Paused for a while**, 30 minutes |
 | Step | **Stop playback**, title `Playback stopped`, message `Stopped after 30 minutes paused.` |
 
-#### Ask "Still Watching?" *(template)*
+#### Ask "Still Watching?"
 
 | Setting | Value |
 |---|---|
@@ -401,7 +401,7 @@ Frees the stream when someone pauses and walks away.
 
 The time counts playback only, not pauses, and the script runs once per playback.
 
-#### Limit the Server to 3 Transcodes *(template)*
+#### Limit the Server to 3 Transcodes
 
 Stops the newest transcode when it would be the fourth.
 
@@ -432,16 +432,16 @@ Stops the newest transcode when it would be the fourth.
 
 Hours are the server's local time.
 
-#### Dim the Lights When a Movie Starts *(template)*
+#### Dim the Lights When a Movie Starts
 
 | Setting | Value |
 |---|---|
 | Triggers | **Playback started**, **Playback resumed** |
 | Item kinds | Movie |
 | Secret | `HA_TOKEN`, a Home Assistant long-lived access token |
-| Step | **HTTP request** from the **Home Assistant service call** preset |
+| Step | **HTTP request** to Home Assistant's light service |
 
-The preset fills in:
+Set the request to:
 
 ```text
 POST http://homeassistant.local:8123/api/services/light/turn_on
@@ -454,7 +454,7 @@ Add a second script on **Playback paused** and **Playback stopped** that calls `
 
 ### Library
 
-#### Post New Movies and Episodes to Discord *(template)*
+#### Post New Movies and Episodes to Discord
 
 | Setting | Value |
 |---|---|
@@ -482,7 +482,7 @@ Body, with `:json` so names containing quotes stay valid JSON:
 
 #### Tag New Items, Then Untag Once Watched
 
-Script 1 *(template)*:
+Script 1:
 
 | Setting | Value |
 |---|---|
@@ -513,13 +513,13 @@ A second script with **Is favorite** is `false` and **Remove from collection** k
 
 ### Accounts and Security
 
-#### Alert on Failed Sign Ins *(template)*
+#### Alert on Failed Sign Ins
 
 | Setting | Value |
 |---|---|
 | Trigger | **Sign in failed** |
 | Cooldown | 5 minutes, so a burst of attempts sends one alert per user |
-| Step | **HTTP request** from the **ntfy** preset, URL `https://ntfy.sh/{{SECRET_NTFY_TOPIC}}` |
+| Step | **HTTP request**, POST `https://ntfy.sh/{{SECRET_NTFY_TOPIC}}`, content type `text/plain` |
 
 Body (plain text, so no `:json`):
 
@@ -545,14 +545,14 @@ Anyone still signed in with the old password has to sign in again. Administrator
 
 ### Server
 
-#### Warn Everyone Before a Restart *(template)*
+#### Warn Everyone Before a Restart
 
 | Setting | Value |
 |---|---|
 | Trigger | **Restart needed** |
 | Step | **Send message** to every active session: `The server needs a restart and may go offline briefly.` |
 
-#### Message the Administrators When a Task Fails *(template)*
+#### Message the Administrators When a Task Fails
 
 | Setting | Value |
 |---|---|
@@ -560,7 +560,7 @@ Anyone still signed in with the old password has to sign in again. Administrator
 | Conditions | **Task status** is `Failed` |
 | Step | **Send message** to every administrator's session: `{{TASK_NAME}} failed: {{TASK_ERROR}}` |
 
-#### Scan Every Library Nightly *(template)*
+#### Scan Every Library Nightly
 
 | Setting | Value |
 |---|---|
@@ -601,9 +601,9 @@ printf '%s,"%s","%s","%s","%s",%s\n' \
     "$JF_TIMESTAMP" "$JF_USER_NAME" "$JF_ITEM_NAME" "$JF_SERIES_NAME" "$JF_DEVICE_NAME" "$JF_PLAY_METHOD" >> "$log"
 ```
 
-For a plain text log without a script, an **Append to file** step with the line `{{LOCAL_DATE}} {{LOCAL_TIME}} {{USER_NAME}} played {{ITEM_NAME}}` does the same *(template)*.
+For a plain text log without a script, an **Append to file** step with the line `{{LOCAL_DATE}} {{LOCAL_TIME}} {{USER_NAME}} played {{ITEM_NAME}}` does the same.
 
-#### Pass Values as Arguments *(template)*
+#### Pass Values as Arguments
 
 | Setting | Value |
 |---|---|
@@ -639,6 +639,491 @@ Choose **Through the shell** to write one `/bin/sh` line. Placeholders are not f
 ```sh
 echo "$JF_LOCAL_DATE $JF_USER_NAME $JF_ITEM_NAME" | tee -a /scripts/plays.log
 ```
+
+### Requests for Common Services
+
+Each **HTTP request** below posts to a common service. Replace the address, and keep tokens in **Secrets**.
+
+| Service | Method and URL | Headers | Content type | Body |
+| :--- | :--- | :--- | :--- | :--- |
+| Any JSON webhook | POST `https://example.com/webhook` | | `application/json` | `{ "event": "{{EVENT}}", "user": "{{USER_NAME:json}}", "item": "{{ITEM_NAME:json}}" }` |
+| Discord | POST `https://discord.com/api/webhooks/ID/TOKEN` | | `application/json` | `{ "content": "{{EVENT}}: {{ITEM_NAME:json}}" }` |
+| Slack | POST `https://hooks.slack.com/services/T000/B000/XXXX` | | `application/json` | `{ "text": "{{EVENT}}: {{ITEM_NAME:json}}" }` |
+| ntfy | POST `https://ntfy.sh/your-topic` | `Title: Jellyfin {{EVENT}}` | `text/plain` | `{{EVENT}}: {{ITEM_NAME}}` |
+| Gotify | POST `https://gotify.example.com/message?token={{SECRET_GOTIFY_TOKEN:url}}` | | `application/json` | `{ "title": "Jellyfin {{EVENT}}", "message": "{{ITEM_NAME:json}}", "priority": 5 }` |
+| Home Assistant | POST `http://homeassistant.local:8123/api/services/light/turn_on` | `Authorization: Bearer {{SECRET_HA_TOKEN}}` | `application/json` | `{ "entity_id": "light.living_room", "brightness_pct": 10 }` |
+
+### Importable Examples
+
+Save a block as a `.json` file and select **Import** in the Scripts tool. Import takes one script, a list of scripts, or an exported file. Each example imports **disabled**, so fill in its secrets and addresses, review its steps, then turn it on and **Save**.
+
+#### Stop Playback Paused for 30 Minutes
+
+Stops a session left paused for 30 minutes and tells the viewer why.
+
+```json
+{
+  "Name": "Stop playback paused for 30 minutes",
+  "Triggers": [
+    "PlaybackPausedFor"
+  ],
+  "PausedForMinutes": 30,
+  "Operations": [
+    {
+      "Type": "StopPlayback",
+      "Title": "Playback stopped",
+      "Text": "Stopped after 30 minutes paused.",
+      "DisplaySeconds": 10
+    }
+  ]
+}
+```
+
+#### Ask "Still Watching?" After 3 Hours of Playback
+
+Asks the viewer after 3 hours of playback, not counting pauses.
+
+```json
+{
+  "Name": "Ask \"Still watching?\" after 3 hours of playback",
+  "Triggers": [
+    "PlaybackPlayingFor"
+  ],
+  "PlayingForMinutes": 180,
+  "Operations": [
+    {
+      "Type": "SendMessage",
+      "Target": "EventSession",
+      "Title": "Still watching?",
+      "Text": "You have been watching for 3 hours.",
+      "DisplaySeconds": 15
+    }
+  ]
+}
+```
+
+#### Limit the Server to 3 Transcodes
+
+Stops a new stream that would convert while 4 or more already are, and says why.
+
+```json
+{
+  "Name": "Limit the server to 3 transcodes",
+  "Triggers": [
+    "PlaybackStart"
+  ],
+  "Conditions": [
+    {
+      "Field": "PlayMethod",
+      "Operator": "Is",
+      "Values": [
+        "Transcode"
+      ]
+    },
+    {
+      "Field": "ActiveTranscodes",
+      "Operator": "AtLeast",
+      "Values": [
+        "4"
+      ]
+    }
+  ],
+  "Operations": [
+    {
+      "Type": "SendMessage",
+      "Target": "EventSession",
+      "Title": "Server busy",
+      "Text": "Too many streams are converting right now. Try a lower quality or direct play.",
+      "DisplaySeconds": 15
+    },
+    {
+      "Type": "StopPlayback"
+    }
+  ]
+}
+```
+
+#### Stop Transcoding Outside the Home Network
+
+Stops a stream that would convert away from home, and asks for a quality the device plays directly.
+
+```json
+{
+  "Name": "Stop transcoding outside the home network",
+  "Triggers": [
+    "PlaybackStart"
+  ],
+  "Conditions": [
+    {
+      "Field": "PlayMethod",
+      "Operator": "Is",
+      "Values": [
+        "Transcode"
+      ]
+    },
+    {
+      "Field": "IsLocal",
+      "Operator": "Is",
+      "Values": [
+        "false"
+      ]
+    }
+  ],
+  "Operations": [
+    {
+      "Type": "SendMessage",
+      "Target": "EventSession",
+      "Title": "Direct play only",
+      "Text": "Away from home, choose a quality your device can play directly.",
+      "DisplaySeconds": 15
+    },
+    {
+      "Type": "StopPlayback"
+    }
+  ]
+}
+```
+
+#### Greet Users When Their Client Connects
+
+Greets a user when a client connects, at most once an hour.
+
+```json
+{
+  "Name": "Greet users when their client connects",
+  "Triggers": [
+    "ClientConnected"
+  ],
+  "CooldownSeconds": 3600,
+  "Operations": [
+    {
+      "Type": "SendMessage",
+      "Target": "EventSession",
+      "Title": "Welcome",
+      "Text": "Welcome back, {{USER_NAME}}.",
+      "DisplaySeconds": 8
+    }
+  ]
+}
+```
+
+#### Warn Everyone When a Restart Is Needed
+
+Tells every session when the server needs a restart.
+
+```json
+{
+  "Name": "Warn everyone when a restart is needed",
+  "Triggers": [
+    "PendingRestart"
+  ],
+  "Operations": [
+    {
+      "Type": "SendMessage",
+      "Target": "AllSessions",
+      "Title": "Restart coming",
+      "Text": "The server needs a restart and may go offline briefly.",
+      "DisplaySeconds": 15
+    }
+  ]
+}
+```
+
+#### Message Administrators When a Task Fails
+
+Messages the administrators when a scheduled task fails, with its error.
+
+```json
+{
+  "Name": "Message administrators when a task fails",
+  "Triggers": [
+    "TaskCompleted"
+  ],
+  "Conditions": [
+    {
+      "Field": "TaskStatus",
+      "Operator": "Is",
+      "Values": [
+        "Failed"
+      ]
+    }
+  ],
+  "Operations": [
+    {
+      "Type": "SendMessage",
+      "Target": "AdminSessions",
+      "Title": "Task failed",
+      "Text": "{{TASK_NAME}} failed: {{TASK_ERROR}}",
+      "DisplaySeconds": 20
+    }
+  ]
+}
+```
+
+#### Post New Movies and Episodes to Discord
+
+Posts each new movie and episode to a Discord channel webhook. Replace the URL with your webhook.
+
+```json
+{
+  "Name": "Post new movies and episodes to Discord",
+  "Triggers": [
+    "ItemAdded"
+  ],
+  "ItemKinds": [
+    "Movie",
+    "Episode"
+  ],
+  "Operations": [
+    {
+      "Type": "HttpRequest",
+      "Method": "POST",
+      "Url": "https://discord.com/api/webhooks/ID/TOKEN",
+      "Headers": "",
+      "ContentType": "application/json",
+      "Body": "{ \"content\": \"New on {{SERVER_NAME:json}}: {{SERIES_NAME:json}} {{ITEM_NAME:json}} ({{YEAR}})\" }"
+    }
+  ]
+}
+```
+
+#### Send a Ntfy Alert on a Failed Sign in
+
+Pushes each failed sign in to an ntfy topic. Replace the topic with your own.
+
+```json
+{
+  "Name": "Send a ntfy alert on a failed sign in",
+  "Triggers": [
+    "AuthenticationFailure"
+  ],
+  "Operations": [
+    {
+      "Type": "HttpRequest",
+      "Method": "POST",
+      "Url": "https://ntfy.sh/your-topic",
+      "Headers": "Title: Jellyfin {{EVENT}}",
+      "ContentType": "text/plain",
+      "Body": "Failed sign in for {{USERNAME_ATTEMPTED}} from {{REMOTE_ADDRESS}} ({{DEVICE_NAME}})"
+    }
+  ]
+}
+```
+
+#### Dim Home Assistant Lights When Playback Starts
+
+Calls a Home Assistant service when playback starts or resumes. Put a long-lived access token in the HA_TOKEN secret and change the entity.
+
+```json
+{
+  "Name": "Dim Home Assistant lights when playback starts",
+  "Triggers": [
+    "PlaybackStart",
+    "PlaybackResume"
+  ],
+  "Secrets": [
+    {
+      "Name": "HA_TOKEN",
+      "Value": ""
+    }
+  ],
+  "Operations": [
+    {
+      "Type": "HttpRequest",
+      "Method": "POST",
+      "Url": "http://homeassistant.local:8123/api/services/light/turn_on",
+      "Headers": "Authorization: Bearer {{SECRET_HA_TOKEN}}",
+      "ContentType": "application/json",
+      "Body": "{ \"entity_id\": \"light.living_room\", \"brightness_pct\": 10 }"
+    }
+  ]
+}
+```
+
+#### Scan Every Library Nightly at 3:00
+
+Scans every library at 03:00 each day.
+
+```json
+{
+  "Name": "Scan every library nightly at 3:00",
+  "Triggers": [
+    "Schedule"
+  ],
+  "ScheduleMode": "Daily",
+  "ScheduleTime": "03:00",
+  "Operations": [
+    {
+      "Type": "ScanLibraries"
+    }
+  ]
+}
+```
+
+#### Tag Movies Nobody Has Watched in 90 Days
+
+Tags up to 100 movies nobody has played in 90 days, each Sunday at 04:00.
+
+```json
+{
+  "Name": "Tag movies nobody has watched in 90 days",
+  "Triggers": [
+    "Schedule"
+  ],
+  "ScheduleMode": "Daily",
+  "ScheduleTime": "04:00",
+  "ScheduleDays": [
+    "Sunday"
+  ],
+  "ForEach": "Items",
+  "ForEachLimit": 100,
+  "ItemKinds": [
+    "Movie"
+  ],
+  "Conditions": [
+    {
+      "Field": "DaysSincePlayed",
+      "Operator": "AtLeast",
+      "Values": [
+        "90"
+      ]
+    }
+  ],
+  "Operations": [
+    {
+      "Type": "AddTag",
+      "Tag": "unwatched"
+    }
+  ]
+}
+```
+
+#### Scan Libraries When Another Service Calls a Webhook
+
+Scans every library when its webhook address is called, at most once a minute, and logs who asked.
+
+```json
+{
+  "Name": "Scan libraries when another service calls a webhook",
+  "Triggers": [
+    "Webhook"
+  ],
+  "CooldownSeconds": 60,
+  "Operations": [
+    {
+      "Type": "ScanLibraries"
+    },
+    {
+      "Type": "WriteActivityLog",
+      "Title": "Library scan requested by webhook",
+      "Text": "From {{REMOTE_ADDRESS}}"
+    }
+  ]
+}
+```
+
+#### Call a Service, then Message Administrators If It Is Down
+
+Checks an address every 15 minutes and messages the administrators when it does not answer 200.
+
+```json
+{
+  "Name": "Call a service, then message administrators if it is down",
+  "Triggers": [
+    "Schedule"
+  ],
+  "ScheduleMode": "Interval",
+  "ScheduleIntervalMinutes": 15,
+  "Operations": [
+    {
+      "Type": "HttpRequest",
+      "Method": "GET",
+      "Url": "https://example.com/health",
+      "Body": "",
+      "OutputName": "HEALTH",
+      "ContinueOnError": true
+    },
+    {
+      "Type": "StopScript",
+      "OnlyIfVariable": "HEALTH_STATUS",
+      "OnlyIfOperator": "Is",
+      "OnlyIfValue": "200"
+    },
+    {
+      "Type": "SendMessage",
+      "Target": "AdminSessions",
+      "Title": "Service check failed",
+      "Text": "example.com answered {{HEALTH_STATUS}}.",
+      "DisplaySeconds": 15
+    }
+  ]
+}
+```
+
+#### Tag New Items "new"
+
+Tags each new movie, series, and episode as new.
+
+```json
+{
+  "Name": "Tag new items \"new\"",
+  "Triggers": [
+    "ItemAdded"
+  ],
+  "ItemKinds": [
+    "Movie",
+    "Series",
+    "Episode"
+  ],
+  "Operations": [
+    {
+      "Type": "AddTag",
+      "Tag": "new"
+    }
+  ]
+}
+```
+
+#### Log Every Playback to a File
+
+Appends a line to a file for every playback.
+
+```json
+{
+  "Name": "Log every playback to a file",
+  "Triggers": [
+    "PlaybackStart"
+  ],
+  "Operations": [
+    {
+      "Type": "AppendToFile",
+      "FilePath": "/config/log/playback.log",
+      "Text": "{{LOCAL_DATE}} {{LOCAL_TIME}} {{USER_NAME}} played {{SERIES_NAME}} {{ITEM_NAME}} on {{DEVICE_NAME}} ({{PLAY_METHOD}})"
+    }
+  ]
+}
+```
+
+#### Run a Script When a User Is Created
+
+Runs a command with the new user's name and id as arguments.
+
+```json
+{
+  "Name": "Run a script when a user is created",
+  "Triggers": [
+    "UserCreated"
+  ],
+  "Operations": [
+    {
+      "Type": "RunCommand",
+      "Command": "/scripts/new-user.sh",
+      "Arguments": "{{USER_NAME}}\n{{USER_ID}}"
+    }
+  ]
+}
+```
+
 
 ### Reusing Steps
 

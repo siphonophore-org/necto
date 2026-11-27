@@ -17,7 +17,7 @@ public class PluginTests
     private static readonly string[] Tools =
     {
         "dashboard", "groups", "requests", "issues", "invites", "proxy", "ddns",
-        "wireguard", "scripts", "pages", "storage", "notifications", "settings", "troubleshooting"
+        "wireguard", "scripts", "pages", "storage", "settings", "troubleshooting"
     };
 
     /// <summary>

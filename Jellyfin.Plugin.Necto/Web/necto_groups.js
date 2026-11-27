@@ -375,9 +375,11 @@ export function grantsAny(permissions, paths) {
 // Output
 // [object[]]: Each group's tool key, its name, and its events.
 export function eventGroups(events, config) {
+    // Notifications has no page of its own, so its events follow the tools.
+    var notifications = { key: 'notifications', name: nectoModule.toolName('TabNotifications', 'Notifications') };
     return nectoModule.nectoTools().filter(function (tool) {
         return !config || nectoModule.toolIsOn(config, tool.key);
-    }).map(function (tool) {
+    }).concat([notifications]).map(function (tool) {
         return { key: tool.key, name: tool.name, events: (events || []).filter(function (e) { return e.Tool === tool.key; }) };
     }).filter(function (group) { return group.events.length > 0; });
 }
