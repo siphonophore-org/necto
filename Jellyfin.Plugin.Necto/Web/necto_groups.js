@@ -589,11 +589,13 @@ export function createGroupEditor(group, ctx) {
             var groups = eventGroups(ctx.events, ctx.config);
             var shownKeys = [];
             var eventsRow = h('div', { 'data-field': spec.path }, [h('div', { class: 'selectLabel', text: t.tr(spec.label) }), describe(spec)]);
+            // Each tool's list holds only its own events, so clearing one in a list clears it from the group.
             var lists = groups.map(function (group) {
+                var own = group.events.map(function (e) { return e.Key; });
                 var eventList = nectoModule.createCheckboxList({
                     items: group.events,
                     idKey: 'Key',
-                    value: value || [],
+                    value: (value || []).filter(function (key) { return own.indexOf(key) >= 0; }),
                     search: false,
                     renderRow: function (e) { return { label: e.Name }; }
                 });

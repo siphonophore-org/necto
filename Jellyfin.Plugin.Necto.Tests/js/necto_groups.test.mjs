@@ -91,8 +91,8 @@ test('a group opens in a sidecar named for it, with its sections, and Remove, Ca
 
     assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'Family');
     assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Cancel', 'Save']);
-    assert.equal((sidecar.textContent.match(/gets every allow/g) || []).length, 1);
-    assert.match(sidecar.querySelector('[data-section="members"]').textContent, /gets every allow/);
+    assert.equal((sidecar.textContent.match(/never holds administrators/g) || []).length, 1);
+    assert.match(sidecar.querySelector('[data-section="members"]').textContent, /never holds administrators/);
     assert.deepEqual(texts(sidecar, '.stolon-collapsible-title'), ['Members', 'Account rules', 'Access and features', 'Preferences', 'Requests', 'Issues', 'Invites', 'VPN', 'Scripts', 'Pages', 'Notifications']);
     assert.deepEqual(texts(sidecar, '[data-section="accounts"] .stolon-subsection-title'), ['Password requirements', 'Expiry', 'Inactivity', 'Session management']);
     assert.equal(sidecar.querySelectorAll('[data-role="coming"]').length, 0);
@@ -108,7 +108,7 @@ test('Everyone opens with no name field, no members to pick, no Remove, and no w
     assert.equal(sidecar.querySelector('[data-field="Name"]'), null);
     assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Cancel', 'Save']);
     assert.match(sidecar.querySelector('[data-section="members"]').textContent, /every user who is in no other group/);
-    assert.doesNotMatch(sidecar.textContent, /gets every allow/);
+    assert.doesNotMatch(sidecar.textContent, /never holds administrators/);
 });
 
 // tile
@@ -135,6 +135,38 @@ test('each tool section tile is green while the group gives members the tool and
     request.checked = false;
     request.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
     assert.equal(tile(sidecar, 'requests'), 'gray');
+});
+
+// flip
+// Sets a checkbox as a click would, with the change event that bubbles from it.
+function flip(box, on) {
+    box.checked = on;
+    box.dispatchEvent(new globalThis.Event('change', { bubbles: true }));
+}
+
+test('the Notifications tile follows the events each list holds, and clearing them saves none', async function () {
+    var list = groups();
+    list[1].Permissions.Notifications = { AllEvents: false, EventKeys: ['requests.approved', 'issues.updated'] };
+    var events = [{ Key: 'requests.approved', Name: 'Request approved', Tool: 'requests' }, { Key: 'issues.updated', Name: 'Issue resolved', Tool: 'issues' }];
+    var opened = await openPage({ 'GET Groups': list, 'GET Notifications/Events': events, ['PUT Groups/' + FAMILY]: function (o) { return JSON.parse(o.data); } });
+    var sidecar = await openRow(opened, 1);
+    var section = sidecar.querySelector('[data-section="notifications"]');
+
+    assert.equal(tile(sidecar, 'notifications'), 'green');
+    ['requests.approved', 'issues.updated'].forEach(function (key) {
+        var picked = section.querySelector('.stolon-filtered-check[data-id="' + key + '"]');
+        assert.equal(picked.checked, true);
+        flip(picked, false);
+    });
+    assert.equal(tile(sidecar, 'notifications'), 'gray');
+    var every = section.querySelector('[data-field="Notifications.AllEvents"]');
+    flip(every, true);
+    assert.equal(tile(sidecar, 'notifications'), 'green');
+    flip(every, false);
+    assert.equal(tile(sidecar, 'notifications'), 'gray');
+    clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Save');
+    await settle(50);
+    assert.deepEqual(JSON.parse(sent(opened)[0].data).Permissions.Notifications.EventKeys, []);
 });
 
 test('the Jellyfin settings tiles follow their switch, and Preferences hides while the group sets nothing', async function () {
