@@ -230,6 +230,33 @@ A color means the same thing on every page and in every plugin.
 
 ## Page Structure
 
+### Page Anatomy
+
+Every page is built from the same parts in the same order. A page never invents its own variation. When two pages show the same kind of thing, they show it the same way, through the same shared helper.
+
+**Tool page**, top to bottom:
+
+1. The intro: one line, one sentence, saying what the page lists.
+2. A banner only for a problem nothing below shows.
+3. Count cards, `stolon-cards stolon-even`, one per state, worded and colored exactly as the badges.
+4. One table, built by the shared table helper, holding the tool's records:
+    * The toolbar: search first, then the filter selects, then the tool's Add action at its end.
+    * The bulk bar: select all, the count, the actions, and Refresh at its end.
+    * Each row: an icon or thumbnail, the name, and one secondary line. The status column holds one state badge and at most two icon buttons.
+    * A row opens its record in a sidecar.
+    * The empty text sits inside the table frame: "No X yet." with nothing at all, "No X match." while a search or filter finds nothing.
+5. Anything else the tool shows sits below the table as a fixed section led by its tile.
+
+While the tool is off, the page shows its intro and one line, "X is off. Turn it on in Settings to ...", and nothing else.
+
+**Sidecar**: the title, then sections led by tiles, one help line per field. The shelf holds the destructive action at its start and Save at its end. The X in the header closes it, asking first when there are edits. There is no Cancel.
+
+**Settings**: a System group and a Services group. Each section is a collapsible section led by its tile. A tool's section starts with "Enable X", and the rest shows only while it is on. Each section saves with its own Save Bar.
+
+**Troubleshooting**: the same System and Services groups. Only reset, repair, clear, and run-now rows, each a reset row led by its tile. A row that loses data is red and tinted. Nothing here repeats what a tool page or Settings shows.
+
+**One place for each thing.** The tool page holds the day-to-day work and its status. Settings holds configuration. Troubleshooting holds only what a user reaches for when something is wrong.
+
 ### Shell
 
 Every tool page uses Jellyfin's page shell. The tool app takes the page's view out of its markup and shows it beside the sidebar, and the shell's heading names it.

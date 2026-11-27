@@ -752,17 +752,6 @@ export default function (view) {
         showOff(!proxyStatus.Enabled);
     }
 
-    // showRouteParts
-    // Shows the framed No routes yet box with its own Add route while the proxy is on with no route, and the route
-    // list with Add route under it once there is one. While the proxy is off, only routes already added show.
-    function showRouteParts() {
-        var off = !proxyStatus.Enabled;
-        var none = routes.length === 0;
-        shared.setVisible('proxyNoRoutes', !off && none);
-        shared.setVisible('proxyRoutes', !none);
-        shared.setVisible('proxyActions', !off && !none);
-    }
-
     // showOff
     // Shows the off state while the proxy is off: one line pointing to Settings in place of the cards, Add route,
     // Jellyfin, and Visitors. Routes already added stay listed. The heading names the tool itself, since a tool that
@@ -774,7 +763,8 @@ export default function (view) {
         box.innerHTML = off ? shared.emptySection(t.tr('ProxyOffNotice')) : '';
         shared.setVisible(box, off);
         shared.setVisible('proxyCards', !off);
-        showRouteParts();
+        shared.setVisible('proxyActions', !off);
+        shared.setVisible('proxyRoutes', !off || routes.length > 0);
         if (jellyfin) shared.setVisible(jellyfin.section.element, !off);
         if (visitors) shared.setVisible(visitors.element, !off);
     }
@@ -848,7 +838,6 @@ export default function (view) {
         routes = (answer && answer.Routes) || [];
         statuses = (answer && answer.Status) || [];
         var items = routeItems(routes, statuses, shared.t);
-        showRouteParts();
         if (list) list.setItems(items);
         else {
             list = nectoModule.createRecordList({
@@ -1240,8 +1229,6 @@ export default function (view) {
         page: 'necto_proxy',
         bind: function (bag, pg) {
             view.querySelector('#btnAddRoute').addEventListener('click', pickTemplate);
-            var first = view.querySelector('#btnAddFirstRoute');
-            if (first) first.addEventListener('click', pickTemplate);
             visitors = createVisitors();
             pg.addCleanup(function () {
                 if (visitors) visitors.destroy();

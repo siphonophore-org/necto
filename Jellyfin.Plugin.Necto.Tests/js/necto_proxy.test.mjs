@@ -216,7 +216,7 @@ test('the route editor turns Request certificate off until the proxy can order o
 test('while the proxy is off the page says so in place of its cards and sections, and keeps its routes listed', async function () {
     var page = installPage({});
     var dom = page.dom;
-    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyNoRoutes', 'proxyRoutes', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }).concat([dom.el('button', { id: 'btnAddRoute' }), dom.el('span', { id: 'proxyStatus' })]));
+    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyRoutes', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }).concat([dom.el('button', { id: 'btnAddRoute' }), dom.el('span', { id: 'proxyStatus' })]));
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
         'GET Proxy/Routes': { Routes: ROUTES, Status: [] },
@@ -235,27 +235,10 @@ test('while the proxy is off the page says so in place of its cards and sections
     assert.match(view.querySelector('#proxyOff').innerHTML, /The proxy is off\. Turn it on in Settings to forward its routes\./);
     assert.equal(view.querySelector('#proxyOff').classList.contains('stolon-hidden'), false);
     assert.equal(view.querySelector('#proxyNotices').classList.contains('stolon-hidden'), true);
-    ['proxyCards', 'proxyNoRoutes', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].forEach(function (id) {
+    ['proxyCards', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].forEach(function (id) {
         assert.equal(view.querySelector('#' + id).classList.contains('stolon-hidden'), true, id);
     });
     assert.deepEqual(texts(view, '.stolon-collapsible-title'), ['Jellyfin', 'Visitors']);
-});
-
-test('with no route the page shows only the framed No routes yet box with its own Add route, and the list once one is added', async function () {
-    var routes = [];
-    var opened = await openProxyPage({ 'GET Proxy/Routes': function () { return { Routes: routes, Status: [] }; } });
-    var hidden = function (id) { return opened.view.querySelector('#' + id).classList.contains('stolon-hidden'); };
-
-    assert.equal(hidden('proxyNoRoutes'), false);
-    assert.equal(hidden('proxyRoutes'), true);
-    assert.equal(hidden('proxyActions'), true);
-
-    routes = ROUTES;
-    opened.timers.filter(function (x) { return x.ms === 10000; }).forEach(function (x) { x.fn(); });
-    await settle();
-    assert.equal(hidden('proxyNoRoutes'), true);
-    assert.equal(hidden('proxyRoutes'), false);
-    assert.equal(hidden('proxyActions'), false);
 });
 
 test('the Proxy Settings section saves a value equal to its default as unset', async function () {
@@ -362,7 +345,7 @@ async function openProxyPage(answers) {
     var timers = [];
     globalThis.setTimeout = function (fn, ms) { timers.push({ fn: fn, ms: ms }); return timers.length; };
     globalThis.setInterval = function (fn, ms) { timers.push({ fn: fn, ms: ms }); return timers.length; };
-    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyNoRoutes', 'proxyRoutes', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }).concat([dom.el('button', { id: 'btnAddRoute' }), dom.el('span', { id: 'proxyStatus' })]));
+    var view = pageView(dom, ['proxyOff', 'proxyNotices', 'proxyCards', 'proxyRoutes', 'proxyActions', 'proxyJellyfin', 'proxyVisitors'].map(function (id) { return dom.el('div', { id: id }); }).concat([dom.el('button', { id: 'btnAddRoute' }), dom.el('span', { id: 'proxyStatus' })]));
     dom.document.documentElement.appendChild(view);
     routeApi(page, Object.assign({
         'GET Proxy/Routes': { Routes: ROUTES, Status: [] },

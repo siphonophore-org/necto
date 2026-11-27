@@ -80,8 +80,3 @@
 /* Example: <div class="necto-storage-tabs"><div class="stolon-subtabs"></div><button class="stolon-row-btn necto-storage-refresh"></button></div> */
 .necto-storage-tabs { position: relative; }
 .necto-storage-tabs > .necto-storage-refresh { position: absolute; top: 0; right: 0; }
-
-/* necto-empty-action */
-/* An empty state with its sentence above the button that adds the first item, as Zooid's Storage page has. */
-/* Example: <div class="stolon-empty-section necto-empty-action"><div>No routes yet.</div><button></button></div> */
-.necto-empty-action { display: flex; flex-direction: column; align-items: center; gap: var(--stolon-gap-wide); }

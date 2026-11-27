@@ -362,10 +362,11 @@ export default function (view) {
     }
 
     // showEmpty
-    // Shows No issues yet in place of the list while there are none at all.
-    function showEmpty(none) {
-        view.querySelector('#issuesEmpty').classList.toggle('stolon-hidden', !none);
-        view.querySelector('#issuesTable').classList.toggle('stolon-hidden', none);
+    // Keeps the table, its search, filters, and bulk actions in place even with no issues at all. The table says No
+    // issues yet in its own frame.
+    function showEmpty() {
+        var holder = view.querySelector('#issuesTable');
+        if (holder) holder.classList.remove('stolon-hidden');
     }
 
     // loadStats
@@ -595,7 +596,6 @@ export default function (view) {
         view.querySelector('#issuesOff').classList.toggle('stolon-hidden', !off);
         view.querySelector('#issueStats').classList.toggle('stolon-hidden', off);
         view.querySelector('#issuesTable').classList.toggle('stolon-hidden', off);
-        if (off) view.querySelector('#issuesEmpty').classList.add('stolon-hidden');
     }
 
     // loadPage
@@ -604,7 +604,7 @@ export default function (view) {
         filters = readFilters(storage());
         page.addCleanup(destroyTable);
         view.querySelector('#issuesOff').innerHTML = shared.emptySection(shared.t.tr('IssuesMessageOff'));
-        view.querySelector('#issuesEmpty').innerHTML = shared.emptySection(shared.t.tr('IssuesEmpty'));
+
         return shared.getConfig().then(function (config) {
             var on = !!(config && config.Issues && config.Issues.Enabled);
             showOff(!on);

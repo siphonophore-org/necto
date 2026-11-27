@@ -203,13 +203,12 @@ test('a closed issue opens with Reopen only', async function () {
     assert.match(sidecar.textContent, /Decided by/);
 });
 
-test('with no issues at all the page says No issues yet in place of the list', async function () {
-    var opened = await openPage({ Issues: { Enabled: true } }, { 'GET Issues/Stats': { Reported: 0, Confirmed: 0, Resolved: 0, Declined: 0, Rescinded: 0 } });
+test('with no issues at all the table stays, with its search and filters, and says No issues yet', async function () {
+    var opened = await openPage({ Issues: { Enabled: true } }, { 'GET Issues/Stats': { Reported: 0, Confirmed: 0, Resolved: 0, Declined: 0, Rescinded: 0 }, 'GET Issues/All': { Items: [], TotalCount: 0 } }, { 'necto-issues-filters': JSON.stringify({ state: 'All' }) });
 
-    var empty = opened.view.querySelector('#issuesEmpty');
-    assert.equal(empty.classList.contains('stolon-hidden'), false);
-    assert.match(empty.innerHTML, /No issues yet\./);
-    assert.equal(opened.view.querySelector('#issuesTable').classList.contains('stolon-hidden'), true);
+    var holder = opened.view.querySelector('#issuesTable');
+    assert.equal(holder.classList.contains('stolon-hidden'), false);
+    assert.match(holder.textContent, /No issues yet\./);
 });
 
 test('a filter that finds no issue says No issues match, and the list with All says No issues yet', async function () {

@@ -1226,7 +1226,6 @@
   "ProxyEmptyBanned": "No addresses are banned right now.",
   "ProxyEmptyCountriesMatch": "No countries match.",
   "ProxyEmptyRoutes": "No routes yet. Select Add route to start from a template.",
-  "ProxyEmptyRoutesShort": "No routes yet.",
   "ProxyEnableHelp": "Starts the proxy on its ports and answers for the routes on the Proxy page.",
   "ProxyErrorAcceptTerms": "Accept the Let's Encrypt terms in Settings first.",
   "ProxyErrorAcmeAccountKey": "The Let's Encrypt account key could not be read. It is tried again on the next check.",
