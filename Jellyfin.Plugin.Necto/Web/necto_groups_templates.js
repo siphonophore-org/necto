@@ -294,10 +294,12 @@ export function ratingChoices(ratings) {
     var list = [];
     var byValue = {};
     (ratings || []).forEach(function (r) {
+        // The server writes the score's own fields in camel case, unlike the rest of the rating.
         var rs = r.RatingScore;
-        var score = rs ? rs.Score : r.Value;
+        var score = rs ? (rs.Score != null ? rs.Score : rs.score) : r.Value;
         if (score == null) return;
-        var value = ratingValue(score, rs && rs.SubScore != null ? rs.SubScore : null);
+        var sub = rs ? (rs.SubScore != null ? rs.SubScore : rs.subScore) : null;
+        var value = ratingValue(score, sub != null ? sub : null);
         if (byValue[value]) {
             byValue[value][1] += '/' + r.Name;
             return;
@@ -352,7 +354,12 @@ export function loadSources(shared) {
     var items = function (r) { return (r && r.Items) || (Array.isArray(r) ? r : []); };
     var me = function () { return api.getCurrentUserId ? api.getCurrentUserId() : ''; };
     return Promise.all([
-        safe(function () { return api.getVirtualFolders(); }),
+        // Jellyfin's own user editor lists the libraries from the media folders, which always carry their ids.
+        safe(function () {
+            return api.getJSON(api.getUrl('Library/MediaFolders', { IsHidden: false })).then(items).then(function (list) {
+                return list.map(function (f) { return { ItemId: f.Id, Name: f.Name, CollectionType: f.CollectionType }; });
+            });
+        }),
         safe(function () { return api.getJSON(api.getUrl('Channels')).then(items); }),
         safe(function () { return shared.request('Devices').then(items); }),
         safe(function () { return api.getParentalRatings(); }),
@@ -471,6 +478,7 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
                 var inherit = nectoModule.createInheritField({
                     field: field,
                     value: { inherit: !(stored && start.manage), value: start.value },
+                    inheritedValue: start.value,
                     inheritText: t.tr('GroupsTemplateMember'),
                     overrideText: t.tr('LabelGroup'),
                     label: row.label,

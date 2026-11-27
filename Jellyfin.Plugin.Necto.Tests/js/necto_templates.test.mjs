@@ -77,9 +77,10 @@ test('a parental rating keeps its sub score, and ratings that share both scores 
         { Name: 'PG-13', RatingScore: { Score: 13, SubScore: null } },
         { Name: 'TV-14', RatingScore: { Score: 13, SubScore: null } },
         { Name: 'DE-12', RatingScore: { Score: 13, SubScore: 1 } },
+        { Name: 'FSK-16', RatingScore: { score: 16, subScore: 0 } },
         { Name: 'Old', Value: 18 },
         { Name: 'Unrated' }
-    ]), [['13', 'PG-13/TV-14'], ['13:1', 'DE-12'], ['18', 'Old']]);
+    ]), [['13', 'PG-13/TV-14'], ['13:1', 'DE-12'], ['16:0', 'FSK-16'], ['18', 'Old']]);
     assert.equal(templates.rowValue({ MaxParentalRating: 13, MaxParentalSubRating: 1 }, row).value, '13:1');
     assert.equal(templates.rowValue({ MaxParentalRating: null, MaxParentalSubRating: 1 }, row).value, '');
 
@@ -113,9 +114,9 @@ test('the editor\'s library order shows only the libraries the template gives, a
         'GET Groups': [{ Id: EVERYONE, Name: 'Everyone', IsEveryone: true, MemberIds: [], Permissions: {} }, family],
         ['PUT Groups/' + FAMILY]: function (o) { return JSON.parse(o.data); }
     });
-    globalThis.ApiClient.getVirtualFolders = function () { return Promise.resolve([{ ItemId: 'aa', Name: 'Movies' }, { ItemId: 'bb', Name: 'Shows' }]); };
     var getJSON = globalThis.ApiClient.getJSON;
     globalThis.ApiClient.getJSON = function (url) {
+        if (String(url).indexOf('Library/MediaFolders') >= 0) return Promise.resolve({ Items: [{ Id: 'aa', Name: 'Movies' }, { Id: 'bb', Name: 'Shows' }] });
         if (String(url).indexOf('/Views') >= 0) return Promise.resolve({ Items: [{ Id: 'aa', Name: 'Movies' }, { Id: 'bb', Name: 'Shows' }, { Id: 'tv', Name: 'Live TV' }] });
         return getJSON ? getJSON.apply(this, arguments) : Promise.resolve([]);
     };

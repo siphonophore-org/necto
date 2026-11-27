@@ -773,7 +773,7 @@ export function createGroupEditor(group, ctx) {
                 onChange: change
             });
             var other = nectoModule.createTagInput({ values: [], inputLabel: t.tr('GroupsLabelOtherClient'), placeholder: t.tr('GroupsPlaceholderOtherClient'), onChange: change });
-            var element = h('div', { class: 'stolon-stack' }, [list.element, other.element]);
+            var element = h('div', { class: 'stolon-stack' }, [list.element, h('div', {}, [h('div', { class: 'selectLabel', text: t.tr('GroupsLabelOtherClient') }), other.element])]);
             return {
                 element: element,
                 input: other.element.querySelector('input'),
