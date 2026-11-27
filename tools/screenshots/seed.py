@@ -75,8 +75,9 @@ def sign_in(api_class, base, state, name):
 
 
 def enable_tools(api):
-    """Issues, the proxy and WireGuard are off until turned on."""
+    """Requests, Issues, the proxy and WireGuard are off until turned on."""
     cfg = config(api)
+    cfg['Requests']['Enabled'] = True
     cfg['Issues']['Enabled'] = True
     cfg['WireGuard']['Enabled'] = True
     cfg['WireGuard']['HostEnabled'] = True

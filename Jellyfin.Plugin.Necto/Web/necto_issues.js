@@ -557,8 +557,7 @@ export default function (view) {
             card.element,
             issue.FileChanged ? h('div', { class: 'stolon-warn', text: t.tr('IssuesHelpFileChanged') }) : null,
             details.element,
-            notes ? h('h3', { class: 'stolon-subsection-title', text: t.tr('LabelNotes') }) : null,
-            notes ? notes.element : null,
+            notes ? nectoModule.createCollapsibleSection({ title: t.tr('LabelNotes'), icon: 'forum', collapsible: false, content: notes.element }).element : null,
             status
         ]);
         var buttons = [{ text: t.tr('ButtonCancel'), className: 'stolon-button stolon-secondary', action: function (close) { close(); } }];
