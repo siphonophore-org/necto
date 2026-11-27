@@ -114,7 +114,7 @@ public class PluginTests
         var registered = TestPlugin.Create().GetPages().Select(p => p.EmbeddedResourcePath).ToHashSet(StringComparer.Ordinal);
         var files = Directory.EnumerateFiles(Path.Combine(ProjectFolder(), "Web")).Select(f => "Jellyfin.Plugin.Necto.Web." + Path.GetFileName(f)).ToList();
 
-        Assert.Equal(34, files.Count);
+        Assert.Equal(35, files.Count);
         Assert.All(files, f => Assert.Contains(f, embedded));
         Assert.All(files, f => Assert.Contains(f, registered));
     }

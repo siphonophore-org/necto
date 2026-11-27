@@ -23,9 +23,9 @@ namespace Jellyfin.Plugin.Necto.Tests.Api.CustomPages;
 /// </summary>
 public class ConfigurationCheckTests
 {
-    private static CustomPagesController Create(string body)
+    private static PagesController Create(string body)
     {
-        var controller = TestController.Create();
+        var controller = TestController.CreateAdmin();
         controller.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(body));
         return controller;
     }
@@ -89,8 +89,8 @@ public class ConfigurationCheckTests
     [Fact]
     public void Check_RequiresElevation()
     {
-        var method = typeof(CustomPagesController).GetMethod(nameof(CustomPagesController.CheckConfiguration))!;
-        var authorize = method.GetCustomAttributes<AuthorizeAttribute>().Single();
+        var method = typeof(PagesController).GetMethod(nameof(PagesController.CheckConfiguration))!;
+        var authorize = typeof(PagesController).GetCustomAttributes<AuthorizeAttribute>().Single();
 
         Assert.Equal("RequiresElevation", authorize.Policy);
         Assert.Empty(method.GetCustomAttributes<AllowAnonymousAttribute>());

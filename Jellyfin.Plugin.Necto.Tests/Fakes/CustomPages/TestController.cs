@@ -46,6 +46,19 @@ public static class TestController
     }
 
     /// <summary>
+    /// Builds the administrator controller over stores and a configuration, with an empty request and response.
+    /// </summary>
+    public static PagesController CreateAdmin(IStoreService? stores = null, PluginConfiguration? config = null)
+    {
+        var controller = new PagesController(stores ?? new RecordingStoreService(), new FakeConfigurationStore(config ?? new PluginConfiguration()))
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+        };
+        controller.Response.Body = new MemoryStream();
+        return controller;
+    }
+
+    /// <summary>
     /// Builds the controller with an empty request and response.
     /// </summary>
     public static CustomPagesController Create(
@@ -67,7 +80,6 @@ public static class TestController
             http ?? new StubHttpClientFactory(),
             serverPaths,
             new PermissionService(store, users.Manager),
-            store,
             secrets ?? new SecretProtector("Necto.Tests", NullLogger.Instance))
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }

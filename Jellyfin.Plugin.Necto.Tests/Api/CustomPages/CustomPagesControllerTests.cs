@@ -401,7 +401,7 @@ public class CustomPagesControllerTests
     {
         var config = new PluginConfiguration();
         config.CustomPages.Pages.Add(new CustomPage { Id = "a1", Title = "Rules", Slug = "rules", Visibility = PageVisibility.User });
-        var controller = TestController.Create(config: config);
+        var controller = TestController.CreateAdmin(config: config);
 
         var list = controller.ListPages().Value!;
 
@@ -416,7 +416,7 @@ public class CustomPagesControllerTests
     /// </summary>
     [Fact]
     public void ListPages_RequiresElevation()
-        => Assert.Equal("RequiresElevation", Method(nameof(CustomPagesController.ListPages)).GetCustomAttribute<AuthorizeAttribute>()!.Policy);
+        => Assert.Equal("RequiresElevation", typeof(PagesController).GetCustomAttribute<AuthorizeAttribute>()!.Policy);
 
     // MARK: Asset endpoint
 

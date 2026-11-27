@@ -193,7 +193,12 @@ export function sectionSpecs() {
             ]
         },
         { key: 'scripts', title: 'TabScripts', icon: 'code', fields: [{ path: 'Scripts.AllScripts', kind: 'check', label: 'LabelAllScripts' }] },
-        { key: 'pages', title: 'TabPages', icon: 'web', fields: [{ path: 'CustomPages.AllPages', kind: 'check', label: 'LabelAllPages' }] },
+        {
+            key: 'pages', title: 'TabPages', icon: 'web', built: true, fields: [
+                { path: 'CustomPages.AllPages', kind: 'check', label: 'LabelAllPages', help: 'PagesAllPagesHelp' },
+                { path: 'CustomPages.PageIds', kind: 'pages', label: 'PagesLabelGroupPages', help: 'PagesGroupPagesHelp', hiddenBy: 'CustomPages.AllPages' }
+            ]
+        },
         { key: 'notifications', title: 'TabNotifications', icon: 'notifications', fields: [{ path: 'Notifications.AllEvents', kind: 'check', label: 'LabelAllEvents' }] }
     ];
 }
@@ -418,6 +423,26 @@ export function createGroupEditor(group, ctx) {
             readers.push(function (out) { setPath(out.Permissions, spec.path, list.getValue()); });
         } else if (spec.kind === 'sessions') {
             drawSessions(into, value || [], spec);
+        } else if (spec.kind === 'pages') {
+            var pages = nectoModule.createCheckboxList({
+                fetchItems: function () { return shared.request('Pages').catch(function () { return []; }); },
+                idKey: 'Id',
+                value: value || [],
+                searchKeys: ['Title', 'Slug'],
+                emptyMessage: t.tr('PagesEmptyGroupPages'),
+                renderRow: function (p) { return { label: p.Title || ('/pages/' + p.Slug), sublabel: '/pages/' + p.Slug }; }
+            });
+            var pagesRow = el('div', { 'data-field': spec.path }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), pages.element, describe(spec)]);
+            into.appendChild(pagesRow);
+            handles.push(pages);
+            ready = Promise.all([ready, pages.ready]);
+            readers.push(function (out) { setPath(out.Permissions, spec.path, pages.getValue()); });
+            var every = into.querySelector('[data-field="' + spec.hiddenBy + '"]');
+            if (every) {
+                var hide = function () { pagesRow.classList.toggle('stolon-hidden', every.checked); };
+                every.addEventListener('change', hide);
+                hide();
+            }
         }
 
         if (spec.reveals) {
@@ -495,11 +520,11 @@ export function createGroupEditor(group, ctx) {
     // One section per tool, each saying the tool is coming until it is built.
     sectionSpecs().forEach(function (spec) {
         var content = el('div', {}, [
-            el('div', { class: 'stolon-info', 'data-role': 'coming', text: t.tr('MessageToolComing') }),
+            spec.built ? null : el('div', { class: 'stolon-info', 'data-role': 'coming', text: t.tr('MessageToolComing') }),
             el('div', { class: 'fieldDescription', text: t.tr('HelpPermissionMerge') })
         ]);
         spec.fields.forEach(function (field) { drawField(field, content); });
-        section(t.tr(spec.title), spec.icon, content, { badge: { label: t.tr('BadgeComing'), color: 'gray' } }).element.setAttribute('data-section', spec.key);
+        section(t.tr(spec.title), spec.icon, content, spec.built ? {} : { badge: { label: t.tr('BadgeComing'), color: 'gray' } }).element.setAttribute('data-section', spec.key);
     });
 
     return {

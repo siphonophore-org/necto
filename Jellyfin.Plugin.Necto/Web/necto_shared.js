@@ -36,6 +36,8 @@ import {
 export { openTool, confirmDialog, openEditorSidecar, createRecordList, createCollapsibleSection, createRepeater, createChipSelect, createCheckboxList, createSaveBar, createCopyField };
 // The builders Storage draws its disks and alerts with.
 export { createUsageMeter, createPieChart, createSpinner, createPillGroup, createDefinitionList, openSidecar, createCheckbox, createChoiceGroup, createSliderField, escapeHtml } from './configurationpage?name=necto_stolon.js';
+// The builders Custom pages draws its pages, images, and stores with.
+export { createSubTabs, createFilePicker, SECRET_KEPT } from './configurationpage?name=necto_stolon.js';
 
 var PLUGIN_ID = 'a8b5ecb0-fc00-428b-85e8-74b85820166d';
 

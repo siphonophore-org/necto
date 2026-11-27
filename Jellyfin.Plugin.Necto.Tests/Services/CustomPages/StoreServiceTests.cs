@@ -888,7 +888,7 @@ public class StoreServiceTests : IDisposable
         service.Clear(store);
 
         // The clear goes out on its own while the earlier addition is still waiting in the summary.
-        Assert.Equal(1, _log!.Entries.Count);
+        Assert.Single(_log!.Entries);
         Assert.Single(_log!.Entries, l => l.Type == "Necto.PagesStoreCleared");
     }
 

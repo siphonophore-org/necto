@@ -367,7 +367,8 @@ public class StoreEndpointTests
     [Fact]
     public void Clear_NamesTheAdministratorForTheActivityLog()
     {
-        var (controller, stores) = Create(Credential.Admin);
+        var stores = new RecordingStoreService();
+        var controller = TestController.CreateAdmin(stores);
         var store = Store();
         stores.Stores["downloads"] = store;
         controller.ControllerContext.HttpContext.User = new ClaimsPrincipal(

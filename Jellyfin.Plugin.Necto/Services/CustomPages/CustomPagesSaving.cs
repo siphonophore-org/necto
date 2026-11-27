@@ -19,19 +19,18 @@ public static class CustomPagesSaving
     public const string SecretsName = "Jellyfin.Plugin.Necto";
 
     private static readonly object Gate = new();
-    private static SecretProtector? _protector;
+    private static readonly Dictionary<string, SecretProtector> Protectors = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Readies the incoming settings for saving.
     /// </summary>
     /// <param name="incoming">The configuration about to be saved. Its Custom pages settings change in place.</param>
-    /// <param name="stored">The configuration in effect.</param>
+    /// <param name="stored">The configuration in effect, or <c>null</c> on a first save.</param>
     /// <param name="paths">Locates the key folder, or <c>null</c> when it is not known, which keeps passwords in plain text.</param>
     /// <exception cref="ArgumentException">When the settings must not be saved.</exception>
-    public static void Apply(PluginConfiguration incoming, PluginConfiguration stored, IApplicationPaths? paths)
+    public static void Apply(PluginConfiguration incoming, PluginConfiguration? stored, IApplicationPaths? paths)
     {
         ArgumentNullException.ThrowIfNull(incoming);
-        ArgumentNullException.ThrowIfNull(stored);
 
         Apply(incoming, stored, Protector(paths));
     }
@@ -40,19 +39,18 @@ public static class CustomPagesSaving
     /// Readies the incoming settings for saving with a given protector.
     /// </summary>
     /// <param name="incoming">The configuration about to be saved. Its Custom pages settings change in place.</param>
-    /// <param name="stored">The configuration in effect.</param>
+    /// <param name="stored">The configuration in effect, or <c>null</c> on a first save.</param>
     /// <param name="secrets">Encrypts route passwords.</param>
     /// <exception cref="ArgumentException">When the settings must not be saved.</exception>
-    public static void Apply(PluginConfiguration incoming, PluginConfiguration stored, SecretProtector secrets)
+    public static void Apply(PluginConfiguration incoming, PluginConfiguration? stored, SecretProtector secrets)
     {
         ArgumentNullException.ThrowIfNull(incoming);
-        ArgumentNullException.ThrowIfNull(stored);
         ArgumentNullException.ThrowIfNull(secrets);
 
         incoming.CustomPages ??= new CustomPagesSettings();
         Normalize(incoming.CustomPages);
         ConfigurationValidator.Validate(incoming.CustomPages);
-        RouteSecrets.Protect(incoming.CustomPages, stored.CustomPages ?? new CustomPagesSettings(), secrets);
+        RouteSecrets.Protect(incoming.CustomPages, stored?.CustomPages ?? new CustomPagesSettings(), secrets);
     }
 
     /// <summary>
@@ -80,7 +78,7 @@ public static class CustomPagesSaving
     }
 
     /// <summary>
-    /// Builds the protector once, over the same key ring as the one the services use.
+    /// Builds the protector once per key folder, over the same key ring as the one the services use.
     /// </summary>
     private static SecretProtector Protector(IApplicationPaths? paths)
     {
@@ -92,7 +90,14 @@ public static class CustomPagesSaving
 
         lock (Gate)
         {
-            return _protector ??= StableSecretProtection.CreateProtector(paths, SecretsName, NullLogger.Instance);
+            var folder = StableSecretProtection.KeyDirectory(paths, SecretsName);
+            if (!Protectors.TryGetValue(folder, out var protector))
+            {
+                protector = StableSecretProtection.CreateProtector(paths, SecretsName, NullLogger.Instance);
+                Protectors[folder] = protector;
+            }
+
+            return protector;
         }
     }
 }

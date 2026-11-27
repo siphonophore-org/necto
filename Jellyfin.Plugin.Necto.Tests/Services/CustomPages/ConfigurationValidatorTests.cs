@@ -248,4 +248,45 @@ public class ConfigurationValidatorTests
         store.RetentionDays = 0;
         ConfigurationValidator.Validate(Config(store));
     }
+
+    // MARK: Necto additions
+
+    /// <summary>
+    /// A slug a route of the pages' own addresses starts with is refused.
+    /// True: no page hides behind or shadows the image, store, or check routes.
+    /// False: a page named asset would serve an image in place of its content.
+    /// </summary>
+    [Theory]
+    [InlineData("asset")]
+    [InlineData("store")]
+    [InlineData("stores")]
+    [InlineData("Configuration")]
+    public void Validate_RejectsAReservedSlug(string slug)
+        => Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(new CustomPage { Slug = slug })));
+
+    /// <summary>
+    /// Two pages may not share an id, since groups name pages by id.
+    /// True: one group's grant reaches exactly one page.
+    /// False: giving one page silently gives another.
+    /// </summary>
+    [Fact]
+    public void Validate_RejectsTwoPagesWithOneId()
+        => Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(
+            new CustomPage { Id = "same", Slug = "a" },
+            new CustomPage { Id = "same", Slug = "b" })));
+
+    /// <summary>
+    /// A refusal is a full sentence in the requested language that names the page.
+    /// True: the Custom pages tool shows the administrator what to fix.
+    /// False: the save fails with a key or an exception message.
+    /// </summary>
+    [Fact]
+    public void Validate_RefusalNamesThePageInASentence()
+    {
+        var error = Assert.Throws<ArgumentException>(() => ConfigurationValidator.Validate(Config(
+            new CustomPage { Slug = "dup" },
+            new CustomPage { Slug = "dup" })));
+
+        Assert.Equal("Two pages use the slug dup.", error.Message);
+    }
 }

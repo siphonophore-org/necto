@@ -26,8 +26,8 @@ using Siphonophore.Stolon;
 namespace Jellyfin.Plugin.Necto.Api.CustomPages;
 
 /// <summary>
-/// Serves the custom pages at their own addresses under <c>/pages</c>, and answers the Custom pages tool. A Signed in
-/// page opens for administrators and the groups that give it.
+/// Serves the custom pages at their own addresses under <c>/pages</c>, with their images, server side routes, and
+/// stores. A Signed in page opens for administrators and the groups that give it.
 /// </summary>
 [ApiController]
 [Route("pages")]
@@ -62,14 +62,6 @@ public class CustomPagesController : ControllerBase
     // covers the envelope around it.
     private const int StoreBodyLimit = StoreService.MaxRecordBytes + 4096;
 
-    // Reads a configuration posted by the dashboard, which sends the same shape it loaded: Pascal cased
-    // names, with tiers as either names or numbers.
-    private static readonly JsonSerializerOptions ConfigurationJson = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        Converters = { new JsonStringEnumConverter() }
-    };
-
     // Store responses are serialized here rather than through the server's MVC options, so a page
     // author gets the same camel cased shape no matter how the host has its own API configured.
     private static readonly JsonSerializerOptions StoreResponseJson = new()
@@ -84,7 +76,6 @@ public class CustomPagesController : ControllerBase
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IServerApplicationPaths _paths;
     private readonly PermissionService _permissions;
-    private readonly IConfigurationStore _configuration;
     private readonly SecretProtector _secrets;
 
     /// <summary>
@@ -96,7 +87,6 @@ public class CustomPagesController : ControllerBase
     /// <param name="httpClientFactory">Forwards the server side routes.</param>
     /// <param name="paths">Locates the web client's favicon.</param>
     /// <param name="permissions">Gives what the calling user's groups allow.</param>
-    /// <param name="configuration">Reads the settings in effect.</param>
     /// <param name="secrets">Reads route passwords back.</param>
     public CustomPagesController(
         IPageService pages,
@@ -105,7 +95,6 @@ public class CustomPagesController : ControllerBase
         IHttpClientFactory httpClientFactory,
         IServerApplicationPaths paths,
         PermissionService permissions,
-        IConfigurationStore configuration,
         SecretProtector secrets)
     {
         _pages = pages ?? throw new ArgumentNullException(nameof(pages));
@@ -114,23 +103,7 @@ public class CustomPagesController : ControllerBase
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         _paths = paths;
         _permissions = permissions ?? throw new ArgumentNullException(nameof(permissions));
-        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _secrets = secrets ?? throw new ArgumentNullException(nameof(secrets));
-    }
-
-    /// <summary>
-    /// Lists every page with its id, title, slug, and tier, for the group editor.
-    /// </summary>
-    /// <returns>The pages in the order the tool lists them.</returns>
-    [HttpGet("")]
-    [Authorize(Policy = AdminPolicy)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public ActionResult<IReadOnlyList<PageSummary>> ListPages()
-    {
-        var pages = _configuration.Read(static c => (c.CustomPages?.Pages ?? new List<CustomPage>())
-            .Select(p => new PageSummary { Id = p.Id, Title = p.Title, Slug = p.Slug, Visibility = p.Visibility, Enabled = p.Enabled })
-            .ToList());
-        return pages;
     }
 
     /// <summary>
@@ -592,107 +565,6 @@ public class CustomPagesController : ControllerBase
         return _stores.Delete(store, recordId, StoreAccess.OwnerFilter(modify, caller))
             ? NoContent()
             : NotFound();
-    }
-
-    /// <summary>
-    /// Reports how many records a store holds, for the Custom pages tool. Administrators only, so a page can
-    /// never use it to learn the size of a store it cannot read.
-    /// </summary>
-    /// <param name="name">The store name.</param>
-    /// <returns>The record count and the store's limit.</returns>
-    [HttpGet("Stores/{name}/Stats")]
-    [Authorize(Policy = AdminPolicy)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult StoreStats(string name)
-    {
-        var store = _stores.Find(name);
-        if (store is null)
-        {
-            return NotFound();
-        }
-
-        NoStore();
-        return Json(new StoreStatsResponse
-        {
-            Count = _stores.Count(store),
-            Limit = StoreService.EffectiveMaxRecords(store)
-        });
-    }
-
-    /// <summary>
-    /// Deletes every record in a store. Administrators only, and never reachable from a page's helper,
-    /// since emptying a store is an administrative act rather than something page script should do.
-    /// </summary>
-    /// <param name="name">The store name.</param>
-    /// <returns>The number of records removed.</returns>
-    [HttpPost("Stores/{name}/Clear")]
-    [Authorize(Policy = AdminPolicy)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult StoreClear(string name)
-    {
-        var store = _stores.Find(name);
-        if (store is null)
-        {
-            return NotFound();
-        }
-
-        NoStore();
-        return Json(new StoreClearResponse { Removed = _stores.Clear(store, User.Identity?.Name) });
-    }
-
-    /// <summary>
-    /// Reports whether a configuration would be accepted, and why not, without saving it. Jellyfin answers
-    /// a refused configuration save with a generic error, so the Custom pages tool asks here first and can show
-    /// the administrator the actual reason, such as a renamed route whose password cannot be carried over.
-    /// </summary>
-    /// <remarks>
-    /// This is advisory only. The save itself runs the same checks and refuses on its own, so a client
-    /// that skips this call gains nothing.
-    /// </remarks>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>Whether the configuration would be accepted, with the reason in the page's language when it would not.</returns>
-    [HttpPost("Configuration/Check")]
-    [Authorize(Policy = AdminPolicy)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> CheckConfiguration(CancellationToken cancellationToken)
-    {
-        NoStore();
-        var language = StolonTranslations.RequestLanguage(Request);
-
-        CustomPagesSettings? incoming;
-        try
-        {
-            var whole = await JsonSerializer.DeserializeAsync<PluginConfiguration>(Request.Body, ConfigurationJson, cancellationToken)
-                .ConfigureAwait(false);
-            incoming = whole?.CustomPages;
-        }
-        catch (JsonException)
-        {
-            incoming = null;
-        }
-
-        if (incoming is null)
-        {
-            return Json(new ConfigurationCheckResponse { Ok = false, Message = StolonTranslations.Get(TranslationKeys.PagesErrorConfigUnreadable, language) });
-        }
-
-        var stored = _configuration.Read(static config => config.CustomPages) ?? new CustomPagesSettings();
-
-        string? message;
-        try
-        {
-            CustomPagesSaving.Normalize(incoming);
-            ConfigurationValidator.Validate(incoming, language);
-            message = RouteSecrets.Check(incoming, stored, language);
-        }
-        catch (ArgumentException ex)
-        {
-            message = ex.Message;
-        }
-
-        return Json(new ConfigurationCheckResponse { Ok = message is null, Message = message });
     }
 
     /// <summary>
