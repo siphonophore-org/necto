@@ -131,7 +131,7 @@ A new group starts with **Pages** and **Invite groups** on **Permissive**. Which
 
 ## Password Resets
 
-The Groups page has two tabs, **Groups** with the counts and the list, and **Password resets**. While no group has **Show reset codes** on, **Password resets** says how to turn it on. Otherwise it warns to use HTTPS, and lists each member's pending reset with its user, when it expires, and **Active**, **Expiring** within 5 minutes, or **Expired**, expired ones last. Select a reset to see its code and copy it.
+The Groups page shows its counts above two tabs, **Groups** with the list, and **Password resets**. While no group has **Show reset codes** on, the **Password resets** table says how to turn it on. Otherwise it warns to use HTTPS when the dashboard is open over plain HTTP, and lists each member's pending reset with its user, when it expires, and **Active**, **Expiring** within 5 minutes, or **Expired**, expired ones last. Select a reset to see its code and copy it.
 
 ## Troubleshooting
 

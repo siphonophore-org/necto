@@ -333,7 +333,7 @@ A test of a script that runs for each item or user uses one sample item or user.
 
 ## History
 
-The Scripts page has two tabs, **Scripts** with the picker and the editor, and **History**. **History** shows how many runs succeeded and failed on each of the last 14 days, or 7 on a phone, in the server's time zone, as a chart. Test runs are left out of it, and it is hidden while those days have no run.
+The Scripts page shows its counts above two tabs, **Scripts** with the table of scripts, and **History**. **History** shows how many runs succeeded and failed on each of the last 14 days, or 7 on a phone, in the server's time zone, as a chart. Test runs are left out of it, and it is hidden while those days have no run.
 
 Every run, tests included, is listed under the chart in a table, newest first, with its trigger, when it started, how long it took, and **Succeeded** or **Failed**. A test shows *(test)* after its script's name, and more runs load as you scroll. Search the runs, or filter them to **Failed**, **Tests**, or one script. Open a run to see, in a sidecar, its result, trigger, start, and length, each step's result with any captured output, and the variables it received.
 
