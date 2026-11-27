@@ -10,7 +10,7 @@ import {
     renderRunSummary, renderRunSteps, renderRunVariables, formatDuration, useStrings, t
 } from './configurationpage?name=necto_scripts_common.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // field
 // Builds a labelled mount for a Stolon control, with its description.
@@ -23,10 +23,10 @@ var el = nectoModule.el;
 // Output
 // [HTMLElement]: The field.
 function field(label, help, control) {
-    return el('div', { class: 'stolon-field' }, [
-        el('label', { text: label }),
+    return h('div', { class: 'stolon-field' }, [
+        h('label', { text: label }),
         control.element,
-        el('div', { class: 'fieldDescription', text: help })
+        h('div', { class: 'fieldDescription', text: help })
     ]);
 }
 
@@ -44,12 +44,12 @@ export function buildSettings(content, ctx) {
     var concurrent = createSliderField({ min: 1, max: 32, label: t.tr('ScriptsLabelRunsAtOnce') });
     var timeout = createDurationField({ units: ['m', 's'], min: 1, max: 3600, required: true });
     var history = createSliderField({ min: 0, max: 5000, label: t.tr('ScriptsLabelHistorySize') });
-    var enabled = nectoModule.enabledSwitch(t.tr('LabelEnabled'), t.tr('ScriptsHelpEnabled'));
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), help: t.tr('ScriptsHelpEnabled'), field: 'Enabled' });
     content.appendChild(enabled.element);
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('ScriptsLabelRuns') }));
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('ScriptsLabelRuns') }));
     content.appendChild(field(t.tr('ScriptsLabelRunsAtOnce'), t.tr('ScriptsHelpRunsAtOnce'), concurrent));
     content.appendChild(field(t.tr('ScriptsLabelDefaultTimeout'), t.tr('ScriptsHelpDefaultTimeout'), timeout));
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('ScriptsTabHistory') }));
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('ScriptsTabHistory') }));
     content.appendChild(field(t.tr('ScriptsLabelHistorySize'), t.tr('ScriptsHelpHistorySize'), history));
 
     return {
@@ -84,10 +84,10 @@ export function buildTroubleshooting(content, ctx) {
     var page = ctx.page;
     var cleanups = [];
     useStrings(Shared);
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var chartHost = el('div', { 'data-role': 'history-chart' });
-    var tableHost = el('div', { 'data-role': 'history-table' });
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('ScriptsTabHistory') }));
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var chartHost = h('div', { 'data-role': 'history-chart' });
+    var tableHost = h('div', { 'data-role': 'history-table' });
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('ScriptsTabHistory') }));
     content.appendChild(chartHost);
     content.appendChild(status);
     content.appendChild(tableHost);

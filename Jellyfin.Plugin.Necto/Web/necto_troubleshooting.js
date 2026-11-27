@@ -34,9 +34,8 @@ export default function (view) {
     function loadPage(shared) {
         entries.forEach(function (entry) { if (entry.handle && entry.handle.load) entry.handle.load(); });
         shared.getConfig().then(function (config) {
-            nectoModule.setToolsOff(config);
             entries.forEach(function (entry) {
-                if (entry.collapsible) entry.collapsible.element.classList.toggle('stolon-hidden', nectoModule.isToolOff(entry.key));
+                if (entry.collapsible) entry.collapsible.element.classList.toggle('stolon-hidden', !nectoModule.toolIsOn(config, entry.key));
             });
         }, function () { /* every section stays */ });
     }

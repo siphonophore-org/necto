@@ -3,7 +3,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // The key of the task that turns off expired invites.
 export var INVITE_EXPIRY_TASK = 'NectoInviteExpiry';
@@ -25,13 +25,13 @@ var fieldSeq = 0;
 function numberField(label, help, data, min) {
     fieldSeq += 1;
     var id = 'necto-invites-' + data + '-' + fieldSeq;
-    var input = el('input', { is: 'emby-input', type: 'number', id: id, min: String(min), 'data-field': data });
+    var input = h('input', { is: 'emby-input', type: 'number', id: id, min: String(min), 'data-field': data });
     return {
         input: input,
-        wrap: el('div', { class: 'inputContainer' }, [
-            el('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: label }),
+        wrap: h('div', { class: 'inputContainer' }, [
+            h('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: label }),
             input,
-            el('div', { class: 'fieldDescription', text: help })
+            h('div', { class: 'fieldDescription', text: help })
         ])
     };
 }
@@ -79,30 +79,30 @@ function buildSettings(content, ctx) {
     var t = ctx.shared.t;
     fieldSeq += 1;
     var linkId = 'necto-invites-link-' + fieldSeq;
-    var link = el('input', { is: 'emby-input', type: 'url', id: linkId, placeholder: 'https://jellyfin.example.com', 'data-field': 'LinkUrl' });
+    var link = h('input', { is: 'emby-input', type: 'url', id: linkId, placeholder: 'https://jellyfin.example.com', 'data-field': 'LinkUrl' });
     var count = numberField(t.tr('InvitesLabelRateCount'), t.tr('InvitesRateCountHelp'), 'RateLimitCount', 0);
     var windowField = numberField(t.tr('InvitesLabelRateWindow'), t.tr('InvitesRateWindowHelp'), 'RateLimitWindowMinutes', 0);
     var pins = numberField(t.tr('InvitesLabelPinAttempts'), t.tr('InvitesPinAttemptsHelp'), 'MaxPinAttempts', 1);
-    var httpsWarn = el('div', { class: 'stolon-warn stolon-hidden', 'data-role': 'https-warning', text: t.tr('InvitesHttpsWarning') });
+    var httpsWarn = h('div', { class: 'stolon-warn stolon-hidden', 'data-role': 'https-warning', text: t.tr('InvitesHttpsWarning') });
     // checkHttps
     // Shows the warning while links would use plain http, which carries the new password unencrypted.
     var checkHttps = function () {
         httpsWarn.classList.toggle('stolon-hidden', !linksInsecure(link.value, globalThis.location && globalThis.location.protocol));
     };
     link.addEventListener('input', checkHttps);
-    var enabled = nectoModule.enabledSwitch(t.tr('LabelEnabled'), t.tr('InvitesHelpEnabled'));
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), help: t.tr('InvitesHelpEnabled'), field: 'Enabled' });
 
     [
         enabled.element,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLinks') }),
-        el('div', { class: 'inputContainer' }, [
-            el('label', { class: 'inputLabel inputLabelUnfocused', for: linkId, text: t.tr('InvitesLabelLinkUrl') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLinks') }),
+        h('div', { class: 'inputContainer' }, [
+            h('label', { class: 'inputLabel inputLabelUnfocused', for: linkId, text: t.tr('InvitesLabelLinkUrl') }),
             link,
-            el('div', { class: 'fieldDescription', text: t.tr('InvitesLinkUrlHelp') })
+            h('div', { class: 'fieldDescription', text: t.tr('InvitesLinkUrlHelp') })
         ]),
         httpsWarn,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLimits') }),
-        el('div', { class: 'fieldDescription', text: t.tr('InvitesLimitsHelp') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLimits') }),
+        h('div', { class: 'fieldDescription', text: t.tr('InvitesLimitsHelp') }),
         count.wrap, windowField.wrap, pins.wrap
     ].forEach(function (node) { content.appendChild(node); });
 
@@ -140,18 +140,18 @@ function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var pollers = [];
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var run = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'run-invite-expiry' }, [el('span', { text: t.tr('ButtonRunTask') })]);
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var run = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'run-invite-expiry' }, [h('span', { text: t.tr('ButtonRunTask') })]);
     [
         status,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
-        el('div', { class: 'stolon-reset-group' }, [
-            nectoModule.resetRow({ icon: 'timer_off', label: t.tr('InvitesTaskExpire'), help: t.tr('InvitesTaskExpireDescription'), button: run })
-        ])
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
+        nectoModule.createResetGroup([
+            nectoModule.createResetRow({ icon: 'timer_off', label: t.tr('InvitesTaskExpire'), help: t.tr('InvitesTaskExpireDescription'), button: run })
+        ]).element
     ].forEach(function (node) { content.appendChild(node); });
 
     run.addEventListener('click', function () {
-        shared.runTask(run, INVITE_EXPIRY_TASK, t.tr('ButtonRunTask')).then(function (poller) { pollers.push(poller); }).catch(function (err) {
+        shared.runScheduledTask(run, INVITE_EXPIRY_TASK, t.tr('ButtonRunTask')).then(function (poller) { pollers.push(poller); }).catch(function (err) {
             return shared.errorText(err, t.tr('ErrorRunTask')).then(function (text) { shared.setStatus(status, text, true); });
         });
     });

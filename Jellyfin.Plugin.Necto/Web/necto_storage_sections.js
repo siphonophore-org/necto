@@ -4,7 +4,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // The key of the scheduled task that checks every disk.
 export var CHECK_TASK = 'NectoStorageCheck';
@@ -157,11 +157,11 @@ export function alertOrderError(t, value) {
 // Output
 // [object]: { element, body }, where body takes the sliders before the description.
 function panelOf(icon, tone, label, point) {
-    var body = el('div', { class: 'stolon-panel-body' }, [el('div', { class: 'fieldDescription', text: point })]);
-    var panel = el('div', { class: 'stolon-panel necto-storage-alert-panel' }, [
-        el('div', { class: 'stolon-panel-header necto-storage-alert-header' }, [
-            el('span', { class: 'material-icons necto-storage-alert-' + tone, 'aria-hidden': 'true', text: icon }),
-            el('span', { text: label })
+    var body = h('div', { class: 'stolon-panel-body' }, [h('div', { class: 'fieldDescription', text: point })]);
+    var panel = h('div', { class: 'stolon-panel necto-storage-alert-panel' }, [
+        h('div', { class: 'stolon-panel-header necto-storage-alert-header' }, [
+            h('span', { class: 'material-icons necto-storage-alert-' + tone, 'aria-hidden': 'true', text: icon }),
+            h('span', { text: label })
         ]),
         body
     ]);
@@ -182,15 +182,26 @@ export function createAlertEditor(t, options) {
     var opts = options || {};
     var unit = 'Percent';
     var ordering = false;
-    var checks = el('div', { class: 'stolon-field-row necto-storage-alert-checks', role: 'group', 'aria-label': t.tr('TabStorage') });
-    var pillGroup = el('div', { class: 'stolon-pill-group', role: 'group', 'aria-label': t.tr('StorageLabelMeasurement') }, [
-        el('button', { type: 'button', class: 'stolon-pill', 'data-value': 'Percent', 'aria-pressed': 'false', text: t.tr('LabelUsage') }),
-        el('button', { type: 'button', class: 'stolon-pill', 'data-value': 'Gigabytes', 'aria-pressed': 'false', text: t.tr('LabelSize') })
-    ]);
-    var unitField = el('div', { class: 'stolon-field necto-storage-alert-unit' }, [el('label', { text: t.tr('StorageLabelMeasurement') }), pillGroup]);
-    var panels = el('div', { class: 'stolon-field-row necto-storage-alert-panels' });
-    var root = el('div', { class: 'necto-storage-alert-editor', 'data-role': 'alert-editor' }, [
-        el('div', { class: 'stolon-field' }, [opts.heading === false ? null : el('label', { text: t.tr('TabStorage') }), checks]),
+    var checks = h('div', { class: 'stolon-field-row necto-storage-alert-checks', role: 'group', 'aria-label': t.tr('TabStorage') });
+    var units = nectoModule.createChoiceGroup(null, {
+        label: t.tr('StorageLabelMeasurement'),
+        value: unit,
+        choices: [
+            { value: 'Percent', name: t.tr('LabelUsage'), text: t.tr('StorageMeasurePercentHelp') },
+            { value: 'Gigabytes', name: t.tr('LabelSize'), text: t.tr('StorageMeasureGigabytesHelp') }
+        ],
+        onChange: function (next) {
+            if (!next || next === unit) return;
+            unit = next;
+            show();
+            keepOrder('error');
+            changed();
+        }
+    });
+    var unitField = h('div', { class: 'stolon-field necto-storage-alert-unit' }, [h('label', { text: t.tr('StorageLabelMeasurement') }), units.element]);
+    var panels = h('div', { class: 'stolon-field-row necto-storage-alert-panels' });
+    var root = h('div', { class: 'necto-storage-alert-editor', 'data-role': 'alert-editor' }, [
+        h('div', { class: 'stolon-field' }, [opts.heading === false ? null : h('label', { text: t.tr('TabStorage') }), checks]),
         unitField,
         panels
     ]);
@@ -237,16 +248,6 @@ export function createAlertEditor(t, options) {
         alerts[alert.stop] = { check: check, panel: panel.element, sliders: sliders };
     });
 
-    var pills = nectoModule.createPillGroup(pillGroup, {
-        onChange: function (next) {
-            if (!next || next === unit) return;
-            unit = next;
-            show();
-            keepOrder('error');
-            changed();
-        }
-    });
-
     // isOn
     // Reads whether one alert is on.
     function isOn(stop) { return !!alerts[stop].check.getValue(); }
@@ -256,7 +257,7 @@ export function createAlertEditor(t, options) {
     function slider(stop) { return alerts[stop].sliders[unit]; }
 
     // changed
-    // Tells the owner and the page that the alerts changed, since the pills raise no change event of their own.
+    // Tells the owner and the page that the alerts changed, so a Save Bar sees a change of unit too.
     function changed() {
         root.dispatchEvent(new CustomEvent('change', { bubbles: true }));
         if (opts.onChange) opts.onChange();
@@ -301,7 +302,6 @@ export function createAlertEditor(t, options) {
     }
 
     show();
-    pills.set(unit);
 
     return {
         element: root,
@@ -309,14 +309,14 @@ export function createAlertEditor(t, options) {
         setValue: function (value) {
             value = value || {};
             unit = value.WarningStop && value.WarningStop.Unit === 'Gigabytes' ? 'Gigabytes' : 'Percent';
-            pills.set(unit);
+            units.set(unit);
             writeStop('warning', value.WarningStop);
             writeStop('error', value.ErrorStop);
             show();
         },
         errorText: function () { return alertOrderError(t, this.getValue()); },
         destroy: function () {
-            if (pills.destroy) pills.destroy();
+            units.destroy();
             ['warning', 'error'].forEach(function (stop) {
                 alerts[stop].check.destroy();
                 Object.keys(RANGES).forEach(function (name) { alerts[stop].sliders[name].destroy(); });
@@ -336,11 +336,11 @@ export function createAlertEditor(t, options) {
 // Output
 // [object]: { element, getValue(), setValue(value), destroy() }, where a value is the configuration's HealthAlerts.
 export function createHealthEditor(t, onChange) {
-    var failingRow = el('div', { class: 'necto-storage-alert-failing' });
-    var checksRow = el('div', { class: 'stolon-field-row necto-storage-alert-checks', role: 'group', 'aria-label': t.tr('StorageLabelHealth') });
-    var panels = el('div', { class: 'stolon-field-row necto-storage-alert-panels' });
-    var root = el('div', { class: 'necto-storage-alert-editor', 'data-role': 'health-editor' }, [
-        el('div', { class: 'stolon-field' }, [el('label', { text: t.tr('StorageLabelHealth') }), failingRow, checksRow]),
+    var failingRow = h('div', { class: 'necto-storage-alert-failing' });
+    var checksRow = h('div', { class: 'stolon-field-row necto-storage-alert-checks', role: 'group', 'aria-label': t.tr('StorageLabelHealth') });
+    var panels = h('div', { class: 'stolon-field-row necto-storage-alert-panels' });
+    var root = h('div', { class: 'necto-storage-alert-editor', 'data-role': 'health-editor' }, [
+        h('div', { class: 'stolon-field' }, [h('label', { text: t.tr('StorageLabelHealth') }), failingRow, checksRow]),
         panels
     ]);
     var checks = {};
@@ -426,10 +426,10 @@ export function createHealthEditor(t, onChange) {
 // Output
 // [HTMLElement]: The card.
 function choiceOf(name, value, label, help) {
-    return el('label', { class: 'stolon-choice' }, [
-        el('input', { type: 'radio', name: name, value: value }),
-        el('span', { class: 'stolon-choice-name', text: label }),
-        el('span', { class: 'stolon-choice-text', text: help })
+    return h('label', { class: 'stolon-choice' }, [
+        h('input', { type: 'radio', name: name, value: value }),
+        h('span', { class: 'stolon-choice-name', text: label }),
+        h('span', { class: 'stolon-choice-text', text: help })
     ]);
 }
 
@@ -444,10 +444,10 @@ function choiceOf(name, value, label, help) {
 // Output
 // [object]: { element, input }.
 function checkboxOf(field, label, help) {
-    var input = el('input', { type: 'checkbox', is: 'emby-checkbox', id: fieldId(field), 'data-field': field });
-    var element = el('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
-        el('label', {}, [input, el('span', { text: label })]),
-        el('div', { class: 'fieldDescription checkboxFieldDescription', text: help })
+    var input = h('input', { type: 'checkbox', is: 'emby-checkbox', id: fieldId(field), 'data-field': field });
+    var element = h('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
+        h('label', {}, [input, h('span', { text: label })]),
+        h('div', { class: 'fieldDescription checkboxFieldDescription', text: help })
     ]);
     return { element: element, input: input };
 }
@@ -467,25 +467,25 @@ function buildSettings(content, ctx) {
     var alerts = createAlertEditor(t);
     var health = createHealthEditor(t);
     var radio = fieldId('scan-guard');
-    var choices = el('div', { class: 'stolon-choice-group', role: 'radiogroup', 'aria-label': t.tr('StorageHeaderLibraryScans'), 'data-field': 'ScanGuard' }, [
+    var choices = h('div', { class: 'stolon-choice-group', role: 'radiogroup', 'aria-label': t.tr('StorageHeaderLibraryScans'), 'data-field': 'ScanGuard' }, [
         choiceOf(radio, 'Affected', t.tr('StorageScanGuardAffected'), t.tr('StorageHelpScanGuardAffected')),
         choiceOf(radio, 'All', t.tr('StorageScanGuardAll'), t.tr('StorageHelpScanGuardAll')),
         choiceOf(radio, 'Off', t.tr('StorageScanGuardOff'), t.tr('StorageHelpScanGuardOff'))
     ]);
     var remount = checkboxOf('Remount', t.tr('StorageLabelRemount'), t.tr('StorageHelpRemount'));
     var mute = checkboxOf('MuteMonitoring', t.tr('StorageLabelMuteMonitoring'), t.tr('StorageHelpMuteMonitoring'));
-    var enabled = nectoModule.enabledSwitch(t.tr('LabelEnabled'), t.tr('StorageHelpEnabled'));
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), help: t.tr('StorageHelpEnabled'), field: 'Enabled' });
 
     [
         enabled.element,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('Alerts') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('Alerts') }),
         alerts.element,
         health.element,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('StorageSectionMissingDisks') }),
-        el('div', { class: 'stolon-field' }, [
-            el('label', { text: t.tr('StorageHeaderLibraryScans') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('StorageSectionMissingDisks') }),
+        h('div', { class: 'stolon-field' }, [
+            h('label', { text: t.tr('StorageHeaderLibraryScans') }),
             choices,
-            el('div', { class: 'fieldDescription', text: t.tr('StorageHelpScanGuardScope') })
+            h('div', { class: 'fieldDescription', text: t.tr('StorageHelpScanGuardScope') })
         ]),
         remount.element,
         mute.element
@@ -539,14 +539,14 @@ function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var pollers = [];
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
 
     [
         status,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
-        el('div', { class: 'stolon-reset-group' }, [nectoModule.resetRow({ icon: 'health_and_safety', label: t.tr('StorageTaskCheckStorage'), help: t.tr('StorageTaskCheckStorageDescription'), button: t.tr('ButtonRunTask'), action: 'run-check' })]),
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('Settings') }),
-        el('div', { class: 'stolon-reset-group' }, [nectoModule.resetRow({ icon: 'settings_backup_restore', label: t.tr('StorageTaskResetSettings'), help: t.tr('StorageHelpResetSettings'), button: t.tr('Reset'), action: 'reset-settings', destructive: true })])
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
+        nectoModule.createResetGroup([nectoModule.createResetRow({ icon: 'health_and_safety', label: t.tr('StorageTaskCheckStorage'), help: t.tr('StorageTaskCheckStorageDescription'), button: t.tr('ButtonRunTask'), action: 'run-check' })]).element,
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('Settings') }),
+        nectoModule.createResetGroup([nectoModule.createResetRow({ icon: 'settings_backup_restore', label: t.tr('StorageTaskResetSettings'), help: t.tr('StorageHelpResetSettings'), button: t.tr('Reset'), action: 'reset-settings', destructive: true })]).element
     ].forEach(function (node) { content.appendChild(node); });
 
     // report
@@ -564,7 +564,7 @@ function buildTroubleshooting(content, ctx) {
     // runCheck
     // Starts the Check storage task and follows it on its button.
     function runCheck() {
-        return shared.runTask(button('run-check'), CHECK_TASK, t.tr('ButtonRunTask')).then(function (poller) {
+        return shared.runScheduledTask(button('run-check'), CHECK_TASK, t.tr('ButtonRunTask')).then(function (poller) {
             pollers.push(poller);
         }).catch(function (err) {
             return shared.errorText(err, t.tr('ErrorRunTask')).then(function (text) { report(text, true); });

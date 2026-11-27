@@ -39,8 +39,8 @@ public static class ToolSwitches
     public const string Storage = "storage";
 
     /// <summary>
-    /// Gets every tool with a switch, in sidebar order. The pages keep the same list in <c>TOOL_SWITCHES</c> in
-    /// necto_shared.js, and a test checks the two agree.
+    /// Gets every tool with a switch, in sidebar order. The pages give the same tools a <c>visibleWhen</c> in
+    /// <c>nectoTools</c> in necto_shared.js, and a test checks the two agree.
     /// </summary>
     public static IReadOnlyList<ToolSwitch> All { get; } = new ToolSwitch[]
     {

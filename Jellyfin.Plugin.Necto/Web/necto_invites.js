@@ -4,7 +4,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // EVERYONE_ID
 // The id of the Everyone group, which an invite names for no group.
@@ -174,8 +174,8 @@ export function createInviteEditor(invite, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var handles = [];
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var root = el('div', { 'data-role': 'invite-editor' }, [status]);
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var root = h('div', { 'data-role': 'invite-editor' }, [status]);
     var nextId = function (name) { fieldSeq += 1; return 'necto-invite-' + name + '-' + fieldSeq; };
 
     // input
@@ -183,37 +183,37 @@ export function createInviteEditor(invite, ctx) {
     var input = function (label, type, value, data, help, placeholder) {
         var id = nextId(data);
         var node = type === 'textarea'
-            ? el('textarea', { is: 'emby-textarea', class: 'emby-textarea', id: id, rows: '3', 'data-field': data })
-            : el('input', { is: 'emby-input', type: type, id: id, 'data-field': data, min: type === 'number' ? '0' : null, placeholder: placeholder || null });
+            ? h('textarea', { is: 'emby-textarea', class: 'emby-textarea', id: id, rows: '3', 'data-field': data })
+            : h('input', { is: 'emby-input', type: type, id: id, 'data-field': data, min: type === 'number' ? '0' : null, placeholder: placeholder || null });
         node.value = value == null ? '' : String(value);
-        root.appendChild(el('div', { class: 'inputContainer' }, [
-            el('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: label }),
+        root.appendChild(h('div', { class: 'inputContainer' }, [
+            h('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: label }),
             node,
-            help ? el('div', { class: 'fieldDescription', text: help }) : null
+            help ? h('div', { class: 'fieldDescription', text: help }) : null
         ]));
         return node;
     };
 
     if (ctx.link) {
-        root.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderLink') }));
+        root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderLink') }));
         var qr = nectoModule.createQrCode({ value: ctx.link, layout: 'inline', fileName: 'invite.png' });
         handles.push(qr);
-        root.appendChild(el('div', { 'data-role': 'link' }, [qr.element]));
-        root.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderSettings') }));
+        root.appendChild(h('div', { 'data-role': 'link' }, [qr.element]));
+        root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderSettings') }));
     }
 
     var label = input(t.tr('LabelName'), 'text', invite.Label, 'Label', t.tr('InvitesNameAdminHelp'));
     var message = input(t.tr('InvitesLabelMessage'), 'textarea', invite.Message, 'Message', t.tr('InvitesMessageHelp'));
 
     var groupId = nextId('group');
-    var group = el('select', { is: 'emby-select', id: groupId, 'data-field': 'GroupId' });
-    groupChoices(ctx.groups, t).forEach(function (o) { group.appendChild(el('option', { value: o.value, text: o.label })); });
+    var group = h('select', { is: 'emby-select', id: groupId, 'data-field': 'GroupId' });
+    groupChoices(ctx.groups, t).forEach(function (o) { group.appendChild(h('option', { value: o.value, text: o.label })); });
     group.value = invite.GroupId || '';
-    var expiredWarn = el('div', { class: 'stolon-warn', 'data-role': 'group-expired', text: t.tr('InvitesGroupExpiredWarning') });
-    root.appendChild(el('div', { class: 'selectContainer' }, [
-        el('label', { class: 'selectLabel', for: groupId, text: t.tr('LabelGroup') }),
+    var expiredWarn = h('div', { class: 'stolon-warn', 'data-role': 'group-expired', text: t.tr('InvitesGroupExpiredWarning') });
+    root.appendChild(h('div', { class: 'selectContainer' }, [
+        h('label', { class: 'selectLabel', for: groupId, text: t.tr('LabelGroup') }),
         group,
-        el('div', { class: 'fieldDescription', text: t.tr('InvitesGroupHelp') })
+        h('div', { class: 'fieldDescription', text: t.tr('InvitesGroupHelp') })
     ]));
     root.appendChild(expiredWarn);
     // checkGroup
@@ -232,13 +232,13 @@ export function createInviteEditor(invite, ctx) {
     pin.setAttribute('inputmode', 'numeric');
     pin.setAttribute('maxlength', '6');
     if (invite.HasPin) {
-        var clearPin = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'clear-pin' }, [el('span', { text: t.tr('InvitesButtonRemovePin') })]);
+        var clearPin = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'clear-pin' }, [h('span', { text: t.tr('InvitesButtonRemovePin') })]);
         pin.parentNode.appendChild(clearPin);
         nectoModule.bindSecretField(pin, true, { clearButton: clearPin });
     }
 
-    root.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderResources') }));
-    root.appendChild(el('div', { class: 'fieldDescription', text: t.tr('InvitesResourcesHelp') }));
+    root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('InvitesHeaderResources') }));
+    root.appendChild(h('div', { class: 'fieldDescription', text: t.tr('InvitesResourcesHelp') }));
     var resources = nectoModule.createRepeater({
         fields: [
             { key: 'title', label: t.tr('InvitesLabelResourceTitle'), type: 'text', placeholder: t.tr('InvitesResourceTitlePlaceholder') },

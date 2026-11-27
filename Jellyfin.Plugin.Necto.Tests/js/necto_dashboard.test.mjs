@@ -18,6 +18,9 @@ var t = {
     format: function (key) {
         var args = Array.prototype.slice.call(arguments, 1);
         return t.tr(key).replace(/\{(\d+)\}/g, function (m, i) { return String(args[i]); });
+    },
+    plural: function (count, one, many) {
+        return t.format.apply(null, [count === 1 ? one : many, count].concat(Array.prototype.slice.call(arguments, 3)));
     }
 };
 

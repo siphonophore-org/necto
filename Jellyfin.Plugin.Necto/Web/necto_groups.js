@@ -5,7 +5,7 @@
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import * as nectoTemplates from './configurationpage?name=necto_groups_templates.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // EVERYONE_ID
 // The id of the Everyone group, which holds every user in no other group.
@@ -218,8 +218,8 @@ export function groupItems(groups, users, shared) {
     }).length;
     return list.map(function (group) {
         var secondary = isEveryone(group)
-            ? shared.plural(loose, 'LabelLooseUsersOne', 'LabelLooseUsersMany')
-            : shared.plural((group.MemberIds || []).length, 'LabelMemberCountOne', 'LabelMemberCountMany');
+            ? shared.t.plural(loose, 'LabelLooseUsersOne', 'LabelLooseUsersMany')
+            : shared.t.plural((group.MemberIds || []).length, 'LabelMemberCountOne', 'LabelMemberCountMany');
         return {
             id: group.Id,
             title: groupName(group, t),
@@ -396,7 +396,8 @@ export function overlappingClients(clients, rules) {
 // Inputs
 // group [object]: The group to edit, or a new one.
 // ctx [object]: shared is the Necto helper bag, users the server's users, groups every group, devices the
-//   server's devices, for the session rules' clients, and profiles the Radarr and Sonarr profiles, read when left out.
+//   server's devices, for the session rules' clients, profiles the Radarr and Sonarr profiles, read when left out,
+//   and config the plugin configuration, whose tools that are off get no section. [optional]
 //
 // Output
 // [object]: A handle with element, getValue, validate, setStatus, ready, and destroy. getValue returns the group
@@ -413,8 +414,8 @@ export function createGroupEditor(group, ctx) {
     var ready = Promise.resolve();
     var waits = [];
     var profileList = null;
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var root = el('div', { 'data-role': 'group-editor' }, [status]);
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var root = h('div', { 'data-role': 'group-editor' }, [status]);
 
     // nextId
     // Makes an id for one of the editor's fields.
@@ -434,17 +435,17 @@ export function createGroupEditor(group, ctx) {
 
     if (!everyone) {
         var nameId = nextId('name');
-        var nameInput = el('input', { is: 'emby-input', type: 'text', id: nameId, 'data-field': 'Name', required: true });
+        var nameInput = h('input', { is: 'emby-input', type: 'text', id: nameId, 'data-field': 'Name', required: true });
         nameInput.value = draft.Name || '';
-        root.appendChild(el('div', { class: 'inputContainer' }, [
-            el('label', { class: 'inputLabel inputLabelUnfocused', for: nameId, text: t.tr('LabelName') }),
+        root.appendChild(h('div', { class: 'inputContainer' }, [
+            h('label', { class: 'inputLabel inputLabelUnfocused', for: nameId, text: t.tr('LabelName') }),
             nameInput
         ]));
         readers.push(function (out) { out.Name = nameInput.value.trim(); });
     }
 
     // Members
-    var membersContent = el('div', {}, [el('div', { class: 'fieldDescription', text: t.tr(everyone ? 'HelpEveryoneMembers' : 'HelpMembers') })]);
+    var membersContent = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr(everyone ? 'HelpEveryoneMembers' : 'HelpMembers') })]);
     section(t.tr('HeaderMembers'), 'group', membersContent, { collapsed: false }).element.setAttribute('data-section', 'members');
     if (!everyone) {
         var members = shared.createUserMultiSelector({
@@ -468,7 +469,7 @@ export function createGroupEditor(group, ctx) {
     // describe
     // Builds a field's description, or nothing when it has none.
     function describe(spec, className) {
-        return spec.help ? el('div', { class: className || 'fieldDescription', text: t.tr(spec.help) }) : null;
+        return spec.help ? h('div', { class: className || 'fieldDescription', text: t.tr(spec.help) }) : null;
     }
 
     // drawField
@@ -479,18 +480,18 @@ export function createGroupEditor(group, ctx) {
         var input = null;
 
         if (spec.kind === 'check' || spec.kind === 'expiry') {
-            input = el('input', { type: 'checkbox', is: 'emby-checkbox', id: id, 'data-field': spec.path });
+            input = h('input', { type: 'checkbox', is: 'emby-checkbox', id: id, 'data-field': spec.path });
             input.checked = value == null ? !!spec.fallback : !!value;
-            into.appendChild(el('div', { class: 'checkboxContainer' + (spec.help ? ' checkboxContainer-withDescription' : '') }, [
-                el('label', {}, [input, el('span', { text: t.tr(spec.label) })]),
+            into.appendChild(h('div', { class: 'checkboxContainer' + (spec.help ? ' checkboxContainer-withDescription' : '') }, [
+                h('label', {}, [input, h('span', { text: t.tr(spec.label) })]),
                 describe(spec, 'fieldDescription checkboxFieldDescription')
             ]));
             if (spec.kind === 'check') readers.push(function (out) { setPath(out.Permissions, spec.path, !!input.checked); });
             else expiryBox = input;
         } else if (spec.kind === 'number' || spec.kind === 'date') {
-            input = el('input', { is: 'emby-input', type: spec.kind, id: id, 'data-field': spec.path, min: spec.kind === 'number' ? String(spec.min || 0) : null });
-            into.appendChild(el('div', { class: 'inputContainer' }, [
-                el('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: t.tr(spec.label) }),
+            input = h('input', { is: 'emby-input', type: spec.kind, id: id, 'data-field': spec.path, min: spec.kind === 'number' ? String(spec.min || 0) : null });
+            into.appendChild(h('div', { class: 'inputContainer' }, [
+                h('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: t.tr(spec.label) }),
                 input,
                 describe(spec)
             ]));
@@ -507,11 +508,11 @@ export function createGroupEditor(group, ctx) {
                 });
             }
         } else if (spec.kind === 'select') {
-            input = el('select', { is: 'emby-select', id: id, 'data-field': spec.path });
-            spec.names.forEach(function (name, i) { input.appendChild(el('option', { value: name, text: t.tr(spec.options[i]) })); });
+            input = h('select', { is: 'emby-select', id: id, 'data-field': spec.path });
+            spec.names.forEach(function (name, i) { input.appendChild(h('option', { value: name, text: t.tr(spec.options[i]) })); });
             input.value = enumName(value, spec.names);
-            into.appendChild(el('div', { class: 'selectContainer' }, [
-                el('label', { class: 'selectLabel', for: id, text: t.tr(spec.label) }),
+            into.appendChild(h('div', { class: 'selectContainer' }, [
+                h('label', { class: 'selectLabel', for: id, text: t.tr(spec.label) }),
                 input,
                 describe(spec)
             ]));
@@ -523,14 +524,14 @@ export function createGroupEditor(group, ctx) {
                 value: value || [],
                 renderRow: function (g) { return { label: g.Name }; }
             });
-            into.appendChild(el('div', { 'data-field': spec.path }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), list.element, describe(spec)]));
+            into.appendChild(h('div', { 'data-field': spec.path }, [h('div', { class: 'selectLabel', text: t.tr(spec.label) }), list.element, describe(spec)]));
             handles.push(list);
             readers.push(function (out) { setPath(out.Permissions, spec.path, list.getValue()); });
         } else if (spec.kind === 'gigabytes') {
-            input = el('input', { is: 'emby-input', type: 'number', id: id, 'data-field': spec.path, min: '0', step: 'any' });
+            input = h('input', { is: 'emby-input', type: 'number', id: id, 'data-field': spec.path, min: '0', step: 'any' });
             input.value = value ? String(Math.round((value / 1073741824) * 100) / 100) : '0';
-            into.appendChild(el('div', { class: 'inputContainer' }, [
-                el('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: t.tr(spec.label) }),
+            into.appendChild(h('div', { class: 'inputContainer' }, [
+                h('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: t.tr(spec.label) }),
                 input,
                 describe(spec)
             ]));
@@ -546,7 +547,7 @@ export function createGroupEditor(group, ctx) {
                 value: (value || []).map(function (v) { return String(v).replace(/-/g, '').toLowerCase(); }),
                 renderRow: function (r) { return { label: r.Name }; }
             });
-            into.appendChild(el('div', { 'data-field': spec.path }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), records.element, describe(spec)]));
+            into.appendChild(h('div', { 'data-field': spec.path }, [h('div', { class: 'selectLabel', text: t.tr(spec.label) }), records.element, describe(spec)]));
             handles.push(records);
             readers.push(function (out) { setPath(out.Permissions, spec.path, records.getValue()); });
         } else if (spec.kind === 'profiles') {
@@ -561,7 +562,7 @@ export function createGroupEditor(group, ctx) {
                 renderRow: function (e) { return { label: e.Name, sublabel: e.Key }; },
                 emptyMessage: t.tr('NotificationsNoUserEvents')
             });
-            into.appendChild(el('div', { 'data-field': spec.path }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), events.element, describe(spec)]));
+            into.appendChild(h('div', { 'data-field': spec.path }, [h('div', { class: 'selectLabel', text: t.tr(spec.label) }), events.element, describe(spec)]));
             handles.push(events);
             readers.push(function (out) { setPath(out.Permissions, spec.path, events.getValue()); });
         } else if (spec.kind === 'pages') {
@@ -573,7 +574,7 @@ export function createGroupEditor(group, ctx) {
                 emptyMessage: t.tr('PagesEmptyGroupPages'),
                 renderRow: function (p) { return { label: p.Title || ('/pages/' + p.Slug), sublabel: '/pages/' + p.Slug }; }
             });
-            var pagesRow = el('div', { 'data-field': spec.path }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), pages.element, describe(spec)]);
+            var pagesRow = h('div', { 'data-field': spec.path }, [h('div', { class: 'selectLabel', text: t.tr(spec.label) }), pages.element, describe(spec)]);
             into.appendChild(pagesRow);
             handles.push(pages);
             ready = Promise.all([ready, pages.ready]);
@@ -588,7 +589,7 @@ export function createGroupEditor(group, ctx) {
 
         // Fields a checkbox hides while it is on, such as the scripts a group runs while it runs every script.
         if (spec.hides) {
-            var rest = el('div', { class: 'stolon-indent' });
+            var rest = h('div', { class: 'stolon-indent' });
             spec.hides.forEach(function (child) { drawField(child, rest); });
             into.appendChild(rest);
             var hideRest = function () { rest.classList.toggle('stolon-hidden', input.checked); };
@@ -597,7 +598,7 @@ export function createGroupEditor(group, ctx) {
         }
 
         if (spec.reveals) {
-            var indent = el('div', { class: 'stolon-indent' });
+            var indent = h('div', { class: 'stolon-indent' });
             spec.reveals.forEach(function (child) { drawField(child, indent); });
             into.appendChild(indent);
             var reflect = function () { indent.classList.toggle('stolon-hidden', !input.checked); };
@@ -619,7 +620,7 @@ export function createGroupEditor(group, ctx) {
             emptyMessage: t.tr('RequestsEmptyProfiles'),
             renderRow: function (p) { return { label: p.Name, sublabel: p.Server }; }
         });
-        into.appendChild(el('div', { 'data-field': spec.path }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), list.element, describe(spec)]));
+        into.appendChild(h('div', { 'data-field': spec.path }, [h('div', { class: 'selectLabel', text: t.tr(spec.label) }), list.element, describe(spec)]));
         handles.push(list);
         waits.push(list.ready);
         readers.push(function (out) { setPath(out.Permissions, spec.path, list.getValue()); });
@@ -643,7 +644,7 @@ export function createGroupEditor(group, ctx) {
     // Draws the session rules as a Repeater of cards, each with its clients, and the overlap warning under it.
     function drawSessions(into, rules, spec) {
         var clients = knownClients(ctx.devices, rules);
-        var warn = el('div', { class: 'stolon-warn stolon-hidden', 'data-role': 'overlap' });
+        var warn = h('div', { class: 'stolon-warn stolon-hidden', 'data-role': 'overlap' });
         var clientField = function (value, change) {
             var chips = nectoModule.createChipSelect({ options: clients, value: value || [], placeholder: t.tr('SearchClients'), noResultsText: t.tr('EmptyClientsMatch'), onChange: change });
             return {
@@ -687,16 +688,16 @@ export function createGroupEditor(group, ctx) {
                 return { Mode: mode, Clients: mode === 'All' ? [] : (item.clients || []).map(String), Days: isNaN(days) || days < 1 ? 30 : days };
             });
         };
-        into.appendChild(el('div', { 'data-field': spec.path }, [describe(spec), repeater.element, warn]));
+        into.appendChild(h('div', { 'data-field': spec.path }, [describe(spec), repeater.element, warn]));
         updateOverlap();
         handles.push(repeater);
         readers.push(function (out) { setPath(out.Permissions, spec.path, read()); });
     }
 
     // Account rules
-    var accountsContent = el('div', {}, [el('div', { class: 'fieldDescription', text: t.tr('HelpAccountRulesMerge') })]);
+    var accountsContent = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr('HelpAccountRulesMerge') })]);
     accountSpecs().forEach(function (sub) {
-        accountsContent.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr(sub.title) }));
+        accountsContent.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr(sub.title) }));
         sub.fields.forEach(function (spec) { drawField(spec, accountsContent); });
     });
     section(t.tr('HeaderAccountRules'), 'manage_accounts', accountsContent).element.setAttribute('data-section', 'accounts');
@@ -706,9 +707,9 @@ export function createGroupEditor(group, ctx) {
     ready = Promise.all([ready, templatesDrawn]);
 
     // One section per tool, without the tools that are off. Their permissions stay as they were.
-    sectionSpecs().filter(function (spec) { return !nectoModule.isToolOff(spec.key); }).forEach(function (spec) {
-        var content = el('div', {}, [
-            el('div', { class: 'fieldDescription', text: t.tr('HelpPermissionMerge') })
+    sectionSpecs().filter(function (spec) { return !ctx.config || nectoModule.toolIsOn(ctx.config, spec.key); }).forEach(function (spec) {
+        var content = h('div', {}, [
+            h('div', { class: 'fieldDescription', text: t.tr('HelpPermissionMerge') })
         ]);
         spec.fields.forEach(function (field) { drawField(field, content); });
         section(t.tr(spec.title), spec.icon, content).element.setAttribute('data-section', spec.key);
@@ -762,6 +763,7 @@ export default function (view) {
     var devices = [];
     var events = [];
     var profiles = [];
+    var config = null;
     var loadSeq = 0;
 
     // report
@@ -779,7 +781,8 @@ export default function (view) {
             shared.request('Groups/Users'),
             shared.request('Devices').catch(function () { return { Items: [] }; }),
             shared.request('Notifications/Events').catch(function () { return []; }),
-            shared.request('Requests/Profiles').catch(function () { return []; })
+            shared.request('Requests/Profiles').catch(function () { return []; }),
+            shared.getConfig().catch(function () { return null; })
         ]).then(function (answers) {
             if (mine !== loadSeq) return;
             groups = answers[0] || [];
@@ -787,6 +790,7 @@ export default function (view) {
             devices = (answers[2] && answers[2].Items) || [];
             events = Array.isArray(answers[3]) ? answers[3] : [];
             profiles = Array.isArray(answers[4]) ? answers[4] : [];
+            config = answers[5];
             shared.renderCards('groupUserCards', userCards(userCounts(users, new Date()), shared.t));
             var items = groupItems(groups, users, shared);
             if (list) list.setItems(items);
@@ -879,7 +883,7 @@ export default function (view) {
     function openGroup(group) {
         var t = shared.t;
         var isNew = !group;
-        var editor = createGroupEditor(group || newGroup(), { shared: shared, users: users, groups: groups, devices: devices, events: events, profiles: profiles });
+        var editor = createGroupEditor(group || newGroup(), { shared: shared, users: users, groups: groups, devices: devices, events: events, profiles: profiles, config: config });
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('TitleNewGroup') : groupName(group, t),
             body: editor.element,
@@ -902,11 +906,11 @@ export default function (view) {
         var ordered = groups.filter(function (g) { return !isEveryone(g); });
         var list = nectoModule.createOrderedList({
             items: ordered,
-            render: function (g) { return el('span', { text: g.Name }); },
+            render: function (g) { return h('span', { text: g.Name }); },
             label: function (g) { return g.Name; }
         });
-        var status = el('div', { class: 'stolon-status-text', role: 'status' });
-        var body = el('div', {}, [el('div', { class: 'fieldDescription', text: t.tr('GroupsOrderHelp') }), status, list.element]);
+        var status = h('div', { class: 'stolon-status-text', role: 'status' });
+        var body = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr('GroupsOrderHelp') }), status, list.element]);
         nectoModule.openEditorSidecar({
             title: t.tr('GroupsButtonOrder'),
             body: body,

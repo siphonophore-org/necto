@@ -309,7 +309,7 @@ export default function (view) {
     // counted
     // Picks the string for none, one, or many, and fills the count into many.
     function counted(count, none, one, many) {
-        return count === 0 ? t.tr(none) : count === 1 ? t.tr(one) : t.format(many, count);
+        return count === 0 ? t.tr(none) : t.plural(count, one, many);
     }
 
     // shown
@@ -348,7 +348,7 @@ export default function (view) {
         var kinds = (script.ItemKinds || []).length;
         folds.triggers.setBadge(!needsKinds(script) ? null : kinds === 0
             ? { label: t.tr('ScriptsBadgeAllKinds'), color: 'green' }
-            : { label: kinds === 1 ? t.tr('ScriptsBadgeKindsOne') : t.format('ScriptsBadgeKindsMany', kinds), color: 'blue' });
+            : { label: t.plural(kinds, 'ScriptsBadgeKindsOne', 'ScriptsBadgeKindsMany'), color: 'blue' });
         folds.steps.setSubtitle(counted((script.Operations || []).length, 'ScriptsSummaryNoSteps', 'ScriptsSummaryStepsOne', 'ScriptsSummaryStepsMany'));
 
         var runningGroups = groupsRunning(script);
@@ -361,7 +361,7 @@ export default function (view) {
             script.Match === 'Any' ? 'ScriptsSummaryConditionsAny' : 'ScriptsSummaryConditionsAll'));
         // How many conditions some selected trigger never supplies a value for.
         var never = (script.Conditions || []).filter(function (c) { return !!conditionWarning(script, c); }).length;
-        folds.conditions.setBadge(never ? { label: never === 1 ? t.tr('ScriptsBadgeNeverMatchesOne') : t.format('ScriptsBadgeNeverMatchesMany', never), color: 'orange' } : null);
+        folds.conditions.setBadge(never ? { label: t.plural(never, 'ScriptsBadgeNeverMatchesOne', 'ScriptsBadgeNeverMatchesMany'), color: 'orange' } : null);
 
         folds.secrets.setSubtitle(counted((script.Secrets || []).length, 'ScriptsSummaryNoSecrets', 'ScriptsSummarySecretsOne', 'ScriptsSummarySecretsMany'));
 
@@ -917,7 +917,7 @@ export default function (view) {
                             ? t.tr('ScriptsHelpShellLine')
                             : t.tr('ScriptsHelpCommand')
                     }) +
-                    (op.RunThroughShell ? '' : '<button is="emby-button" type="button" class="raised stolon-button secondary small" id="btnCheckPath"><span>' + esc(t.tr('ScriptsButtonCheckPath')) + '</span></button>') +
+                    (op.RunThroughShell ? '' : '<button is="emby-button" type="button" class="raised stolon-button secondary small stolon-gap-below-wide" id="btnCheckPath"><span>' + esc(t.tr('ScriptsButtonCheckPath')) + '</span></button>') +
                     (op.RunThroughShell ? '' : input(op, 'Arguments', t.tr('ScriptsLabelArguments'), {
                         textarea: true,
                         placeholder: '--title\n{{ITEM_NAME}}',
@@ -1486,7 +1486,7 @@ export default function (view) {
             });
             var replacingNames = replacing.map(function (s) { return '"' + s.Name + '"'; }).join(', ');
             var message = [
-                incoming.length === 1 ? t.tr('ScriptsConfirmImportOne') : t.format('ScriptsConfirmImportMany', incoming.length),
+                t.plural(incoming.length, 'ScriptsConfirmImportOne', 'ScriptsConfirmImportMany'),
                 !replacing.length ? '' : replacing.length === 1 ? t.format('ScriptsConfirmImportReplacingOne', replacingNames) : t.format('ScriptsConfirmImportReplacingMany', replacing.length, replacingNames),
                 t.tr('ScriptsConfirmImportReview')
             ].filter(Boolean).join(' ');

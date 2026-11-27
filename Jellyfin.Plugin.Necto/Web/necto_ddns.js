@@ -3,9 +3,8 @@
 // each in an editor sidecar with the fields its provider uses, its update interval, and its status.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
-import * as fields from './configurationpage?name=necto_netfields.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // The outcome labels the update run writes, in its own words, and the state each shows as.
 var ACTIONS = {
@@ -102,7 +101,7 @@ export function recordItems(entries, providers, t) {
     return (entries || []).map(function (entry) {
         var r = entry.Record;
         var where = r.FollowProxyHosts
-            ? t.format((entry.Followed || []).length === 1 ? 'DdnsFollowsHostsOne' : 'DdnsFollowsHostsMany', (entry.Followed || []).length)
+            ? t.plural((entry.Followed || []).length, 'DdnsFollowsHostsOne', 'DdnsFollowsHostsMany')
             : (r.Hostname || '');
         var tags = [];
         var result = resultTag(r.FollowProxyHosts && (entry.Followed || []).length ? worst(entry.Followed) : r, t);
@@ -181,52 +180,52 @@ export function createRecordEditor(record, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var draft = JSON.parse(JSON.stringify(record || newRecord()));
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var root = el('div', { 'data-role': 'record-editor' }, [status]);
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var root = h('div', { 'data-role': 'record-editor' }, [status]);
     var handles = [];
 
-    var name = fields.inputField({ label: t.tr('LabelName'), field: 'Name', value: draft.Name, help: t.tr('DdnsNameHelp') });
-    var enabled = fields.checkField({ label: t.tr('DdnsLabelEnabled'), field: 'Enabled', checked: draft.Enabled !== false, help: t.tr('DdnsEnabledHelp') });
-    var provider = fields.selectField({
+    var name = nectoModule.createInputField({ label: t.tr('LabelName'), field: 'Name', value: draft.Name, help: t.tr('DdnsNameHelp') });
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelEnabled'), field: 'Enabled', checked: draft.Enabled !== false, help: t.tr('DdnsEnabledHelp') });
+    var provider = nectoModule.createSelectField({
         label: t.tr('LabelProvider'),
         field: 'Provider',
-        options: (ctx.providers || []).map(function (p) { return { value: p.Value, label: p.Label }; }),
+        options: (ctx.providers || []).map(function (p) { return { value: p.Value, text: p.Label }; }),
         value: draft.Provider
     });
-    var follow = fields.checkField({ label: t.tr('DdnsLabelFollowProxy'), field: 'FollowProxyHosts', checked: !!draft.FollowProxyHosts, help: t.tr('DdnsFollowProxyHelp') });
-    var hostname = fields.inputField({ label: t.tr('DdnsLabelHostname'), field: 'Hostname', value: draft.Hostname, placeholder: 'home.example.com', help: t.tr('DdnsHostnameHelp') });
-    var guide = el('a', { class: 'button-link', target: '_blank', rel: 'noopener noreferrer', 'data-role': 'provider-guide' });
-    provider.element.appendChild(el('div', { class: 'fieldDescription' }, [guide]));
-    var login = fields.secretField({ label: t.tr('GuideProviderLogin'), field: 'Login', clearText: t.tr('ButtonClearSaved') });
-    var password = fields.secretField({ label: t.tr('LabelPassword'), field: 'Password', help: t.tr('DdnsLimitedTokenHelp'), clearText: t.tr('ButtonClearSaved') });
-    var zone = fields.inputField({ label: t.tr('DdnsLabelZone'), field: 'Zone', value: draft.Zone, placeholder: 'example.com' });
-    var ipv4 = fields.checkField({ label: t.tr('DdnsLabelUpdateIpv4'), field: 'UpdateIPv4', checked: draft.UpdateIPv4 !== false });
-    var ipv6 = fields.checkField({ label: t.tr('DdnsLabelUpdateIpv6'), field: 'UpdateIPv6', checked: !!draft.UpdateIPv6, help: t.tr('DdnsUpdateFamiliesHelp') });
-    var every = fields.inputField({ label: t.tr('DdnsLabelUpdateEvery'), field: 'UpdateEveryMinutes', type: 'number', min: 5, value: draft.UpdateEveryMinutes || 15, help: t.tr('DdnsUpdateEveryHelp') });
-    var server = fields.inputField({ label: t.tr('DdnsLabelServerOverride'), field: 'Server', value: draft.Server, placeholder: 'Default', help: t.tr('DdnsServerOverrideHelp') });
-    var ttl = fields.inputField({ label: t.tr('DdnsLabelTtl'), field: 'Ttl', type: 'number', min: 1, value: draft.Ttl || 1, help: t.tr('DdnsTtlHelp') });
-    var proxied = fields.checkField({ label: t.tr('DdnsLabelProxied'), field: 'Proxied', checked: !!draft.Proxied, help: t.tr('DdnsProxiedHelp') });
-    var wildcard = fields.checkField({ label: t.tr('DdnsLabelWildcard'), field: 'Wildcard', checked: !!draft.Wildcard, help: t.tr('DdnsWildcardHelp') });
-    var isStatic = fields.checkField({ label: t.tr('DdnsLabelStaticDns'), field: 'Static', checked: !!draft.Static, help: t.tr('DdnsStaticDnsHelp') });
-    var mx = fields.inputField({ label: t.tr('DdnsLabelMxHost'), field: 'Mx', value: draft.Mx, placeholder: 'mail.example.com', help: t.tr('DdnsMxHostHelp') });
-    var backupMx = fields.checkField({ label: t.tr('DdnsLabelBackupMx'), field: 'BackupMx', checked: !!draft.BackupMx });
+    var follow = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelFollowProxy'), field: 'FollowProxyHosts', checked: !!draft.FollowProxyHosts, help: t.tr('DdnsFollowProxyHelp') });
+    var hostname = nectoModule.createInputField({ label: t.tr('DdnsLabelHostname'), field: 'Hostname', value: draft.Hostname, placeholder: 'home.example.com', help: t.tr('DdnsHostnameHelp') });
+    var hint = h('div', { class: 'fieldDescription' });
+    var guide = h('a', { class: 'button-link', target: '_blank', rel: 'noopener noreferrer', 'data-role': 'provider-guide' });
+    provider.element.appendChild(hint);
+    provider.element.appendChild(h('div', { class: 'fieldDescription' }, [guide]));
+    var login = nectoModule.createSecretField({ label: t.tr('GuideProviderLogin'), field: 'Login', stored: !!draft.Login, clearText: t.tr('ButtonClearSaved') });
+    var password = nectoModule.createSecretField({ label: t.tr('LabelPassword'), field: 'Password', help: t.tr('DdnsLimitedTokenHelp'), stored: !!draft.Password, clearText: t.tr('ButtonClearSaved') });
+    var zone = nectoModule.createInputField({ label: t.tr('DdnsLabelZone'), field: 'Zone', value: draft.Zone, placeholder: 'example.com' });
+    var ipv4 = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelUpdateIpv4'), field: 'UpdateIPv4', checked: draft.UpdateIPv4 !== false });
+    var ipv6 = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelUpdateIpv6'), field: 'UpdateIPv6', checked: !!draft.UpdateIPv6, help: t.tr('DdnsUpdateFamiliesHelp') });
+    var every = nectoModule.createInputField({ label: t.tr('DdnsLabelUpdateEvery'), field: 'UpdateEveryMinutes', type: 'number', min: 5, value: draft.UpdateEveryMinutes || 15, help: t.tr('DdnsUpdateEveryHelp') });
+    var server = nectoModule.createInputField({ label: t.tr('DdnsLabelServerOverride'), field: 'Server', value: draft.Server, placeholder: 'Default', help: t.tr('DdnsServerOverrideHelp') });
+    var ttl = nectoModule.createInputField({ label: t.tr('DdnsLabelTtl'), field: 'Ttl', type: 'number', min: 1, value: draft.Ttl || 1, help: t.tr('DdnsTtlHelp') });
+    var proxied = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelProxied'), field: 'Proxied', checked: !!draft.Proxied, help: t.tr('DdnsProxiedHelp') });
+    var wildcard = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelWildcard'), field: 'Wildcard', checked: !!draft.Wildcard, help: t.tr('DdnsWildcardHelp') });
+    var isStatic = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelStaticDns'), field: 'Static', checked: !!draft.Static, help: t.tr('DdnsStaticDnsHelp') });
+    var mx = nectoModule.createInputField({ label: t.tr('DdnsLabelMxHost'), field: 'Mx', value: draft.Mx, placeholder: 'mail.example.com', help: t.tr('DdnsMxHostHelp') });
+    var backupMx = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelBackupMx'), field: 'BackupMx', checked: !!draft.BackupMx });
 
-    shared.bindSecretField(login.input, !!draft.Login, { clearButton: login.clear });
-    shared.bindSecretField(password.input, !!draft.Password, { clearButton: password.clear });
 
     [name, enabled, provider].forEach(function (f) { root.appendChild(f.element); });
-    root.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderName') }));
+    root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderName') }));
     [follow, hostname, login, password, zone].forEach(function (f) { root.appendChild(f.element); });
-    root.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderUpdates') }));
+    root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderUpdates') }));
     [ipv4, ipv6, every].forEach(function (f) { root.appendChild(f.element); });
-    var advanced = el('div', {}, [server, ttl, proxied, wildcard, isStatic, mx, backupMx].map(function (f) { return f.element; }));
+    var advanced = h('div', {}, [server, ttl, proxied, wildcard, isStatic, mx, backupMx].map(function (f) { return f.element; }));
     var advancedSection = nectoModule.createCollapsibleSection({ title: t.tr('DdnsHeaderAdvanced'), icon: 'tune', collapsed: true, content: advanced });
     root.appendChild(advancedSection.element);
     handles.push(advancedSection);
 
     if (draft.Id) {
-        var statusList = el('div', { 'data-role': 'record-status' });
-        root.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderStatus') }));
+        var statusList = h('div', { 'data-role': 'record-status' });
+        root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderStatus') }));
         root.appendChild(statusList);
         var rows = draft.FollowProxyHosts && (ctx.followed || []).length
             ? (ctx.followed || []).map(function (f) {
@@ -244,7 +243,7 @@ export function createRecordEditor(record, ctx) {
     function showFields() {
         var spec = fields_of(provider.input.value);
         var f = spec.Fields || {};
-        provider.help.textContent = spec.Hint || '';
+        hint.textContent = spec.Hint || '';
         guide.setAttribute('href', guideUrl(provider.input.value));
         guide.textContent = t.format('DdnsProviderGuide', spec.Label || provider.input.value);
         var set = function (field, label) {
@@ -289,14 +288,14 @@ export function createRecordEditor(record, ctx) {
             out.Provider = provider.input.value;
             out.FollowProxyHosts = !!fields_of(provider.input.value).Follow && !!follow.input.checked;
             out.Hostname = spec.Hostname ? hostname.input.value.trim() : '';
-            out.Login = spec.Login ? shared.readSecretField(login.input) : '';
-            out.Password = spec.Password ? shared.readSecretField(password.input) : '';
+            out.Login = spec.Login ? login.getValue() : '';
+            out.Password = spec.Password ? password.getValue() : '';
             out.Zone = spec.Zone ? zone.input.value.trim() : '';
             out.UpdateIPv4 = !!ipv4.input.checked;
             out.UpdateIPv6 = spec.IPv6 === false ? false : !!ipv6.input.checked;
-            out.UpdateEveryMinutes = Math.max(5, fields.readNumber(every.input) || 15);
+            out.UpdateEveryMinutes = Math.max(5, nectoModule.readNumber(every.input) || 15);
             out.Server = spec.Server ? server.input.value.trim() : '';
-            out.Ttl = spec.Ttl ? Math.max(1, fields.readNumber(ttl.input) || 1) : out.Ttl;
+            out.Ttl = spec.Ttl ? Math.max(1, nectoModule.readNumber(ttl.input) || 1) : out.Ttl;
             out.Proxied = !!proxied.input.checked;
             out.Wildcard = adv.indexOf('wildcard') >= 0 && !!wildcard.input.checked;
             out.Static = adv.indexOf('static') >= 0 && !!isStatic.input.checked;
@@ -337,8 +336,8 @@ export function outcomeMessage(outcome, shared) {
     var warnings = (outcome && outcome.Warnings) || [];
     if (records.length === 0) return { text: warnings.length ? warnings.join(' ') : t.tr('DdnsNoRecordsToUpdate'), error: warnings.length > 0 };
     var parts = [];
-    if (updated) parts.push(shared.plural(updated, 'DdnsRunUpdatedOne', 'DdnsRunUpdatedMany'));
-    if (failed) parts.push(shared.plural(failed, 'DdnsRunFailedOne', 'DdnsRunFailedMany'));
+    if (updated) parts.push(shared.t.plural(updated, 'DdnsRunUpdatedOne', 'DdnsRunUpdatedMany'));
+    if (failed) parts.push(shared.t.plural(failed, 'DdnsRunFailedOne', 'DdnsRunFailedMany'));
     if (!parts.length) parts.push(t.tr('DdnsRunNothingChanged'));
     return { text: parts.concat(warnings).join(' '), error: failed > 0 };
 }

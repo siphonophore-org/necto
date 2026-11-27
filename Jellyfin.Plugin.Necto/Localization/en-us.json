@@ -2875,6 +2875,8 @@
   "StorageLastChecked": "Checked {0}",
   "StorageLevelFull": "Full",
   "StorageLevelLow": "Low",
+  "StorageMeasureGigabytesHelp": "Alerts on how much space a disk has left, in GB.",
+  "StorageMeasurePercentHelp": "Alerts on how full a disk is, in percent.",
   "StorageMissingSince": "missing {0}",
   "StorageNoticeAllHealthy": "Every disk your libraries use is healthy.",
   "StorageNoticeDiskMissingSince": "Not mounted since {0}. Its library items stay until it is back.",

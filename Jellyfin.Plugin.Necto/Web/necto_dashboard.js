@@ -180,7 +180,7 @@ export function groupsCard(t, config) {
     groups.forEach(function (g) { (g.MemberIds || []).forEach(function (id) { members[String(id).toLowerCase()] = true; }); });
     var count = Object.keys(members).length;
     card.value = groups.length;
-    card.detail = t.format(count === 1 ? 'DashboardMembersOne' : 'DashboardMembersMany', count);
+    card.detail = t.plural(count, 'DashboardMembersOne', 'DashboardMembersMany');
     return card;
 }
 
@@ -677,16 +677,16 @@ export default function (view) {
     }
 
     function buildMap(t) {
-        var body = nectoModule.el('div', { class: 'necto-detail' });
-        mapNote = nectoModule.el('div', { class: 'stolon-info stolon-hidden', text: t.tr('DashboardMapLoading') });
-        mapHost = nectoModule.el('div');
-        tableHost = nectoModule.el('div');
-        attribution = nectoModule.el('a', { class: 'button-link', href: 'https://db-ip.com', target: '_blank', rel: 'noopener noreferrer' });
-        body.appendChild(nectoModule.el('div', { class: 'fieldDescription', text: t.tr('DashboardMapHelp') }));
+        var body = nectoModule.h('div', { class: 'stolon-stack' });
+        mapNote = nectoModule.h('div', { class: 'stolon-info stolon-hidden', text: t.tr('DashboardMapLoading') });
+        mapHost = nectoModule.h('div');
+        tableHost = nectoModule.h('div');
+        attribution = nectoModule.h('a', { class: 'button-link', href: 'https://db-ip.com', target: '_blank', rel: 'noopener noreferrer' });
+        body.appendChild(nectoModule.h('div', { class: 'fieldDescription', text: t.tr('DashboardMapHelp') }));
         body.appendChild(mapNote);
         body.appendChild(mapHost);
         body.appendChild(tableHost);
-        body.appendChild(nectoModule.el('div', { class: 'fieldDescription' }, [attribution]));
+        body.appendChild(nectoModule.h('div', { class: 'fieldDescription' }, [attribution]));
         var section = nectoModule.createCollapsibleSection({ title: t.tr('HeaderLocations'), icon: 'public', collapsible: false, content: body });
         getEl('dashboardMap').appendChild(section.element);
     }
@@ -734,13 +734,13 @@ export default function (view) {
     }
 
     function buildShare(t) {
-        var body = nectoModule.el('div', { class: 'necto-dashboard-share' });
-        shareNote = nectoModule.el('div', { class: 'fieldDescription', text: t.tr('DashboardShareNote') });
-        shareHomeOnly = nectoModule.el('div', { class: 'stolon-warn stolon-hidden', text: t.tr('DashboardShareHomeOnly') });
+        var body = nectoModule.h('div', { class: 'stolon-stack stolon-narrow' });
+        shareNote = nectoModule.h('div', { class: 'fieldDescription', text: t.tr('DashboardShareNote') });
+        shareHomeOnly = nectoModule.h('div', { class: 'stolon-warn stolon-hidden', text: t.tr('DashboardShareHomeOnly') });
         qr = nectoModule.createQrCode({ label: t.tr('DashboardShareQrLabel'), fileName: 'jellyfin-qr.png' });
-        shareButton = nectoModule.el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button secondary small stolon-hidden' }, [
-            nectoModule.el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'share' }),
-            nectoModule.el('span', { text: t.tr('Share') })
+        shareButton = nectoModule.h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button secondary small stolon-hidden' }, [
+            nectoModule.h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'share' }),
+            nectoModule.h('span', { text: t.tr('Share') })
         ]);
         shareButton.addEventListener('click', function () {
             navigator.share({ title: 'Jellyfin', url: qr.getValue() }).catch(function () { /* closed without sharing */ });
@@ -748,7 +748,7 @@ export default function (view) {
         body.appendChild(shareNote);
         body.appendChild(shareHomeOnly);
         body.appendChild(qr.element);
-        body.appendChild(nectoModule.el('div', { class: 'stolon-button-row' }, [shareButton]));
+        body.appendChild(nectoModule.h('div', { class: 'stolon-button-row' }, [shareButton]));
         share = nectoModule.createCollapsibleSection({ title: t.tr('DashboardHeaderShare'), icon: 'qr_code_2', collapsible: false, content: body });
         getEl('dashboardShare').appendChild(share.element);
     }

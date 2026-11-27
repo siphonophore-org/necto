@@ -5,7 +5,7 @@
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import * as sections from './configurationpage?name=necto_storage_sections.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // The string that says what each file system the server can offer is best for, by its name on the server.
 export var FILE_SYSTEM_HELP = {
@@ -122,7 +122,7 @@ export function meterOptions(disk) {
 export function tagsOf(t, disk) {
     var tags = [typeOf(t, disk)];
     var gone = (disk.MissingFolders || []).length;
-    if (gone) tags.push({ label: gone === 1 ? t.tr('StorageFolderMissing') : t.format('StorageFoldersMissing', gone), icon: 'folder_off', color: 'orange' });
+    if (gone) tags.push({ label: t.plural(gone, 'StorageFolderMissing', 'StorageFoldersMissing'), icon: 'folder_off', color: 'orange' });
     if (disk.Hot) tags.push({ label: t.tr('StorageAlertHot'), icon: 'thermostat', color: 'red' });
     if (disk.Worn) tags.push({ label: t.tr('StorageAlertWorn'), icon: 'battery_alert', color: 'orange' });
     return tags;
@@ -317,9 +317,9 @@ export default function (view) {
     // Output
     // [object]: { element, button, fail(text) }.
     function actionRow(label, destructive) {
-        var problem = el('div', { class: 'stolon-error stolon-hidden', role: 'status' });
-        var button = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + (destructive ? 'destructive' : 'primary') }, [el('span', { text: label })]);
-        var row = el('div', { class: 'necto-storage-actions' }, [problem, button]);
+        var problem = h('div', { class: 'stolon-error stolon-hidden necto-storage-actions-why', role: 'status' });
+        var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button ' + (destructive ? 'destructive' : 'primary') }, [h('span', { text: label })]);
+        var row = h('div', { class: 'necto-storage-actions' }, [problem, button]);
         return {
             element: row,
             button: button,
@@ -333,15 +333,15 @@ export default function (view) {
     // section
     // Builds a sidecar section with its heading.
     function section(title) {
-        return el('div', { class: 'necto-storage-section' }, [el('h3', { class: 'stolon-subsection-title', text: title })]);
+        return h('div', { class: 'necto-storage-section' }, [h('h3', { class: 'stolon-subsection-title', text: title })]);
     }
 
     // asideOf
     // Builds the end of a disk's row: its state badge, and a usage meter when the disk was read.
     function asideOf(disk) {
-        var aside = el('div', { class: 'necto-storage-disk-aside' });
+        var aside = h('div', { class: 'necto-storage-disk-aside' });
         var state = stateOf(t, disk);
-        var badge = el('span');
+        var badge = h('span');
         badge.innerHTML = shared.badge(state.color, state.label);
         aside.appendChild(badge);
         if (isRead(disk)) aside.appendChild(nectoModule.createUsageMeter(meterOptions(disk)).element);
@@ -384,8 +384,8 @@ export default function (view) {
                 { label: t.tr('StorageLabelFree'), value: disk.FreeBytes, color: token('--stolon-gray-fg') }
             ]
         });
-        var figures = el('div', { class: 'necto-storage-figures' });
-        var cards = el('div', { class: 'stolon-cards' });
+        var figures = h('div', { class: 'necto-storage-figures' });
+        var cards = h('div', { class: 'stolon-cards' });
         figures.appendChild(cards);
         var freeColor = disk.Level === 'Error' ? 'red' : disk.Level === 'Warning' ? 'orange' : 'green';
         shared.renderCards(cards, [
@@ -399,18 +399,18 @@ export default function (view) {
             stopCard(disk, disk.ErrorStop, disk.ErrorPercent, 'red', t.tr('StorageAlertFull'))
         ].filter(Boolean);
         if (stops.length) {
-            var alertCards = el('div', { class: 'stolon-cards' });
+            var alertCards = h('div', { class: 'stolon-cards' });
             figures.appendChild(alertCards);
             shared.renderCards(alertCards, stops);
         }
-        return el('div', { class: 'necto-storage-space' }, [chart.element, figures]);
+        return h('div', { class: 'necto-storage-space' }, [chart.element, figures]);
     }
 
     // librariesSection
     // Builds the sidecar's libraries, one tag each.
     function librariesSection(disk) {
         var part = section(t.tr('HeaderLibraries'));
-        part.appendChild(el('div', { class: 'stolon-tags' }, disk.Libraries.map(function (l) { return el('span', { class: 'stolon-tag stolon-tag-pill', text: l.Name }); })));
+        part.appendChild(h('div', { class: 'stolon-tags' }, disk.Libraries.map(function (l) { return h('span', { class: 'stolon-tag stolon-tag-pill', text: l.Name }); })));
         return part;
     }
 
@@ -429,7 +429,7 @@ export default function (view) {
             var owner = folder.Server ? t.tr(folder.Library) : folder.Library;
             return '<tr><td>' + badge + '</td><td class="stolon-mono">' + nectoModule.escapeHtml(folder.Path) + '</td><td>' + nectoModule.escapeHtml(owner) + '</td></tr>';
         }).join('');
-        var wrap = el('div', { class: 'stolon-static-table-scroll' });
+        var wrap = h('div', { class: 'stolon-static-table-scroll' });
         wrap.innerHTML = '<table class="stolon-static-table"><thead><tr><th>' + nectoModule.escapeHtml(t.tr('LabelStatus')) + '</th><th>'
             + nectoModule.escapeHtml(t.tr('LabelFolder')) + '</th><th>' + nectoModule.escapeHtml(t.tr('LabelUsage')) + '</th></tr></thead><tbody>' + rows + '</tbody></table>';
         part.appendChild(wrap);
@@ -448,8 +448,8 @@ export default function (view) {
             var own = storage.DiskOverrides.filter(function (o) { return o.MountPoint === disk.MountPoint; })[0];
             var editor = sections.createAlertEditor(t, { heading: false, onChange: changed });
             editor.setValue(own ? { WarningStop: own.WarningStop, ErrorStop: own.ErrorStop } : globals);
-            var inherited = el('div', { class: 'fieldDescription', text: t.format('StorageInheritedAlerts', sections.alertText(t, globals)) });
-            var indent = el('div', { class: 'stolon-indent' }, [editor.element]);
+            var inherited = h('div', { class: 'fieldDescription', text: t.format('StorageInheritedAlerts', sections.alertText(t, globals)) });
+            var indent = h('div', { class: 'stolon-indent' }, [editor.element]);
             var toggle = nectoModule.createCheckbox({
                 label: t.tr('StorageLabelOwnAlerts'),
                 description: t.tr('StorageHelpOwnAlerts'),
@@ -490,7 +490,7 @@ export default function (view) {
                 });
             });
         }).catch(function () {
-            part.appendChild(el('div', { class: 'stolon-error', text: t.tr('StorageErrorLoadSettings') }));
+            part.appendChild(h('div', { class: 'stolon-error', text: t.tr('StorageErrorLoadSettings') }));
         });
         return part;
     }
@@ -501,9 +501,9 @@ export default function (view) {
     function addressSection(disk) {
         var windows = /^[A-Za-z]:|^\\\\/.test(disk.MountPoint);
         var part = section(t.tr('StorageHeaderShareAddress'));
-        var input = el('input', { is: 'emby-input', type: 'text', class: 'stolon-mono', spellcheck: 'false', 'aria-label': t.tr('StorageHeaderShareAddress'), placeholder: windows ? '\\\\nas\\Media' : 'smb://nas.example.com/Media' });
+        var input = h('input', { is: 'emby-input', type: 'text', class: 'stolon-mono', spellcheck: 'false', 'aria-label': t.tr('StorageHeaderShareAddress'), placeholder: windows ? '\\\\nas\\Media' : 'smb://nas.example.com/Media' });
         input.value = disk.ShareAddress || '';
-        part.appendChild(el('div', { class: 'inputContainer' }, [input, el('div', { class: 'fieldDescription', text: t.tr(windows ? 'StorageHelpShareAddressWindows' : 'StorageHelpShareAddress') })]));
+        part.appendChild(h('div', { class: 'inputContainer' }, [input, h('div', { class: 'fieldDescription', text: t.tr(windows ? 'StorageHelpShareAddressWindows' : 'StorageHelpShareAddress') })]));
         var row = actionRow(t.tr('Save'));
         part.appendChild(row.element);
         var start = input.value.trim();
@@ -530,11 +530,11 @@ export default function (view) {
     // Builds the Add to library select, with None first.
     function librarySelect(libraries) {
         var id = 'necto-storage-library-' + Math.random().toString(36).slice(2, 8);
-        var select = el('select', { is: 'emby-select', id: id }, [el('option', { value: '', text: t.tr('None') })].concat(libraries.map(function (name) {
-            return el('option', { value: name, text: name });
+        var select = h('select', { is: 'emby-select', id: id }, [h('option', { value: '', text: t.tr('None') })].concat(libraries.map(function (name) {
+            return h('option', { value: name, text: name });
         })));
         return {
-            element: el('div', { class: 'selectContainer' }, [el('label', { class: 'selectLabel', for: id, text: t.tr('StorageLabelAddToLibrary') }), select]),
+            element: h('div', { class: 'selectContainer' }, [h('label', { class: 'selectLabel', for: id, text: t.tr('StorageLabelAddToLibrary') }), select]),
             select: select
         };
     }
@@ -547,13 +547,13 @@ export default function (view) {
         part.setAttribute('data-role', 'new-folder');
         ApiClient.getVirtualFolders().catch(function () { return []; }).then(function (found) {
             var id = 'necto-storage-folder-' + Math.random().toString(36).slice(2, 8);
-            var input = el('input', { is: 'emby-input', type: 'text', id: id, maxlength: '100' });
+            var input = h('input', { is: 'emby-input', type: 'text', id: id, maxlength: '100' });
             var library = librarySelect(librariesOf(found));
-            part.appendChild(el('div', { class: 'stolon-field-row necto-storage-folder-fields' }, [
-                el('div', { class: 'inputContainer' }, [
-                    el('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: t.tr('StorageLabelFolderName') }),
+            part.appendChild(h('div', { class: 'stolon-field-row necto-storage-folder-fields' }, [
+                h('div', { class: 'inputContainer' }, [
+                    h('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: t.tr('StorageLabelFolderName') }),
                     input,
-                    el('div', { class: 'fieldDescription', text: t.tr('StorageHelpFolderName') })
+                    h('div', { class: 'fieldDescription', text: t.tr('StorageHelpFolderName') })
                 ]),
                 library.element
             ]));
@@ -604,29 +604,29 @@ export default function (view) {
             var options = loaded[0] || {};
             var systems = options.FileSystems || [];
             if (!systems.length) {
-                part.appendChild(el('div', { class: 'stolon-info', text: t.tr('StorageNoticeFormatUnavailable') }));
+                part.appendChild(h('div', { class: 'stolon-info', text: t.tr('StorageNoticeFormatUnavailable') }));
                 return;
             }
 
             var nameId = 'necto-storage-volume-' + Math.random().toString(36).slice(2, 8);
-            var input = el('input', { is: 'emby-input', type: 'text', id: nameId, maxlength: '11' });
+            var input = h('input', { is: 'emby-input', type: 'text', id: nameId, maxlength: '11' });
             input.value = 'Media';
-            part.appendChild(el('div', { class: 'inputContainer' }, [
-                el('label', { class: 'inputLabel inputLabelUnfocused', for: nameId, text: t.tr('Name') }),
+            part.appendChild(h('div', { class: 'inputContainer' }, [
+                h('label', { class: 'inputLabel inputLabelUnfocused', for: nameId, text: t.tr('Name') }),
                 input,
-                el('div', { class: 'fieldDescription', text: t.tr('StorageHelpVolumeName') })
+                h('div', { class: 'fieldDescription', text: t.tr('StorageHelpVolumeName') })
             ]));
 
             // One card per file system, each saying what it is best for.
             var radio = 'necto-storage-fs-' + Math.random().toString(36).slice(2, 8);
-            var choices = el('div', { class: 'stolon-choice-group', role: 'radiogroup', 'aria-label': t.tr('StorageLabelFileSystem') }, systems.map(function (value) {
-                return el('label', { class: 'stolon-choice' }, [
-                    el('input', { type: 'radio', name: radio, value: value }),
-                    el('span', { class: 'stolon-choice-name', text: sections.named(t, value) }),
-                    el('span', { class: 'stolon-choice-text', text: FILE_SYSTEM_HELP[value] ? t.tr(FILE_SYSTEM_HELP[value]) : '' })
+            var choices = h('div', { class: 'stolon-choice-group', role: 'radiogroup', 'aria-label': t.tr('StorageLabelFileSystem') }, systems.map(function (value) {
+                return h('label', { class: 'stolon-choice' }, [
+                    h('input', { type: 'radio', name: radio, value: value }),
+                    h('span', { class: 'stolon-choice-name', text: sections.named(t, value) }),
+                    h('span', { class: 'stolon-choice-text', text: FILE_SYSTEM_HELP[value] ? t.tr(FILE_SYSTEM_HELP[value]) : '' })
                 ]);
             }));
-            part.appendChild(el('div', { class: 'stolon-field' }, [el('label', { text: t.tr('StorageLabelFileSystem') }), choices]));
+            part.appendChild(h('div', { class: 'stolon-field' }, [h('label', { text: t.tr('StorageLabelFileSystem') }), choices]));
             var system = nectoModule.createChoiceGroup(choices, {});
             system.set(systems[0]);
 
@@ -634,7 +634,7 @@ export default function (view) {
             part.appendChild(library.element);
 
             // Where it will be mounted, which follows the name.
-            var where = el('div', { class: 'stolon-warn' });
+            var where = h('div', { class: 'stolon-warn' });
             part.appendChild(where);
             var describe = function () {
                 var name = input.value.trim();
@@ -702,7 +702,7 @@ export default function (view) {
                 });
             });
         }).catch(function () {
-            part.appendChild(el('div', { class: 'stolon-error', text: t.tr('StorageErrorLoadFormat') }));
+            part.appendChild(h('div', { class: 'stolon-error', text: t.tr('StorageErrorLoadFormat') }));
         });
         return part;
     }
@@ -744,7 +744,7 @@ export default function (view) {
     // openDisk
     // Opens a sidecar with one disk's facts, space, alerts, libraries, folders, and forms.
     function openDisk(disk) {
-        var body = el('div', { class: 'necto-storage-disk', 'data-role': 'disk' });
+        var body = h('div', { class: 'necto-storage-disk', 'data-role': 'disk' });
         var state = stateOf(t, disk);
         var health = healthFacts(disk);
         var facts = [{ label: t.tr('LabelStatus'), value: { badge: { label: state.label, color: state.color } } }];
@@ -764,17 +764,17 @@ export default function (view) {
             body.appendChild(spaceSection(disk));
         } else if (disk.MissingSinceUtc) {
             var key = disk.State === 'Missing' ? 'StorageNoticeDiskMissingSince' : 'StorageNoticeDiskUnresponsiveSince';
-            body.appendChild(el('div', { class: 'stolon-error', text: t.format(key, shared.formatDate(disk.MissingSinceUtc)) }));
+            body.appendChild(h('div', { class: 'stolon-error', text: t.format(key, shared.formatDate(disk.MissingSinceUtc)) }));
         }
 
         if (disk.State === 'Unformatted') {
-            body.appendChild(el('div', { class: 'stolon-info', text: t.tr('StorageNoticeDiskUnformatted') }));
+            body.appendChild(h('div', { class: 'stolon-info', text: t.tr('StorageNoticeDiskUnformatted') }));
             body.appendChild(formatSection(disk));
         } else if (disk.State === 'NotMounted' && libraryMount(disk.MountsAt)) {
             // A library's own disk, dropped off its mount point, is mounted again rather than erased.
-            body.appendChild(el('div', { class: 'stolon-error', text: t.format('StorageNoticeLibraryDisk', disk.MountsAt) }));
+            body.appendChild(h('div', { class: 'stolon-error', text: t.format('StorageNoticeLibraryDisk', disk.MountsAt) }));
         } else if (disk.State === 'NotMounted') {
-            body.appendChild(el('div', { class: 'stolon-warn', text: t.tr('StorageNoticeDiskNotMounted') }));
+            body.appendChild(h('div', { class: 'stolon-warn', text: t.tr('StorageNoticeDiskNotMounted') }));
             body.appendChild(formatSection(disk));
         } else if (disk.InUse) {
             // A share, or a disk gone missing, can be given the address it is mounted from.
@@ -785,7 +785,7 @@ export default function (view) {
             if (disk.State === 'Available') body.appendChild(newFolderSection(disk));
         } else {
             body.appendChild(alertsSection(disk));
-            body.appendChild(el('div', { class: 'stolon-info', text: t.tr('StorageNoticeDiskUnused') }));
+            body.appendChild(h('div', { class: 'stolon-info', text: t.tr('StorageNoticeDiskUnused') }));
             body.appendChild(newFolderSection(disk));
         }
 
@@ -810,14 +810,9 @@ export default function (view) {
         banner.textContent = '';
         var issues = allIssues(t, shared, used);
         var kind = !issues.length ? 'success' : issues.some(function (i) { return i.serious; }) ? 'error' : 'warn';
-        banner.className = 'stolon-' + kind + (issues.length ? ' necto-storage-attention' : '');
         var text = !issues.length ? (used.length ? t.tr('StorageNoticeAllHealthy') : t.tr('StorageNoticeNoDisks')) : issues.length === 1 ? issues[0].text : '';
-        var made = nectoModule.createBanner({ kind: kind, text: text, dismissible: false });
-        banner.appendChild(made.element);
-        if (issues.length > 1) {
-            var body = made.element.querySelector('.stolon-banner-text') || made.element;
-            body.appendChild(el('ul', {}, issues.map(function (issue) { return el('li', { text: issue.text }); })));
-        }
+        var items = issues.length > 1 ? issues.map(function (issue) { return issue.text; }) : null;
+        banner.appendChild(nectoModule.createBanner({ kind: kind, text: text, items: items, dismissible: false }).element);
     }
 
     // renderSpace
@@ -828,7 +823,7 @@ export default function (view) {
         cards.classList.toggle('stolon-hidden', !space);
         cards.textContent = '';
         if (!space) return;
-        var detail = space.count === 1 ? t.tr('StorageSpaceOneDisk') : t.format('StorageSpaceDisks', space.count);
+        var detail = t.plural(space.count, 'StorageSpaceOneDisk', 'StorageSpaceDisks');
         shared.renderCards(cards, [
             { label: t.tr('LabelSize') + ' · ' + detail, count: shared.formatSize(space.total) },
             { label: t.tr('StorageLabelUsed'), count: shared.formatSize(space.total - space.free) },

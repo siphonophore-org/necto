@@ -156,32 +156,28 @@ test('pending password resets show their counts and the HTTPS warning', async fu
     assert.match(resets.textContent, /Reset codes are sent over this connection\. Use HTTPS so they cannot be read in transit\./);
 });
 
-test('a tool with an on switch has a green tile while on, a gray one while off, and follows its switch', async function () {
-    var page = installPage({});
-    var dom = page.dom;
-    var mod = await loadScript('necto_settings.js');
-    function entry(key) {
-        var tile = dom.el('span', { class: 'stolon-collapsible-tile' });
-        var box = dom.el('input', { type: 'checkbox' });
-        return { key: key, tile: tile, box: box, collapsible: { element: dom.el('div', {}, [tile, box]) } };
-    }
-    var proxy = entry('proxy'), wireguard = entry('wireguard'), groups = entry('groups');
+test('the tile of a tool turns green as its switch is turned on, and gray as it is turned off', async function () {
+    var config = allToolsOn();
+    config.Scripts.Enabled = false;
+    var opened = await openTool('settings', { config: config, answers: { 'GET Ddns/Settings': { Enabled: true } } });
+    var section = opened.section('scripts');
+    var box = section.querySelector('input[type="checkbox"]');
+    var tile = section.querySelector('.stolon-collapsible-tile');
+    assert.ok(tile.classList.contains('stolon-gray'));
 
-    mod.paintSwitchTiles([proxy, wireguard, groups], { Proxy: { Enabled: true }, WireGuard: { Enabled: false } });
+    box.checked = true;
+    box.dispatchEvent(new globalThis.Event('change'));
+    assert.ok(tile.classList.contains('stolon-green'));
 
-    assert.ok(proxy.tile.classList.contains('stolon-green'));
-    assert.ok(wireguard.tile.classList.contains('stolon-gray'));
-    assert.ok(!groups.tile.classList.contains('stolon-green') && !groups.tile.classList.contains('stolon-gray'));
-
-    wireguard.box.checked = true;
-    wireguard.box.dispatchEvent(new globalThis.Event('change'));
-    assert.ok(wireguard.tile.classList.contains('stolon-green'));
+    box.checked = false;
+    box.dispatchEvent(new globalThis.Event('change'));
+    assert.ok(tile.classList.contains('stolon-gray'));
 });
 
 test('each tool with a switch has Enabled as its first checkbox, and its tile is green while on and gray while off', async function () {
     var config = allToolsOn();
     config.Storage.Enabled = false;
-    var opened = await openTool('settings', { config: config, answers: { 'GET Ddns/Settings': { Enabled: true } } });
+    var opened = await openTool('settings', { config: config, answers: { 'GET Ddns/Settings': { Enabled: true }, 'GET Proxy/Defaults': {}, 'GET Proxy/Settings': { Enabled: true } } });
     ['requests', 'issues', 'invites', 'proxy', 'ddns', 'wireguard', 'scripts', 'pages', 'storage'].forEach(function (key) {
         var section = opened.section(key);
         var box = section.querySelector('input[type="checkbox"]');

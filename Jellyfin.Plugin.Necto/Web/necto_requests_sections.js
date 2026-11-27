@@ -3,7 +3,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // The keys of the scheduled tasks Troubleshooting runs.
 export var SWEEP_TASK = 'RequestsSweep';
@@ -279,10 +279,10 @@ function sentence(t, key) {
 // Output
 // [HTMLElement]: The field.
 function field(id, label, control, help, select) {
-    return el('div', { class: select ? 'selectContainer' : 'inputContainer' }, [
-        el('label', { class: select ? 'selectLabel' : 'inputLabel inputLabelUnfocused', for: id, text: label }),
+    return h('div', { class: select ? 'selectContainer' : 'inputContainer' }, [
+        h('label', { class: select ? 'selectLabel' : 'inputLabel inputLabelUnfocused', for: id, text: label }),
         control,
-        help ? el('div', { class: 'fieldDescription', text: help }) : null
+        help ? h('div', { class: 'fieldDescription', text: help }) : null
     ]);
 }
 
@@ -297,9 +297,9 @@ function field(id, label, control, help, select) {
 // Output
 // [HTMLElement]: The field.
 function checkField(input, label, help) {
-    return el('div', { class: 'checkboxContainer' + (help ? ' checkboxContainer-withDescription' : '') }, [
-        el('label', {}, [input, el('span', { text: label })]),
-        help ? el('div', { class: 'fieldDescription checkboxFieldDescription', text: help }) : null
+    return h('div', { class: 'checkboxContainer' + (help ? ' checkboxContainer-withDescription' : '') }, [
+        h('label', {}, [input, h('span', { text: label })]),
+        help ? h('div', { class: 'fieldDescription checkboxFieldDescription', text: help }) : null
     ]);
 }
 
@@ -314,7 +314,7 @@ function checkField(input, label, help) {
 // Output
 // [HTMLInputElement]: The input.
 function numberInput(id, path, min) {
-    return el('input', { is: 'emby-input', type: 'number', id: id, 'data-field': path, min: String(min || 0), step: '1' });
+    return h('input', { is: 'emby-input', type: 'number', id: id, 'data-field': path, min: String(min || 0), step: '1' });
 }
 
 // checkbox
@@ -327,7 +327,7 @@ function numberInput(id, path, min) {
 // Output
 // [HTMLInputElement]: The checkbox.
 function checkbox(id, path) {
-    return el('input', { type: 'checkbox', is: 'emby-checkbox', id: id, 'data-field': path });
+    return h('input', { type: 'checkbox', is: 'emby-checkbox', id: id, 'data-field': path });
 }
 
 // linkSentence
@@ -342,10 +342,10 @@ function checkbox(id, path) {
 // [HTMLElement]: The sentence.
 function linkSentence(text, url, className) {
     var parts = String(text).split('{0}');
-    return el('div', { class: className }, [
-        el('span', { text: parts[0] || '' }),
-        el('span', { class: 'stolon-url' }, [el('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: url })]),
-        el('span', { text: parts.slice(1).join('{0}') })
+    return h('div', { class: className }, [
+        h('span', { text: parts[0] || '' }),
+        h('span', { class: 'stolon-url' }, [h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', text: url })]),
+        h('span', { text: parts.slice(1).join('{0}') })
     ]);
 }
 
@@ -397,7 +397,7 @@ function buildRequestSettings(content, ctx) {
     // sub
     // Adds a subsection title to the section.
     function sub(key) {
-        content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr(key) }));
+        content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr(key) }));
     }
 
     // numberField
@@ -423,10 +423,10 @@ function buildRequestSettings(content, ctx) {
         if (input) input.setAttribute('aria-label', t.tr(label));
         chips[path] = made;
         handles.push(made);
-        content.appendChild(el('div', { class: 'inputContainer', 'data-field': path }, [
-            el('div', { class: 'inputLabel', text: t.tr(label) }),
+        content.appendChild(h('div', { class: 'inputContainer', 'data-field': path }, [
+            h('div', { class: 'inputLabel', text: t.tr(label) }),
             made.element,
-            help ? el('div', { class: 'fieldDescription', text: t.tr(help) }) : null
+            help ? h('div', { class: 'fieldDescription', text: t.tr(help) }) : null
         ]));
         return made;
     }
@@ -477,8 +477,8 @@ function buildRequestSettings(content, ctx) {
 
     // The switch, first, with where users request.
     inputs.Enabled = checkbox(fieldId('requests-enabled'), 'Requests.Enabled');
-    content.appendChild(el('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
-        el('label', {}, [inputs.Enabled, el('span', { text: t.tr('LabelEnabled') })]),
+    content.appendChild(h('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
+        h('label', {}, [inputs.Enabled, h('span', { text: t.tr('LabelEnabled') })]),
         linkSentence(t.tr('RequestsHelpEnabled'), pageUrl('requests'), 'fieldDescription checkboxFieldDescription')
     ]));
 
@@ -488,20 +488,20 @@ function buildRequestSettings(content, ctx) {
     numberField('AgingAfterDays', 'RequestsLabelRemindAfterDays', null, 0, t.format('RequestsHelpAging', t.tr('RequestsEventAging')));
     numberField('AutoDeclineAfterDays', 'RequestsLabelRejectAfterDays', 'RequestsHelpRejectAfter', 0);
     var reasonId = fieldId('reason');
-    inputs.AutoDeclineReason = el('input', { is: 'emby-input', type: 'text', id: reasonId, 'data-field': 'AutoDeclineReason', maxlength: '500' });
+    inputs.AutoDeclineReason = h('input', { is: 'emby-input', type: 'text', id: reasonId, 'data-field': 'AutoDeclineReason', maxlength: '500' });
     content.appendChild(field(reasonId, t.tr('RequestsLabelAutoRejectReason'), inputs.AutoDeclineReason, t.tr('RequestsHelpAutoRejectReason')));
     checkSetting('FullSeriesOnly', 'RequestsLabelFullSeriesOnly', 'RequestsHelpFullSeriesOnly');
     checkSetting('AllowSpecials', 'RequestsLabelAllowSpecials', 'RequestsHelpAllowSpecials');
 
     // Quota windows
     sub('RequestsHeaderQuotaWindows');
-    content.appendChild(el('div', { class: 'fieldDescription', text: t.tr('RequestsHelpQuotaWindows') }));
+    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpQuotaWindows') }));
     numberField('MovieQuotaDays', 'RequestsLabelMovieQuotaDays', 'RequestsHelpMovieQuotaDays', 1);
     numberField('SeriesQuotaDays', 'RequestsLabelSeriesQuotaDays', 'RequestsHelpSeriesQuotaDays', 1);
 
     // Blocklist
     sub('RequestsHeaderBlocklist');
-    content.appendChild(el('div', { class: 'fieldDescription', text: t.tr('RequestsHelpBlocklist') }));
+    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpBlocklist') }));
     chipField('BlockedGenres', 'RequestsLabelBlockedGenres', null, { allowCreate: true, placeholder: t.tr('RequestsPlaceholderTypeToAdd') });
     chipField('BlockedRatings', 'RequestsLabelBlockedRatings', null, { allowCreate: true, placeholder: t.tr('RequestsPlaceholderTypeToAdd') });
     chipField('BlockedKeywords', 'RequestsLabelBlockedWords', 'RequestsHelpBlockedWords', { allowCreate: true, placeholder: t.tr('RequestsPlaceholderTypeToAdd') });
@@ -511,58 +511,58 @@ function buildRequestSettings(content, ctx) {
         options: LANGUAGES.map(function (c) { return { value: c, label: languageName(c, t) }; })
     });
     chipField('BlockedCollections', 'RequestsLabelBlockedCollections', 'RequestsHelpBlockedCollections', { placeholder: t.tr('RequestsPlaceholderTypeToFind'), searchFn: tmdbSearch('Collection') });
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('RequestsHeaderBlockedTitles') }));
-    content.appendChild(el('div', { class: 'fieldDescription', text: t.tr('RequestsHelpBlockedTitles') }));
-    var blockedMount = el('div', { 'data-role': 'blocked-titles' });
-    var blockedStatus = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'blocked-status' });
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('RequestsHeaderBlockedTitles') }));
+    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpBlockedTitles') }));
+    var blockedMount = h('div', { 'data-role': 'blocked-titles' });
+    var blockedStatus = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'blocked-status' });
     content.appendChild(blockedMount);
     content.appendChild(blockedStatus);
 
     // Radarr and Sonarr
     sub('RequestsLabelRadarrAndSonarr');
-    content.appendChild(el('div', { class: 'fieldDescription', text: t.tr('RequestsHelpServers') }));
-    var serverMount = el('div', { 'data-role': 'servers' });
+    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpServers') }));
+    var serverMount = h('div', { 'data-role': 'servers' });
     content.appendChild(serverMount);
-    content.appendChild(el('div', { class: 'stolon-card-list-actions' }, ['Movie', 'Series'].map(function (type) {
-        return el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-add-server': type }, [
-            el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
-            el('span', { text: t.tr(type === 'Movie' ? 'RequestsButtonAddRadarr' : 'RequestsButtonAddSonarr') })
+    content.appendChild(h('div', { class: 'stolon-card-list-actions' }, ['Movie', 'Series'].map(function (type) {
+        return h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-add-server': type }, [
+            h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
+            h('span', { text: t.tr(type === 'Movie' ? 'RequestsButtonAddRadarr' : 'RequestsButtonAddSonarr') })
         ]);
     })));
 
     // Discovery
     sub('RequestsHeaderDiscovery');
-    content.appendChild(el('div', { class: 'fieldDescription' }, [el('img', { src: '../requests/tmdb.svg', alt: 'TMDB', width: '60' })]));
-    content.appendChild(el('div', { class: 'fieldDescription', text: t.tr('RequestsTmdbNotice') }));
+    content.appendChild(h('div', { class: 'fieldDescription' }, [h('img', { src: '../requests/tmdb.svg', alt: 'TMDB', width: '60' })]));
+    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsTmdbNotice') }));
     var keyId = fieldId('tmdb-key');
-    inputs.TmdbApiKey = el('input', { is: 'emby-input', type: 'password', id: keyId, 'data-field': 'TmdbApiKey', autocomplete: 'off' });
-    var clearKey = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small stolon-hidden', 'data-action': 'clear-tmdb-key' }, [el('span', { text: t.tr('RequestsButtonClearSavedKey') })]);
-    content.appendChild(el('div', { class: 'inputContainer' }, [
-        el('label', { class: 'inputLabel inputLabelUnfocused', for: keyId, text: t.tr('RequestsLabelTmdbApiKey') }),
+    inputs.TmdbApiKey = h('input', { is: 'emby-input', type: 'password', id: keyId, 'data-field': 'TmdbApiKey', autocomplete: 'off' });
+    var clearKey = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small stolon-hidden', 'data-action': 'clear-tmdb-key' }, [h('span', { text: t.tr('RequestsButtonClearSavedKey') })]);
+    content.appendChild(h('div', { class: 'inputContainer' }, [
+        h('label', { class: 'inputLabel inputLabelUnfocused', for: keyId, text: t.tr('RequestsLabelTmdbApiKey') }),
         inputs.TmdbApiKey,
-        el('div', { class: 'fieldDescription', text: t.tr('RequestsHelpTmdbKey') }),
+        h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpTmdbKey') }),
         clearKey
     ]));
     checkSetting('HideAvailableInRows', 'RequestsLabelHideAvailable', 'RequestsHelpHideAvailable');
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('RequestsHeaderHomeRows') }));
-    content.appendChild(el('div', { class: 'fieldDescription', text: t.tr('RequestsHelpHomeRows') }));
-    var rowMount = el('div', { class: 'stolon-card-list', 'data-role': 'home-rows' });
-    var rowEditorEl = el('div', { 'data-role': 'home-row-editor' });
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('RequestsHeaderHomeRows') }));
+    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpHomeRows') }));
+    var rowMount = h('div', { class: 'stolon-card-list', 'data-role': 'home-rows' });
+    var rowEditorEl = h('div', { 'data-role': 'home-row-editor' });
     content.appendChild(rowMount);
-    content.appendChild(el('div', { class: 'stolon-hidden' }, [rowEditorEl]));
-    content.appendChild(el('div', { class: 'stolon-card-list-actions' }, [
-        el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'add-row' }, [
-            el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
-            el('span', { text: t.tr('RequestsButtonAddRow') })
+    content.appendChild(h('div', { class: 'stolon-hidden' }, [rowEditorEl]));
+    content.appendChild(h('div', { class: 'stolon-card-list-actions' }, [
+        h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'add-row' }, [
+            h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
+            h('span', { text: t.tr('RequestsButtonAddRow') })
         ])
     ]));
 
     // Imports
     sub('RequestsHeaderImports');
     var scanId = fieldId('scan');
-    inputs.RefreshOnAvailable = el('select', { is: 'emby-select', id: scanId, 'data-field': 'RefreshOnAvailable' });
+    inputs.RefreshOnAvailable = h('select', { is: 'emby-select', id: scanId, 'data-field': 'RefreshOnAvailable' });
     [['ItemFolder', 'RequestsOptionScanTitleFolder'], ['FullLibrary', 'AllLibraries'], ['Disabled', 'RequestsOptionScanNone']].forEach(function (o) {
-        inputs.RefreshOnAvailable.appendChild(el('option', { value: o[0], text: t.tr(o[1]) }));
+        inputs.RefreshOnAvailable.appendChild(h('option', { value: o[0], text: t.tr(o[1]) }));
     });
     content.appendChild(field(scanId, t.tr('RequestsLabelScanAfterDownload'), inputs.RefreshOnAvailable, t.tr('RequestsHelpScan'), true));
     numberField('RetentionDays', 'RequestsLabelKeepFinishedDays', 'RequestsHelpKeepFinished', 0);
@@ -576,7 +576,7 @@ function buildRequestSettings(content, ctx) {
                 id: String(i) + ':' + b.Title,
                 title: b.Title + (b.Year ? ' (' + b.Year + ')' : ''),
                 secondary: [enumName(b.Type, TYPES) === 'Series' ? t.tr('LabelShow') : t.tr('Movie')].concat(ids).join(' · '),
-                aside: el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-unblock': String(i), 'aria-label': t.format('RequestsLabelUnblockTitle', b.Title) }, [el('span', { text: t.tr('ButtonUnblock') })])
+                aside: h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-unblock': String(i), 'aria-label': t.format('RequestsLabelUnblockTitle', b.Title) }, [h('span', { text: t.tr('ButtonUnblock') })])
             };
         });
         if (blockedList) blockedList.destroy();
@@ -645,26 +645,26 @@ function buildRequestSettings(content, ctx) {
         var savedUrl = server.Url || '';
         var ids = { def: fieldId('default'), name: fieldId('name'), url: fieldId('url'), ext: fieldId('external'), key: fieldId('key'), search: fieldId('search') };
         var defaultBox = checkbox(ids.def, 'IsDefault');
-        var nameInput = el('input', { is: 'emby-input', type: 'text', id: ids.name, 'data-field': 'Name', maxlength: '100', placeholder: arr.name });
-        var urlInput = el('input', { is: 'emby-input', type: 'url', id: ids.url, 'data-field': 'Url', placeholder: arr.example });
-        var extInput = el('input', { is: 'emby-input', type: 'url', id: ids.ext, 'data-field': 'ExternalUrl', maxlength: '500', placeholder: 'https://' + arr.name.toLowerCase() + '.example.com' });
-        var keyInput = el('input', { is: 'emby-input', type: 'password', id: ids.key, 'data-field': 'ApiKey', autocomplete: 'off' });
+        var nameInput = h('input', { is: 'emby-input', type: 'text', id: ids.name, 'data-field': 'Name', maxlength: '100', placeholder: arr.name });
+        var urlInput = h('input', { is: 'emby-input', type: 'url', id: ids.url, 'data-field': 'Url', placeholder: arr.example });
+        var extInput = h('input', { is: 'emby-input', type: 'url', id: ids.ext, 'data-field': 'ExternalUrl', maxlength: '500', placeholder: 'https://' + arr.name.toLowerCase() + '.example.com' });
+        var keyInput = h('input', { is: 'emby-input', type: 'password', id: ids.key, 'data-field': 'ApiKey', autocomplete: 'off' });
         var searchBox = checkbox(ids.search, 'SearchOnAdd');
-        var testStatus = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'test-status' });
-        var doneStatus = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-        var profileMount = el('div', { 'data-role': 'profiles' });
-        var testButton = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'test' }, [el('span', { text: t.tr('RequestsButtonTestLoadOptions') })]);
-        var body = el('div', { 'data-role': 'server-editor' }, [
-            el('h3', { class: 'stolon-subsection-title', text: t.tr('TabServer') }),
+        var testStatus = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'test-status' });
+        var doneStatus = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+        var profileMount = h('div', { 'data-role': 'profiles' });
+        var testButton = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'test' }, [h('span', { text: t.tr('RequestsButtonTestLoadOptions') })]);
+        var body = h('div', { 'data-role': 'server-editor' }, [
+            h('h3', { class: 'stolon-subsection-title', text: t.tr('TabServer') }),
             checkField(defaultBox, t.tr('RequestsLabelDefaultServer'), t.tr(isMovie ? 'RequestsHelpDefaultServerMovie' : 'RequestsHelpDefaultServerShow')),
             field(ids.name, t.tr('LabelName'), nameInput, t.format('RequestsHelpServerName', arr.name)),
             field(ids.url, t.tr('LabelAddress'), urlInput, t.format('RequestsHelpServerAddress', arr.name)),
             field(ids.ext, t.tr('RequestsLabelExternalUrl'), extInput, t.format('RequestsHelpExternalUrl', arr.name)),
             field(ids.key, sentence(t, 'HeaderApiKey'), keyInput, t.format('RequestsHelpArrApiKey', arr.name)),
             checkField(searchBox, t.tr('RequestsLabelSearchOnAdd'), t.tr('RequestsHelpSearchOnAdd')),
-            el('div', { class: 'inputContainer' }, [testButton, testStatus]),
-            el('h3', { class: 'stolon-subsection-title', text: t.tr('RequestsHeaderProfiles') }),
-            el('div', { class: 'fieldDescription', text: t.format('RequestsHelpArrProfiles', arr.name) }),
+            h('div', { class: 'inputContainer' }, [testButton, testStatus]),
+            h('h3', { class: 'stolon-subsection-title', text: t.tr('RequestsHeaderProfiles') }),
+            h('div', { class: 'fieldDescription', text: t.format('RequestsHelpArrProfiles', arr.name) }),
             profileMount,
             doneStatus
         ]);
@@ -907,15 +907,15 @@ function buildRequestSettings(content, ctx) {
     function rowEditor(key) {
         rowEditorEl.textContent = '';
         if (builtInRow(key)) {
-            var box = el('input', { type: 'checkbox', is: 'emby-checkbox', 'data-show-row': key });
+            var box = h('input', { type: 'checkbox', is: 'emby-checkbox', 'data-show-row': key });
             box.checked = hidden.indexOf(key) < 0;
             rowEditorEl.appendChild(checkField(box, t.tr('RequestsLabelShowOnRequestPage'), t.tr('RequestsHelpHiddenRow')));
             return;
         }
-        rowEditorEl.appendChild(el('div', { class: 'stolon-card-list-actions' }, [
-            el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-edit-row': String(rows.map(customKey).indexOf(key)) }, [
-                el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'edit' }),
-                el('span', { text: t.tr('RequestsButtonEditRow') })
+        rowEditorEl.appendChild(h('div', { class: 'stolon-card-list-actions' }, [
+            h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-edit-row': String(rows.map(customKey).indexOf(key)) }, [
+                h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'edit' }),
+                h('span', { text: t.tr('RequestsButtonEditRow') })
             ])
         ]));
     }
@@ -955,22 +955,22 @@ function buildRequestSettings(content, ctx) {
         row.Type = enumName(row.Type, TYPES);
         var ids = { title: fieldId('row-title'), type: fieldId('row-type'), kind: fieldId('row-kind'), sort: fieldId('row-sort') };
         var select = function (id, list) {
-            var s = el('select', { is: 'emby-select', id: id });
-            list.forEach(function (o) { s.appendChild(el('option', { value: o[0], text: o[1] })); });
+            var s = h('select', { is: 'emby-select', id: id });
+            list.forEach(function (o) { s.appendChild(h('option', { value: o[0], text: o[1] })); });
             return s;
         };
-        var titleInput = el('input', { is: 'emby-input', type: 'text', id: ids.title, 'data-field': 'Title', maxlength: '60' });
+        var titleInput = h('input', { is: 'emby-input', type: 'text', id: ids.title, 'data-field': 'Title', maxlength: '60' });
         var typeSelect = select(ids.type, [['Movie', t.tr('Movies')], ['Series', t.tr('Shows')]]);
         var kindSelect = select(ids.kind, rowKinds());
         var sortSelect = select(ids.sort, rowSorts());
-        var picksMount = el('div', { 'data-role': 'row-picks' });
-        var hint = el('div', { class: 'fieldDescription', 'data-role': 'row-hint' });
-        var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-        var body = el('div', { 'data-role': 'row-editor' }, [
+        var picksMount = h('div', { 'data-role': 'row-picks' });
+        var hint = h('div', { class: 'fieldDescription', 'data-role': 'row-hint' });
+        var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+        var body = h('div', { 'data-role': 'row-editor' }, [
             field(ids.title, t.tr('RequestsLabelHeading'), titleInput, t.tr('RequestsHelpRowHeading')),
             field(ids.type, t.tr('RequestsLabelLists'), typeSelect, '', true),
             field(ids.kind, t.tr('RequestsLabelPickedBy'), kindSelect, '', true),
-            el('div', { class: 'inputContainer' }, [el('div', { class: 'inputLabel', text: t.tr('RequestsLabelAnyOf') }), picksMount, hint]),
+            h('div', { class: 'inputContainer' }, [h('div', { class: 'inputLabel', text: t.tr('RequestsLabelAnyOf') }), picksMount, hint]),
             field(ids.sort, t.tr('RequestsLabelOrder'), sortSelect, '', true),
             status
         ]);
@@ -1181,13 +1181,13 @@ function buildIssueSettings(content, ctx) {
     var windowId = fieldId('issues-window');
     var keep = numberInput(keepId, 'Issues.RetentionDays', 0);
     var limitWindow = numberInput(windowId, 'Issues.LimitDays', 1);
-    var options = el('div', { class: 'stolon-indent', 'data-role': 'issue-options' }, [
+    var options = h('div', { class: 'stolon-indent', 'data-role': 'issue-options' }, [
         field(keepId, t.tr('RequestsLabelKeepClosedIssuesDays'), keep, t.tr('RequestsHelpKeepClosedIssues')),
         field(windowId, t.tr('RequestsLabelIssueQuotaDays'), limitWindow, t.tr('IssuesHelpLimitWindow'))
     ]);
     var help = linkSentence(t.tr('IssuesHelpEnable'), pageUrl('issues'), 'fieldDescription checkboxFieldDescription');
-    content.appendChild(el('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
-        el('label', {}, [enabled, el('span', { text: t.tr('IssuesLabelEnable') })]),
+    content.appendChild(h('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
+        h('label', {}, [enabled, h('span', { text: t.tr('IssuesLabelEnable') })]),
         help
     ]));
     content.appendChild(options);
@@ -1231,10 +1231,10 @@ function buildTaskSection(content, ctx, tasks, extra) {
     var shared = ctx.shared;
     var t = shared.t;
     var pollers = [];
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var group = el('div', { class: 'stolon-reset-group' });
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var group = h('div', { class: 'stolon-reset-group' });
     content.appendChild(status);
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }));
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }));
     content.appendChild(group);
 
     // report
@@ -1244,11 +1244,11 @@ function buildTaskSection(content, ctx, tasks, extra) {
     }
 
     tasks.forEach(function (task) {
-        var row = nectoModule.resetRow({ icon: task.icon, label: t.tr(task.label), help: t.tr(task.help), button: t.tr('ButtonRunTask'), action: 'run-' + task.key });
+        var row = nectoModule.createResetRow({ icon: task.icon, label: t.tr(task.label), help: t.tr(task.help), button: t.tr('ButtonRunTask'), action: 'run-' + task.key }).element;
         group.appendChild(row);
         var btn = row.querySelector('button');
         btn.addEventListener('click', function () {
-            shared.runTask(btn, task.key, t.tr('ButtonRunTask')).then(function (poller) {
+            shared.runScheduledTask(btn, task.key, t.tr('ButtonRunTask')).then(function (poller) {
                 pollers.push(poller);
             }).catch(function (err) {
                 return shared.errorText(err, t.tr('ErrorRunTask')).then(function (text) { report(text, true); });
@@ -1283,7 +1283,7 @@ function buildRequestTroubleshooting(content, ctx) {
         { key: DISCOVERY_TASK, icon: 'explore', label: 'RequestsTaskDiscoveryName', help: 'RequestsTaskDiscoveryDescription' },
         { key: CLEANUP_TASK, icon: 'cleaning_services', label: 'RequestsTaskCleanupName', help: 'RequestsTaskCleanupDescription' }
     ], function (group, report) {
-        var row = nectoModule.resetRow({ icon: 'refresh', label: t.tr('RequestsLabelRefreshStatuses'), help: t.tr('RequestsHelpRefreshStatuses'), button: t.tr('RequestsButtonRefreshNow'), action: 'refresh-statuses' });
+        var row = nectoModule.createResetRow({ icon: 'refresh', label: t.tr('RequestsLabelRefreshStatuses'), help: t.tr('RequestsHelpRefreshStatuses'), button: t.tr('RequestsButtonRefreshNow'), action: 'refresh-statuses' }).element;
         group.appendChild(row);
         var btn = row.querySelector('button');
         btn.addEventListener('click', function () {

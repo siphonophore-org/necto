@@ -6,15 +6,7 @@
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import { readCount, createDataLimitField, normalizePeriod, dataText, tunnelStateLabel } from './configurationpage?name=necto_wireguard_common.js';
 
-var el = nectoModule.el;
-
-// Ids for fields, so two sections never share one.
-var fieldSeq = 0;
-
-function fieldId(name) {
-    fieldSeq += 1;
-    return 'necto-wireguard-' + name + '-' + fieldSeq;
-}
+var h = nectoModule.h;
 
 // sidecarText
 // Says what wireguard-go this server has, such as "Version 1.0.0 for linux-amd64, downloaded Nov 20, 2026.".
@@ -52,37 +44,13 @@ export function downloadSidecar(shared, button) {
     });
 }
 
-// checkbox
-// A checkbox with its label and an optional description.
-function checkbox(t, label, help) {
-    var input = el('input', { type: 'checkbox', is: 'emby-checkbox', id: fieldId('check') });
-    var element = el('div', { class: 'checkboxContainer' + (help ? ' checkboxContainer-withDescription' : '') }, [
-        el('label', {}, [input, el('span', { text: t.tr(label) })]),
-        help ? el('div', { class: 'fieldDescription checkboxFieldDescription', text: t.tr(help) }) : null
-    ]);
-    return { element: element, input: input };
-}
-
-// input
-// A text or number input with its label and an optional description and placeholder.
-function input(t, label, type, help, placeholder) {
-    var id = fieldId('input');
-    var box = el('input', { is: 'emby-input', type: type, id: id, autocomplete: 'off', placeholder: placeholder || null, min: type === 'number' ? '0' : null });
-    var element = el('div', { class: 'inputContainer' }, [
-        el('label', { for: id, text: t.tr(label) }),
-        box,
-        help ? el('div', { class: 'fieldDescription', text: t.tr(help) }) : null
-    ]);
-    return { element: element, input: box };
-}
-
 // labelled
 // Puts a control under a label, with an optional description.
 function labelled(t, label, control, help) {
-    return el('div', { class: 'inputContainer' }, [
-        el('label', { text: t.tr(label) }),
+    return h('div', { class: 'inputContainer' }, [
+        h('label', { text: t.tr(label) }),
         control,
-        help ? el('div', { class: 'fieldDescription', text: t.tr(help) }) : null
+        help ? h('div', { class: 'fieldDescription', text: t.tr(help) }) : null
     ]);
 }
 
@@ -99,56 +67,56 @@ function labelled(t, label, control, help) {
 export function buildSettings(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var enabled = checkbox(t, 'LabelEnabled', 'WireGuardEnabledHelp');
-    var sidecarLine = el('div', { class: 'fieldDescription', 'data-role': 'sidecar' });
-    var replace = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button secondary small', 'data-action': 'replace-sidecar' }, [el('span', { text: t.tr('WireGuardButtonReplace') })]);
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), help: t.tr('WireGuardEnabledHelp') });
+    var sidecarLine = h('div', { class: 'fieldDescription', 'data-role': 'sidecar' });
+    var replace = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button secondary small', 'data-action': 'replace-sidecar' }, [h('span', { text: t.tr('WireGuardButtonReplace') })]);
     var info = null;
 
-    var host = checkbox(t, 'WireGuardLabelHostEnabled', 'WireGuardHostEnabledHelp');
-    var endpoint = input(t, 'WireGuardLabelPublicEndpoint', 'text', 'WireGuardPublicEndpointHelp', 'vpn.example.com');
-    var port = input(t, 'WireGuardLabelListenPort', 'number', 'WireGuardListenPortHelp');
-    var subnet = input(t, 'WireGuardLabelTunnelSubnet', 'text', 'WireGuardTunnelSubnetHelp', '10.66.0.0/24');
+    var host = nectoModule.createCheckboxField({ label: t.tr('WireGuardLabelHostEnabled'), help: t.tr('WireGuardHostEnabledHelp') });
+    var endpoint = nectoModule.createInputField({ label: t.tr('WireGuardLabelPublicEndpoint'), help: t.tr('WireGuardPublicEndpointHelp'), placeholder: 'vpn.example.com', autocomplete: 'off' });
+    var port = nectoModule.createInputField({ label: t.tr('WireGuardLabelListenPort'), type: 'number', min: 0, help: t.tr('WireGuardListenPortHelp'), autocomplete: 'off' });
+    var subnet = nectoModule.createInputField({ label: t.tr('WireGuardLabelTunnelSubnet'), help: t.tr('WireGuardTunnelSubnetHelp'), placeholder: '10.66.0.0/24', autocomplete: 'off' });
     var keyField = nectoModule.createCopyField({ label: t.tr('WireGuardLabelHostPublicKey'), copyLabel: t.tr('WireGuardLabelHostPublicKey'), mono: true });
     var keyRow = labelled(t, 'WireGuardLabelHostPublicKey', keyField.element);
-    var psk = checkbox(t, 'WireGuardLabelPresharedKeys', 'WireGuardPresharedKeysHelp');
-    var forward = checkbox(t, 'WireGuardLabelForwardClientAddress', 'WireGuardForwardClientAddressHelp');
-    var dns = checkbox(t, 'WireGuardLabelDnsEnabled', 'WireGuardDnsEnabledHelp');
-    var dnsName = input(t, 'LabelName', 'text', 'WireGuardDnsNameHelp', 'jellyfin.internal');
-    var dnsUp = input(t, 'WireGuardLabelDnsUpstreams', 'text', 'WireGuardDnsUpstreamsHelp', '1.1.1.1, 1.0.0.1');
-    var dnsFields = el('div', { class: 'stolon-indent' }, [dnsName.element, dnsUp.element]);
-    var peerDown = input(t, 'WireGuardLabelDownloadMbps', 'number');
-    var peerUp = input(t, 'WireGuardLabelUploadMbps', 'number');
+    var psk = nectoModule.createCheckboxField({ label: t.tr('WireGuardLabelPresharedKeys'), help: t.tr('WireGuardPresharedKeysHelp') });
+    var forward = nectoModule.createCheckboxField({ label: t.tr('WireGuardLabelForwardClientAddress'), help: t.tr('WireGuardForwardClientAddressHelp') });
+    var dns = nectoModule.createCheckboxField({ label: t.tr('WireGuardLabelDnsEnabled'), help: t.tr('WireGuardDnsEnabledHelp') });
+    var dnsName = nectoModule.createInputField({ label: t.tr('LabelName'), help: t.tr('WireGuardDnsNameHelp'), placeholder: 'jellyfin.internal', autocomplete: 'off' });
+    var dnsUp = nectoModule.createInputField({ label: t.tr('WireGuardLabelDnsUpstreams'), help: t.tr('WireGuardDnsUpstreamsHelp'), placeholder: '1.1.1.1, 1.0.0.1', autocomplete: 'off' });
+    var dnsFields = h('div', { class: 'stolon-indent' }, [dnsName.element, dnsUp.element]);
+    var peerDown = nectoModule.createInputField({ label: t.tr('WireGuardLabelDownloadMbps'), type: 'number', min: 0, autocomplete: 'off' });
+    var peerUp = nectoModule.createInputField({ label: t.tr('WireGuardLabelUploadMbps'), type: 'number', min: 0, autocomplete: 'off' });
     var peerData = createDataLimitField(t, null);
-    var keepalive = input(t, 'WireGuardLabelKeepalive', 'number', 'WireGuardKeepaliveHelp');
-    var mtu = input(t, 'WireGuardLabelMtu', 'number', 'WireGuardMtuHelp');
-    var connect = checkbox(t, 'WireGuardLabelConnectEnabled', 'WireGuardConnectEnabledHelp');
-    var connDown = input(t, 'WireGuardLabelDownloadMbps', 'number');
-    var connUp = input(t, 'WireGuardLabelUploadMbps', 'number');
+    var keepalive = nectoModule.createInputField({ label: t.tr('WireGuardLabelKeepalive'), type: 'number', min: 0, help: t.tr('WireGuardKeepaliveHelp'), autocomplete: 'off' });
+    var mtu = nectoModule.createInputField({ label: t.tr('WireGuardLabelMtu'), type: 'number', min: 0, help: t.tr('WireGuardMtuHelp'), autocomplete: 'off' });
+    var connect = nectoModule.createCheckboxField({ label: t.tr('WireGuardLabelConnectEnabled'), help: t.tr('WireGuardConnectEnabledHelp') });
+    var connDown = nectoModule.createInputField({ label: t.tr('WireGuardLabelDownloadMbps'), type: 'number', min: 0, autocomplete: 'off' });
+    var connUp = nectoModule.createInputField({ label: t.tr('WireGuardLabelUploadMbps'), type: 'number', min: 0, autocomplete: 'off' });
     var connData = createDataLimitField(t, null);
 
     [
         status,
         enabled.element,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderSidecar') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderSidecar') }),
         sidecarLine,
-        el('div', { class: 'stolon-reset-group' }, [
-            nectoModule.resetRow({ icon: 'swap_horiz', label: t.tr('WireGuardTitleReplace'), help: t.tr('WireGuardSidecarHelp'), button: replace })
-        ]),
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('LabelServerHost') }),
+        nectoModule.createResetGroup([
+            nectoModule.createResetRow({ icon: 'swap_horiz', label: t.tr('WireGuardTitleReplace'), help: t.tr('WireGuardSidecarHelp'), button: replace })
+        ]).element,
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('LabelServerHost') }),
         host.element, endpoint.element, port.element, subnet.element,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderSecurity') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderSecurity') }),
         keyRow, psk.element, forward.element,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderDns') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderDns') }),
         dns.element, dnsFields,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderPeerLimits') }),
-        el('div', { class: 'fieldDescription', text: t.tr('WireGuardPeerLimitsHelp') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderPeerLimits') }),
+        h('div', { class: 'fieldDescription', text: t.tr('WireGuardPeerLimitsHelp') }),
         peerDown.element, peerUp.element, labelled(t, 'WireGuardLabelPeerDataLimit', peerData.element),
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('TabAdvanced') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('TabAdvanced') }),
         keepalive.element, mtu.element,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderConnections') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderConnections') }),
         connect.element,
-        el('div', { class: 'fieldDescription', text: t.tr('WireGuardConnectionLimitsHelp') }),
+        h('div', { class: 'fieldDescription', text: t.tr('WireGuardConnectionLimitsHelp') }),
         connDown.element, connUp.element, labelled(t, 'WireGuardLabelConnectionDataLimit', connData.element)
     ].forEach(function (node) { content.appendChild(node); });
 
@@ -322,20 +290,20 @@ export function allowanceText(row, shared) {
 export function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var restart = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button secondary small', 'data-action': 'restart' }, [el('span', { text: t.tr('Restart') })]);
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var restart = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button secondary small', 'data-action': 'restart' }, [h('span', { text: t.tr('Restart') })]);
     var tunnelList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderTunnels'), emptyText: t.tr('WireGuardEmptyTunnels') });
     var userList = nectoModule.createRecordList({ label: t.tr('WireGuardHeaderPeersByUser'), emptyText: t.tr('EmptyUsers') });
 
     [
         status,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderTunnels') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderTunnels') }),
         tunnelList.element,
-        el('div', { class: 'stolon-reset-group' }, [
-            nectoModule.resetRow({ icon: 'restart_alt', label: t.tr('WireGuardRestartTitle'), help: t.tr('WireGuardRestartHelp'), button: restart })
-        ]),
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderPeersByUser') }),
-        el('div', { class: 'fieldDescription', text: t.tr('WireGuardPeersByUserHelp') }),
+        nectoModule.createResetGroup([
+            nectoModule.createResetRow({ icon: 'restart_alt', label: t.tr('WireGuardRestartTitle'), help: t.tr('WireGuardRestartHelp'), button: restart })
+        ]).element,
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('WireGuardHeaderPeersByUser') }),
+        h('div', { class: 'fieldDescription', text: t.tr('WireGuardPeersByUserHelp') }),
         userList.element
     ].forEach(function (node) { content.appendChild(node); });
 

@@ -92,7 +92,6 @@ test('the group editor lists the scripts a group runs, hidden while it runs ever
     var dom = page.dom;
     routeApi(page, { 'GET Scripts/Names': [{ Id: SCRIPT.replace(/-/g, ''), Name: 'Notify' }] });
     var shared = await loadScript('necto_shared.js');
-    shared.setToolsOff(allToolsOn());
     var groupsModule = await loadScript('necto_groups.js');
     var bag = shared.createNectoShared(pageView(dom, []));
     await bag.translations;

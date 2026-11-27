@@ -4,7 +4,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 var esc = nectoModule.escapeHtml;
 
 // The rows a page of the list holds.
@@ -393,12 +393,12 @@ export default function (view) {
         var items = detailItems(issue, t);
         var details = nectoModule.createDefinitionList({ items: items });
         var notes = (issue.Notes || []).length ? nectoModule.createTimeline({ items: noteItems(issue.Notes) }) : null;
-        var status = el('div', { class: 'stolon-status-text', role: 'alert', 'data-role': 'status' });
-        var body = el('div', { class: 'necto-detail', 'data-role': 'issue-detail' }, [
+        var status = h('div', { class: 'stolon-status-text', role: 'alert', 'data-role': 'status' });
+        var body = h('div', { class: 'stolon-stack', 'data-role': 'issue-detail' }, [
             card.element,
-            issue.FileChanged ? el('div', { class: 'stolon-warn', text: t.tr('IssuesHelpFileChanged') }) : null,
+            issue.FileChanged ? h('div', { class: 'stolon-warn', text: t.tr('IssuesHelpFileChanged') }) : null,
             details.element,
-            notes ? el('h3', { class: 'stolon-subsection-title', text: t.tr('LabelNotes') }) : null,
+            notes ? h('h3', { class: 'stolon-subsection-title', text: t.tr('LabelNotes') }) : null,
             notes ? notes.element : null,
             status
         ]);

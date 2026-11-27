@@ -21,6 +21,9 @@ var t = {
         var args = Array.prototype.slice.call(arguments, 1);
         return t.tr(key).replace(/\{(\d+)\}/g, function (m, i) { return String(args[i]); });
     },
+    plural: function (count, one, many) {
+        return t.format.apply(null, [count === 1 ? one : many, count].concat(Array.prototype.slice.call(arguments, 3)));
+    },
     casing: ['exFAT', 'APFS', 'Btrfs']
 };
 
@@ -198,6 +201,36 @@ test('the Storage section of Troubleshooting asks before it resets the settings,
     assert.deepEqual(config.Storage.DiskOverrides, []);
 });
 
+test('the notice lists each problem on its own line when more than one disk needs a look', async function () {
+    var page = installPage({ config: {} });
+    var dom = page.dom;
+    var ids = ['storageAttention', 'storageSpaceCards', 'storageCheckStatus', 'storageDiskList'];
+    var children = ids.map(function (id) { return dom.el('div', { id: id }); });
+    var filterEl = dom.el('div', { id: 'storageDiskFilter', class: 'stolon-pill-group' }, [
+        dom.el('button', { class: 'stolon-pill', 'data-value': 'used' }),
+        dom.el('button', { class: 'stolon-pill', 'data-value': 'all' })
+    ]);
+    var refresh = dom.el('button', { id: 'btnStorageCheck' }, [dom.el('span', { id: 'storageRefreshIcon' })]);
+    var view = pageView(dom, children.concat([filterEl, refresh]));
+    dom.document.documentElement.appendChild(view);
+    routeApi(page, {
+        'GET Storage/Disks': [
+            disk({ Name: 'media', State: 'Missing', TotalBytes: null, FreeBytes: null, MissingSinceUtc: '2026-11-26T10:00:00Z' }),
+            disk({ MountPoint: '/mnt/backup', Name: 'backup', State: 'Missing', TotalBytes: null, FreeBytes: null, MissingSinceUtc: '2026-11-26T10:00:00Z' })
+        ]
+    });
+    var mod = await loadScript('necto_storage.js');
+    mod.default(view);
+    view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
+    await settle();
+
+    var banner = view.querySelector('#storageAttention .stolon-banner');
+    var lines = banner.querySelectorAll('.stolon-banner-list li');
+    assert.equal(lines.length, 2);
+    assert.match(lines[0].textContent, /went missing/);
+    assert.match(lines[1].textContent, /went missing/);
+});
+
 test('the tool checks every disk, says what needs a look, and lists the disks in use', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
@@ -223,7 +256,7 @@ test('the tool checks every disk, says what needs a look, and lists the disks in
 
     assert.ok(page.requests.some(function (r) { return r.url === 'Storage/Disks'; }));
     var attention = view.querySelector('#storageAttention');
-    assert.equal(attention.className.indexOf('stolon-error') >= 0, true);
+    assert.ok(attention.querySelector('.stolon-banner').classList.contains('stolon-error'));
     assert.match(attention.textContent, /media went missing /);
     var rows = view.querySelectorAll('#storageDiskList .stolon-record-list-row');
     assert.equal(rows.length, 1);

@@ -3,7 +3,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // KIND_KEYS
 // The string key of each channel kind's name, as Notifications/Channels names the kinds.
@@ -56,7 +56,7 @@ export function channelSummary(channel, shared) {
     if (channel.Kind === 'Browsers' || channel.Kind === 'Apps') return t.tr('NotificationsByGroups');
     if (channel.AllEvents) return t.tr('NotificationsEveryEvent');
     if (!channel.EventCount) return t.tr('NotificationsNoEvents');
-    return shared.plural(channel.EventCount, 'NotificationsEventCountOne', 'NotificationsEventCountMany');
+    return shared.t.plural(channel.EventCount, 'NotificationsEventCountOne', 'NotificationsEventCountMany');
 }
 
 // channelItems
@@ -75,7 +75,7 @@ export function channelItems(channels, shared, onTest) {
         var tags = [{ label: t.tr(KIND_KEYS[channel.Kind] || 'LabelWebhook'), icon: KIND_ICONS[channel.Kind] || 'send' }];
         if (!channel.Enabled) tags.push({ label: t.tr('Off'), color: 'gray', off: true });
         else if (!channel.Ready) tags.push({ label: t.tr('NotificationsTagNotSetUp'), color: 'orange' });
-        var button = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'test', 'data-channel': channel.Id }, [el('span', { text: t.tr('ButtonTest') })]);
+        var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'test', 'data-channel': channel.Id }, [h('span', { text: t.tr('ButtonTest') })]);
         button.addEventListener('click', function (e) { e.stopPropagation(); onTest(channel, button); });
         return { id: channel.Id, title: channelName(channel, t), secondary: channelSummary(channel, shared), tags: tags, aside: button, channel: channel };
     });

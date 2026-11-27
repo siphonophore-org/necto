@@ -6,7 +6,7 @@
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import * as fields from './configurationpage?name=necto_netfields.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // The names of each choice field's values, in the order the server numbers them.
 export var CERTIFICATE_MODES = ['None', 'Automatic', 'Pkcs12File', 'PemFiles', 'SelfSigned'];
@@ -145,79 +145,78 @@ export function createRouteEditor(route, ctx) {
     var t = shared.t;
     var draft = JSON.parse(JSON.stringify(route || newRoute()));
     draft.Certificate = draft.Certificate || {};
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var root = el('div', { 'data-role': 'route-editor' }, [status]);
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var root = h('div', { 'data-role': 'route-editor' }, [status]);
     var handles = [];
 
-    var host = fields.inputField({ label: t.tr('ProxyLabelHost'), field: 'Host', value: draft.Host, placeholder: 'media.example.com', help: t.tr('ProxyHostHelp') });
-    var ddnsNames = fields.selectField({
+    var host = nectoModule.createInputField({ label: t.tr('ProxyLabelHost'), field: 'Host', value: draft.Host, placeholder: 'media.example.com', help: t.tr('ProxyHostHelp') });
+    var ddnsNames = nectoModule.createSelectField({
         label: t.tr('ProxyLabelDdnsName'),
         field: 'DdnsName',
-        options: [{ value: '', label: t.tr('ProxyOptionTypeName') }].concat((ctx.hostnames || []).map(function (h) { return { value: h.Hostname, label: h.Hostname }; })),
+        options: [{ value: '', text: t.tr('ProxyOptionTypeName') }].concat((ctx.hostnames || []).map(function (name) { return { value: name.Hostname, text: name.Hostname }; })),
         value: ''
     });
-    var enabled = fields.checkField({ label: t.tr('ProxyLabelRouteEnabled'), field: 'Enabled', checked: draft.Enabled !== false, help: t.tr('ProxyRouteEnabledHelp') });
-    var target = fields.selectField({
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelRouteEnabled'), field: 'Enabled', checked: draft.Enabled !== false, help: t.tr('ProxyRouteEnabledHelp') });
+    var target = nectoModule.createSelectField({
         label: t.tr('ProxyLabelForwardTo'),
         field: 'Target',
-        options: [{ value: 'jellyfin', label: t.tr('ProxyThisJellyfin') }, { value: 'other', label: t.tr('ProxyOptionAnotherService') }],
+        options: [{ value: 'jellyfin', text: t.tr('ProxyThisJellyfin') }, { value: 'other', text: t.tr('ProxyOptionAnotherService') }],
         value: draft.Upstream ? 'other' : 'jellyfin'
     });
-    var upstream = fields.inputField({ label: t.tr('ProxyLabelUpstream'), field: 'Upstream', value: draft.Upstream, placeholder: 'http://192.168.1.20:8096', help: t.tr('ProxyUpstreamHelp') });
-    var localOnly = fields.checkField({ label: t.tr('ProxyLabelLocalOnly'), field: 'LocalOnly', checked: !!draft.LocalOnly, help: t.tr('ProxyLocalOnlyHelp') });
-    var mode = fields.selectField({
+    var upstream = nectoModule.createInputField({ label: t.tr('ProxyLabelUpstream'), field: 'Upstream', value: draft.Upstream, placeholder: 'http://192.168.1.20:8096', help: t.tr('ProxyUpstreamHelp') });
+    var localOnly = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelLocalOnly'), field: 'LocalOnly', checked: !!draft.LocalOnly, help: t.tr('ProxyLocalOnlyHelp') });
+    var mode = nectoModule.createSelectField({
         label: t.tr('LabelSource'),
         field: 'Certificate.Mode',
         options: [
-            { value: 'Automatic', label: t.tr('ProxyOptionLetsEncrypt') },
-            { value: 'Pkcs12File', label: t.tr('ProxyOptionPkcs12File') },
-            { value: 'PemFiles', label: t.tr('ProxyOptionPemFiles') },
-            { value: 'SelfSigned', label: t.tr('ProxyOptionSelfSigned') },
-            { value: 'None', label: t.tr('ProxyOptionNoCertificate') }
+            { value: 'Automatic', text: t.tr('ProxyOptionLetsEncrypt') },
+            { value: 'Pkcs12File', text: t.tr('ProxyOptionPkcs12File') },
+            { value: 'PemFiles', text: t.tr('ProxyOptionPemFiles') },
+            { value: 'SelfSigned', text: t.tr('ProxyOptionSelfSigned') },
+            { value: 'None', text: t.tr('ProxyOptionNoCertificate') }
         ],
         value: fields.enumName(draft.Certificate.Mode, CERTIFICATE_MODES)
     });
-    var challenge = fields.selectField({
+    var challenge = nectoModule.createSelectField({
         label: t.tr('ProxyLabelChallenge'),
         field: 'Certificate.Challenge',
         options: [
-            { value: 'Auto', label: t.tr('ProxyOptionChallengeAuto') },
-            { value: 'Http', label: t.tr('ProxyOptionChallengeHttp') },
-            { value: 'Dns', label: t.tr('ProxyOptionChallengeDns') }
+            { value: 'Auto', text: t.tr('ProxyOptionChallengeAuto') },
+            { value: 'Http', text: t.tr('ProxyOptionChallengeHttp') },
+            { value: 'Dns', text: t.tr('ProxyOptionChallengeDns') }
         ],
         value: fields.enumName(draft.Certificate.Challenge, CHALLENGES)
     });
-    var record = fields.selectField({
+    var record = nectoModule.createSelectField({
         label: t.tr('ProxyLabelDnsRecord'),
         field: 'Certificate.DnsRecordId',
-        options: [{ value: '', label: t.tr('ProxyOptionRecordByZone') }].concat((ctx.records || []).map(function (r) { return { value: r.Id, label: r.Name || r.Hostname || r.Zone || r.Id }; })),
+        options: [{ value: '', text: t.tr('ProxyOptionRecordByZone') }].concat((ctx.records || []).map(function (r) { return { value: r.Id, text: r.Name || r.Hostname || r.Zone || r.Id }; })),
         value: draft.Certificate.DnsRecordId || '',
         help: t.tr('ProxyDnsRecordHelp')
     });
-    var path = fields.inputField({ label: t.tr('ProxyLabelCertificateFile'), field: 'Certificate.Path', value: draft.Certificate.Path, placeholder: '/etc/ssl/media.example.com.pfx', help: t.tr('ProxyCertificateFileHelp') });
-    var keyPath = fields.inputField({ label: t.tr('ProxyLabelPrivateKeyFile'), field: 'Certificate.KeyPath', value: draft.Certificate.KeyPath, placeholder: '/etc/ssl/media.example.com.key' });
-    var password = fields.secretField({ label: t.tr('LabelPassword'), field: 'Certificate.Password', help: t.tr('ProxyCertificatePasswordHelp'), clearText: t.tr('ButtonClearSaved') });
-    shared.bindSecretField(password.input, !!draft.Certificate.Password, { clearButton: password.clear });
+    var path = nectoModule.createInputField({ label: t.tr('ProxyLabelCertificateFile'), field: 'Certificate.Path', value: draft.Certificate.Path, placeholder: '/etc/ssl/media.example.com.pfx', help: t.tr('ProxyCertificateFileHelp') });
+    var keyPath = nectoModule.createInputField({ label: t.tr('ProxyLabelPrivateKeyFile'), field: 'Certificate.KeyPath', value: draft.Certificate.KeyPath, placeholder: '/etc/ssl/media.example.com.key' });
+    var password = nectoModule.createSecretField({ label: t.tr('LabelPassword'), field: 'Certificate.Password', help: t.tr('ProxyCertificatePasswordHelp'), stored: !!draft.Certificate.Password, clearText: t.tr('ButtonClearSaved') });
 
-    var upload = el('div', { 'data-role': 'upload' });
-    var uploadCert = el('input', { type: 'file', 'data-field': 'UploadCertificate', accept: '.pfx,.p12,.pem,.crt,.cer' });
-    var uploadKey = el('input', { type: 'file', 'data-field': 'UploadKey', accept: '.pem,.key' });
-    var uploadPassword = fields.inputField({ label: t.tr('LabelCertificatePassword'), field: 'UploadPassword', type: 'password' });
+    var upload = h('div', { 'data-role': 'upload' });
+    var uploadCert = h('input', { type: 'file', 'data-field': 'UploadCertificate', accept: '.pfx,.p12,.pem,.crt,.cer' });
+    var uploadKey = h('input', { type: 'file', 'data-field': 'UploadKey', accept: '.pem,.key' });
+    var uploadPassword = nectoModule.createInputField({ label: t.tr('LabelCertificatePassword'), field: 'UploadPassword', type: 'password' });
     [
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderUpload') }),
-        el('div', { class: 'fieldDescription', text: t.tr('ProxyUploadHelp') }),
-        el('label', { class: 'selectLabel', text: t.tr('ProxyLabelUploadFile') }), uploadCert,
-        el('label', { class: 'selectLabel', text: t.tr('LabelPrivateKey') }), uploadKey,
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderUpload') }),
+        h('div', { class: 'fieldDescription', text: t.tr('ProxyUploadHelp') }),
+        h('label', { class: 'selectLabel', text: t.tr('ProxyLabelUploadFile') }), uploadCert,
+        h('label', { class: 'selectLabel', text: t.tr('LabelPrivateKey') }), uploadKey,
         uploadPassword.element
     ].forEach(function (n) { upload.appendChild(n); });
 
-    var certStatus = el('div', { 'data-role': 'certificate-status' });
+    var certStatus = h('div', { 'data-role': 'certificate-status' });
     var certList = nectoModule.createDefinitionList({ items: [] });
     certStatus.appendChild(certList.element);
     handles.push(certList);
-    var actions = el('div', { class: 'stolon-button-row' });
+    var actions = h('div', { class: 'stolon-button-row' });
     var actionButton = function (action, text) {
-        var btn = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': action }, [el('span', { text: text })]);
+        var btn = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': action }, [h('span', { text: text })]);
         btn.addEventListener('click', function () { if (ctx.onAction) ctx.onAction(action, draft, btn, handle); });
         actions.appendChild(btn);
         return btn;
@@ -228,12 +227,12 @@ export function createRouteEditor(route, ctx) {
     var lastStatus = ctx.status;
     var rootBtn = actionButton('root', t.tr('ProxyButtonDownloadRoot'));
     var testBtn = actionButton('test', t.tr('ProxyButtonTestRoute'));
-    upload.appendChild(el('div', { class: 'stolon-button-row' }, [uploadBtn]));
+    upload.appendChild(h('div', { class: 'stolon-button-row' }, [uploadBtn]));
 
     root.appendChild(host.element);
     if ((ctx.hostnames || []).length) root.appendChild(ddnsNames.element);
     [enabled, target, upstream, localOnly].forEach(function (f) { root.appendChild(f.element); });
-    root.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyLabelUploadFile') }));
+    root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyLabelUploadFile') }));
     [mode, challenge, record, path, keyPath, password].forEach(function (f) { root.appendChild(f.element); });
     root.appendChild(certStatus);
     root.appendChild(upload);
@@ -278,7 +277,7 @@ export function createRouteEditor(route, ctx) {
                 DnsRecordId: record.input.value,
                 Path: m === 'Pkcs12File' || m === 'PemFiles' ? path.input.value.trim() : '',
                 KeyPath: m === 'PemFiles' ? keyPath.input.value.trim() : '',
-                Password: m === 'Pkcs12File' || m === 'PemFiles' ? shared.readSecretField(password.input) : ''
+                Password: m === 'Pkcs12File' || m === 'PemFiles' ? password.getValue() : ''
             };
             return out;
         },
@@ -496,15 +495,15 @@ export default function (view) {
         var phase = phaseText(proxyStatus, t);
         var managed = phase.color !== 'gray';
         if (!jellyfin) {
-            var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'trust-status' });
-            var trust = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'trust' }, [el('span', {})]);
-            var undo = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'undo' }, [el('span', { text: t.tr('ButtonUndo') })]);
-            var state = el('div', { 'data-role': 'trust-state' });
-            var content = el('div', {}, [
-                el('div', { class: 'fieldDescription', text: t.tr('ProxyTrustHelp') }),
+            var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'trust-status' });
+            var trust = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'trust' }, [h('span', {})]);
+            var undo = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'undo' }, [h('span', { text: t.tr('ButtonUndo') })]);
+            var state = h('div', { 'data-role': 'trust-state' });
+            var content = h('div', {}, [
+                h('div', { class: 'fieldDescription', text: t.tr('ProxyTrustHelp') }),
                 state,
-                el('div', { class: 'fieldDescription', text: t.tr('ProxyTrustRestartsOnce') }),
-                el('div', { class: 'stolon-button-row' }, [trust, undo]),
+                h('div', { class: 'fieldDescription', text: t.tr('ProxyTrustRestartsOnce') }),
+                h('div', { class: 'stolon-button-row' }, [trust, undo]),
                 status
             ]);
             var section = nectoModule.createCollapsibleSection({ title: t.tr('LabelJellyfin'), icon: 'shield', collapsed: managed, content: content });
@@ -775,18 +774,18 @@ export default function (view) {
     function pickTemplate() {
         var t = shared.t;
         shared.request('Proxy/Templates').then(function (data) {
-            var group = el('div', { class: 'stolon-choice-group', role: 'radiogroup', 'aria-label': t.tr('ProxyLabelTemplate') });
+            var group = h('div', { class: 'stolon-choice-group', role: 'radiogroup', 'aria-label': t.tr('ProxyLabelTemplate') });
             TEMPLATES.forEach(function (tpl, i) {
-                var input = el('input', { type: 'radio', name: 'necto-route-template', value: tpl.key, checked: i === 0 });
-                group.appendChild(el('label', { class: 'stolon-choice' }, [
+                var input = h('input', { type: 'radio', name: 'necto-route-template', value: tpl.key, checked: i === 0 });
+                group.appendChild(h('label', { class: 'stolon-choice' }, [
                     input,
-                    el('span', { class: 'stolon-choice-name', text: t.tr(tpl.title) }),
-                    el('span', { class: 'stolon-choice-text', text: t.tr(tpl.help) })
+                    h('span', { class: 'stolon-choice-name', text: t.tr(tpl.title) }),
+                    h('span', { class: 'stolon-choice-text', text: t.tr(tpl.help) })
                 ]));
             });
-            var domain = fields.inputField({ label: t.tr('LabelDomain'), field: 'Domain', value: data.Domain || '', placeholder: 'example.com', help: t.tr('ProxyDomainHelp') });
+            var domain = nectoModule.createInputField({ label: t.tr('LabelDomain'), field: 'Domain', value: data.Domain || '', placeholder: 'example.com', help: t.tr('ProxyDomainHelp') });
             var choices = nectoModule.createChoiceGroup(group);
-            var body = el('div', {}, [el('div', { class: 'fieldDescription', text: t.tr('ProxyTemplatesHelp') }), group, domain.element]);
+            var body = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr('ProxyTemplatesHelp') }), group, domain.element]);
             nectoModule.openSidecar({
                 title: t.tr('ProxyTitleNewRoute'),
                 body: body,
@@ -817,24 +816,24 @@ export default function (view) {
     // Builds the Visitors section: the bans, what each address did, and the countries.
     function createVisitors() {
         var t = shared.t;
-        var content = el('div', {}, [el('div', { class: 'fieldDescription', text: t.tr('ProxyVisitorsHelp') })]);
-        var off = el('div', { class: 'stolon-info stolon-hidden', text: t.tr('ProxyVisitorsOff') });
-        var status = el('div', { class: 'stolon-status-text', role: 'status' });
-        var bannedHost = el('div', {});
-        var activityHost = el('div', {});
-        var countryHost = el('div', {});
-        var attribution = el('div', { class: 'fieldDescription' });
-        var location = el('div', { class: 'fieldDescription', 'data-role': 'location' });
+        var content = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr('ProxyVisitorsHelp') })]);
+        var off = h('div', { class: 'stolon-info stolon-hidden', text: t.tr('ProxyVisitorsOff') });
+        var status = h('div', { class: 'stolon-status-text', role: 'status' });
+        var bannedHost = h('div', {});
+        var activityHost = h('div', {});
+        var countryHost = h('div', {});
+        var attribution = h('div', { class: 'fieldDescription' });
+        var location = h('div', { class: 'fieldDescription', 'data-role': 'location' });
         [off, status,
-            el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderBanned') }), bannedHost,
-            el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderActivity') }), activityHost,
-            el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderCountries') }), countryHost,
+            h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderBanned') }), bannedHost,
+            h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderActivity') }), activityHost,
+            h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderCountries') }), countryHost,
             location, attribution].forEach(function (n) { content.appendChild(n); });
         var section = nectoModule.createCollapsibleSection({ title: t.tr('HeaderVisitors'), icon: 'travel_explore', collapsed: true, content: content });
         view.querySelector('#proxyVisitors').appendChild(section.element);
 
         var button = function (label, variant, act, name) {
-            var b = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-small ' + variant, 'aria-label': name }, [el('span', { text: label })]);
+            var b = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-small ' + variant, 'aria-label': name }, [h('span', { text: label })]);
             if (act && act.reason) b.setAttribute('title', act.action === 'unblock-country' ? t.format(act.reason, act.country) : t.tr(act.reason));
             if (act && !act.disabled) b.addEventListener('click', function () { visitorAction(act); });
             else b.disabled = true;

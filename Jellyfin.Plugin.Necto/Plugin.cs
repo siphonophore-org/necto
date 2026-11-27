@@ -157,7 +157,7 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
             "necto_scripts_sections.js", "necto_scripts_common.js", "necto_scripts_templates.js",
             "necto_storage_sections.js", "necto_pages_sections.js",
             "necto_notifications_sections.js", "necto_invites_sections.js", "necto_groups_templates.js",
-            "necto_invite_signup.js", "necto_invites_member.js", "necto_push.js",
+            "necto_invite_signup.js", "necto_invites_member.js",
             "necto_netfields.js", "necto_ddns_sections.js", "necto_proxy_sections.js",
             "necto_requests_sections.js", "necto_menulinks_sections.js"
         })

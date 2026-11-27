@@ -2,8 +2,7 @@
 // The script of a member's invite page at /invites. It lists the member's invites with their links, makes new ones
 // within what the member's groups allow, and holds the page's browser notification switch.
 
-import { startUserPage, showUserPageView, setUserPageMessage, loadTranslations, createTranslations, createQrCode, confirmDialog, el } from './configurationpage?name=necto_shared.js';
-import { createPushToggle } from './configurationpage?name=necto_push.js';
+import { startUserPage, showUserPageView, setUserPageMessage, loadTranslations, createTranslations, createQrCode, confirmDialog, createWebPushToggle, h } from './configurationpage?name=necto_shared.js';
 import { STATE_KEYS, stateName } from './configurationpage?name=necto_invites.js';
 
 // inviteLink
@@ -58,7 +57,18 @@ export async function start(doc) {
     var handles = [];
     var mine = null;
 
-    byId('pushCard').appendChild(createPushToggle(session, t, doc).element);
+    // The one service worker Notifications serves, at the server's root, so a browser keeps one subscription for
+    // every user page.
+    byId('pushCard').appendChild(createWebPushToggle({
+        keyUrl: 'Notifications/Push/Key',
+        subscribeUrl: 'Notifications/Push/Subscribe',
+        unsubscribeUrl: 'Notifications/Push/Unsubscribe',
+        workerUrl: 'Notifications/Push/Worker.js',
+        request: session.request,
+        onText: t.tr('NotificationsButtonPushOn'),
+        offText: t.tr('NotificationsButtonPushOff'),
+        failedText: t.tr('NotificationsErrorPush')
+    }).element);
 
     // load
     // Reads the member's invites and draws them, with the form when the groups allow invites.
@@ -82,16 +92,16 @@ export async function start(doc) {
         byId('newInvite').hidden = !mine.MayCreate;
         var select = byId('inviteGroup');
         select.textContent = '';
-        (mine.Groups || []).forEach(function (g) { select.appendChild(el('option', { value: g.Id, text: g.Name })); });
+        (mine.Groups || []).forEach(function (g) { select.appendChild(h('option', { value: g.Id, text: g.Name })); });
 
         if (!(mine.Invites || []).length) {
-            list.appendChild(el('p', { class: 'stolon-user-page-hint', text: t.tr('InvitesMemberEmpty') }));
+            list.appendChild(h('p', { class: 'stolon-user-page-hint', text: t.tr('InvitesMemberEmpty') }));
         }
 
         (mine.Invites || []).forEach(function (invite) {
             var qr = createQrCode({ value: inviteLink(invite.Token, mine.LinkUrl, doc.baseURI), layout: 'inline', fileName: 'invite.png' });
             handles.push(qr);
-            var remove = el('button', { type: 'button', class: 'raised stolon-button stolon-destructive stolon-fill', 'data-action': 'delete' }, [el('span', { text: t.tr('Delete') })]);
+            var remove = h('button', { type: 'button', class: 'raised stolon-button stolon-destructive stolon-fill', 'data-action': 'delete' }, [h('span', { text: t.tr('Delete') })]);
             remove.addEventListener('click', function () {
                 confirmDialog(t.tr('InvitesConfirmDelete'), { title: t.format('DeleteName', invite.Label || t.tr('InvitesUntitled')), confirmText: t.tr('Delete'), destructive: true }).then(function (ok) {
                     if (!ok) return;
@@ -99,11 +109,11 @@ export async function start(doc) {
                 });
             });
             var uses = invite.MaxUses > 0 ? t.format('InvitesUsesOf', invite.UsedCount, invite.MaxUses) : t.format('InvitesUses', invite.UsedCount);
-            list.appendChild(el('div', { class: 'stolon-user-page-form', 'data-invite': invite.Id }, [
-                el('h2', { class: 'stolon-user-page-subtitle', text: invite.Label || t.tr('InvitesUntitled') }),
-                el('p', { class: 'stolon-user-page-hint', text: [t.tr(STATE_KEYS[stateName(invite.State)]), invite.GroupName, uses].join(' · ') }),
+            list.appendChild(h('div', { class: 'stolon-user-page-form', 'data-invite': invite.Id }, [
+                h('h2', { class: 'stolon-user-page-subtitle', text: invite.Label || t.tr('InvitesUntitled') }),
+                h('p', { class: 'stolon-user-page-hint', text: [t.tr(STATE_KEYS[stateName(invite.State)]), invite.GroupName, uses].join(' · ') }),
                 qr.element,
-                el('div', { class: 'stolon-user-page-actions' }, [remove])
+                h('div', { class: 'stolon-user-page-actions' }, [remove])
             ]));
         });
     };

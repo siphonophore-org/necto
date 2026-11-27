@@ -4,7 +4,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 var esc = nectoModule.escapeHtml;
 
 // The rows a page of the list holds, and the most requesters the filter lists.
@@ -524,7 +524,7 @@ export default function (view) {
         var actions = table.getBulkActionsContainer();
         if (actions) {
             [['approve', 'RequestsButtonApprove', 'stolon-primary'], ['decline', 'RequestsButtonReject', 'stolon-secondary'], ['remove', 'ButtonRemove', 'stolon-destructive']].forEach(function (b) {
-                actions.appendChild(el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-small ' + b[2], 'data-bulk': b[0], disabled: true }, [el('span', { text: t.tr(b[1]) })]));
+                actions.appendChild(h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-small ' + b[2], 'data-bulk': b[0], disabled: true }, [h('span', { text: t.tr(b[1]) })]));
             });
             actions.addEventListener('click', function (e) {
                 var btn = e.target.closest('[data-bulk]');
@@ -649,9 +649,9 @@ export default function (view) {
         var ids = table ? table.getSelectedIds() : [];
         if (!ids.length) return Promise.resolve();
         var ask = action === 'decline'
-            ? nectoModule.promptSidecar([{ name: 'Reason', label: t.tr('RequestsLabelReasonShownToRequesters'), type: 'textarea' }], { title: ids.length === 1 ? t.tr('RequestsHeaderRejectRequest') : t.format('RequestsHeaderRejectRequests', ids.length), submitText: t.tr('RequestsButtonReject') })
+            ? nectoModule.promptSidecar([{ name: 'Reason', label: t.tr('RequestsLabelReasonShownToRequesters'), type: 'textarea' }], { title: t.plural(ids.length, 'RequestsHeaderRejectRequest', 'RequestsHeaderRejectRequests'), submitText: t.tr('RequestsButtonReject') })
             : action === 'remove'
-                ? nectoModule.confirmDialog(t.tr('RequestsConfirmRemoveRequests'), { title: shared.plural(ids.length, 'RequestsHeaderRemoveCountOne', 'RequestsHeaderRemoveCountMany'), confirmText: t.tr('ButtonRemove'), destructive: true }).then(function (ok) { return ok ? {} : null; })
+                ? nectoModule.confirmDialog(t.tr('RequestsConfirmRemoveRequests'), { title: shared.t.plural(ids.length, 'RequestsHeaderRemoveCountOne', 'RequestsHeaderRemoveCountMany'), confirmText: t.tr('ButtonRemove'), destructive: true }).then(function (ok) { return ok ? {} : null; })
                 : Promise.resolve({});
         return ask.then(function (values) {
             if (!values) return null;
@@ -675,9 +675,9 @@ export default function (view) {
         var choices = profiles.filter(function (p) { return p.Type === r.Type; });
         if (choices.length < 2) return null;
         var placed = placedProfile(profiles, r);
-        var picker = el('select', { is: 'emby-select', id: id || null, 'aria-label': shared.t.tr('RequestsLabelGoesTo') });
+        var picker = h('select', { is: 'emby-select', id: id || null, 'aria-label': shared.t.tr('RequestsLabelGoesTo') });
         choices.forEach(function (p) {
-            var option = el('option', { value: p.Id, text: profileLabel(profiles, p) });
+            var option = h('option', { value: p.Id, text: profileLabel(profiles, p) });
             if (placed && p.Id === placed.Id) option.selected = true;
             picker.appendChild(option);
         });
@@ -709,11 +709,11 @@ export default function (view) {
         });
         var items = detailItems(r, t, goesTo);
         var details = nectoModule.createDefinitionList({ items: items });
-        var status = el('div', { class: 'stolon-status-text', role: 'alert', 'data-role': 'status' });
-        var body = el('div', { class: 'necto-detail', 'data-role': 'request-detail' }, [
+        var status = h('div', { class: 'stolon-status-text', role: 'alert', 'data-role': 'status' });
+        var body = h('div', { class: 'stolon-stack', 'data-role': 'request-detail' }, [
             card.element,
             details.element,
-            r.Overview ? el('div', { class: 'fieldDescription', text: r.Overview }) : null,
+            r.Overview ? h('div', { class: 'fieldDescription', text: r.Overview }) : null,
             status
         ]);
 
@@ -759,21 +759,21 @@ export default function (view) {
         var series = r.Type === 'Series';
         var placed = placedProfile(profiles, r);
         var picker = profilePicker(r, 'necto-request-profile');
-        var note = el('textarea', { is: 'emby-textarea', id: 'necto-request-note', rows: '3', maxlength: '500' });
+        var note = h('textarea', { is: 'emby-textarea', id: 'necto-request-note', rows: '3', maxlength: '500' });
         note.value = r.RequesterNote || '';
-        var status = el('div', { class: 'stolon-status-text', role: 'alert', 'data-role': 'status' });
+        var status = h('div', { class: 'stolon-status-text', role: 'alert', 'data-role': 'status' });
         var seasons = null;
         var seasonsRead = false;
         var seasonsLoaded = Promise.resolve();
-        var body = el('div', { 'data-role': 'request-editor' }, [
-            picker ? el('div', { class: 'selectContainer' }, [el('label', { class: 'selectLabel', for: 'necto-request-profile', text: t.tr('Profile') }), picker]) : null
+        var body = h('div', { 'data-role': 'request-editor' }, [
+            picker ? h('div', { class: 'selectContainer' }, [h('label', { class: 'selectLabel', for: 'necto-request-profile', text: t.tr('Profile') }), picker]) : null
         ]);
         if (series) {
             seasons = nectoModule.createChipSelect({ placeholder: t.tr('RequestsMessageLoadingSeasons') });
-            body.appendChild(el('div', { class: 'inputContainer', 'data-field': 'Seasons' }, [
-                el('label', { class: 'inputLabel', text: t.tr('HeaderSeasons') }),
+            body.appendChild(h('div', { class: 'inputContainer', 'data-field': 'Seasons' }, [
+                h('label', { class: 'inputLabel', text: t.tr('HeaderSeasons') }),
                 seasons.element,
-                el('div', { class: 'fieldDescription', text: t.tr('RequestsHelpEditSeasons') })
+                h('div', { class: 'fieldDescription', text: t.tr('RequestsHelpEditSeasons') })
             ]));
             seasonsLoaded = shared.request('Requests/Titles/Seasons', 'POST', { Title: r.Title, Year: r.Year, ProviderIds: r.ProviderIds }).then(function (answer) {
                 var mine = function (n) { return !r.Seasons || r.Seasons.indexOf(n) >= 0; };
@@ -789,7 +789,7 @@ export default function (view) {
                 if (input) input.placeholder = t.tr('RequestsErrorLoadSeasons');
             });
         }
-        body.appendChild(el('div', { class: 'inputContainer' }, [el('label', { class: 'inputLabel', for: 'necto-request-note', text: t.tr('RequestsLabelRequestNote') }), note]));
+        body.appendChild(h('div', { class: 'inputContainer' }, [h('label', { class: 'inputLabel', for: 'necto-request-note', text: t.tr('RequestsLabelRequestNote') }), note]));
         body.appendChild(status);
 
         // save

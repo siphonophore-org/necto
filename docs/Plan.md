@@ -26,7 +26,7 @@ Necto 12.4.0.0 is a first release. It reads nothing the old plugins stored, so a
 
 * Dashboard, Groups, Notifications, Settings, and Troubleshooting are always on. Requests, Issues, Invites, Proxy, DDNS, VPN, Scripts, Pages, and Storage each have an **Enabled** switch, the first checkbox of their Settings section. **Review**
 * A fresh install has all nine off, so a new server runs no optional tool until the administrator turns it on. Necto reads nothing from the old plugins, so no setting is carried over. **Review**
-* `ToolSwitches.All` lists the switches in C#, and `TOOL_SWITCHES` in `necto_shared.js` lists them for the pages. A test reads the script and checks the two agree. **Review**
+* `ToolSwitches.All` lists the switches in C#, and each tool's `visibleWhen` in `nectoTools` in `necto_shared.js` reads them for the pages, through Stolon's tool app. A test reads the script and checks the two agree. **Review**
 * A tool that is off leaves the sidebar, the Dashboard, the group editor, and Troubleshooting. Its pages answer as off, and its routes, tasks, and background work do nothing. Turning it off deletes nothing. **Review**
 * The switches of Issues, Proxy, and WireGuard keep their labels, **Enable issues**, **Enable proxy**, and **Enabled**. The new switches read **Enabled**, as WireGuard's does. **Review**
 * Issues does not need Requests. The issue page is the request page served at `/issues/`, with its own switch, so `/issues/` and the routes it calls answer while Requests is off. **Review**

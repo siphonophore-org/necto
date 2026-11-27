@@ -3,7 +3,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // The key of the scheduled task that applies store retention.
 export var RETENTION_TASK = 'NectoPagesStoreRetention';
@@ -58,27 +58,27 @@ function buildSettings(content, ctx) {
     var t = ctx.shared.t;
     var limitId = fieldId('limit');
     var retentionId = fieldId('retention');
-    var limit = el('input', { is: 'emby-input', type: 'number', id: limitId, min: '1', max: String(RECORD_CEILING), 'data-field': 'NewStoreMaxRecords' });
-    var retention = el('input', { is: 'emby-input', type: 'number', id: retentionId, min: '0', max: String(RETENTION_CEILING), 'data-field': 'NewStoreRetentionDays' });
-    var notify = el('input', { type: 'checkbox', is: 'emby-checkbox', id: fieldId('notify'), 'data-field': 'NewStoreNotifyOnWrite' });
+    var limit = h('input', { is: 'emby-input', type: 'number', id: limitId, min: '1', max: String(RECORD_CEILING), 'data-field': 'NewStoreMaxRecords' });
+    var retention = h('input', { is: 'emby-input', type: 'number', id: retentionId, min: '0', max: String(RETENTION_CEILING), 'data-field': 'NewStoreRetentionDays' });
+    var notify = h('input', { type: 'checkbox', is: 'emby-checkbox', id: fieldId('notify'), 'data-field': 'NewStoreNotifyOnWrite' });
 
-    var enabled = nectoModule.enabledSwitch(t.tr('LabelEnabled'), t.tr('PagesHelpEnabled'));
-    content.appendChild(el('div', { class: 'fieldDescription', text: t.tr('PagesSettingsIntro') }));
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), help: t.tr('PagesHelpEnabled'), field: 'Enabled' });
+    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('PagesSettingsIntro') }));
     content.appendChild(enabled.element);
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('PagesHeaderNewStores') }));
-    content.appendChild(el('div', { class: 'inputContainer' }, [
-        el('label', { class: 'inputLabel inputLabelUnfocused', for: limitId, text: t.tr('PagesLabelRecordLimit') }),
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('PagesHeaderNewStores') }));
+    content.appendChild(h('div', { class: 'inputContainer' }, [
+        h('label', { class: 'inputLabel inputLabelUnfocused', for: limitId, text: t.tr('PagesLabelRecordLimit') }),
         limit,
-        el('div', { class: 'fieldDescription', text: t.tr('PagesNewStoreLimitHelp') })
+        h('div', { class: 'fieldDescription', text: t.tr('PagesNewStoreLimitHelp') })
     ]));
-    content.appendChild(el('div', { class: 'inputContainer' }, [
-        el('label', { class: 'inputLabel inputLabelUnfocused', for: retentionId, text: t.tr('PagesLabelRetentionDays') }),
+    content.appendChild(h('div', { class: 'inputContainer' }, [
+        h('label', { class: 'inputLabel inputLabelUnfocused', for: retentionId, text: t.tr('PagesLabelRetentionDays') }),
         retention,
-        el('div', { class: 'fieldDescription', text: t.tr('PagesNewStoreRetentionHelp') })
+        h('div', { class: 'fieldDescription', text: t.tr('PagesNewStoreRetentionHelp') })
     ]));
-    content.appendChild(el('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
-        el('label', {}, [notify, el('span', { text: t.tr('PagesLabelNotifyAdmins') })]),
-        el('div', { class: 'fieldDescription checkboxFieldDescription', text: t.tr('PagesNewStoreNotifyHelp') })
+    content.appendChild(h('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
+        h('label', {}, [notify, h('span', { text: t.tr('PagesLabelNotifyAdmins') })]),
+        h('div', { class: 'fieldDescription checkboxFieldDescription', text: t.tr('PagesNewStoreNotifyHelp') })
     ]));
 
     return {
@@ -110,7 +110,7 @@ function buildSettings(content, ctx) {
 // [string]: The message.
 export function clearMessage(count, t) {
     if (typeof count !== 'number') return t.tr('PagesConfirmClearStoreUnknown');
-    return t.format(count === 1 ? 'PagesConfirmClearStoreOne' : 'PagesConfirmClearStoreMany', count);
+    return t.plural(count, 'PagesConfirmClearStoreOne', 'PagesConfirmClearStoreMany');
 }
 
 // buildTroubleshooting
@@ -127,19 +127,19 @@ function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var pollers = [];
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var stores = el('div', { class: 'stolon-reset-group', 'data-role': 'stores' });
-    var retention = nectoModule.resetRow({ icon: 'auto_delete', label: t.tr('PagesTaskRetentionName'), help: t.tr('PagesTaskRetentionDescription'), button: t.tr('ButtonRunTask'), action: 'run-retention' });
-    var check = nectoModule.resetRow({ icon: 'fact_check', label: t.tr('PagesLabelCheckSettings'), help: t.tr('PagesCheckSettingsHelp'), button: t.tr('PagesButtonCheck'), action: 'check-settings' });
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var stores = h('div', { class: 'stolon-reset-group', 'data-role': 'stores' });
+    var retention = nectoModule.createResetRow({ icon: 'auto_delete', label: t.tr('PagesTaskRetentionName'), help: t.tr('PagesTaskRetentionDescription'), button: t.tr('ButtonRunTask'), action: 'run-retention' }).element;
+    var check = nectoModule.createResetRow({ icon: 'fact_check', label: t.tr('PagesLabelCheckSettings'), help: t.tr('PagesCheckSettingsHelp'), button: t.tr('PagesButtonCheck'), action: 'check-settings' }).element;
 
     [
         status,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('PagesTabStores') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('PagesTabStores') }),
         stores,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
-        el('div', { class: 'stolon-reset-group' }, [retention]),
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('PagesHeaderSettingsCheck') }),
-        el('div', { class: 'stolon-reset-group' }, [check])
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
+        h('div', { class: 'stolon-reset-group' }, [retention]),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('PagesHeaderSettingsCheck') }),
+        h('div', { class: 'stolon-reset-group' }, [check])
     ].forEach(function (node) { content.appendChild(node); });
 
     // report
@@ -165,7 +165,7 @@ function buildTroubleshooting(content, ctx) {
             if (!ok) return null;
             return shared.request('Pages/Stores/' + encodeURIComponent(name) + '/Clear', 'POST').then(function (result) {
                 var removed = (result && result.removed) || 0;
-                report(shared.plural(removed, 'PagesToastRecordRemoved', 'PagesToastRecordsRemoved'), false);
+                report(shared.t.plural(removed, 'PagesToastRecordRemoved', 'PagesToastRecordsRemoved'), false);
                 return loadStores();
             }).catch(function (err) {
                 return shared.errorText(err, t.tr('PagesErrorClearStore')).then(function (text) { report(text, true); });
@@ -193,7 +193,7 @@ function buildTroubleshooting(content, ctx) {
                 var help = typeof row.count === 'number'
                     ? t.format('PagesUsageRecords', row.count, row.limit || row.store.MaxRecords || 1000)
                     : t.tr('PagesStoreDisabledHelp');
-                var node = nectoModule.resetRow({ icon: 'delete_sweep', label: row.store.Name, help: help, button: t.tr('ButtonClear'), action: 'clear-store', destructive: true, empty: row.count === 0 });
+                var node = nectoModule.createResetRow({ icon: 'delete_sweep', label: row.store.Name, help: help, button: t.tr('ButtonClear'), action: 'clear-store', destructive: true, empty: row.count === 0 }).element;
                 node.setAttribute('data-store', row.store.Name);
                 var btn = node.querySelector('button');
                 btn.disabled = typeof row.count !== 'number';
@@ -208,7 +208,7 @@ function buildTroubleshooting(content, ctx) {
     // runRetention
     // Starts the retention task and follows it on its button.
     function runRetention() {
-        return shared.runTask(button('run-retention'), RETENTION_TASK, t.tr('ButtonRunTask'), loadStores).then(function (poller) {
+        return shared.runScheduledTask(button('run-retention'), RETENTION_TASK, t.tr('ButtonRunTask'), loadStores).then(function (poller) {
             pollers.push(poller);
         }).catch(function (err) {
             return shared.errorText(err, t.tr('ErrorRunTask')).then(function (text) { report(text, true); });

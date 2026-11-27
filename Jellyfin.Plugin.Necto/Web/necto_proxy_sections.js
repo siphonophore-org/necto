@@ -4,7 +4,7 @@
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import * as fields from './configurationpage?name=necto_netfields.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // The keys of the scheduled tasks Troubleshooting runs.
 export var CERTIFICATE_TASK = 'NectoProxyCertificates';
@@ -113,8 +113,8 @@ export function readAdvanced(inputs, defaults, countries) {
             if (!f) return;
             var v;
             if (spec.kind === 'bool') v = !!f.input.checked;
-            else if (spec.kind === 'int') v = fields.readNumber(f.input);
-            else if (spec.kind === 'lines') v = fields.readLines(f.input);
+            else if (spec.kind === 'int') v = nectoModule.readNumber(f.input);
+            else if (spec.kind === 'lines') v = nectoModule.readLines(f.input);
             else if (spec.kind === 'enum') v = f.input.value;
             else if (spec.kind === 'countries') v = countries ? countries.getValue().map(String) : [];
             else v = String(f.input.value || '').trim();
@@ -299,30 +299,30 @@ function buildSettings(content, ctx) {
     var proxyStatus = null;
     var inputs = {};
     var countries = null;
-    var countryText = el('div', { class: 'fieldDescription', 'data-role': 'country-note' });
-    var refusedLine = el('div', { class: 'fieldDescription', 'data-role': 'country-refused' });
-    var locationLine = el('div', { class: 'fieldDescription', 'data-role': 'location-note' });
-    var status = el('div', { class: 'stolon-status-text', role: 'status' });
-    var enabled = fields.checkField({ label: t.tr('ProxyLabelEnableProxy'), help: t.tr('ProxyEnableHelp'), field: 'Enabled' });
-    var terms = fields.checkField({ label: t.tr('ProxyLabelAcceptTerms'), help: t.tr('ProxyAcceptTermsHelp'), field: 'AcceptTerms' });
-    var history = fields.checkField({ label: t.tr('ProxyLabelRecordHistory'), help: t.tr('ProxyRecordHistoryHelp'), field: 'Visitors.Enabled' });
-    var days = fields.inputField({ label: t.tr('ProxyLabelHistoryDays'), help: t.tr('ProxyHistoryDaysHelp'), field: 'Visitors.HistoryDays', type: 'number', min: 1, max: 3650 });
-    var location = fields.selectField({
+    var countryText = h('div', { class: 'fieldDescription', 'data-role': 'country-note' });
+    var refusedLine = h('div', { class: 'fieldDescription', 'data-role': 'country-refused' });
+    var locationLine = h('div', { class: 'fieldDescription', 'data-role': 'location-note' });
+    var status = h('div', { class: 'stolon-status-text', role: 'status' });
+    var enabled = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelEnableProxy'), help: t.tr('ProxyEnableHelp'), field: 'Enabled' });
+    var terms = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelAcceptTerms'), help: t.tr('ProxyAcceptTermsHelp'), field: 'AcceptTerms' });
+    var history = nectoModule.createCheckboxField({ label: t.tr('ProxyLabelRecordHistory'), help: t.tr('ProxyRecordHistoryHelp'), field: 'Visitors.Enabled' });
+    var days = nectoModule.createInputField({ label: t.tr('ProxyLabelHistoryDays'), help: t.tr('ProxyHistoryDaysHelp'), field: 'Visitors.HistoryDays', type: 'number', min: 1, max: 3650 });
+    var location = nectoModule.createSelectField({
         label: t.tr('HeaderLocations'), help: t.tr('ProxyLocationsHelp'), field: 'Visitors.Location',
-        options: [{ value: 'Country', label: t.tr('HeaderCountry') }, { value: 'City', label: t.tr('ProxyOptionCountryAndCity') }, { value: 'Off', label: t.tr('Off') }]
+        options: [{ value: 'Country', text: t.tr('HeaderCountry') }, { value: 'City', text: t.tr('ProxyOptionCountryAndCity') }, { value: 'Off', text: t.tr('Off') }]
     });
 
     [status, enabled.element, terms.element].forEach(function (n) { content.appendChild(n); });
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderVisitors') }));
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderVisitors') }));
     [history, days, location].forEach(function (f) { content.appendChild(f.element); });
     content.appendChild(locationLine);
     advancedSpecs().forEach(function (sub) {
-        content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr(sub.title) }));
+        content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr(sub.title) }));
         sub.fields.forEach(function (spec) {
             var f;
-            if (spec.kind === 'bool') f = fields.checkField({ label: t.tr(spec.label), help: t.tr(spec.help), field: spec.key });
-            else if (spec.kind === 'lines') f = fields.textareaField({ label: t.tr(spec.label), help: t.tr(spec.help), field: spec.key, placeholder: spec.placeholder });
-            else if (spec.kind === 'enum') f = fields.selectField({ label: t.tr(spec.label), help: t.tr(spec.help), field: spec.key, options: spec.names.map(function (n, i) { return { value: n, label: t.tr(spec.options[i]) }; }) });
+            if (spec.kind === 'bool') f = nectoModule.createCheckboxField({ label: t.tr(spec.label), help: t.tr(spec.help), field: spec.key });
+            else if (spec.kind === 'lines') f = nectoModule.createTextareaField({ label: t.tr(spec.label), help: t.tr(spec.help), field: spec.key, placeholder: spec.placeholder });
+            else if (spec.kind === 'enum') f = nectoModule.createSelectField({ label: t.tr(spec.label), help: t.tr(spec.help), field: spec.key, options: spec.names.map(function (n, i) { return { value: n, text: t.tr(spec.options[i]) }; }) });
             else if (spec.kind === 'countries') {
                 countries = nectoModule.createChipSelect({
                     options: nectoModule.COUNTRY_CODES.map(function (code) { return { value: code, label: countryName(code) }; }),
@@ -330,8 +330,8 @@ function buildSettings(content, ctx) {
                     placeholder: t.tr('ProxySearchCountries'),
                     noResultsText: t.tr('ProxyEmptyCountriesMatch')
                 });
-                f = { element: el('div', { 'data-field': spec.key }, [el('div', { class: 'selectLabel', text: t.tr(spec.label) }), countries.element, fields.describe(t.tr(spec.help))]), input: null };
-            } else f = fields.inputField({ label: t.tr(spec.label), help: t.tr(spec.help), field: spec.key, type: spec.kind === 'int' ? 'number' : 'text', min: spec.min, max: spec.max, placeholder: spec.placeholder });
+                f = { element: h('div', { 'data-field': spec.key }, [h('div', { class: 'selectLabel', text: t.tr(spec.label) }), countries.element, fields.describe(t.tr(spec.help))]), input: null };
+            } else f = nectoModule.createInputField({ label: t.tr(spec.label), help: t.tr(spec.help), field: spec.key, type: spec.kind === 'int' ? 'number' : 'text', min: spec.min, max: spec.max, placeholder: spec.placeholder });
             inputs[spec.key] = f;
             content.appendChild(f.element);
             if (spec.key === 'CountryMode') {
@@ -399,7 +399,6 @@ function buildSettings(content, ctx) {
         }).then(function (result) {
             if (result && result.Restart) shared.setStatus(status, result.Restart, false);
             if (result && result.Settings) fill(result.Settings);
-            if (shared.onTabsChanged) shared.onTabsChanged();
         }, function (err) {
             return shared.errorText(err, t.tr('ProxyErrorSaveSettings')).then(function (text) { throw new Error(text); });
         });
@@ -424,7 +423,7 @@ function buildSettings(content, ctx) {
             var body = JSON.parse(JSON.stringify(stored || {}));
             body.Enabled = !!enabled.input.checked;
             body.AcceptTerms = !!terms.input.checked;
-            body.Visitors = { Enabled: !!history.input.checked, HistoryDays: Math.max(1, fields.readNumber(days.input) || 90), Location: location.input.value };
+            body.Visitors = { Enabled: !!history.input.checked, HistoryDays: Math.max(1, nectoModule.readNumber(days.input) || 90), Location: location.input.value };
             body.Advanced = readAdvanced(inputs, defaults, countries);
             body.Routes = [];
             if (!turnsOnLoopback(stored && stored.Advanced, inputs.JellyfinLoopbackOnly.input.checked, defaults)) return send(body);
@@ -450,30 +449,30 @@ function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var pollers = [];
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var state = nectoModule.createDefinitionList({ items: [] });
     var reach = nectoModule.createDefinitionList({ items: [] });
-    var recovery = el('div', { class: 'stolon-info' });
+    var recovery = h('div', { class: 'stolon-info' });
     [
         status,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderState') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderState') }),
         state.element,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderChecks') }),
-        el('div', { class: 'stolon-reset-group' }, [
-            nectoModule.resetRow({ icon: 'travel_explore', label: t.tr('ProxyTestOutside'), help: t.tr('ProxyTestOutsideHelp'), button: t.tr('ProxyButtonTest'), action: 'reach' }),
-            nectoModule.resetRow({ icon: 'public', label: t.tr('ProxyTaskExternal'), help: t.tr('ProxyTaskExternalHelp'), button: t.tr('ButtonRunTask'), action: 'task-external' }),
-            nectoModule.resetRow({ icon: 'verified_user', label: t.tr('ProxyTaskCertificates'), help: t.tr('ProxyTaskCertificatesHelp'), button: t.tr('ButtonRunTask'), action: 'task-certificates' }),
-            nectoModule.resetRow({ icon: 'map', label: t.tr('ProxyTaskLocations'), help: t.tr('ProxyTaskLocationsHelp'), button: t.tr('ButtonRunTask'), action: 'task-locations' })
-        ]),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderChecks') }),
+        nectoModule.createResetGroup([
+            nectoModule.createResetRow({ icon: 'travel_explore', label: t.tr('ProxyTestOutside'), help: t.tr('ProxyTestOutsideHelp'), button: t.tr('ProxyButtonTest'), action: 'reach' }),
+            nectoModule.createResetRow({ icon: 'public', label: t.tr('ProxyTaskExternal'), help: t.tr('ProxyTaskExternalHelp'), button: t.tr('ButtonRunTask'), action: 'task-external' }),
+            nectoModule.createResetRow({ icon: 'verified_user', label: t.tr('ProxyTaskCertificates'), help: t.tr('ProxyTaskCertificatesHelp'), button: t.tr('ButtonRunTask'), action: 'task-certificates' }),
+            nectoModule.createResetRow({ icon: 'map', label: t.tr('ProxyTaskLocations'), help: t.tr('ProxyTaskLocationsHelp'), button: t.tr('ButtonRunTask'), action: 'task-locations' })
+        ]).element,
         reach.element,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
-        el('div', { class: 'stolon-reset-group' }, [
-            nectoModule.resetRow({ icon: 'restart_alt', label: t.tr('ProxyRestart'), help: t.tr('ProxyRestartHelp'), button: t.tr('Restart'), action: 'restart' }),
-            nectoModule.resetRow({ icon: 'undo', label: t.tr('ProxyUndoTrust'), help: t.tr('ProxyUndoTrustHelp'), button: t.tr('ButtonUndo'), action: 'undo', destructive: true }),
-            nectoModule.resetRow({ icon: 'settings_backup_restore', label: t.tr('ProxyResetDefaults'), help: t.tr('ProxyResetDefaultsHelp'), button: t.tr('Reset'), action: 'reset', destructive: true }),
-            nectoModule.resetRow({ icon: 'delete_sweep', label: t.tr('ProxyClearHistory'), help: t.tr('ProxyClearHistoryHelp'), button: t.tr('ButtonClear'), action: 'clear', destructive: true })
-        ]),
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderRecovery') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
+        nectoModule.createResetGroup([
+            nectoModule.createResetRow({ icon: 'restart_alt', label: t.tr('ProxyRestart'), help: t.tr('ProxyRestartHelp'), button: t.tr('Restart'), action: 'restart' }),
+            nectoModule.createResetRow({ icon: 'undo', label: t.tr('ProxyUndoTrust'), help: t.tr('ProxyUndoTrustHelp'), button: t.tr('ButtonUndo'), action: 'undo', destructive: true }),
+            nectoModule.createResetRow({ icon: 'settings_backup_restore', label: t.tr('ProxyResetDefaults'), help: t.tr('ProxyResetDefaultsHelp'), button: t.tr('Reset'), action: 'reset', destructive: true }),
+            nectoModule.createResetRow({ icon: 'delete_sweep', label: t.tr('ProxyClearHistory'), help: t.tr('ProxyClearHistoryHelp'), button: t.tr('ButtonClear'), action: 'clear', destructive: true })
+        ]).element,
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderRecovery') }),
         recovery
     ].forEach(function (n) { content.appendChild(n); });
 
@@ -537,7 +536,7 @@ function buildTroubleshooting(content, ctx) {
     // runTask
     // Starts a scheduled task and follows it on its button.
     function runTask(action, key) {
-        shared.runTask(button(action), key, t.tr('ButtonRunTask'), load).then(function (p) { pollers.push(p); }).catch(fail('ErrorRunTask'));
+        shared.runScheduledTask(button(action), key, t.tr('ButtonRunTask'), load).then(function (p) { pollers.push(p); }).catch(fail('ErrorRunTask'));
     }
 
     // confirmThen
@@ -574,9 +573,9 @@ function buildTroubleshooting(content, ctx) {
                 report(t.tr('ProxyResetNothing'), false);
                 return null;
             }
-            var context = el('div', {}, [
-                el('div', { class: 'fieldDescription', text: t.tr('ProxyResetChanges') }),
-                el('ul', {}, changes.map(function (c) { return el('li', { text: t.tr(c.label) }); }))
+            var context = h('div', {}, [
+                h('div', { class: 'fieldDescription', text: t.tr('ProxyResetChanges') }),
+                h('ul', {}, changes.map(function (c) { return h('li', { text: t.tr(c.label) }); }))
             ]);
             return nectoModule.confirmDialog(t.tr('ProxyConfirmResetDefaults'), { title: t.tr('ProxyTitleResetDefaults'), confirmText: t.tr('Reset'), destructive: true, context: context }).then(function (ok) {
                 if (!ok) return null;

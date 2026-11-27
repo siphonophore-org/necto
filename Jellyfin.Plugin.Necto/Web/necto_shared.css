@@ -12,27 +12,17 @@
 .necto-wireguard-meter { width: calc(var(--stolon-size-large) * 6); max-width: 40vw; }
 
 /* necto-scripts editor spacing */
-/* Spacing between Stolon components in the Scripts editor that Stolon does not set itself. */
-/* Example: <div id="NectoScriptsPage"><button id="btnCheckPath">Check path</button></div> */
-#NectoScriptsPage #btnCheckPath { margin: 0 0 var(--stolon-gap-wide); }
-#NectoScriptsPage #webhookExample { margin-bottom: var(--stolon-gap-wide); }
-#NectoScriptsPage #triggerMount { margin-bottom: var(--stolon-gap-wide); }
-#NectoScriptsPage #conditionList .stolon-repeater-rows > * { align-items: end; }
+/* A wide gap under a block of the Scripts editor while the warning after it shows. */
+/* Example: <div id="NectoScriptsPage"><div id="groupList"></div><div id="userWarn"></div></div> */
 #NectoScriptsPage #itemKindMount:has(+ #itemKindWarn:not(.stolon-hidden)),
 #NectoScriptsPage #groupList:has(+ #userWarn:not(.stolon-hidden)),
 #NectoScriptsPage #forEachLimitRow:not(.stolon-hidden):has(+ #forEachWarn:not(.stolon-hidden)),
 #NectoScriptsPage #conditionList:has(+ #conditionWarnings:not(:empty)) { margin-bottom: var(--stolon-gap-wide); }
+
 /* necto-storage-disk-aside */
 /* The end of a disk row: the state badge over a usage meter, right aligned, a fixed width so meters line up down the list. */
-/* Example: <div class="necto-storage-disk-aside"><span class="stolon-badge stolon-green">Available</span><div class="stolon-usage-meter"></div></div> */
-.necto-storage-disk-aside { display: flex; flex-direction: column; align-items: flex-end; gap: var(--stolon-gap-narrow); width: 14rem; max-width: 40vw; }
-.necto-storage-disk-aside > .stolon-usage-meter { align-self: stretch; }
-
-/* necto-storage-attention */
-/* The notice above the disk list when more than one thing needs a look, one line each. */
-/* Example: <div class="stolon-error necto-storage-attention"><ul><li>media2 went missing 2 hours ago.</li></ul></div> */
-.necto-storage-attention { margin-bottom: var(--stolon-gap-wide); }
-.necto-storage-attention ul { margin: 0; padding-inline-start: 1.25em; }
+/* Example: <div class="necto-storage-disk-aside"><span><span class="stolon-badge stolon-green">Available</span></span><div class="stolon-usage-meter"></div></div> */
+.necto-storage-disk-aside { display: flex; flex-direction: column; align-items: stretch; text-align: end; gap: var(--stolon-gap-narrow); width: 14rem; max-width: 40vw; }
 
 /* necto-storage-toolbar */
 /* The line above the disk list: the Jellyfin and All filter on the left, Refresh on the right. */
@@ -90,33 +80,9 @@
 
 /* necto-storage-actions */
 /* The end of a sidecar section that saves: why it cannot, then its button on the right. */
-/* Example: <div class="necto-storage-actions"><div class="stolon-error stolon-hidden"></div><button class="raised stolon-button primary">Save</button></div> */
+/* Example: <div class="necto-storage-actions"><div class="stolon-error necto-storage-actions-why"></div><button class="raised stolon-button primary">Save</button></div> */
 .necto-storage-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--stolon-gap-narrow); }
-.necto-storage-actions > .stolon-error { flex: 1 1 auto; }
-/* necto-detail */
-/* The body of a request's or an issue's sidecar, its media card, notices, details, and notes spaced apart. */
-/* Example: <div class="necto-detail"><div class="stolon-media-card">...</div><dl class="stolon-defs">...</dl></div> */
-.necto-detail { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
-.necto-detail > .fieldDescription { margin: 0; }
-
-/* necto-dashboard */
-/* The Dashboard's column of cards, map, share card, and activity, spaced evenly. */
-/* Example: <div class="verticalSection necto-dashboard"><div id="dashboardCards"></div></div> */
-.necto-dashboard { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
-.necto-dashboard > .fieldDescription { margin: 0; }
-
-/* necto-dashboard-share */
-/* The share card's body, its note and warning over the QR code and the Share button. */
-/* Example: <div class="necto-dashboard-share"><div class="fieldDescription"></div></div> */
-.necto-dashboard-share { display: flex; flex-direction: column; gap: var(--stolon-gap-narrow); }
-
-/* necto-link-aside */
-/* A record row whose aside holds a link with Copy and a QR button, such as an invite's. The link wraps inside a capped width, so the row's name and details keep their room. */
-/* Example: <div class="stolon-record-list-aside"><div class="stolon-qr-code stolon-inline">...</div></div> */
-.stolon-record-list-aside:has(> .stolon-qr-code.stolon-inline) { flex: 0 1 22em; min-width: 0; }
-.stolon-record-list-aside > .stolon-qr-code.stolon-inline { min-width: 0; width: 100%; }
-.stolon-record-list-aside > .stolon-qr-code.stolon-inline .stolon-copy-field-text { min-width: 0; overflow-wrap: anywhere; }
-
+.necto-storage-actions-why { flex: 1 1 auto; }
 /* necto-menu-link */
 /* A row of the Menu links list: the link's icon in a tile, its name and address, and its Edit button. */
 /* Example: <div class="necto-menu-link"><span class="stolon-collapsible-tile"></span><div class="necto-menu-link-text"></div><button class="stolon-row-btn"></button></div> */
@@ -132,61 +98,3 @@
 .necto-icon-field > input { flex: 1 1 auto; min-width: 0; }
 .necto-icon-grid { display: flex; flex-wrap: wrap; gap: var(--stolon-gap-narrow); margin-top: var(--stolon-gap-narrow); max-height: 12rem; overflow-y: auto; }
 .necto-icon-choice[aria-selected="true"] { outline: 2px solid var(--stolon-accent); }
-
-/* necto-stack */
-/* A column of a tool's blocks, such as an intro, a notice, cards, and a list, kept apart by the standard gap. */
-/* Example: <div class="necto-stack"><div class="fieldDescription"></div><div class="stolon-cards"></div></div> */
-.necto-stack { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
-/* Stolon gives every description margins with !important, so the stack's own gap needs it too. */
-.pluginConfigurationPage .necto-stack > .fieldDescription,
-.necto-stack > .stolon-info,
-.necto-stack > .stolon-cards,
-.necto-stack > .stolon-button-row { margin-top: 0 !important; margin-bottom: 0 !important; }
-
-/* necto-card-fit */
-/* A balanced card row keeps every card inside its column, and a card whose value is a word, such as Running, ends it
-   with an ellipsis instead of running past the edge. Stolon's card minimum otherwise outweighs the balanced grid. */
-/* Example: <div class="stolon-cards stolon-balanced"><div class="stolon-card"><span class="stolon-card-count">Running</span></div></div> */
-.stolon-cards.stolon-balanced > .stolon-card { min-width: 0; }
-.stolon-cards .stolon-card-count { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* necto-word-cards */
-/* A card row whose values are words, such as Running or Points elsewhere, in a smaller size that wraps, so the word
-   reads whole instead of ending in an ellipsis. */
-/* Example: <div class="stolon-cards necto-word-cards"><div class="stolon-card"><span class="stolon-card-count">Running</span></div></div> */
-.necto-word-cards .stolon-card-count { font-size: var(--stolon-font-large); white-space: normal; overflow-wrap: anywhere; }
-.necto-word-cards .stolon-card-label { white-space: normal; }
-.pluginConfigurationPage .necto-stack > .fieldDescription { padding-left: 0; }
-
-/* necto-section-flow */
-/* Each Settings and Troubleshooting section lays its blocks out as one column with the standard gap, so every field,
-   checkbox, card row, and panel sits the same distance from the next. Stolon and Jellyfin give fields their own
-   margins, some with !important, which stack unevenly, so the column takes them over. A subsection title gets extra
-   room above, so it groups with what follows. A description right after a field hugs that field. */
-/* Example: <div id="settingsSections"><div class="stolon-collapsible-section"><div class="stolon-collapsible-content"><div>…</div></div></div></div> */
-#settingsSections .stolon-collapsible-content > div,
-#troubleshootingSections .stolon-collapsible-content > div { display: flex; flex-direction: column; gap: var(--stolon-gap-wide); }
-#settingsSections .stolon-collapsible-content > div > *,
-#troubleshootingSections .stolon-collapsible-content > div > * { flex: none; margin-top: 0 !important; margin-bottom: 0 !important; }
-#settingsSections .stolon-collapsible-content > div > .stolon-subsection-title:not(:first-child),
-#troubleshootingSections .stolon-collapsible-content > div > .stolon-subsection-title:not(:first-child) { margin-top: var(--stolon-gap-wide) !important; }
-#settingsSections .stolon-collapsible-content > div > :not(.stolon-subsection-title) + .fieldDescription,
-#troubleshootingSections .stolon-collapsible-content > div > :not(.stolon-subsection-title) + .fieldDescription { margin-top: calc(var(--stolon-gap-narrow) - var(--stolon-gap-wide)) !important; }
-#settingsSections .stolon-collapsible-content > div > .stolon-status-text:empty,
-#troubleshootingSections .stolon-collapsible-content > div > .stolon-status-text:empty { display: none; }
-#settingsSections .selectContainer > .fieldDescription,
-#settingsSections .inputContainer > .fieldDescription,
-#settingsSections .checkboxContainer > .fieldDescription,
-#troubleshootingSections .selectContainer > .fieldDescription,
-#troubleshootingSections .inputContainer > .fieldDescription { margin-bottom: 0 !important; }
-#settingsSections .stolon-field,
-#troubleshootingSections .stolon-field { gap: var(--stolon-gap-narrow); }
-#settingsSections .stolon-field > *,
-#troubleshootingSections .stolon-field > * { margin-top: 0 !important; margin-bottom: 0 !important; }
-#settingsSections .stolon-field-row > .stolon-panel { margin: 0 !important; }
-#settingsSections .stolon-panel-body > .stolon-slider { margin-bottom: 0 !important; }
-#settingsSections .stolon-panel-body > .fieldDescription { margin: var(--stolon-gap-narrow) 0 0 !important; }
-#settingsSections .necto-storage-alert-editor { gap: var(--stolon-gap-wide); }
-#settingsSections .necto-storage-alert-editor > * { flex: none; margin-top: 0 !important; margin-bottom: 0 !important; }
-#settingsSections .stolon-collapsible-content > div > div > :last-child,
-#troubleshootingSections .stolon-collapsible-content > div > div > :last-child { margin-bottom: 0 !important; }

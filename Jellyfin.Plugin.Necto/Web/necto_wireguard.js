@@ -9,7 +9,7 @@ import {
     parseWgConfig, parseForwards, safeFileName, stateTag, tunnelStateLabel
 } from './configurationpage?name=necto_wireguard_common.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // peerLimit
 // A peer's data limit and its period, its own or the host's default.
@@ -136,7 +136,7 @@ export default function (view) {
             bytes: true,
             usedText: t.tr('WireGuardUsedOfTotal') + '/' + periodLabel(t, limit.period).toLowerCase()
         });
-        return el('div', { class: 'necto-wireguard-meter' }, [meter.element]);
+        return h('div', { class: 'necto-wireguard-meter' }, [meter.element]);
     }
 
     // usedText
@@ -274,7 +274,7 @@ export default function (view) {
         setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     }
 
-    function subsection(key) { return el('h3', { class: 'stolon-subsection-title', text: t.tr(key) }); }
+    function subsection(key) { return h('h3', { class: 'stolon-subsection-title', text: t.tr(key) }); }
 
     // openPeer
     // Opens a peer's details in a sidecar: its state, owner, address, handshake, source, usage, and limits, its
@@ -285,7 +285,7 @@ export default function (view) {
         var state = peerState(peer);
         var end = endOf(peer.Id);
         var tag = stateTag(t, end.State || 'Offline');
-        var body = el('div');
+        var body = h('div');
         body.appendChild(subsection('LabelDetails'));
         body.appendChild(nectoModule.createDefinitionList({
             emptyText: '-',
@@ -300,8 +300,8 @@ export default function (view) {
                 { label: t.tr('WireGuardLabelSpeedLimit'), value: speedText(peer.DownloadMbps, cfg.PeerDownloadMbps, peer.UploadMbps, cfg.PeerUploadMbps) }
             ]
         }).element);
-        var qrHost = el('div');
-        var configHost = el('div');
+        var qrHost = h('div');
+        var configHost = h('div');
         body.appendChild(subsection('WireGuardHeaderQrCode'));
         body.appendChild(qrHost);
         body.appendChild(subsection('WireGuardLabelConfigFile'));
@@ -310,7 +310,7 @@ export default function (view) {
         fetchPeerConfig(peer.Id).then(function (text) {
             configText = text;
             qrHost.appendChild(nectoModule.createQrCode({ value: text, showValue: false, label: t.tr('WireGuardQrLabel'), fileName: safeFileName(peer.Name) + '.png' }).element);
-            configHost.appendChild(el('pre', { class: 'stolon-code stolon-code-block', text: text }));
+            configHost.appendChild(h('pre', { class: 'stolon-code stolon-code-block', text: text }));
         }, function () {
             qrHost.innerHTML = shared.emptySection(t.tr('WireGuardErrorNoPeerConfig'));
         });
@@ -331,13 +331,13 @@ export default function (view) {
     // A labelled text or number input, with an optional description and placeholder.
     function field(labelKey, type, value, helpKey, placeholder) {
         var id = 'necto-wg-' + Math.random().toString(36).slice(2);
-        var input = el('input', { is: 'emby-input', type: type, id: id, autocomplete: 'off', min: type === 'number' ? '0' : null, placeholder: placeholder || null });
+        var input = h('input', { is: 'emby-input', type: type, id: id, autocomplete: 'off', min: type === 'number' ? '0' : null, placeholder: placeholder || null });
         input.value = value == null ? '' : value;
         return {
-            element: el('div', { class: 'inputContainer' }, [
-                el('label', { for: id, text: t.tr(labelKey) }),
+            element: h('div', { class: 'inputContainer' }, [
+                h('label', { for: id, text: t.tr(labelKey) }),
                 input,
-                helpKey ? el('div', { class: 'fieldDescription', text: t.tr(helpKey) }) : null
+                helpKey ? h('div', { class: 'fieldDescription', text: t.tr(helpKey) }) : null
             ]),
             input: input
         };
@@ -347,13 +347,13 @@ export default function (view) {
     // A labelled code area with a description.
     function textArea(labelKey, helpKey, value, placeholder, rows) {
         var id = 'necto-wg-' + Math.random().toString(36).slice(2);
-        var area = el('textarea', { class: 'stolon-code stolon-code-block', id: id, rows: String(rows || 3), spellcheck: 'false', placeholder: placeholder || null });
+        var area = h('textarea', { class: 'stolon-code stolon-code-block', id: id, rows: String(rows || 3), spellcheck: 'false', placeholder: placeholder || null });
         area.value = value || '';
         return {
-            element: el('div', { class: 'inputContainer' }, [
-                el('label', { for: id, text: t.tr(labelKey) }),
+            element: h('div', { class: 'inputContainer' }, [
+                h('label', { for: id, text: t.tr(labelKey) }),
                 area,
-                el('div', { class: 'fieldDescription', text: t.tr(helpKey) })
+                h('div', { class: 'fieldDescription', text: t.tr(helpKey) })
             ]),
             input: area
         };
@@ -362,24 +362,24 @@ export default function (view) {
     // labelled
     // Puts a control under a label, as a form field.
     function labelled(labelKey, control, helpKey) {
-        return el('div', { class: 'inputContainer' }, [
-            el('label', { text: t.tr(labelKey) }),
+        return h('div', { class: 'inputContainer' }, [
+            h('label', { text: t.tr(labelKey) }),
             control,
-            helpKey ? el('div', { class: 'fieldDescription', text: t.tr(helpKey) }) : null
+            helpKey ? h('div', { class: 'fieldDescription', text: t.tr(helpKey) }) : null
         ]);
     }
 
     // collapsible
     // A collapsible section holding a group of an editor's fields, closed unless it is the first.
     function collapsible(titleKey, children, open) {
-        var content = el('div', {}, children.map(function (c) { return c.element || c; }));
+        var content = h('div', {}, children.map(function (c) { return c.element || c; }));
         return nectoModule.createCollapsibleSection({ title: t.tr(titleKey), content: content, collapsed: !open }).element;
     }
 
     // inheritSpeed
     // A speed limit in Mbps that takes the default until it is overridden.
     function inheritSpeed(labelKey, own, inherited) {
-        var input = el('input', { is: 'emby-input', type: 'number', min: '0' });
+        var input = h('input', { is: 'emby-input', type: 'number', min: '0' });
         var made = nectoModule.createInheritField({
             field: input,
             inheritedValue: inherited || 0,
@@ -459,7 +459,7 @@ export default function (view) {
     function editPeer(existing) {
         var isNew = !existing;
         var peer = existing || { UserId: ApiClient.getCurrentUserId(), Name: '', Address: '', RoutedSubnets: [], Enabled: true, PublicKey: '' };
-        var status = el('div', { class: 'stolon-status-text', role: 'status' });
+        var status = h('div', { class: 'stolon-status-text', role: 'status' });
         var name = field('LabelName', 'text', peer.Name, null, t.tr('WireGuardPlaceholderPeerName'));
         var owner = shared.createUserSelector({ value: peer.UserId, includeEmptyOption: false });
         var address = field('LabelAddress', 'text', peer.Address, null, t.tr('WireGuardPlaceholderNextFree'));
@@ -470,7 +470,7 @@ export default function (view) {
         var down = inheritSpeed('WireGuardLabelDownloadMbps', peer.DownloadMbps, cfg.PeerDownloadMbps);
         var up = inheritSpeed('WireGuardLabelUploadMbps', peer.UploadMbps, cfg.PeerUploadMbps);
         var data = inheritData(peer.DataLimit != null ? { bytes: peer.DataLimit, period: normalizePeriod(peer.DataPeriod) } : null, { bytes: cfg.PeerDataLimit || 0, period: normalizePeriod(cfg.PeerDataPeriod) });
-        var body = el('div', {}, [
+        var body = h('div', {}, [
             status,
             collapsible('WireGuardHeaderPeer', [name, labelled('WireGuardLabelOwner', owner.element, 'WireGuardOwnerHelp'), address, publicKey, enabled], true),
             collapsible('HeaderLimits', [down, up, data]),
@@ -523,7 +523,7 @@ export default function (view) {
         var state = connectionState(c);
         var end = endOf(c.Id);
         var tag = stateTag(t, end.State || 'Offline');
-        var body = el('div');
+        var body = h('div');
         body.appendChild(subsection('LabelDetails'));
         body.appendChild(nectoModule.createDefinitionList({
             emptyText: '-',
@@ -540,7 +540,7 @@ export default function (view) {
         }).element);
         body.appendChild(subsection('WireGuardLabelOurPublicKey'));
         body.appendChild(nectoModule.createCopyField({ label: t.tr('WireGuardLabelOurPublicKey'), copyLabel: t.tr('WireGuardLabelOurPublicKey'), value: c.PublicKey || '', mono: true }).element);
-        body.appendChild(el('div', { class: 'fieldDescription', text: t.tr('WireGuardOurPublicKeyHelp') }));
+        body.appendChild(h('div', { class: 'fieldDescription', text: t.tr('WireGuardOurPublicKeyHelp') }));
 
         nectoModule.openSidecar({
             title: c.Name || c.Endpoint,
@@ -557,7 +557,7 @@ export default function (view) {
     function editConnection(existing) {
         var isNew = !existing;
         var c = existing || { Name: '', Endpoint: '', PeerPublicKey: '', Address: '', Keepalive: 25, Enabled: true, Forwards: [] };
-        var status = el('div', { class: 'stolon-status-text', role: 'status' });
+        var status = h('div', { class: 'stolon-status-text', role: 'status' });
         var importArea = textArea('WireGuardLabelConfigFile', 'WireGuardImportConfigHelp', '', '', 6);
         var name = field('LabelName', 'text', c.Name, null, t.tr('WireGuardPlaceholderConnectionName'));
         var endpoint = field('WireGuardLabelRemoteHost', 'text', c.Endpoint, null, 'vpn.example.com:51820');
@@ -571,7 +571,7 @@ export default function (view) {
         var down = inheritSpeed('WireGuardLabelDownloadMbps', c.DownloadMbps, cfg.ConnectionDownloadMbps);
         var up = inheritSpeed('WireGuardLabelUploadMbps', c.UploadMbps, cfg.ConnectionUploadMbps);
         var data = inheritData(c.DataLimit != null ? { bytes: c.DataLimit, period: normalizePeriod(c.DataPeriod) } : null, { bytes: cfg.ConnectionDataLimit || 0, period: normalizePeriod(cfg.ConnectionDataPeriod) });
-        var body = el('div', {}, [
+        var body = h('div', {}, [
             status,
             collapsible('WireGuardHeaderImport', [importArea]),
             collapsible('WireGuardHeaderConnection', [name, endpoint, peerKey, psk, address, privateKey, enabled], true),

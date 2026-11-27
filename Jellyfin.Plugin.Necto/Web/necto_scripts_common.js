@@ -23,10 +23,11 @@ var strings = null;
 // Reads the plugin's strings, in the viewer's language once a Scripts page has loaded them.
 //
 // Output
-// [object]: { tr(key, fallback), format(key, ...values), title(key), language }.
+// [object]: { tr(key, fallback), format(key, ...values), plural(count, one, many, ...values), title(key), language }.
 export var t = {
     tr: function (key, fallback) { return strings ? strings.tr(key, fallback) : (fallback === undefined ? key : fallback); },
     format: function () { return strings ? strings.format.apply(strings, arguments) : arguments[0]; },
+    plural: function (count, one, many) { return strings ? strings.plural.apply(strings, arguments) : (count === 1 ? one : many); },
     title: function (key) { return strings && strings.title ? strings.title(key) : t.tr(key); },
     get language() { return strings ? strings.language : 'en-us'; }
 };

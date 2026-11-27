@@ -3,7 +3,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // The kinds an administrator may add, by the number the server keeps them as.
 export var CHANNEL_KINDS = { Discord: 0, Webhook: 1, Email: 2, Administrators: 3, ActivityLog: 4 };
@@ -13,22 +13,6 @@ var KIND_NAMES = ['Discord', 'Webhook', 'Email', 'Administrators', 'ActivityLog'
 // The string key of each kind's name, and of the button that adds one.
 export var KIND_KEYS = { Discord: 'NotificationsKindDiscord', Webhook: 'LabelWebhook', Email: 'NotificationsKindEmail', Administrators: 'NotificationsKindAdministrators', ActivityLog: 'NotificationsKindActivityLog' };
 var ADD_KEYS = { Discord: 'NotificationsButtonAddDiscord', Webhook: 'NotificationsButtonAddWebhook', Email: 'NotificationsButtonAddEmail' };
-
-// Ids for fields, so two sections never share one.
-var fieldSeq = 0;
-
-// fieldId
-// Makes an id for a field.
-//
-// Inputs
-// name [string]: What the field is.
-//
-// Output
-// [string]: An id no other field has.
-function fieldId(name) {
-    fieldSeq += 1;
-    return 'necto-notifications-' + name + '-' + fieldSeq;
-}
 
 // kindName
 // Reads a channel's kind, which the server may send as its number or its name.
@@ -98,62 +82,22 @@ export function channelTitle(channel, t) {
 export function eventsLine(channel, shared) {
     if (channel.AllEvents) return shared.t.tr('NotificationsEveryEvent');
     var count = (channel.EventKeys || []).length;
-    return count === 0 ? shared.t.tr('NotificationsNoEvents') : shared.plural(count, 'NotificationsEventCountOne', 'NotificationsEventCountMany');
-}
-
-// field
-// Builds a labelled input with its description.
-//
-// Inputs
-// opts [object]: label, help, type, value, placeholder, and data, the input's data-field.
-//
-// Output
-// [object]: wrap, the container, and input.
-function field(opts) {
-    var id = fieldId(opts.data || 'field');
-    var input = opts.type === 'textarea'
-        ? el('textarea', { is: 'emby-textarea', id: id, rows: '4', class: 'emby-textarea', 'data-field': opts.data })
-        : el('input', { is: 'emby-input', type: opts.type || 'text', id: id, placeholder: opts.placeholder || null, 'data-field': opts.data, min: opts.min || null });
-    input.value = opts.value == null ? '' : String(opts.value);
-    var wrap = el('div', { class: 'inputContainer' }, [
-        el('label', { class: 'inputLabel inputLabelUnfocused', for: id, text: opts.label }),
-        input,
-        opts.help ? el('div', { class: 'fieldDescription', text: opts.help }) : null
-    ]);
-    return { wrap: wrap, input: input };
+    return count === 0 ? shared.t.tr('NotificationsNoEvents') : shared.t.plural(count, 'NotificationsEventCountOne', 'NotificationsEventCountMany');
 }
 
 // clearButton
 // Builds the button that clears a stored secret on the next save, placed under its field.
 //
 // Inputs
-// wrap [HTMLElement]: The field's container.
+// wrap [HTMLElement]: The field's element.
 // t [object]: The strings.
 //
 // Output
 // [HTMLButtonElement]: The button, for bindSecretField's clearButton.
 function clearButton(wrap, t) {
-    var button = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'clear-secret' }, [el('span', { text: t.tr('ButtonClear') })]);
+    var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'clear-secret' }, [h('span', { text: t.tr('ButtonClear') })]);
     wrap.appendChild(button);
     return button;
-}
-
-// check
-// Builds a checkbox with its description.
-//
-// Inputs
-// opts [object]: label, help, checked, and data, the input's data-field.
-//
-// Output
-// [object]: wrap, the container, and input.
-function check(opts) {
-    var input = el('input', { type: 'checkbox', is: 'emby-checkbox', id: fieldId(opts.data || 'check'), 'data-field': opts.data });
-    input.checked = !!opts.checked;
-    var wrap = el('div', { class: 'checkboxContainer' + (opts.help ? ' checkboxContainer-withDescription' : '') }, [
-        el('label', {}, [input, el('span', { text: opts.label })]),
-        opts.help ? el('div', { class: 'fieldDescription checkboxFieldDescription', text: opts.help }) : null
-    ]);
-    return { wrap: wrap, input: input };
 }
 
 // buildSettings
@@ -173,25 +117,25 @@ function buildSettings(content, ctx) {
     var settings = null;
     var events = [];
     var list = null;
-    var status = el('div', { class: 'stolon-status-text', role: 'status' });
+    var status = h('div', { class: 'stolon-status-text', role: 'status' });
 
-    var browsers = check({ label: t.tr('LabelBrowserNotifications'), help: t.tr('NotificationsBrowsersHelp'), data: 'BrowserNotifications' });
-    var apps = check({ label: t.tr('NotificationsChannelApps'), help: t.tr('NotificationsAppsHelp'), data: 'JellyfinMessages' });
-    var server = field({ label: t.tr('NotificationsLabelServerUrl'), help: t.tr('NotificationsServerUrlHelp'), placeholder: 'https://jellyfin.example.com', data: 'ServerUrl' });
-    var contact = field({ label: t.tr('NotificationsLabelPushContact'), help: t.tr('NotificationsPushContactHelp'), placeholder: 'mailto:admin@example.com', data: 'PushContact' });
-    var host = field({ label: t.tr('NotificationsLabelSmtpHost'), placeholder: 'smtp.example.com', data: 'Smtp.Host' });
-    var port = field({ label: t.tr('NotificationsLabelSmtpPort'), type: 'number', min: '1', data: 'Smtp.Port', help: t.tr('NotificationsSmtpPortHelp') });
-    var tls = check({ label: t.tr('NotificationsLabelSmtpTls'), help: t.tr('NotificationsSmtpTlsHelp'), data: 'Smtp.UseTls' });
-    var user = field({ label: t.tr('NotificationsLabelSmtpUser'), data: 'Smtp.Username', help: t.tr('NotificationsSmtpUserHelp') });
-    var password = field({ label: t.tr('NotificationsLabelSmtpPassword'), type: 'password', data: 'Smtp.Password' });
-    var passwordClear = clearButton(password.wrap, t);
-    var from = field({ label: t.tr('NotificationsLabelFromAddress'), type: 'email', placeholder: 'jellyfin@example.com', data: 'Smtp.FromAddress' });
-    var fromName = field({ label: t.tr('NotificationsLabelFromName'), placeholder: 'Jellyfin', data: 'Smtp.FromName' });
-    var listBox = el('div', { 'data-role': 'channels' });
-    var addRow = el('div', { class: 'stolon-card-list-actions' }, ['Discord', 'Webhook', 'Email'].map(function (kind) {
-        var button = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'add-' + kind.toLowerCase() }, [
-            el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
-            el('span', { text: t.tr(ADD_KEYS[kind]) })
+    var browsers = nectoModule.createCheckboxField({ label: t.tr('LabelBrowserNotifications'), help: t.tr('NotificationsBrowsersHelp'), field: 'BrowserNotifications' });
+    var apps = nectoModule.createCheckboxField({ label: t.tr('NotificationsChannelApps'), help: t.tr('NotificationsAppsHelp'), field: 'JellyfinMessages' });
+    var server = nectoModule.createInputField({ label: t.tr('NotificationsLabelServerUrl'), help: t.tr('NotificationsServerUrlHelp'), placeholder: 'https://jellyfin.example.com', field: 'ServerUrl' });
+    var contact = nectoModule.createInputField({ label: t.tr('NotificationsLabelPushContact'), help: t.tr('NotificationsPushContactHelp'), placeholder: 'mailto:admin@example.com', field: 'PushContact' });
+    var host = nectoModule.createInputField({ label: t.tr('NotificationsLabelSmtpHost'), placeholder: 'smtp.example.com', field: 'Smtp.Host' });
+    var port = nectoModule.createInputField({ label: t.tr('NotificationsLabelSmtpPort'), type: 'number', min: '1', field: 'Smtp.Port', help: t.tr('NotificationsSmtpPortHelp') });
+    var tls = nectoModule.createCheckboxField({ label: t.tr('NotificationsLabelSmtpTls'), help: t.tr('NotificationsSmtpTlsHelp'), field: 'Smtp.UseTls' });
+    var user = nectoModule.createInputField({ label: t.tr('NotificationsLabelSmtpUser'), field: 'Smtp.Username', help: t.tr('NotificationsSmtpUserHelp') });
+    var password = nectoModule.createInputField({ label: t.tr('NotificationsLabelSmtpPassword'), type: 'password', field: 'Smtp.Password' });
+    var passwordClear = clearButton(password.element, t);
+    var from = nectoModule.createInputField({ label: t.tr('NotificationsLabelFromAddress'), type: 'email', placeholder: 'jellyfin@example.com', field: 'Smtp.FromAddress' });
+    var fromName = nectoModule.createInputField({ label: t.tr('NotificationsLabelFromName'), placeholder: 'Jellyfin', field: 'Smtp.FromName' });
+    var listBox = h('div', { 'data-role': 'channels' });
+    var addRow = h('div', { class: 'stolon-card-list-actions' }, ['Discord', 'Webhook', 'Email'].map(function (kind) {
+        var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'add-' + kind.toLowerCase() }, [
+            h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
+            h('span', { text: t.tr(ADD_KEYS[kind]) })
         ]);
         button.addEventListener('click', function () { openChannel(newChannel(kind, t.tr(KIND_KEYS[kind])), true); });
         return button;
@@ -199,15 +143,15 @@ function buildSettings(content, ctx) {
 
     [
         status,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderUsers') }),
-        el('div', { class: 'fieldDescription', text: t.tr('NotificationsUsersHelp') }),
-        browsers.wrap, apps.wrap,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLinks') }),
-        server.wrap, contact.wrap,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderEmail') }),
-        host.wrap, port.wrap, tls.wrap, user.wrap, password.wrap, from.wrap, fromName.wrap,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderChannels') }),
-        el('div', { class: 'fieldDescription', text: t.tr('NotificationsChannelsHelp') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderUsers') }),
+        h('div', { class: 'fieldDescription', text: t.tr('NotificationsUsersHelp') }),
+        browsers.element, apps.element,
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLinks') }),
+        server.element, contact.element,
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderEmail') }),
+        host.element, port.element, tls.element, user.element, password.element, from.element, fromName.element,
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderChannels') }),
+        h('div', { class: 'fieldDescription', text: t.tr('NotificationsChannelsHelp') }),
         listBox, addRow
     ].forEach(function (node) { content.appendChild(node); });
 
@@ -396,74 +340,74 @@ export function createChannelEditor(channel, ctx) {
     var kind = kindName(channel.Kind);
     var handles = [];
     var readers = [];
-    var status = el('div', { class: 'stolon-status-text', role: 'status' });
-    var previewBox = el('div', { 'data-role': 'preview' });
-    var root = el('div', { 'data-role': 'channel-editor', 'data-kind': kind }, [status]);
+    var status = h('div', { class: 'stolon-status-text', role: 'status' });
+    var previewBox = h('div', { 'data-role': 'preview' });
+    var root = h('div', { 'data-role': 'channel-editor', 'data-kind': kind }, [status]);
 
     if (!isBuiltIn(channel)) {
-        var name = field({ label: t.tr('LabelName'), value: channel.Name, data: 'Name' });
-        root.appendChild(name.wrap);
+        var name = nectoModule.createInputField({ label: t.tr('LabelName'), value: channel.Name, field: 'Name' });
+        root.appendChild(name.element);
         readers.push(function (out) { out.Name = name.input.value.trim(); });
     }
 
-    var on = check({ label: t.tr('NotificationsLabelChannelOn'), checked: channel.Enabled !== false, data: 'Enabled' });
-    root.appendChild(on.wrap);
+    var on = nectoModule.createCheckboxField({ label: t.tr('NotificationsLabelChannelOn'), checked: channel.Enabled !== false, field: 'Enabled' });
+    root.appendChild(on.element);
     readers.push(function (out) { out.Enabled = !!on.input.checked; });
 
     if (kind === 'Discord' || kind === 'Webhook') {
-        var url = field({ label: t.tr(kind === 'Discord' ? 'NotificationsLabelDiscordUrl' : 'LabelWebhookAddress'), placeholder: kind === 'Discord' ? 'https://discord.com/api/webhooks/...' : 'https://hooks.example.com/jellyfin', data: 'Url', help: t.tr('NotificationsUrlHelp') });
-        root.appendChild(url.wrap);
+        var url = nectoModule.createInputField({ label: t.tr(kind === 'Discord' ? 'NotificationsLabelDiscordUrl' : 'LabelWebhookAddress'), placeholder: kind === 'Discord' ? 'https://discord.com/api/webhooks/...' : 'https://hooks.example.com/jellyfin', field: 'Url', help: t.tr('NotificationsUrlHelp') });
+        root.appendChild(url.element);
         nectoModule.bindSecretField(url.input, channel.Url === nectoModule.SECRET_KEPT);
         readers.push(function (out) { out.Url = nectoModule.readSecretField(url.input); });
         if (kind === 'Discord') {
-            var username = field({ label: t.tr('NotificationsLabelDiscordName'), placeholder: 'Jellyfin', value: channel.Username, data: 'Username' });
-            var avatar = field({ label: t.tr('NotificationsLabelDiscordAvatar'), placeholder: 'https://example.com/avatar.png', value: channel.AvatarUrl, data: 'AvatarUrl' });
-            root.appendChild(username.wrap);
-            root.appendChild(avatar.wrap);
+            var username = nectoModule.createInputField({ label: t.tr('NotificationsLabelDiscordName'), placeholder: 'Jellyfin', value: channel.Username, field: 'Username' });
+            var avatar = nectoModule.createInputField({ label: t.tr('NotificationsLabelDiscordAvatar'), placeholder: 'https://example.com/avatar.png', value: channel.AvatarUrl, field: 'AvatarUrl' });
+            root.appendChild(username.element);
+            root.appendChild(avatar.element);
             readers.push(function (out) { out.Username = username.input.value.trim(); out.AvatarUrl = avatar.input.value.trim(); });
         } else {
-            var headers = field({ label: t.tr('NotificationsLabelHeaders'), type: 'textarea', data: 'Headers', help: t.tr('NotificationsHeadersHelp') });
-            root.appendChild(headers.wrap);
-            nectoModule.bindSecretField(headers.input, channel.Headers === nectoModule.SECRET_KEPT, { clearButton: clearButton(headers.wrap, t) });
+            var headers = nectoModule.createTextareaField({ label: t.tr('NotificationsLabelHeaders'), field: 'Headers', help: t.tr('NotificationsHeadersHelp') });
+            root.appendChild(headers.element);
+            nectoModule.bindSecretField(headers.input, channel.Headers === nectoModule.SECRET_KEPT, { clearButton: clearButton(headers.element, t) });
             readers.push(function (out) { out.Headers = nectoModule.readSecretField(headers.input); });
         }
-        var custom = check({ label: t.tr('NotificationsLabelCustomBody'), help: t.tr('NotificationsCustomBodyHelp'), checked: channel.UseCustomBody, data: 'UseCustomBody' });
-        var body = field({ label: t.tr('LabelBody'), type: 'textarea', value: channel.Body, data: 'Body', help: t.tr('NotificationsBodyHelp') });
-        var hint = el('div');
+        var custom = nectoModule.createCheckboxField({ label: t.tr('NotificationsLabelCustomBody'), help: t.tr('NotificationsCustomBodyHelp'), checked: channel.UseCustomBody, field: 'UseCustomBody' });
+        var body = nectoModule.createTextareaField({ label: t.tr('LabelBody'), value: channel.Body, field: 'Body', help: t.tr('NotificationsBodyHelp') });
+        var hint = h('div');
         hint.innerHTML = nectoModule.placeholderHint(bodyPlaceholders(t));
-        while (hint.firstChild) body.wrap.appendChild(hint.firstChild);
-        nectoModule.bindPlaceholders(body.wrap);
-        var indent = el('div', { class: 'stolon-indent' }, [body.wrap]);
-        root.appendChild(custom.wrap);
+        while (hint.firstChild) body.element.appendChild(hint.firstChild);
+        nectoModule.bindPlaceholders(body.element);
+        var indent = h('div', { class: 'stolon-indent' }, [body.element]);
+        root.appendChild(custom.element);
         root.appendChild(indent);
         var reveal = function () { indent.classList.toggle('stolon-hidden', !custom.input.checked); };
         custom.input.addEventListener('change', reveal);
         reveal();
         readers.push(function (out) { out.UseCustomBody = !!custom.input.checked; out.Body = body.input.value; });
     } else if (kind === 'Email') {
-        if (!ctx.smtpSet) root.appendChild(el('div', { class: 'stolon-warn', text: t.tr('NotificationsResultNoSmtp') }));
-        var recipients = field({ label: t.tr('NotificationsLabelRecipients'), type: 'textarea', value: channel.Recipients, data: 'Recipients', help: t.tr('NotificationsRecipientsHelp'), placeholder: 'admin@example.com' });
-        root.appendChild(recipients.wrap);
+        if (!ctx.smtpSet) root.appendChild(h('div', { class: 'stolon-warn', text: t.tr('NotificationsResultNoSmtp') }));
+        var recipients = nectoModule.createTextareaField({ label: t.tr('NotificationsLabelRecipients'), value: channel.Recipients, field: 'Recipients', help: t.tr('NotificationsRecipientsHelp'), placeholder: 'admin@example.com' });
+        root.appendChild(recipients.element);
         readers.push(function (out) { out.Recipients = recipients.input.value; });
     } else if (kind === 'Administrators') {
-        root.appendChild(el('div', { class: 'fieldDescription', text: t.tr('NotificationsAdministratorsHelp') }));
+        root.appendChild(h('div', { class: 'fieldDescription', text: t.tr('NotificationsAdministratorsHelp') }));
     } else {
-        root.appendChild(el('div', { class: 'fieldDescription', text: t.tr('NotificationsActivityLogHelp') }));
+        root.appendChild(h('div', { class: 'fieldDescription', text: t.tr('NotificationsActivityLogHelp') }));
     }
 
     var shows = postFields(kind);
     if (shows.length > 0) {
-        root.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderPostFields') }));
-        root.appendChild(el('div', { class: 'fieldDescription', text: t.tr('NotificationsPostFieldsHelp') }));
+        root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderPostFields') }));
+        root.appendChild(h('div', { class: 'fieldDescription', text: t.tr('NotificationsPostFieldsHelp') }));
         shows.forEach(function (f) {
-            var box = check({ label: t.tr(f.label), checked: channel[f.key] == null ? f.fallback : channel[f.key], data: f.key });
-            root.appendChild(box.wrap);
+            var box = nectoModule.createCheckboxField({ label: t.tr(f.label), checked: channel[f.key] == null ? f.fallback : channel[f.key], field: f.key });
+            root.appendChild(box.element);
             readers.push(function (out) { out[f.key] = !!box.input.checked; });
         });
     }
 
-    root.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsGroupEvents') }));
-    var all = check({ label: t.tr('NotificationsEveryEvent'), checked: channel.AllEvents, data: 'AllEvents' });
+    root.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsGroupEvents') }));
+    var all = nectoModule.createCheckboxField({ label: t.tr('NotificationsEveryEvent'), checked: channel.AllEvents, field: 'AllEvents' });
     var picks = nectoModule.createCheckboxList({
         items: ctx.events || [],
         idKey: 'Key',
@@ -474,8 +418,8 @@ export function createChannelEditor(channel, ctx) {
         emptyMessage: t.tr('NotificationsNoEventsListed')
     });
     handles.push(picks);
-    var pickBox = el('div', { class: 'stolon-indent' }, [picks.element]);
-    root.appendChild(all.wrap);
+    var pickBox = h('div', { class: 'stolon-indent' }, [picks.element]);
+    root.appendChild(all.element);
     root.appendChild(pickBox);
     var showPicks = function () { pickBox.classList.toggle('stolon-hidden', all.input.checked); };
     all.input.addEventListener('change', showPicks);
@@ -568,31 +512,31 @@ function buildTroubleshooting(content, ctx) {
     var t = shared.t;
     var logList = null;
     var browserList = null;
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var logBox = el('div', { 'data-role': 'log' });
-    var browserBox = el('div', { 'data-role': 'browsers' });
-    var heldLine = el('div', { class: 'fieldDescription', 'data-role': 'held' });
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var logBox = h('div', { 'data-role': 'log' });
+    var browserBox = h('div', { 'data-role': 'browsers' });
+    var heldLine = h('div', { class: 'fieldDescription', 'data-role': 'held' });
 
     [
         status,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderTests') }),
-        el('div', { class: 'stolon-reset-group' }, [
-            nectoModule.resetRow({ icon: 'send', label: t.tr('NotificationsTestMe'), help: t.tr('NotificationsTestMeHelp'), button: t.tr('ButtonTest'), action: 'test-me' })
-        ]),
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderLog') }),
-        el('div', { class: 'fieldDescription', text: t.tr('NotificationsLogHelp') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderTests') }),
+        nectoModule.createResetGroup([
+            nectoModule.createResetRow({ icon: 'send', label: t.tr('NotificationsTestMe'), help: t.tr('NotificationsTestMeHelp'), button: t.tr('ButtonTest'), action: 'test-me' })
+        ]).element,
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderLog') }),
+        h('div', { class: 'fieldDescription', text: t.tr('NotificationsLogHelp') }),
         logBox,
-        el('div', { class: 'stolon-card-list-actions' }, [
-            el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'refresh-log' }, [el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'refresh' }), el('span', { text: t.tr('Refresh') })]),
-            el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'clear-log' }, [el('span', { text: t.tr('NotificationsButtonClearLog') })])
+        h('div', { class: 'stolon-card-list-actions' }, [
+            h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'refresh-log' }, [h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'refresh' }), h('span', { text: t.tr('Refresh') })]),
+            h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'clear-log' }, [h('span', { text: t.tr('NotificationsButtonClearLog') })])
         ]),
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderBrowsers') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderBrowsers') }),
         browserBox,
         heldLine,
-        el('div', { class: 'stolon-reset-group' }, [
-            nectoModule.resetRow({ icon: 'delete_sweep', label: t.tr('NotificationsClearHeld'), help: t.tr('NotificationsClearHeldHelp'), button: t.tr('ButtonClear'), action: 'clear-held', destructive: true }),
-            nectoModule.resetRow({ icon: 'key', label: t.tr('NotificationsResetKeys'), help: t.tr('NotificationsResetKeysHelp'), button: t.tr('NotificationsButtonResetKeys'), action: 'reset-keys', destructive: true })
-        ])
+        nectoModule.createResetGroup([
+            nectoModule.createResetRow({ icon: 'delete_sweep', label: t.tr('NotificationsClearHeld'), help: t.tr('NotificationsClearHeldHelp'), button: t.tr('ButtonClear'), action: 'clear-held', destructive: true }),
+            nectoModule.createResetRow({ icon: 'key', label: t.tr('NotificationsResetKeys'), help: t.tr('NotificationsResetKeysHelp'), button: t.tr('NotificationsButtonResetKeys'), action: 'reset-keys', destructive: true })
+        ]).element
     ].forEach(function (node) { content.appendChild(node); });
 
     // report
@@ -636,7 +580,7 @@ function buildTroubleshooting(content, ctx) {
                 browserList = nectoModule.createRecordList({ items: items, label: t.tr('NotificationsHeaderBrowsers'), emptyText: t.tr('NotificationsEmptyBrowsers') });
                 browserBox.appendChild(browserList.element);
             }
-            heldLine.textContent = shared.plural((push && push.Held) || 0, 'NotificationsHeldOne', 'NotificationsHeldMany');
+            heldLine.textContent = shared.t.plural((push && push.Held) || 0, 'NotificationsHeldOne', 'NotificationsHeldMany');
         }).catch(fail('NotificationsErrorLoadPush'));
     }
 
@@ -663,7 +607,7 @@ function buildTroubleshooting(content, ctx) {
     button('clear-held').addEventListener('click', function () {
         confirmThen(t.tr('NotificationsConfirmClearHeld'), t.tr('NotificationsClearHeld'), t.tr('ButtonClear'), function () {
             return shared.request('Notifications/Held', 'DELETE').then(function (r) {
-                report(shared.plural((r && r.Count) || 0, 'NotificationsHeldClearedOne', 'NotificationsHeldClearedMany'), false);
+                report(shared.t.plural((r && r.Count) || 0, 'NotificationsHeldClearedOne', 'NotificationsHeldClearedMany'), false);
                 loadPush();
             }).catch(fail('NotificationsErrorClear'));
         });

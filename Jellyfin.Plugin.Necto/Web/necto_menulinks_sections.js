@@ -4,7 +4,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // MENU_LINKS_ROUTE
 // The route that reads and saves the links.
@@ -98,9 +98,9 @@ export function managedText(link, t) {
 // Output
 // [object]: element, input, getValue, setValue.
 export function createIconPicker(opts) {
-    var input = el('input', { is: 'emby-input', type: 'text', id: opts.id, 'data-field': 'Icon', autocomplete: 'off', spellcheck: 'false', placeholder: opts.placeholder || '' });
-    var preview = el('span', { class: 'material-icons necto-icon-preview', 'aria-hidden': 'true' });
-    var grid = el('div', { class: 'necto-icon-grid', role: 'listbox', 'aria-label': opts.label || '' });
+    var input = h('input', { is: 'emby-input', type: 'text', id: opts.id, 'data-field': 'Icon', autocomplete: 'off', spellcheck: 'false', placeholder: opts.placeholder || '' });
+    var preview = h('span', { class: 'material-icons necto-icon-preview', 'aria-hidden': 'true' });
+    var grid = h('div', { class: 'necto-icon-grid', role: 'listbox', 'aria-label': opts.label || '' });
 
     // draw
     // Shows the icons the typed text matches, the picked one pressed.
@@ -110,10 +110,10 @@ export function createIconPicker(opts) {
         grid.textContent = '';
         var matches = iconMatches(ICONS.indexOf(value) >= 0 ? '' : value);
         matches.forEach(function (name) {
-            var btn = el('button', {
+            var btn = h('button', {
                 is: 'emby-button', type: 'button', class: 'stolon-row-btn necto-icon-choice', title: name, 'aria-label': name,
                 role: 'option', 'aria-selected': name === value ? 'true' : 'false', 'data-icon': name
-            }, [el('span', { class: 'material-icons', 'aria-hidden': 'true', text: name })]);
+            }, [h('span', { class: 'material-icons', 'aria-hidden': 'true', text: name })]);
             btn.addEventListener('click', function () {
                 input.value = name;
                 draw();
@@ -131,7 +131,7 @@ export function createIconPicker(opts) {
     draw();
 
     return {
-        element: el('div', { class: 'necto-icon-picker' }, [el('div', { class: 'necto-icon-field' }, [preview, input]), grid]),
+        element: h('div', { class: 'necto-icon-picker' }, [h('div', { class: 'necto-icon-field' }, [preview, input]), grid]),
         input: input,
         getValue: function () { return input.value.trim(); },
         setValue: function (v) { input.value = v || ''; draw(); }
@@ -153,33 +153,33 @@ function openLinkEditor(ctx) {
     seq += 1;
     var nameId = 'necto-menulink-name-' + seq;
     var iconId = 'necto-menulink-icon-' + seq;
-    var name = el('input', { is: 'emby-input', type: 'text', id: nameId, 'data-field': 'Name', maxlength: '100' });
+    var name = h('input', { is: 'emby-input', type: 'text', id: nameId, 'data-field': 'Name', maxlength: '100' });
     name.value = link.Name || '';
     var icon = createIconPicker({ id: iconId, value: link.Icon || '', placeholder: t.tr('MenuLinksPlaceholderIcon'), label: t.tr('MenuLinksLabelIcon') });
     var address = nectoModule.createComboBox({ value: link.Url || '', suggestions: addressChoices(t, ctx.pages), placeholder: 'https://example.com' });
     address.input.setAttribute('aria-label', t.tr('LabelAddress'));
     address.input.setAttribute('data-field', 'Url');
     if (link.Managed) address.input.disabled = true;
-    var problem = el('div', { class: 'stolon-error stolon-hidden', role: 'status' });
+    var problem = h('div', { class: 'stolon-error stolon-hidden', role: 'status' });
     var managed = managedText(link, t);
 
-    var body = el('div', {}, [
-        managed ? el('div', { class: 'stolon-info', text: managed }) : null,
+    var body = h('div', {}, [
+        managed ? h('div', { class: 'stolon-info', text: managed }) : null,
         problem,
-        el('div', { class: 'inputContainer' }, [
-            el('label', { class: 'inputLabel inputLabelUnfocused', for: nameId, text: t.tr('Name') }),
+        h('div', { class: 'inputContainer' }, [
+            h('label', { class: 'inputLabel inputLabelUnfocused', for: nameId, text: t.tr('Name') }),
             name,
-            el('div', { class: 'fieldDescription', text: t.tr('MenuLinksHelpName') })
+            h('div', { class: 'fieldDescription', text: t.tr('MenuLinksHelpName') })
         ]),
-        el('div', { class: 'inputContainer' }, [
-            el('label', { class: 'inputLabel', for: iconId, text: t.tr('MenuLinksLabelIcon') }),
+        h('div', { class: 'inputContainer' }, [
+            h('label', { class: 'inputLabel', for: iconId, text: t.tr('MenuLinksLabelIcon') }),
             icon.element,
-            el('div', { class: 'fieldDescription', text: t.tr('MenuLinksHelpIcon') })
+            h('div', { class: 'fieldDescription', text: t.tr('MenuLinksHelpIcon') })
         ]),
-        el('div', { class: 'inputContainer' }, [
-            el('div', { class: 'inputLabel', text: t.tr('LabelAddress') }),
+        h('div', { class: 'inputContainer' }, [
+            h('div', { class: 'inputLabel', text: t.tr('LabelAddress') }),
             address.element,
-            el('div', { class: 'fieldDescription', text: t.tr('MenuLinksHelpAddress') })
+            h('div', { class: 'fieldDescription', text: t.tr('MenuLinksHelpAddress') })
         ])
     ]);
 
@@ -235,20 +235,20 @@ function openLinkEditor(ctx) {
 // Output
 // [HTMLElement]: The row.
 export function linkRow(link, t, onEdit, badgeHtml) {
-    var edit = el('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn', title: t.tr('MenuLinksButtonEdit'), 'aria-label': t.tr('MenuLinksButtonEdit'), 'data-action': 'edit' }, [
-        el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'edit' })
+    var edit = h('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn', title: t.tr('MenuLinksButtonEdit'), 'aria-label': t.tr('MenuLinksButtonEdit'), 'data-action': 'edit' }, [
+        h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'edit' })
     ]);
     edit.addEventListener('click', onEdit);
-    var badge = el('span', { class: 'necto-menu-link-badge' });
+    var badge = h('span', { class: 'necto-menu-link-badge' });
     if (link.Managed && badgeHtml) badge.innerHTML = badgeHtml;
-    return el('div', { class: 'necto-menu-link', 'data-url': link.Url }, [
-        el('span', { class: 'stolon-collapsible-tile', 'aria-hidden': 'true' }, [el('span', { class: 'material-icons', text: link.Icon || 'link' })]),
-        el('div', { class: 'necto-menu-link-text' }, [
-            el('div', { class: 'necto-menu-link-name' }, [
-                el('span', { text: link.Name }),
+    return h('div', { class: 'necto-menu-link', 'data-url': link.Url }, [
+        h('span', { class: 'stolon-collapsible-tile', 'aria-hidden': 'true' }, [h('span', { class: 'material-icons', text: link.Icon || 'link' })]),
+        h('div', { class: 'necto-menu-link-text' }, [
+            h('div', { class: 'necto-menu-link-name' }, [
+                h('span', { text: link.Name }),
                 link.Managed ? badge : null
             ]),
-            el('div', { class: 'fieldDescription necto-menu-link-url', text: link.Url })
+            h('div', { class: 'fieldDescription necto-menu-link-url', text: link.Url })
         ]),
         edit
     ]);
@@ -270,11 +270,11 @@ function buildSettings(content, ctx) {
     var links = [];
     var pages = null;
     var writable = true;
-    var problem = el('div', { class: 'stolon-warn stolon-hidden', role: 'status', 'data-role': 'problem' });
-    var empty = el('div', { 'data-role': 'empty' });
-    var add = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'add-link' }, [
-        el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
-        el('span', { text: t.tr('MenuLinksButtonAdd') })
+    var problem = h('div', { class: 'stolon-warn stolon-hidden', role: 'status', 'data-role': 'problem' });
+    var empty = h('div', { 'data-role': 'empty' });
+    var add = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary stolon-small', 'data-action': 'add-link' }, [
+        h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }),
+        h('span', { text: t.tr('MenuLinksButtonAdd') })
     ]);
     var list = nectoModule.createOrderedList({
         items: [],
@@ -288,11 +288,11 @@ function buildSettings(content, ctx) {
         }
     });
 
-    content.appendChild(el('div', { class: 'fieldDescription', text: t.tr('MenuLinksIntro') }));
+    content.appendChild(h('div', { class: 'fieldDescription', text: t.tr('MenuLinksIntro') }));
     content.appendChild(problem);
     content.appendChild(list.element);
     content.appendChild(empty);
-    content.appendChild(el('div', { class: 'stolon-button-row' }, [add]));
+    content.appendChild(h('div', { class: 'stolon-button-row' }, [add]));
 
     // changed
     // Tells the Settings page the section has changes, for edits made in a sidecar or by a move.
@@ -381,9 +381,9 @@ function buildSettings(content, ctx) {
 function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
-    var state = el('div', { role: 'status', 'data-role': 'file-state' });
-    var path = el('div', { class: 'stolon-code-block', 'data-role': 'file-path' });
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('MenuLinksTroubleFile') }));
+    var state = h('div', { role: 'status', 'data-role': 'file-state' });
+    var path = h('div', { class: 'stolon-code-block', 'data-role': 'file-path' });
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('MenuLinksTroubleFile') }));
     content.appendChild(state);
     content.appendChild(path);
 

@@ -86,7 +86,7 @@ test('the page lists every channel with its kind, its state, and a Test that rep
 test('channelSummary says what each channel gets', async function () {
     installPage({});
     var mod = await loadScript('necto_notifications.js');
-    var shared = { t: { tr: function (k) { return k; } }, plural: function (n, one, many) { return n + (n === 1 ? one : many); } };
+    var shared = { t: { tr: function (k) { return k; }, plural: function (n, one, many) { return n + (n === 1 ? one : many); } } };
 
     assert.equal(mod.channelSummary({ Kind: 'Browsers' }, shared), 'NotificationsByGroups');
     assert.equal(mod.channelSummary({ Kind: 'Email', AllEvents: true }, shared), 'NotificationsEveryEvent');
@@ -135,7 +135,7 @@ test('Add webhook opens a channel editor, and Done adds the channel to the list'
 test('the channel editor refuses a channel with no name', async function () {
     installPage({});
     var mod = await loadScript('necto_notifications_sections.js');
-    var shared = { t: { tr: function (k) { return k; }, format: function (k) { return k; } }, setStatus: function () {} };
+    var shared = { t: { tr: function (k) { return k; }, format: function (k) { return k; }, plural: function (n, one, many) { return n === 1 ? one : many; } }, setStatus: function () {} };
     var editor = mod.createChannelEditor(mod.newChannel('Email', ''), { shared: shared, events: [], smtpSet: true });
 
     assert.equal(editor.validate(), 'NotificationsErrorChannelName');
@@ -146,7 +146,7 @@ test('the channel editor refuses a channel with no name', async function () {
 test('the channel editor offers what posts carry, the requester off on a new channel, and saves each switch', async function () {
     installPage({});
     var mod = await loadScript('necto_notifications_sections.js');
-    var shared = { t: { tr: function (k) { return k; }, format: function (k) { return k; } }, setStatus: function () {} };
+    var shared = { t: { tr: function (k) { return k; }, format: function (k) { return k; }, plural: function (n, one, many) { return n === 1 ? one : many; } }, setStatus: function () {} };
     var hook = mod.newChannel('Webhook', 'Hook');
     var editor = mod.createChannelEditor(hook, { shared: shared, events: [], smtpSet: true });
 
@@ -179,15 +179,6 @@ test('the Troubleshooting section lists the send log and the browsers, and asks 
     clickDialogButton(opened.dom, 'Make new keys');
     await settle(50);
     assert.ok(opened.page.requests.some(function (r) { return r.type === 'POST' && r.url === 'Notifications/Push/Keys'; }));
-});
-
-test('workerScope registers the shared worker at the server root, under any base path', async function () {
-    installPage({});
-    var push = await loadScript('necto_push.js');
-
-    assert.equal(push.workerScope('https://media.example.com/'), '/');
-    assert.equal(push.workerScope('https://media.example.com/jellyfin/'), '/jellyfin/');
-    assert.equal(push.WORKER_URL, 'Notifications/Push/Worker.js');
 });
 
 test('a custom body lists every placeholder the server fills', async function () {

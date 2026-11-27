@@ -67,7 +67,7 @@ public class ToolSwitchesTests
     }
 
     /// <summary>
-    /// The pages' TOOL_SWITCHES in necto_shared.js names the same tools, in the same order, with the same sections.
+    /// The tools with visibleWhen in nectoTools in necto_shared.js are the same tools, in the same order, with the same sections.
     /// True: the sidebar, the tiles, and the server agree on which tools are on.
     /// False: a tool could leave the sidebar while its routes still work, or the other way round.
     /// </summary>
@@ -75,9 +75,7 @@ public class ToolSwitchesTests
     public void PagesList_MatchesTheServers()
     {
         var script = EmbeddedResources.Read("necto_shared.js");
-        var block = Regex.Match(script, @"export var TOOL_SWITCHES = \{(?<body>[^}]*)\};", RegexOptions.Singleline);
-        Assert.True(block.Success);
-        var pairs = Regex.Matches(block.Groups["body"].Value, @"(?<key>\w+): '(?<section>\w+)'")
+        var pairs = Regex.Matches(script, @"\{ key: '(?<key>\w+)', [^\n]*visibleWhen: switchOn\('(?<section>\w+)'\) \}")
             .Select(m => (m.Groups["key"].Value, m.Groups["section"].Value))
             .ToList();
 

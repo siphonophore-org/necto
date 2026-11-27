@@ -3,7 +3,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // The tiers a page, an image, or a store's access takes, lowest first.
 export var VISIBILITIES = ['Anonymous', 'User', 'Admin'];
@@ -351,13 +351,13 @@ function serverOrigin() {
 function fieldRow(kind, label, attrs, help) {
     var id = fieldId(attrs['data-field'] || kind);
     var control;
-    if (kind === 'select') control = el('select', Object.assign({ is: 'emby-select', id: id }, attrs));
-    else if (kind === 'textarea') control = el('textarea', Object.assign({ id: id }, attrs));
-    else control = el('input', Object.assign({ is: 'emby-input', type: 'text', id: id }, attrs));
-    var row = el('div', { class: kind === 'select' ? 'selectContainer' : 'inputContainer' }, [
-        kind === 'textarea' ? null : el('label', { class: kind === 'select' ? 'selectLabel' : 'inputLabel inputLabelUnfocused', for: id, text: label }),
+    if (kind === 'select') control = h('select', Object.assign({ is: 'emby-select', id: id }, attrs));
+    else if (kind === 'textarea') control = h('textarea', Object.assign({ id: id }, attrs));
+    else control = h('input', Object.assign({ is: 'emby-input', type: 'text', id: id }, attrs));
+    var row = h('div', { class: kind === 'select' ? 'selectContainer' : 'inputContainer' }, [
+        kind === 'textarea' ? null : h('label', { class: kind === 'select' ? 'selectLabel' : 'inputLabel inputLabelUnfocused', for: id, text: label }),
         control,
-        help ? el('div', { class: 'fieldDescription', text: help }) : null
+        help ? h('div', { class: 'fieldDescription', text: help }) : null
     ]);
     if (kind === 'textarea') control.setAttribute('aria-label', label);
     return { row: row, control: control };
@@ -374,10 +374,10 @@ function fieldRow(kind, label, attrs, help) {
 // Output
 // [object]: row, the container, and control, the checkbox.
 function checkRow(label, help, field) {
-    var control = el('input', { type: 'checkbox', is: 'emby-checkbox', id: fieldId(field), 'data-field': field });
-    var row = el('div', { class: 'checkboxContainer' + (help ? ' checkboxContainer-withDescription' : '') }, [
-        el('label', {}, [control, el('span', { text: label })]),
-        help ? el('div', { class: 'fieldDescription checkboxFieldDescription', text: help }) : null
+    var control = h('input', { type: 'checkbox', is: 'emby-checkbox', id: fieldId(field), 'data-field': field });
+    var row = h('div', { class: 'checkboxContainer' + (help ? ' checkboxContainer-withDescription' : '') }, [
+        h('label', {}, [control, h('span', { text: label })]),
+        help ? h('div', { class: 'fieldDescription checkboxFieldDescription', text: help }) : null
     ]);
     return { row: row, control: control };
 }
@@ -390,7 +390,7 @@ function checkRow(label, help, field) {
 // t [object]: The strings.
 function tierOptions(select, t) {
     ['Admin', 'User', 'Anonymous'].forEach(function (v) {
-        select.appendChild(el('option', { value: v, text: tierLabel(v, t) }));
+        select.appendChild(h('option', { value: v, text: tierLabel(v, t) }));
     });
 }
 
@@ -415,19 +415,19 @@ export function createPageEditor(page, shared) {
     var draft = JSON.parse(JSON.stringify(page || newPage()));
     var currentPane = 'html';
     var single = !!draft.SingleFile;
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var root = el('div', { 'data-role': 'page-editor' }, [status]);
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var root = h('div', { 'data-role': 'page-editor' }, [status]);
 
     var slug = fieldRow('input', t.tr('PagesLabelSlug'), { 'data-field': 'Slug', autocomplete: 'off' });
     slug.control.value = draft.Slug || '';
     var url = nectoModule.createCopyField({ label: t.tr('LabelUrl'), copyLabel: t.tr('PagesCopyUrl') });
-    var urlRow = el('div', { class: 'inputContainer', 'data-role': 'url' }, [el('div', { class: 'inputLabel', text: t.tr('LabelUrl') }), url.element]);
+    var urlRow = h('div', { class: 'inputContainer', 'data-role': 'url' }, [h('div', { class: 'inputLabel', text: t.tr('LabelUrl') }), url.element]);
     var title = fieldRow('input', t.tr('LabelTitle'), { 'data-field': 'Title', autocomplete: 'off' });
     title.control.value = draft.Title || '';
     var visibility = fieldRow('select', t.tr('PagesLabelVisibility'), { 'data-field': 'Visibility' }, t.tr('PagesVisibilityHelp'));
     tierOptions(visibility.control, t);
     visibility.control.value = normalizeVisibility(draft.Visibility);
-    var groupsNote = el('div', { class: 'stolon-info', 'data-role': 'groups-note', text: t.tr('PagesGroupsNote') });
+    var groupsNote = h('div', { class: 'stolon-info', 'data-role': 'groups-note', text: t.tr('PagesGroupsNote') });
     var published = checkRow(t.tr('PagesLabelPublished'), t.tr('PagesPublishedHelp'), 'Enabled');
     published.control.checked = draft.Enabled !== false;
     var singleFile = checkRow(t.tr('PagesLabelSingleFile'), t.tr('PagesSingleFileHelp'), 'SingleFile');
@@ -450,21 +450,21 @@ export function createPageEditor(page, shared) {
         rowName: t.tr('PagesRowRoute'),
         emptyText: t.tr('PagesEmptyRoutes')
     });
-    var routesHelp = el('div', { class: 'fieldDescription' });
+    var routesHelp = h('div', { class: 'fieldDescription' });
     fillWithCode(routesHelp, t.tr('PagesRoutesHelp'), ["serverFetch('name', options)"]);
-    var routesRow = el('div', { class: 'stolon-indent', 'data-role': 'routes' }, [
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('PagesHeaderRoutes') }),
+    var routesRow = h('div', { class: 'stolon-indent', 'data-role': 'routes' }, [
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('PagesHeaderRoutes') }),
         routesHelp,
         routes.element
     ]);
 
     var source = fieldRow('select', t.tr('LabelSource'), { 'data-field': 'Source' });
     [['html', 'HTML'], ['css', 'CSS'], ['js', 'JavaScript']].forEach(function (o) {
-        source.control.appendChild(el('option', { value: o[0], text: o[1] }));
+        source.control.appendChild(h('option', { value: o[0], text: o[1] }));
     });
-    var code = el('textarea', { class: 'stolon-code', spellcheck: 'false', 'data-field': 'Code', 'aria-label': t.tr('PagesLabelPageSource'), rows: '16' });
-    var hint = el('div', { class: 'fieldDescription', 'data-role': 'hint' });
-    var codeRow = el('div', { class: 'inputContainer' }, [code, hint]);
+    var code = h('textarea', { class: 'stolon-code', spellcheck: 'false', 'data-field': 'Code', 'aria-label': t.tr('PagesLabelPageSource'), rows: '16' });
+    var hint = h('div', { class: 'fieldDescription', 'data-role': 'hint' });
+    var codeRow = h('div', { class: 'inputContainer' }, [code, hint]);
 
     [slug.row, urlRow, title.row, visibility.row, groupsNote, published.row, singleFile.row, system.row, routesRow, source.row, codeRow]
         .forEach(function (node) { root.appendChild(node); });
@@ -558,37 +558,37 @@ export function createPageEditor(page, shared) {
 export function createStoreEditor(store, count, shared) {
     var t = shared.t;
     var draft = JSON.parse(JSON.stringify(store));
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var root = el('div', { 'data-role': 'store-editor' }, [status]);
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var root = h('div', { 'data-role': 'store-editor' }, [status]);
 
     var name = fieldRow('input', t.tr('LabelName'), { 'data-field': 'Name', autocomplete: 'off' });
     name.control.value = draft.Name || '';
     var url = nectoModule.createCopyField({ label: t.tr('LabelUrl'), copyLabel: t.tr('PagesCopyUrl') });
-    var urlRow = el('div', { class: 'inputContainer', 'data-role': 'url' }, [el('div', { class: 'inputLabel', text: t.tr('LabelUrl') }), url.element]);
+    var urlRow = h('div', { class: 'inputContainer', 'data-role': 'url' }, [h('div', { class: 'inputLabel', text: t.tr('LabelUrl') }), url.element]);
     var enabled = checkRow(t.tr('PagesLabelStoreEnabled'), t.tr('PagesStoreEnabledHelp'), 'Enabled');
     enabled.control.checked = draft.Enabled !== false;
     var read = fieldRow('select', t.tr('PagesLabelRead'), { 'data-field': 'ReadAccess' }, t.tr('PagesReadHelp'));
     tierOptions(read.control, t);
     read.control.value = normalizeVisibility(draft.ReadAccess, 'Admin');
     var scope = fieldRow('select', t.tr('PagesLabelScope'), { 'data-field': 'ReadScope' }, t.tr('PagesScopeHelp'));
-    scope.control.appendChild(el('option', { value: 'All', text: t.tr('PagesScopeAll') }));
-    scope.control.appendChild(el('option', { value: 'Own', text: t.tr('PagesScopeOwn') }));
+    scope.control.appendChild(h('option', { value: 'All', text: t.tr('PagesScopeAll') }));
+    scope.control.appendChild(h('option', { value: 'Own', text: t.tr('PagesScopeOwn') }));
     scope.control.value = normalizeScope(draft.ReadScope);
     var write = fieldRow('select', t.tr('PagesLabelWrite'), { 'data-field': 'WriteAccess' }, t.tr('PagesWriteHelp'));
     tierOptions(write.control, t);
     write.control.value = normalizeVisibility(draft.WriteAccess, 'User');
-    var anonWarn = el('div', { class: 'stolon-warn', 'data-role': 'anonymous-write', text: t.tr('PagesWarnAnonymousWrite') });
-    var scopeWarn = el('div', { class: 'stolon-warn', 'data-role': 'scope-all-write', text: t.tr('PagesWarnScopeAllWrite') });
+    var anonWarn = h('div', { class: 'stolon-warn', 'data-role': 'anonymous-write', text: t.tr('PagesWarnAnonymousWrite') });
+    var scopeWarn = h('div', { class: 'stolon-warn', 'data-role': 'scope-all-write', text: t.tr('PagesWarnScopeAllWrite') });
     var editOwn = checkRow(t.tr('PagesLabelEditOwn'), t.tr('PagesEditOwnHelp'), 'AllowEditOwn');
     editOwn.control.checked = !!draft.AllowEditOwn;
     var limit = fieldRow('input', t.tr('PagesLabelRecordLimit'), { type: 'number', min: '1', max: String(RECORD_CEILING), 'data-field': 'MaxRecords' }, t.tr('PagesRecordLimitHelp'));
     limit.control.value = String(draft.MaxRecords || 1000);
     var retention = fieldRow('select', t.tr('PagesLabelRetention'), { 'data-field': 'Retention' }, t.tr('PagesRetentionHelp'));
     RETENTION_PRESETS.forEach(function (days) {
-        var text = days === 0 ? t.tr('PagesRetentionKeep') : (days === 1 ? t.format('PagesRetentionDay', days) : t.format('PagesRetentionDays', days));
-        retention.control.appendChild(el('option', { value: String(days), text: text }));
+        var text = days === 0 ? t.tr('PagesRetentionKeep') : t.plural(days, 'PagesRetentionDay', 'PagesRetentionDays');
+        retention.control.appendChild(h('option', { value: String(days), text: text }));
     });
-    retention.control.appendChild(el('option', { value: 'custom', text: t.tr('Custom') }));
+    retention.control.appendChild(h('option', { value: 'custom', text: t.tr('Custom') }));
     var days = String(draft.RetentionDays || 0);
     var preset = RETENTION_PRESETS.map(String).indexOf(days) >= 0;
     retention.control.value = preset ? days : 'custom';
@@ -597,7 +597,7 @@ export function createStoreEditor(store, count, shared) {
     var notify = checkRow(t.tr('PagesLabelNotifyAdmins'), t.tr('PagesNotifyHelp'), 'NotifyOnWrite');
     notify.control.checked = !!draft.NotifyOnWrite;
     var meter = nectoModule.createUsageMeter({ label: t.tr('PagesCardRecords'), usedText: t.tr('PagesUsageMeter') });
-    var meterRow = el('div', { class: 'inputContainer', 'data-role': 'usage' }, [meter.element]);
+    var meterRow = h('div', { class: 'inputContainer', 'data-role': 'usage' }, [meter.element]);
 
     [name.row, urlRow, enabled.row, read.row, scope.row, write.row, anonWarn, scopeWarn, editOwn.row, limit.row, retention.row, custom.row, notify.row, meterRow]
         .forEach(function (node) { root.appendChild(node); });
@@ -654,8 +654,8 @@ export function fillWithCode(node, text, codes) {
     node.textContent = '';
     String(text).split(/(\{\d+\})/).forEach(function (part) {
         var m = /^\{(\d+)\}$/.exec(part);
-        if (m && codes[+m[1]] !== undefined) node.appendChild(el('code', { text: codes[+m[1]] }));
-        else if (part) node.appendChild(el('span', { text: part }));
+        if (m && codes[+m[1]] !== undefined) node.appendChild(h('code', { text: codes[+m[1]] }));
+        else if (part) node.appendChild(h('span', { text: part }));
     });
 }
 
@@ -825,22 +825,22 @@ export default function (view) {
     function assetRow(a) {
         var t = shared.t;
         // Set as a property, never as markup, so a stored value cannot leave the attribute.
-        var thumb = el('img', { class: 'stolon-asset-thumb', alt: '' });
+        var thumb = h('img', { class: 'stolon-asset-thumb', alt: '' });
         thumb.src = 'data:' + (a.ContentType || '') + ';base64,' + (a.DataBase64 || '');
         var path = nectoModule.createCopyField({ value: 'asset/' + a.Name, inline: true, size: 'small', label: t.tr('LabelPath'), copyLabel: t.tr('PagesCopyPath') });
         assetFields.push(path);
-        var select = el('select', { is: 'emby-select', title: t.tr('PagesLabelVisibility'), 'aria-label': t.tr('PagesLabelVisibility'), 'data-field': 'Visibility' });
+        var select = h('select', { is: 'emby-select', title: t.tr('PagesLabelVisibility'), 'aria-label': t.tr('PagesLabelVisibility'), 'data-field': 'Visibility' });
         tierOptions(select, t);
         select.value = normalizeVisibility(a.Visibility);
         select.addEventListener('change', function () { setAssetVisibility(a.Name, select.value); });
-        var remove = el('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn stolon-destructive', title: t.tr('Delete'), 'aria-label': t.tr('Delete'), 'data-action': 'delete-asset' }, [
-            el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'delete' })
+        var remove = h('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn stolon-destructive', title: t.tr('Delete'), 'aria-label': t.tr('Delete'), 'data-action': 'delete-asset' }, [
+            h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'delete' })
         ]);
         remove.addEventListener('click', function () { deleteAsset(a.Name); });
-        return el('div', { class: 'stolon-asset-item', 'data-asset': a.Name }, [
+        return h('div', { class: 'stolon-asset-item', 'data-asset': a.Name }, [
             thumb,
-            el('div', { class: 'stolon-asset-info' }, [el('div', { class: 'stolon-asset-name', text: a.Name }), path.element]),
-            el('div', { class: 'stolon-asset-actions' }, [select, remove])
+            h('div', { class: 'stolon-asset-info' }, [h('div', { class: 'stolon-asset-name', text: a.Name }), path.element]),
+            h('div', { class: 'stolon-asset-actions' }, [select, remove])
         ]);
     }
 
@@ -1059,21 +1059,21 @@ export default function (view) {
     function renderTab(tab, panel) {
         var t = shared.t;
         panels[tab.id] = panel;
-        panel.classList.add('necto-stack');
+        panel.classList.add('stolon-stack');
         if (tab.id === 'pages') {
-            var pagesIntro = el('div', { class: 'fieldDescription' });
+            var pagesIntro = h('div', { class: 'fieldDescription' });
             fillWithCode(pagesIntro, t.tr('PagesPagesIntro'), ['/pages/{slug}']);
-            var addPage = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'add-page' }, [
-                el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }), el('span', { text: t.tr('PagesButtonAddPage') })
+            var addPage = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'add-page' }, [
+                h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }), h('span', { text: t.tr('PagesButtonAddPage') })
             ]);
             addPage.addEventListener('click', function () { openPage(-1); });
-            [pagesIntro, el('div', { class: 'stolon-cards', 'data-role': 'page-counts' }), el('div', { 'data-role': 'page-list' }), el('div', { class: 'stolon-card-list-actions' }, [addPage])]
+            [pagesIntro, h('div', { class: 'stolon-cards', 'data-role': 'page-counts' }), h('div', { 'data-role': 'page-list' }), h('div', { class: 'stolon-card-list-actions' }, [addPage])]
                 .forEach(function (n) { panel.appendChild(n); });
             drawPages();
         } else if (tab.id === 'assets') {
-            var assetsIntro = el('div', { class: 'fieldDescription' });
+            var assetsIntro = h('div', { class: 'fieldDescription' });
             fillWithCode(assetsIntro, t.tr('PagesAssetsIntro'), ['asset/logo.png']);
-            var assetsInfo = el('div', { class: 'stolon-info' });
+            var assetsInfo = h('div', { class: 'stolon-info' });
             fillWithCode(assetsInfo, t.tr('PagesAssetsVisibilityInfo'), ['/pages/asset/{name}']);
             var refused = '';
             picker = nectoModule.createFilePicker({
@@ -1094,17 +1094,17 @@ export default function (view) {
                     setTimeout(function () { refused = ''; }, 0);
                 }
             });
-            [assetsIntro, assetsInfo, el('div', { class: 'stolon-cards', 'data-role': 'asset-counts' }), picker.element, el('div', { class: 'stolon-asset-list', 'data-role': 'asset-list' })]
+            [assetsIntro, assetsInfo, h('div', { class: 'stolon-cards', 'data-role': 'asset-counts' }), picker.element, h('div', { class: 'stolon-asset-list', 'data-role': 'asset-list' })]
                 .forEach(function (n) { panel.appendChild(n); });
             drawAssets();
         } else if (tab.id === 'stores') {
-            var storesIntro = el('div', { class: 'fieldDescription' });
+            var storesIntro = h('div', { class: 'fieldDescription' });
             fillWithCode(storesIntro, t.tr('PagesStoresIntro'), ["pageStore.read('name')", "pageStore.write('name', data)"]);
-            var addStore = el('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'add-store' }, [
-                el('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }), el('span', { text: t.tr('PagesButtonAddStore') })
+            var addStore = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-primary', 'data-action': 'add-store' }, [
+                h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'add' }), h('span', { text: t.tr('PagesButtonAddStore') })
             ]);
             addStore.addEventListener('click', function () { openStore(-1); });
-            [storesIntro, el('div', { class: 'stolon-cards', 'data-role': 'store-counts' }), el('div', { 'data-role': 'store-list' }), el('div', { class: 'stolon-card-list-actions' }, [addStore])]
+            [storesIntro, h('div', { class: 'stolon-cards', 'data-role': 'store-counts' }), h('div', { 'data-role': 'store-list' }), h('div', { class: 'stolon-card-list-actions' }, [addStore])]
                 .forEach(function (n) { panel.appendChild(n); });
             drawStores();
         }

@@ -4,7 +4,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // Ids for the fields, so each label names its own field.
 var fieldSeq = 0;
@@ -385,15 +385,15 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
     template.Preferences = template.Preferences || {};
 
     var onId = 'necto-template-on-' + (++fieldSeq);
-    var on = el('input', { type: 'checkbox', is: 'emby-checkbox', id: onId, 'data-field': 'Template.Enabled' });
+    var on = h('input', { type: 'checkbox', is: 'emby-checkbox', id: onId, 'data-field': 'Template.Enabled' });
     on.checked = template.Enabled === true;
-    var accessBody = el('div', { 'data-role': 'template-access' });
-    var prefsBody = el('div', { 'data-role': 'template-preferences' });
-    var intro = el('div', {}, [
-        el('div', { class: 'fieldDescription', text: t.tr('GroupsTemplateHelp') }),
-        el('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
-            el('label', {}, [on, el('span', { text: t.tr('GroupsTemplateEnable') })]),
-            el('div', { class: 'fieldDescription checkboxFieldDescription', text: t.tr('GroupsTemplateEnableHelp') })
+    var accessBody = h('div', { 'data-role': 'template-access' });
+    var prefsBody = h('div', { 'data-role': 'template-preferences' });
+    var intro = h('div', {}, [
+        h('div', { class: 'fieldDescription', text: t.tr('GroupsTemplateHelp') }),
+        h('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
+            h('label', {}, [on, h('span', { text: t.tr('GroupsTemplateEnable') })]),
+            h('div', { class: 'fieldDescription checkboxFieldDescription', text: t.tr('GroupsTemplateEnableHelp') })
         ]),
         accessBody
     ]);
@@ -422,7 +422,7 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
     // Draws one part's sections and rows, and reads them back into the group.
     function drawPart(into, specs, partName, part, sources) {
         specs.forEach(function (spec) {
-            into.appendChild(el('h3', { class: 'stolon-subsection-title', text: spec.title }));
+            into.appendChild(h('h3', { class: 'stolon-subsection-title', text: spec.title }));
             spec.rows.forEach(function (row) {
                 var start = rowValue(part, row);
                 var field = buildField(row, start.value, sources);
@@ -435,10 +435,10 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
                     onChange: row.type === 'library' ? refreshViews : undefined
                 });
                 handles.push(inherit);
-                var rowElement = el('div', { class: 'necto-template-row', 'data-field': partName + '.' + row.key }, [
-                    el('div', { class: 'selectLabel', text: row.label }),
+                var rowElement = h('div', { class: 'necto-template-row', 'data-field': partName + '.' + row.key }, [
+                    h('div', { class: 'selectLabel', text: row.label }),
                     inherit.element,
-                    row.help ? el('div', { class: 'fieldDescription', text: row.help }) : null
+                    row.help ? h('div', { class: 'fieldDescription', text: row.help }) : null
                 ]);
                 if (row.type === 'library') {
                     libraryAccess = inherit;
@@ -461,28 +461,28 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
         var id = 'necto-template-' + (++fieldSeq);
         switch (row.type) {
             case 'bool': {
-                var box = el('input', { type: 'checkbox', is: 'emby-checkbox', id: id });
+                var box = h('input', { type: 'checkbox', is: 'emby-checkbox', id: id });
                 box.checked = !!value;
-                return wrap(el('label', {}, [box, el('span', { text: t.tr('GroupsTemplateOn') })]), function () { return box.checked; }, function (v) { box.checked = !!v; });
+                return wrap(h('label', {}, [box, h('span', { text: t.tr('GroupsTemplateOn') })]), function () { return box.checked; }, function (v) { box.checked = !!v; });
             }
             case 'int':
             case 'bitrate': {
-                var num = el('input', { is: 'emby-input', type: 'number', id: id, min: String(row.min == null ? 0 : row.min), step: row.type === 'bitrate' ? '0.1' : '1', 'aria-label': row.label });
+                var num = h('input', { is: 'emby-input', type: 'number', id: id, min: String(row.min == null ? 0 : row.min), step: row.type === 'bitrate' ? '0.1' : '1', 'aria-label': row.label });
                 num.value = String(value || 0);
-                return wrap(el('div', { class: 'inputContainer' }, [num]), function () { return num.value; }, function (v) { num.value = String(v || 0); });
+                return wrap(h('div', { class: 'inputContainer' }, [num]), function () { return num.value; }, function (v) { num.value = String(v || 0); });
             }
             case 'enum':
             case 'culture':
             case 'cast':
             case 'rating': {
-                var select = el('select', { is: 'emby-select', id: id, 'aria-label': row.label });
-                choices(row, sources).forEach(function (o) { select.appendChild(el('option', { value: o[0], text: o[1] })); });
+                var select = h('select', { is: 'emby-select', id: id, 'aria-label': row.label });
+                choices(row, sources).forEach(function (o) { select.appendChild(h('option', { value: o[0], text: o[1] })); });
                 select.value = value == null ? '' : String(value);
-                var optionHelp = row.optionHelp ? el('div', { class: 'fieldDescription', 'data-role': 'option-help' }) : null;
+                var optionHelp = row.optionHelp ? h('div', { class: 'fieldDescription', 'data-role': 'option-help' }) : null;
                 var showHelp = function () { if (optionHelp) optionHelp.textContent = row.optionHelp[select.value] || ''; };
                 select.addEventListener('change', showHelp);
                 showHelp();
-                return wrap(el('div', { class: 'selectContainer' }, [select, optionHelp]), function () { return select.value; }, function (v) { select.value = v == null ? '' : String(v); showHelp(); });
+                return wrap(h('div', { class: 'selectContainer' }, [select, optionHelp]), function () { return select.value; }, function (v) { select.value = v == null ? '' : String(v); showHelp(); });
             }
             case 'tags': {
                 var tags = nectoModule.createTagInput({ values: value || [], inputLabel: row.label });
@@ -535,7 +535,7 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
     function allOrSome(row, value, sources) {
         var list = row.type === 'channels' ? sources.channels : row.type === 'devices' ? sources.devices : sources.libraries;
         var idKey = row.type === 'devices' ? 'Id' : row.type === 'channels' ? 'Id' : 'ItemId';
-        var box = el('input', { type: 'checkbox', is: 'emby-checkbox' });
+        var box = h('input', { type: 'checkbox', is: 'emby-checkbox' });
         box.checked = !!value.all;
         var picks = nectoModule.createCheckboxList({
             items: (list || []).map(function (i) { return { Id: i[idKey] || i.Id, Name: i.Name || i.AppName || i.Id }; }),
@@ -545,11 +545,11 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
             emptyMessage: t.tr('GroupsTemplateNothingToList')
         });
         handles.push(picks);
-        var indent = el('div', { class: 'stolon-indent' }, [picks.element]);
+        var indent = h('div', { class: 'stolon-indent' }, [picks.element]);
         var show = function () { indent.classList.toggle('stolon-hidden', box.checked); };
         box.addEventListener('change', show);
         show();
-        return wrap(el('div', {}, [el('label', {}, [box, el('span', { text: row.label })]), indent]),
+        return wrap(h('div', {}, [h('label', {}, [box, h('span', { text: row.label })]), indent]),
             function () { return { all: box.checked, ids: picks.getValue() }; },
             function (v) { box.checked = !!(v && v.all); picks.setValue((v && v.ids) || []); show(); });
     }
@@ -559,13 +559,13 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
     function homeSections(value) {
         var options = homeSectionOptions(t);
         var selects = [];
-        var box = el('div', { class: 'necto-template-home' });
+        var box = h('div', { class: 'necto-template-home' });
         for (var i = 0; i < HOME_SECTION_COUNT; i++) {
-            var select = el('select', { is: 'emby-select', 'aria-label': t.format('LabelHomeScreenSectionValue', i + 1) });
-            options.forEach(function (o) { select.appendChild(el('option', { value: o[0], text: o[1] })); });
+            var select = h('select', { is: 'emby-select', 'aria-label': t.format('LabelHomeScreenSectionValue', i + 1) });
+            options.forEach(function (o) { select.appendChild(h('option', { value: o[0], text: o[1] })); });
             select.value = (value && value[i]) || 'none';
             selects.push(select);
-            box.appendChild(el('div', { class: 'selectContainer' }, [el('label', { class: 'selectLabel', text: t.format('LabelHomeScreenSectionValue', i + 1) }), select]));
+            box.appendChild(h('div', { class: 'selectContainer' }, [h('label', { class: 'selectLabel', text: t.format('LabelHomeScreenSectionValue', i + 1) }), select]));
         }
         return wrap(box, function () { return selects.map(function (s) { return s.value; }); }, function (v) { selects.forEach(function (s, i) { s.value = (v && v[i]) || 'none'; }); });
     }
@@ -583,7 +583,7 @@ export function drawTemplateSections(section, draft, ctx, readers, handles) {
         var shown = function (ids) { return shownViews(ordered(ids), sources); };
         var list = nectoModule.createOrderedList({
             items: shown(full),
-            render: function (v) { return el('span', { text: v.Name }); },
+            render: function (v) { return h('span', { text: v.Name }); },
             label: function (v) { return v.Name; }
         });
         handles.push(list);

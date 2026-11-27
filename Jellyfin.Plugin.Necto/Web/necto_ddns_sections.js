@@ -2,9 +2,8 @@
 // The DDNS sections of Settings and Troubleshooting, which this module adds to the registry when it loads.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
-import * as fields from './configurationpage?name=necto_netfields.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // The key of the scheduled task that updates the records.
 export var DDNS_UPDATE_TASK = 'NectoDdnsUpdate';
@@ -24,13 +23,13 @@ var BACKOFF_HOURS = [1, 6, 12, 24, 48];
 // offKey [string]: The key of the name for 0, or null when 0 is not a choice.
 //
 // Output
-// [object[]]: Each choice's value and label.
+// [object[]]: Each choice's value and text.
 export function hourOptions(hours, current, t, offKey) {
     var list = hours.slice();
     if (current != null && list.indexOf(current) < 0) list.push(current);
     return list.sort(function (a, b) { return a - b; }).map(function (h) {
-        var label = h === 0 && offKey ? t.tr(offKey) : t.format(h === 1 ? 'HoursOne' : 'HoursMany', h);
-        return { value: String(h), label: label };
+        var label = h === 0 && offKey ? t.tr(offKey) : t.plural(h, 'HoursOne', 'HoursMany');
+        return { value: String(h), text: label };
     });
 }
 
@@ -42,12 +41,12 @@ export function hourOptions(hours, current, t, offKey) {
 // t [object]: The strings.
 //
 // Output
-// [object[]]: Each choice's value and label.
+// [object[]]: Each choice's value and text.
 export function failureOptions(current, t) {
     var list = BACKOFF_FAILURES.slice();
     if (current != null && list.indexOf(current) < 0) list.push(current);
     return list.sort(function (a, b) { return a - b; }).map(function (n) {
-        return { value: String(n), label: n === 0 ? t.tr('Off') : t.format(n === 1 ? 'DdnsFailuresOne' : 'DdnsFailuresMany', n) };
+        return { value: String(n), text: n === 0 ? t.tr('Off') : t.plural(n, 'DdnsFailuresOne', 'DdnsFailuresMany') };
     });
 }
 
@@ -62,13 +61,13 @@ export function failureOptions(current, t) {
 export function readSettings(f) {
     return {
         Enabled: !!(f.enabled && f.enabled.input.checked),
-        IPv4DetectionUrl: fields.readLines(f.ipv4.input).join('\n'),
-        IPv6DetectionUrl: fields.readLines(f.ipv6.input).join('\n'),
+        IPv4DetectionUrl: nectoModule.readLines(f.ipv4.input).join('\n'),
+        IPv6DetectionUrl: nectoModule.readLines(f.ipv6.input).join('\n'),
         SkipInternalAddresses: !!f.skip.input.checked,
         ForceUpdateHours: parseInt(f.force.input.value, 10) || 0,
         BackoffAfterFailures: parseInt(f.failures.input.value, 10) || 0,
         BackoffHours: parseInt(f.backoff.input.value, 10) || 24,
-        RequestTimeoutSeconds: Math.max(1, fields.readNumber(f.timeout.input) || 15),
+        RequestTimeoutSeconds: Math.max(1, nectoModule.readNumber(f.timeout.input) || 15),
         Records: []
     };
 }
@@ -87,21 +86,21 @@ function buildSettings(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var f = {
-        enabled: nectoModule.enabledSwitch(t.tr('LabelEnabled'), t.tr('DdnsHelpEnabled')),
-        ipv4: fields.textareaField({ label: t.tr('DdnsLabelIpv4Urls'), help: t.tr('DdnsIpv4UrlsHelp'), field: 'IPv4DetectionUrl', placeholder: 'https://api.ipify.org' }),
-        ipv6: fields.textareaField({ label: t.tr('DdnsLabelIpv6Urls'), help: t.tr('DdnsIpv6UrlsHelp'), field: 'IPv6DetectionUrl', placeholder: 'https://api6.ipify.org' }),
-        skip: fields.checkField({ label: t.tr('DdnsLabelSkipInternal'), help: t.tr('DdnsSkipInternalHelp'), field: 'SkipInternalAddresses' }),
-        force: fields.selectField({ label: t.tr('DdnsLabelForceUpdate'), help: t.tr('DdnsForceUpdateHelp'), field: 'ForceUpdateHours' }),
-        failures: fields.selectField({ label: t.tr('DdnsLabelBackoffAfter'), help: t.tr('DdnsBackoffAfterHelp'), field: 'BackoffAfterFailures' }),
-        backoff: fields.selectField({ label: t.tr('DdnsLabelBackoffFor'), help: t.tr('DdnsBackoffForHelp'), field: 'BackoffHours' }),
-        timeout: fields.inputField({ label: t.tr('DdnsLabelRequestTimeout'), help: t.tr('DdnsRequestTimeoutHelp'), field: 'RequestTimeoutSeconds', type: 'number', min: 1, max: 300 })
+        enabled: nectoModule.createCheckboxField({ label: t.tr('LabelEnabled'), help: t.tr('DdnsHelpEnabled'), field: 'Enabled' }),
+        ipv4: nectoModule.createTextareaField({ label: t.tr('DdnsLabelIpv4Urls'), help: t.tr('DdnsIpv4UrlsHelp'), field: 'IPv4DetectionUrl', placeholder: 'https://api.ipify.org' }),
+        ipv6: nectoModule.createTextareaField({ label: t.tr('DdnsLabelIpv6Urls'), help: t.tr('DdnsIpv6UrlsHelp'), field: 'IPv6DetectionUrl', placeholder: 'https://api6.ipify.org' }),
+        skip: nectoModule.createCheckboxField({ label: t.tr('DdnsLabelSkipInternal'), help: t.tr('DdnsSkipInternalHelp'), field: 'SkipInternalAddresses' }),
+        force: nectoModule.createSelectField({ label: t.tr('DdnsLabelForceUpdate'), help: t.tr('DdnsForceUpdateHelp'), field: 'ForceUpdateHours' }),
+        failures: nectoModule.createSelectField({ label: t.tr('DdnsLabelBackoffAfter'), help: t.tr('DdnsBackoffAfterHelp'), field: 'BackoffAfterFailures' }),
+        backoff: nectoModule.createSelectField({ label: t.tr('DdnsLabelBackoffFor'), help: t.tr('DdnsBackoffForHelp'), field: 'BackoffHours' }),
+        timeout: nectoModule.createInputField({ label: t.tr('DdnsLabelRequestTimeout'), help: t.tr('DdnsRequestTimeoutHelp'), field: 'RequestTimeoutSeconds', type: 'number', min: 1, max: 300 })
     };
-    var status = el('div', { class: 'stolon-status-text', role: 'status' });
+    var status = h('div', { class: 'stolon-status-text', role: 'status' });
     content.appendChild(status);
     content.appendChild(f.enabled.element);
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderPublicIp') }));
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderPublicIp') }));
     [f.ipv4, f.ipv6, f.skip].forEach(function (x) { content.appendChild(x.element); });
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderUpdates') }));
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderUpdates') }));
     [f.force, f.failures, f.backoff, f.timeout].forEach(function (x) { content.appendChild(x.element); });
 
     return {
@@ -143,25 +142,25 @@ function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var pollers = [];
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var addresses = el('div', { 'data-role': 'addresses' });
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var addresses = h('div', { 'data-role': 'addresses' });
     var addressList = nectoModule.createDefinitionList({ items: [] });
     addresses.appendChild(addressList.element);
-    var record = fields.selectField({ label: t.tr('DdnsLabelRecord'), field: 'ResetRecord', help: t.tr('DdnsResetRecordHelp') });
-    var rows = el('div', { class: 'stolon-reset-group' }, [
-        nectoModule.resetRow({ icon: 'schedule', label: t.tr('DdnsTaskUpdate'), help: t.tr('DdnsTaskUpdateHelp'), button: t.tr('ButtonRunTask'), action: 'run-update' }),
-        nectoModule.resetRow({ icon: 'sync', label: t.tr('DdnsButtonCheckAll'), help: t.tr('DdnsCheckAllHelp'), button: t.tr('DdnsButtonUpdateNow'), action: 'update-now' })
-    ]);
-    var resetRow = nectoModule.resetRow({ icon: 'restart_alt', label: t.tr('DdnsResetRecord'), help: t.tr('DdnsResetRecordRowHelp'), button: t.tr('DdnsButtonReset'), action: 'reset-record' });
+    var record = nectoModule.createSelectField({ label: t.tr('DdnsLabelRecord'), field: 'ResetRecord', help: t.tr('DdnsResetRecordHelp') });
+    var rows = nectoModule.createResetGroup([
+        nectoModule.createResetRow({ icon: 'schedule', label: t.tr('DdnsTaskUpdate'), help: t.tr('DdnsTaskUpdateHelp'), button: t.tr('ButtonRunTask'), action: 'run-update' }),
+        nectoModule.createResetRow({ icon: 'sync', label: t.tr('DdnsButtonCheckAll'), help: t.tr('DdnsCheckAllHelp'), button: t.tr('DdnsButtonUpdateNow'), action: 'update-now' })
+    ]).element;
+    var resetRow = nectoModule.createResetRow({ icon: 'restart_alt', label: t.tr('DdnsResetRecord'), help: t.tr('DdnsResetRecordRowHelp'), button: t.tr('DdnsButtonReset'), action: 'reset-record' }).element;
     [
         status,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderPublicIp') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('DdnsHeaderPublicIp') }),
         addresses,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderChecks') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderChecks') }),
         rows,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
         record.element,
-        el('div', { class: 'stolon-reset-group' }, [resetRow])
+        h('div', { class: 'stolon-reset-group' }, [resetRow])
     ].forEach(function (node) { content.appendChild(node); });
 
     // report
@@ -188,7 +187,7 @@ function buildTroubleshooting(content, ctx) {
             addressList.setItems(items);
             record.setOptions((data.Records || []).map(function (entry) {
                 var r = entry.Record;
-                return { value: r.Id, label: (r.Name || r.Hostname || r.Id) };
+                return { value: r.Id, text: (r.Name || r.Hostname || r.Id) };
             }));
             button('reset-record').disabled = !(data.Records || []).length;
         }).catch(function (err) {
@@ -197,7 +196,7 @@ function buildTroubleshooting(content, ctx) {
     }
 
     button('run-update').addEventListener('click', function () {
-        shared.runTask(button('run-update'), DDNS_UPDATE_TASK, t.tr('ButtonRunTask'), load).then(function (p) { pollers.push(p); }).catch(function (err) {
+        shared.runScheduledTask(button('run-update'), DDNS_UPDATE_TASK, t.tr('ButtonRunTask'), load).then(function (p) { pollers.push(p); }).catch(function (err) {
             return shared.errorText(err, t.tr('DdnsErrorRunTask')).then(function (text) { report(text, true); });
         });
     });

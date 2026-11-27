@@ -43,9 +43,8 @@ changelog:
   - "Menu links in Settings, which edits the web client's side menu, with an icon picker, the server's own pages to pick from, and the Requests and Issues links kept while their tools are on"
   - "Every reset and action row in Troubleshooting leads with its icon tile"
   developer:
-  - "ToolSwitches.All lists the tools with a switch, and TOOL_SWITCHES in necto_shared.js matches it"
+  - "ToolSwitches.All lists the tools with a switch, and each tool's visibleWhen in necto_shared.js matches it"
   - "GET and PUT /Necto/MenuLinks read and save the web client's menuLinks, keeping every other key of its config.json"
-  - "resetRow in necto_shared.js draws every Troubleshooting row with its icon tile"
   - "Routes under /Groups list, create, save, and delete groups, list users with their groups, and give a user's permissions"
   - "Routes under /WireGuard give the tunnels' state and usage, the tunnel ends for the Dashboard map, change peers and connections, and download wireguard-go"
   - "Routes under /Scripts give the editor's catalog and the script names, test and run scripts, take webhooks, and read and clear the run history"
@@ -64,3 +63,4 @@ changelog:
   - "Strings that more than one tool uses take neutral keys, such as ButtonClear and LabelSignedIn"
   - "Notifications secrets live in Jellyfin.Plugin.Necto.Notifications.Secrets.json, and every other secret setting carries KeptSecretConverter, so JSON writes it as the kept marker except through Stolon's SecretJson"
   - "The Requests database drops its unused HeldMessages and PushSubscriptions tables at schema version 19"
+  - "Uses Siphonophore.Stolon 12.4.9, whose SecretJson, KeptSecretConverter, OwnerOnly, AtomicFile, ProtectedJsonFileStore, JsonWebPushStore, JsonNotifyHeldStore, WebClientCheck, and WebClientJson replace the local copies, and whose h, createResetRow, createResetGroup, bindTileToSwitch, createSaveBars, the field builders, t.plural, runScheduledTask, createWebPushToggle, banner items, and the tool app's visibleWhen replace the page helpers"

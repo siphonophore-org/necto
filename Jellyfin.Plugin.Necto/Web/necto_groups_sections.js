@@ -3,7 +3,7 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 
-var el = nectoModule.el;
+var h = nectoModule.h;
 
 // The keys of the scheduled tasks Troubleshooting runs.
 export var ACCOUNT_RULES_TASK = 'NectoAccountRules';
@@ -59,19 +59,19 @@ function buildSettings(content, ctx) {
     var t = ctx.shared.t;
     var selectId = fieldId('new-user-group');
     var resetId = fieldId('show-reset-codes');
-    var select = el('select', { is: 'emby-select', id: selectId, 'data-field': 'NewUserGroupId' });
-    var resets = el('input', { type: 'checkbox', is: 'emby-checkbox', id: resetId, 'data-field': 'ShowResetCodes' });
+    var select = h('select', { is: 'emby-select', id: selectId, 'data-field': 'NewUserGroupId' });
+    var resets = h('input', { type: 'checkbox', is: 'emby-checkbox', id: resetId, 'data-field': 'ShowResetCodes' });
 
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderNewUsers') }));
-    content.appendChild(el('div', { class: 'selectContainer' }, [
-        el('label', { class: 'selectLabel', for: selectId, text: t.tr('LabelNewUserGroup') }),
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderNewUsers') }));
+    content.appendChild(h('div', { class: 'selectContainer' }, [
+        h('label', { class: 'selectLabel', for: selectId, text: t.tr('LabelNewUserGroup') }),
         select,
-        el('div', { class: 'fieldDescription', text: t.tr('NewUserGroupHelp') })
+        h('div', { class: 'fieldDescription', text: t.tr('NewUserGroupHelp') })
     ]));
-    content.appendChild(el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderAccounts') }));
-    content.appendChild(el('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
-        el('label', {}, [resets, el('span', { text: t.tr('LabelShowResetCodes') })]),
-        el('div', { class: 'fieldDescription checkboxFieldDescription', text: t.tr('ShowResetCodesHelp') })
+    content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderAccounts') }));
+    content.appendChild(h('div', { class: 'checkboxContainer checkboxContainer-withDescription' }, [
+        h('label', {}, [resets, h('span', { text: t.tr('LabelShowResetCodes') })]),
+        h('div', { class: 'fieldDescription checkboxFieldDescription', text: t.tr('ShowResetCodesHelp') })
     ]));
 
     return {
@@ -79,7 +79,7 @@ function buildSettings(content, ctx) {
             var chosen = (config.GroupSettings && config.GroupSettings.NewUserGroupId) || '';
             select.textContent = '';
             groupOptions(config, t).forEach(function (o) {
-                select.appendChild(el('option', { value: o.value, text: o.label }));
+                select.appendChild(h('option', { value: o.value, text: o.label }));
             });
             select.value = chosen;
             resets.checked = !!(config.AccountSettings && config.AccountSettings.ShowResetCodes);
@@ -176,22 +176,22 @@ function buildTroubleshooting(content, ctx) {
     var t = shared.t;
     var resetList = null;
     var pollers = [];
-    var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var resets = el('div', { 'data-role': 'resets' });
-    var apply = nectoModule.resetRow({ icon: 'password', label: t.tr('TaskApplyPasswordRules'), help: t.tr('HelpApplyPasswordRules'), button: t.tr('ButtonApplyRules'), action: 'apply-rules' });
-    var templates = nectoModule.resetRow({ icon: 'library_add_check', label: t.tr('GroupsTaskApplyTemplates'), help: t.tr('GroupsTaskApplyTemplatesDescription'), button: t.tr('GroupsButtonApplyTemplates'), action: 'apply-templates' });
-    var expired = nectoModule.resetRow({ icon: 'event_busy', label: t.tr('TaskProcessExpired'), help: t.tr('HelpProcessExpiredTask'), button: t.tr('ButtonRunTask'), action: 'run-account-rules' });
-    var sessions = nectoModule.resetRow({ icon: 'devices', label: t.tr('TaskCleanSessions'), help: t.tr('HelpCleanSessionsTask'), button: t.tr('ButtonRunTask'), action: 'run-session-cleanup' });
+    var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
+    var resets = h('div', { 'data-role': 'resets' });
+    var apply = nectoModule.createResetRow({ icon: 'password', label: t.tr('TaskApplyPasswordRules'), help: t.tr('HelpApplyPasswordRules'), button: t.tr('ButtonApplyRules'), action: 'apply-rules' }).element;
+    var templates = nectoModule.createResetRow({ icon: 'library_add_check', label: t.tr('GroupsTaskApplyTemplates'), help: t.tr('GroupsTaskApplyTemplatesDescription'), button: t.tr('GroupsButtonApplyTemplates'), action: 'apply-templates' }).element;
+    var expired = nectoModule.createResetRow({ icon: 'event_busy', label: t.tr('TaskProcessExpired'), help: t.tr('HelpProcessExpiredTask'), button: t.tr('ButtonRunTask'), action: 'run-account-rules' }).element;
+    var sessions = nectoModule.createResetRow({ icon: 'devices', label: t.tr('TaskCleanSessions'), help: t.tr('HelpCleanSessionsTask'), button: t.tr('ButtonRunTask'), action: 'run-session-cleanup' }).element;
 
     [
         status,
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderPasswordRequirements') }),
-        el('div', { class: 'stolon-reset-group' }, [apply]),
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('GroupsHeaderTemplates') }),
-        el('div', { class: 'stolon-reset-group' }, [templates]),
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
-        el('div', { class: 'stolon-reset-group' }, [expired, sessions]),
-        el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderPasswordResets') }),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderPasswordRequirements') }),
+        h('div', { class: 'stolon-reset-group' }, [apply]),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('GroupsHeaderTemplates') }),
+        h('div', { class: 'stolon-reset-group' }, [templates]),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
+        h('div', { class: 'stolon-reset-group' }, [expired, sessions]),
+        h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderPasswordResets') }),
         resets
     ].forEach(function (node) { content.appendChild(node); });
 
@@ -212,7 +212,7 @@ function buildTroubleshooting(content, ctx) {
     function applyRules() {
         return shared.request('Groups/PasswordRules/Apply', 'POST').then(function (result) {
             var moved = (result && result.Moved) || 0;
-            report(moved === 0 ? t.tr('ToastNoUsersMoved') : shared.plural(moved, 'ToastUsersMovedOne', 'ToastUsersMovedMany'), false);
+            report(moved === 0 ? t.tr('ToastNoUsersMoved') : shared.t.plural(moved, 'ToastUsersMovedOne', 'ToastUsersMovedMany'), false);
         }).catch(function (err) {
             return shared.errorText(err, t.tr('ErrorApplyRules')).then(function (text) { report(text, true); });
         });
@@ -221,7 +221,7 @@ function buildTroubleshooting(content, ctx) {
     // runTask
     // Starts a scheduled task and follows it on its button.
     function runTask(action, key) {
-        return shared.runTask(button(action), key, t.tr('ButtonRunTask')).then(function (poller) {
+        return shared.runScheduledTask(button(action), key, t.tr('ButtonRunTask')).then(function (poller) {
             pollers.push(poller);
         }).catch(function (err) {
             return shared.errorText(err, t.tr('ErrorRunTask')).then(function (text) { report(text, true); });
@@ -246,17 +246,17 @@ function buildTroubleshooting(content, ctx) {
         if (resetList) { resetList.destroy(); resetList = null; }
         resets.textContent = '';
         if (!result || !result.Enabled) {
-            resets.appendChild(el('div', { class: 'stolon-info', text: t.tr('ResetsDisabled') }));
+            resets.appendChild(h('div', { class: 'stolon-info', text: t.tr('ResetsDisabled') }));
             return;
         }
-        var warning = el('div', { class: 'stolon-warn', text: t.tr('ResetsHttpsWarning') });
+        var warning = h('div', { class: 'stolon-warn', text: t.tr('ResetsHttpsWarning') });
         if (!(result.Codes || []).length) {
             resets.innerHTML = shared.emptySection(t.tr('EmptyPendingResets'), { inline: true });
             resets.insertBefore(warning, resets.firstChild);
             return;
         }
         var items = resetItems(result.Codes, shared, new Date());
-        var cards = el('div', { class: 'stolon-cards', 'data-role': 'reset-cards' });
+        var cards = h('div', { class: 'stolon-cards', 'data-role': 'reset-cards' });
         resets.appendChild(cards);
         resets.appendChild(warning);
         shared.renderCards(cards, resetCards(items, t));
@@ -275,7 +275,7 @@ function buildTroubleshooting(content, ctx) {
     button('apply-rules').addEventListener('click', applyRules);
     button('apply-templates').addEventListener('click', function () {
         shared.request('Groups/Templates/Apply', 'POST').then(function (result) {
-            report(shared.plural((result && result.Count) || 0, 'GroupsTemplatesAppliedOne', 'GroupsTemplatesAppliedMany'), false);
+            report(shared.t.plural((result && result.Count) || 0, 'GroupsTemplatesAppliedOne', 'GroupsTemplatesAppliedMany'), false);
         }).catch(function (err) {
             return shared.errorText(err, t.tr('GroupsErrorApplyTemplates')).then(function (text) { report(text, true); });
         });
