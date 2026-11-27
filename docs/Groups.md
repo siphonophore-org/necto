@@ -4,11 +4,15 @@ Groups set what their members may do in every Necto tool, and hold the account r
 
 ## The Groups Tool
 
-**Groups** lists every group, **Everyone** first. Each row shows how many members the group has and which account rules it has on. Select a row to open the group in a sidecar, or select **Add group** to start a new one.
+**Groups** lists every group, **Everyone** first, then the others in group order. Each row shows how many members the group has and which account rules it has on. Select a row to open the group in a sidecar, select **Add group** to start a new one, or select **Group order** to reorder them.
 
-The sidecar holds the group's name, its members, **Account rules**, and one collapsible section per tool. Its shelf holds **Delete**, **Cancel**, and **Save**. **Delete** asks first, with the group's name in the title, such as "Delete Family". Its members keep their other groups, and a member in no other group takes **Everyone**.
+The sidecar holds the group's name, its members, **Account rules**, **Access and features**, **Preferences**, and one collapsible section per tool. Its shelf holds **Delete**, **Cancel**, and **Save**. **Delete** asks first, with the group's name in the title, such as "Delete Family". Its members keep their other groups, and a member in no other group takes **Everyone**.
 
-Sections for tools that are not built show their fields with the note "This tool is coming." Those permissions are saved, and take effect once the tool is built.
+Sections for tools that are not built show their fields with the note "This tool is coming." Those permissions are saved, and take effect once the tool is built. **Invites** and **Notifications** are built.
+
+## Group Order
+
+**Group order** opens the groups in a sidecar, each with **Move up** and **Move down**, and **Save** keeps the order. The order decides whose template a member of several groups takes. **Everyone** always comes first, and only applies to users in no group.
 
 ## Everyone
 
@@ -35,6 +39,8 @@ The account rules combine the other way, since any one group may keep a member's
 * **Inactivity** and **Session management** apply only when every group has them on, after the largest window any group gives.
 
 Administrators are never held to an account rule.
+
+A template writes whole Jellyfin settings, so it does not combine. A member takes the template of the first of their groups, in group order, that has **Set Jellyfin settings** on. A user in no group takes Everyone's.
 
 ## Account Rules
 
@@ -74,17 +80,28 @@ A refused change shows the reason on the password form, and writes "Password cha
 * Each rule sets **Applies to**, its **Clients**, and **Days before logout**. **All clients** covers every client, **Only these clients** covers the listed ones, and **All except these clients** covers the rest.
 * Where several rules of one group cover a client, the shortest window wins, and the editor names the clients that overlap.
 
+## Templates
+
+**Access and features** and **Preferences** write Jellyfin's own user settings onto members.
+
+* **Set Jellyfin settings** turns the group's template on. It is written onto members when a group is saved or reordered, when a user is created or joins through an invite, and when the server starts.
+* Each setting shows **Member** or **Group**. **Member** leaves the setting as each member has it. **Group** sets it to the value under it.
+* **Access and features** holds Jellyfin's library, channel, and device access, media deletion, playback, Live TV, remote control, parental control with the access schedule, and the profile's switches, such as **Disable this user** and **Hide this user from login screens**.
+* **Preferences** holds the subtitle and audio languages and modes, **Google cast version**, missing episodes, the Collections view, the ten home screen sections, the library order, and the libraries on the home screen, in home sections, and grouped into views.
+* A template that sets **Disable this user** off never turns on an account its groups' expiry or inactivity turned off.
+* Administrators are never changed by a template.
+
 ## Tool Permissions
 
 | Section | Fields |
 | :--- | :--- |
 | **Requests** | **Allow requests**, **Movie quota**, **Series quota**, **Auto approve requests**, **Show others' requests**, **Manage requests** |
 | **Issues** | **Allow issue reports**, **Manage issues** |
-| **Invites** | **Allow invites**, **Open invites**, **Invite to any group**, **Invite groups** |
+| **Invites** | **Allow invites**, **Open invites**, **Invite to any group**, **Invite groups**. See [Invites](Invites.md#members-invites) |
 | **WireGuard** | **Allow peers**, **Peers per member** |
 | **Scripts** | **Run every script** |
 | **Custom pages** | **Open every page** |
-| **Notifications** | **Receive every event** |
+| **Notifications** | **Receive every event**, **Events**. See [Notifications](Notifications.md#who-gets-an-event) |
 
 ## Scheduled Tasks
 
@@ -93,6 +110,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 | **Process expired and inactive users** | Disables or deletes users whose groups have expired, and disables inactive users | Daily at midnight |
 | **Clean expired sessions** | Logs out devices past their groups' session windows | Daily at midnight |
 | **Apply password rules** | Drops administrators and deleted users from the groups, and moves users onto or off password rules | When the server starts |
+| **Apply group templates** | Writes each user's group template onto their Jellyfin policy and preferences | When the server starts |
 
 ## Settings
 
@@ -106,6 +124,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 **Troubleshooting > Groups** holds the repairs.
 
 * **Apply rules** moves users onto or off password rules by their groups, and drops administrators from every group.
+* **Apply templates** writes each user's group template onto them, and reports how many took one.
 * **Run now** beside **Process expired and inactive users** asks first, then runs the task. A deleted user cannot come back.
 * **Run now** beside **Clean expired sessions** runs the task.
 * **Password resets** lists each pending reset with its user and its code, while **Show reset codes** is on.
@@ -142,5 +161,7 @@ Every route is for administrators.
 | `GET /Groups/Users/{userId}/Permissions` | Gives what a user may do in every tool |
 | `POST /Groups/PasswordRules/Apply` | Moves users onto or off password rules |
 | `GET /Groups/ResetCodes` | Lists the pending password resets while **Show reset codes** is on |
+| `PUT /Groups/Order` | Puts the groups in a new order from every group's id, then writes the templates |
+| `POST /Groups/Templates/Apply` | Writes each user's group template, and gives how many took one |
 
 A refused change answers `400` with `{ "Error": "..." }`, and a missing group or user answers `404`.

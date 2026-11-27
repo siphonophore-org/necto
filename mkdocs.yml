@@ -43,6 +43,8 @@ markdown_extensions:
 nav:
   - Overview: index.md
   - Tools:
+      - Invites: Invites.md
       - Groups: Groups.md
+      - Notifications: Notifications.md
   - Development:
       - Plan: Plan.md
