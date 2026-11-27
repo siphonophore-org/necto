@@ -560,7 +560,7 @@ export default function (view) {
             notes ? nectoModule.createCollapsibleSection({ title: t.tr('LabelNotes'), icon: 'forum', collapsible: false, content: notes.element }).element : null,
             status
         ]);
-        var buttons = [{ text: t.tr('ButtonCancel'), className: 'stolon-button stolon-secondary', action: function (close) { close(); } }];
+        var buttons = [];
         if (issue.ItemId) buttons.push({ text: t.tr('ButtonOpenInLibrary'), className: 'stolon-button stolon-secondary', action: function (close) { close(); Dashboard.navigate('details?id=' + issue.ItemId); } });
         issueActions(issue).forEach(function (verb) {
             var kind = verb === 'Decline' ? 'stolon-destructive' : verb === 'Confirm' ? 'stolon-secondary' : 'stolon-primary';

@@ -6,11 +6,6 @@
 /* Example: <span class="necto-wireguard-slash">/</span> */
 .necto-wireguard-slash { display: flex; align-items: center; flex: 0 0 auto; line-height: 1; font-size: calc(var(--stolon-field-height) * 0.8); color: var(--stolon-text-muted); }
 
-/* necto-wireguard-meter */
-/* A peer's or connection's usage meter at the end of its row, one width so the bars line up down the list. */
-/* Example: <div class="necto-wireguard-meter"><div class="stolon-usage-meter">...</div></div> */
-.necto-wireguard-meter { width: calc(var(--stolon-size-large) * 6); max-width: 40vw; }
-
 /* necto-scripts editor spacing */
 /* A wide gap under a block of the Scripts editor while the warning after it shows. */
 /* Example: <div id="NectoScriptsPage"><div id="groupList"></div><div id="userWarn"></div></div> */

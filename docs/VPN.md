@@ -84,11 +84,13 @@ While VPN is off, the tool reads "VPN is off. Turn it on in Settings to add peer
 | :---: | :---: |
 | ![VPN](screenshots/WireGuard.png) | ![VPN on a phone](screenshots/WireGuard%20Phone.png) |
 
-The cards at the top show the host's state, how many **Peers** and **Connections** are connected out of all of them, and how many are over their data limit. **Connections** turns red while any connection failed and gray while **Connect to hosts** is off. **Left out** counts the peers their owners' groups leave out, while there are any. When the host cannot start, the reason shows under the cards. **Add peer** shows while the host is on, and **Add connection** while connecting is on.
+The cards at the top show the host's state, how many **Peers** and **Connections** are connected out of all of them, and how many are over their data limit. **Connections** turns red while any connection failed and gray while **Connect to hosts** is off. **Left out** counts the peers their owners' groups leave out, while there are any. When the host cannot start, the reason shows under the cards.
+
+One table lists this server, the peers, and the connections, each with a **Type** badge, **Host**, **Peer**, or **Connection**, and its state. Search it by name, owner, or address, and filter it to **Peers** or **Connections**. **Add peer** in its toolbar shows while the host is on, and **Add connection** while connecting is on. With nothing to list it reads "No peers or connections yet."
 
 ### Peers
 
-Each peer shows its owner, with tags for its state, address, where it connects from, and **Router** when it has child networks. On a phone the address is left out. A usage meter shows its data out of its data limit. The state is **Connected**, **Offline**, **Disabled**, **Over limit**, **Not allowed** when no group of its owner allows peers, or **Over peer count** when its owner has more peers than their groups give.
+Each peer's row shows its owner and address, then what it used, out of its data limit when it has one, where it connects from, and **Router** when it has child networks. The state is **Connected**, **Offline**, **Disabled**, **Over limit**, **Not allowed** when no group of its owner allows peers, or **Over peer count** when its owner has more peers than their groups give.
 
 ![Peer editor](screenshots/Peer%20Editor.png)
 
@@ -104,7 +106,7 @@ A peer that brought its own public key gets a config file without a private key,
 
 ### Connections
 
-While the host is on, this server leads the list, named after the server and placed by its **Public address**. Selecting it opens **Settings**. Each connection shows its remote host, with tags for its state and forwards, and a usage meter.
+While the host is on, this server leads the table, named after the server, with its **Public address**. Selecting it opens **Settings**. Each connection's row shows its remote host, then what it used and its forwards.
 
 Select a connection to open its details, with its status, remote host, this server's address, forwards, last handshake, last error, usage, and speed limit. **This server's public key** has a Copy button. Give it to the remote host.
 

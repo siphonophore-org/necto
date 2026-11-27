@@ -819,7 +819,6 @@ export default function (view) {
             page: page,
             autofocus: false,
             buttons: takesSave ? [
-                { text: t.tr('ButtonCancel'), className: 'raised stolon-button stolon-secondary', action: function (close) { close(); } },
                 { text: t.tr('Save'), className: 'raised stolon-button stolon-primary', action: function (close, dismiss, button) { saveDisk(savers, problem, button); } }
             ] : undefined,
             onClose: function () { sidecar = null; }

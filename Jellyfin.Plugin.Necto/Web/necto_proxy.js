@@ -827,7 +827,6 @@ export default function (view) {
                 title: t.tr('ProxyTitleNewRoute'),
                 body: body,
                 buttons: [
-                    { text: t.tr('ButtonCancel'), className: 'raised stolon-button stolon-secondary', action: function (close) { choices.destroy(); close(); } },
                     {
                         text: t.tr('Next'), className: 'raised stolon-button stolon-primary', action: function (close) {
                             var key = choices.get() || 'jellyfin';
@@ -837,12 +836,12 @@ export default function (view) {
                             route.Id = '';
                             if (key === 'jellyfin') route.Host = zone;
                             if (key === 'jellyfin-lan') route.Host = zone ? 'home.' + zone : '';
-                            choices.destroy();
                             close();
                             openRoute(route, null);
                         }
                     }
-                ]
+                ],
+                onClose: function () { choices.destroy(); }
             });
         }).catch(function (err) {
             shared.errorText(err, t.tr('ProxyErrorLoad')).then(function (text) { report(text, true); });

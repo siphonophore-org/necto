@@ -52,7 +52,7 @@ While a request waits, its requester can change its seasons, profile, and note, 
 * Select rows to **Approve**, **Reject**, or **Remove** them together.
 * When requests change while the list is open, a notice says so, and **Show latest** loads them.
 
-Select a row to open the request in a sidecar, its status in the header. Its shelf offers **Approve** to the profile picked in **Goes to**, **Edit**, or **Edit note** for a movie with one profile, **Cancel**, **Reject** with an optional reason, **Mark available**, **Retry** for a failed one, and **Remove**. Its details link **Open in library** once the title is in Jellyfin, and **Open in Radarr** or **Open in Sonarr** once it is sent. On a phone the shelf wraps onto a second row.
+Select a row to open the request in a sidecar, its status in the header. Its shelf offers **Approve** to the profile picked in **Goes to**, **Edit**, or **Edit note** for a movie with one profile, **Reject** with an optional reason, **Mark available**, **Retry** for a failed one, and **Remove**. Its details link **Open in library** once the title is in Jellyfin, and **Open in Radarr** or **Open in Sonarr** once it is sent. On a phone the shelf wraps onto a second row.
 
 ## Settings
 

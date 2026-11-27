@@ -1,5 +1,5 @@
 <!-- necto_wireguard.html -->
-<!-- The WireGuard tool. It lists the host's peers and the connections to other hosts, each opening in a sidecar. -->
+<!-- The WireGuard tool. It lists the host's peers and the connections to other hosts in one table, each opening in a sidecar. -->
 
 <div id="NectoWireGuardPage" data-role="page" class="page type-interior pluginConfigurationPage"
      data-require="emby-input,emby-button,emby-select,emby-checkbox"
@@ -24,24 +24,10 @@
                     <!-- Shown while Host peers and Connect to hosts are both off and nothing is listed. -->
                     <div id="wireguardBothOff" class="stolon-hidden"></div>
 
-                    <div class="stolon-button-row" id="addButtons">
-                        <button is="emby-button" type="button" id="btnAddPeer" class="raised stolon-button stolon-primary stolon-fill stolon-hidden">
-                            <span class="material-icons" aria-hidden="true">add</span>
-                            <span data-str="WireGuardButtonAddPeer">Add peer</span>
-                        </button>
-                        <button is="emby-button" type="button" id="btnAddConnection" class="raised stolon-button stolon-secondary stolon-fill stolon-hidden">
-                            <span class="material-icons" aria-hidden="true">add_link</span>
-                            <span data-str="WireGuardButtonAddConnection">Add connection</span>
-                        </button>
-                    </div>
-
-                    <!-- Peers -->
-                    <!-- The devices and routers that connect to this server. -->
-                    <div id="peerSection"></div>
-
-                    <!-- Connections -->
-                    <!-- The other hosts this server connects to. -->
-                    <div id="connectionSection"></div>
+                    <!-- Peers and connections -->
+                    <!-- This server, the devices and routers that connect to it, and the hosts it connects to, in one table with
+                         a type filter, and Add peer and Add connection in its toolbar. -->
+                    <div id="wireguardTable"></div>
                 </div>
             </div>
         </div>

@@ -5,11 +5,107 @@
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import {
-    compact, readLimit, createDataLimitField, normalizePeriod, dataText, limitText, speedText, periodLabel,
+    compact, readLimit, createDataLimitField, normalizePeriod, dataText, limitText, speedText,
     parseWgConfig, parseForwards, safeFileName, stateTag, tunnelStateLabel
 } from './configurationpage?name=necto_wireguard_common.js';
 
 var h = nectoModule.h;
+var esc = nectoModule.escapeHtml;
+
+// TYPE_BADGES
+// The color of each kind of row's type badge, and the key of its word.
+var TYPE_BADGES = {
+    Host: { key: 'LabelServerHost', color: 'gray' },
+    Peer: { key: 'WireGuardHeaderPeer', color: 'blue' },
+    Connection: { key: 'WireGuardHeaderConnection', color: 'purple' }
+};
+
+// tunnelRows
+// Turns the peers, the connections, and this server while it hosts into the table's rows, in that order: this server
+// first, then the peers, then the connections.
+//
+// Inputs
+// t [object]: The strings.
+// cfg [object]: The WireGuard settings.
+// ends [object[]]: The tunnel ends from WireGuard/Peers.
+// names [object]: user(id) names a peer's owner, used(id, limit) words what a record used, and server is this
+//   server's name.
+//
+// Output
+// [object[]]: Rows of { Id, Kind, Name, Line, Detail, State }, State being the state tag.
+export function tunnelRows(t, cfg, ends, names) {
+    var endOf = function (id) { return (ends || []).filter(function (e) { return compact(e.Id) === compact(id); })[0] || {}; };
+    var rows = [];
+    if (cfg.Enabled && cfg.HostEnabled) {
+        var host = (ends || []).filter(function (e) { return e.Kind === 'Host'; })[0];
+        var hostState = host ? host.State : 'Stopped';
+        rows.push({
+            Id: 'self', Kind: 'Host', Name: names.server || t.tr('LabelServerHost'), Line: cfg.PublicEndpoint || '', Detail: '',
+            State: stateTag(t, hostState === 'Running' ? 'Connected' : hostState === 'Failed' ? 'Failed' : 'Offline')
+        });
+    }
+    (cfg.Peers || []).forEach(function (p) {
+        var end = endOf(p.Id);
+        var detail = [names.used(p.Id, peerLimit(cfg, p))];
+        if (end.RemoteAddress) detail.push(end.RemoteAddress);
+        if ((p.RoutedSubnets || []).length) detail.push(t.tr('WireGuardTagRouter'));
+        rows.push({
+            Id: p.Id, Kind: 'Peer', Name: p.Name || p.Address, Line: [names.user(p.UserId), p.Address].filter(Boolean).join(' · '),
+            Detail: detail.join(' · '), State: stateTag(t, end.State || (p.Enabled ? 'Offline' : 'Disabled'))
+        });
+    });
+    (cfg.Connections || []).forEach(function (c) {
+        var end = endOf(c.Id);
+        var detail = [names.used(c.Id, connectionLimit(cfg, c))];
+        (c.Forwards || []).forEach(function (f) { detail.push('127.0.0.1:' + f.LocalPort); });
+        rows.push({
+            Id: c.Id, Kind: 'Connection', Name: c.Name || c.Endpoint, Line: c.Endpoint || '',
+            Detail: detail.join(' · '), State: stateTag(t, end.State || (c.Enabled ? 'Offline' : 'Disabled'))
+        });
+    });
+    return rows;
+}
+
+// pageOf
+// Answers one page of the table from its rows, as the table's route would: rows of the type picked whose name or
+// lines hold the search, then the page asked for.
+//
+// Inputs
+// rows [object[]]: The rows, from tunnelRows.
+// query [object]: skip and take, search, and type, Peer or Connection, or empty for every row.
+//
+// Output
+// [object]: { Items, TotalCount }.
+export function pageOf(rows, query) {
+    var q = String(query.search || '').trim().toLowerCase();
+    var type = query.type && query.type !== 'All' ? query.type : '';
+    var found = rows.filter(function (r) {
+        if (type && r.Kind !== type) return false;
+        return !q || [r.Name, r.Line, r.Detail].join(' ').toLowerCase().indexOf(q) >= 0;
+    });
+    var skip = Number(query.skip) || 0;
+    var take = Number(query.take) || found.length;
+    return { Items: found.slice(skip, skip + take), TotalCount: found.length };
+}
+
+// readQuery
+// Reads the table's request, such as WireGuard/Tunnels?skip=0&take=50&search=phone&type=Peer, into a query.
+//
+// Inputs
+// url [string]: The address the table asked for.
+//
+// Output
+// [object]: { skip, take, search, type }.
+export function readQuery(url) {
+    var query = {};
+    String(url || '').split('?').slice(1).join('?').split('&').forEach(function (pair) {
+        if (!pair) return;
+        var at = pair.indexOf('=');
+        var key = decodeURIComponent(at < 0 ? pair : pair.slice(0, at));
+        query[key] = decodeURIComponent((at < 0 ? '' : pair.slice(at + 1)).replace(/\+/g, ' '));
+    });
+    return query;
+}
 
 // peerLimit
 // A peer's data limit and its period, its own or the host's default.
@@ -95,11 +191,10 @@ export default function (view) {
     var tunnels = [];
     var usage = { Bytes: {}, Blocked: [], Refused: {} };
     var sidecar = null;
-    var peerList = null;
-    var connectionList = null;
+    var table = null;
+    var rows = [];
     var loadSeq = 0;
     var serverName = '';
-    var SELF_ID = 'self';
 
     function $(id) { return view.querySelector('#' + id); }
 
@@ -128,21 +223,6 @@ export default function (view) {
         return tunnel ? Object.assign({ State: tunnel.State, Error: tunnel.Error }, (tunnel.Peers || [])[0] || {}) : {};
     }
 
-    // usageAside
-    // A Usage Meter of a limited peer or connection at the end of its row, which turns orange then red as it nears
-    // its limit. A record with no limit gets none.
-    function usageAside(id, limit) {
-        if (!(limit.bytes > 0)) return null;
-        var meter = nectoModule.createUsageMeter({
-            label: t.tr('LabelUsage'),
-            used: bytesOf(id, limit.period),
-            total: limit.bytes,
-            bytes: true,
-            usedText: t.tr('WireGuardUsedOfTotal') + '/' + periodLabel(t, limit.period).toLowerCase()
-        });
-        return h('div', { class: 'necto-wireguard-meter' }, [meter.element]);
-    }
-
     // usedText
     // What a peer or connection used in its limit's window, such as 1.2 GB of 10 GB/month.
     function usedText(id, limit) {
@@ -150,15 +230,6 @@ export default function (view) {
         return limit.bytes > 0
             ? t.tr('WireGuardUsedOfTotal').replace('{used}', used).replace('{total}', dataText(t, shared, limit.bytes, limit.period))
             : t.tr('WireGuardUsageThisMonth').replace('{0}', used);
-    }
-
-    // section
-    // Draws a list in a collapsible section of the page, open by default.
-    function section(holder, title, icon, list) {
-        holder.innerHTML = '';
-        var made = nectoModule.createCollapsibleSection({ title: title, icon: icon, collapsed: false, content: list.element });
-        holder.appendChild(made.element);
-        return made;
     }
 
     // render
@@ -197,42 +268,78 @@ export default function (view) {
         $('hostError').textContent = error || '';
         shared.setVisible('hostError', !!error);
 
-        shared.setVisible('btnAddPeer', on && !!w.HostEnabled);
-        shared.setVisible('btnAddConnection', on && !!w.ConnectEnabled);
-        shared.setVisible('addButtons', on && (!!w.HostEnabled || !!w.ConnectEnabled));
         var bothOff = on && !w.HostEnabled && !w.ConnectEnabled && !(w.Peers || []).length && !(w.Connections || []).length;
         $('wireguardBothOff').innerHTML = bothOff ? shared.emptySection(t.tr('WireGuardEmptyBothOff')) : '';
         shared.setVisible('wireguardBothOff', bothOff);
 
-        // A narrow list, such as on a phone, drops each row's tunnel address.
-        var narrow = !!(globalThis.matchMedia && globalThis.matchMedia('(max-width: 600px)').matches);
-        peerList.setItems((w.Peers || []).map(function (p) {
-            var end = endOf(p.Id);
-            var tags = [stateTag(t, end.State || (p.Enabled ? 'Offline' : 'Disabled'))];
-            if (!narrow) tags.push({ label: p.Address, icon: 'lan' });
-            if (end.RemoteAddress) tags.push({ label: end.RemoteAddress, icon: 'place' });
-            if ((p.RoutedSubnets || []).length) tags.push({ label: t.tr('WireGuardTagRouter'), icon: 'router' });
-            return { id: p.Id, title: p.Name || p.Address, secondary: userName(p.UserId), tags: tags, aside: usageAside(p.Id, peerLimit(w, p)) };
-        }));
-        // This server leads the connections while it hosts, placed by its public address. It opens Settings.
-        var self = [];
-        if (on && w.HostEnabled) {
-            var hostState = host ? host.State : 'Stopped';
-            self.push({
-                id: SELF_ID,
-                title: serverName || t.tr('LabelServerHost'),
-                secondary: w.PublicEndpoint || '-',
-                tags: [stateTag(t, hostState === 'Running' ? 'Connected' : hostState === 'Failed' ? 'Failed' : 'Offline'), { label: t.tr('LabelServerHost'), icon: 'dns' }]
+        rows = tunnelRows(t, w, ends, { user: userName, used: usedText, server: serverName });
+        if (!table) createTable();
+        shared.setVisible('wireguardTable', !bothOff);
+        shared.setVisible('btnAddPeer', on && !!w.HostEnabled);
+        shared.setVisible('btnAddConnection', on && !!w.ConnectEnabled);
+        table.refresh();
+    }
+
+    // typeCell
+    // The badge that says whether a row is this server, a peer, or a connection.
+    function typeCell(row) {
+        var type = TYPE_BADGES[row.Kind];
+        return shared.badge(type.color, t.tr(type.key));
+    }
+
+    // createTable
+    // Builds the one table of this server, the peers, and the connections, with its search, its type filter, and
+    // Add peer and Add connection. The rows come from what the page loaded, through the bag's apiRequest.
+    function createTable() {
+        var bag = Object.create(shared);
+        bag.apiPrefix = '';
+        bag.apiRequest = function (url) { return Promise.resolve(pageOf(rows, readQuery(url))); };
+        table = nectoModule.createPaginatedTable(view, bag, {
+            containerId: 'wireguardTable',
+            endpoint: 'WireGuard/Tunnels',
+            search: { enabled: true, placeholder: t.tr('WireGuardSearch') },
+            filters: {
+                name: 'type',
+                label: t.tr('LabelType'),
+                options: [{ value: 'Peer', label: t.tr('HeaderPeers') }, { value: 'Connection', label: t.tr('HeaderConnections') }],
+                allValue: 'All',
+                initialValue: 'All',
+                buildParams: function (value) { return { type: value === 'All' ? null : value }; }
+            },
+            pagination: { pageSize: 50 },
+            emptyState: { message: t.tr('WireGuardEmptyNone'), filteredMessage: t.tr('WireGuardEmptyMatch') },
+            columns: [
+                {
+                    key: 'Name', type: 'custom', label: t.tr('LabelName'),
+                    render: function (row) {
+                        return '<div class="stolon-table-item-info"><div class="stolon-table-item-title">' + esc(row.Name) + '</div>'
+                            + (row.Line ? '<div class="stolon-table-item-sub">' + esc(row.Line) + '</div>' : '')
+                            + (row.Detail ? '<div class="stolon-table-item-sub">' + esc(row.Detail) + '</div>' : '') + '</div>';
+                    }
+                },
+                { key: 'Kind', type: 'custom', label: t.tr('LabelType'), className: 'stolon-table-cell-status', render: function (row) { return '<span data-role="tunnel-type">' + typeCell(row) + '</span>'; } },
+                { key: 'State', type: 'custom', label: t.tr('LabelStatus'), className: 'stolon-table-cell-status', render: function (row) { return '<span data-role="tunnel-state">' + shared.badge(row.State.color || 'gray', row.State.label) + '</span>'; } }
+            ],
+            actions: {
+                onRowClick: function (row) {
+                    if (row.Kind === 'Host') nectoModule.openTool(view, 'settings');
+                    else if (row.Kind === 'Peer') openPeer(row.Id);
+                    else openConnection(row.Id);
+                }
+            }
+        });
+        var controls = table.getControlsContainer();
+        if (controls) {
+            [['btnAddPeer', 'add', 'WireGuardButtonAddPeer', 'stolon-primary', function () { editPeer(null); }],
+                ['btnAddConnection', 'add_link', 'WireGuardButtonAddConnection', 'stolon-secondary', function () { editConnection(null); }]].forEach(function (b) {
+                var button = h('button', { is: 'emby-button', type: 'button', id: b[0], class: 'raised stolon-button ' + b[3] }, [
+                    h('span', { class: 'material-icons', 'aria-hidden': 'true', text: b[1] }),
+                    h('span', { text: t.tr(b[2]) })
+                ]);
+                button.addEventListener('click', b[4]);
+                controls.appendChild(button);
             });
         }
-        connectionList.setItems(self.concat((w.Connections || []).map(function (c) {
-            var end = endOf(c.Id);
-            var tags = [stateTag(t, end.State || (c.Enabled ? 'Offline' : 'Disabled'))];
-            (c.Forwards || []).forEach(function (f) { tags.push({ label: '127.0.0.1:' + f.LocalPort, icon: 'swap_horiz' }); });
-            return { id: c.Id, title: c.Name || c.Endpoint, secondary: c.Endpoint, tags: tags, aside: usageAside(c.Id, connectionLimit(w, c)) };
-        })));
-        shared.setVisible('peerSection', !!w.HostEnabled || (w.Peers || []).length > 0);
-        shared.setVisible('connectionSection', !!w.ConnectEnabled || (w.Connections || []).length > 0);
     }
 
     // load
@@ -642,18 +749,11 @@ export default function (view) {
         page: 'necto_wireguard',
         bind: function (s, p) {
             t = s.t;
-            peerList = nectoModule.createRecordList({ label: t.tr('HeaderPeers'), emptyText: t.tr('WireGuardEmptyPeers'), onOpen: function (item) { openPeer(item.id); } });
-            connectionList = nectoModule.createRecordList({ label: t.tr('HeaderConnections'), emptyText: t.tr('WireGuardEmptyConnections'), onOpen: function (item) {
-                if (item.id === SELF_ID) nectoModule.openTool(view, 'settings');
-                else openConnection(item.id);
-            } });
-            section($('peerSection'), t.tr('HeaderPeers'), 'devices', peerList);
-            section($('connectionSection'), t.tr('HeaderConnections'), 'link', connectionList);
-            $('btnAddPeer').addEventListener('click', function () { editPeer(null); });
-            $('btnAddConnection').addEventListener('click', function () { editConnection(null); });
             p.addCleanup(function () {
-                if (peerList) peerList.destroy();
-                if (connectionList) connectionList.destroy();
+                if (table) table.destroy();
+                table = null;
+                var mount = $('wireguardTable');
+                if (mount) mount.innerHTML = '';
             });
         },
         load: function () { load(); }

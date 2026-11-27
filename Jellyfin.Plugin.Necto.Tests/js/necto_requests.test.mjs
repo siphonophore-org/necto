@@ -157,11 +157,11 @@ test('a request goes to its own profile, else its server\'s first, and profiles 
 test('each status offers its own actions in shelf order', async function () {
     var mod = await loadScript('necto_requests.js');
 
-    assert.deepEqual(mod.requestActions({ Status: 'Pending' }), ['remove', 'cancel', 'available', 'reject', 'edit', 'approve']);
-    assert.deepEqual(mod.requestActions({ Status: 'Failed' }), ['remove', 'cancel', 'available', 'reject', 'retry']);
-    assert.deepEqual(mod.requestActions({ Status: 'Approved', LibraryItemId: 'x' }), ['remove', 'cancel', 'available', 'reject']);
-    assert.deepEqual(mod.requestActions({ Status: 'Available', LibraryItemId: 'x' }), ['remove', 'cancel']);
-    assert.deepEqual(mod.requestActions({ Status: 'Declined' }), ['remove', 'cancel']);
+    assert.deepEqual(mod.requestActions({ Status: 'Pending' }), ['remove', 'available', 'reject', 'edit', 'approve']);
+    assert.deepEqual(mod.requestActions({ Status: 'Failed' }), ['remove', 'available', 'reject', 'retry']);
+    assert.deepEqual(mod.requestActions({ Status: 'Approved', LibraryItemId: 'x' }), ['remove', 'available', 'reject']);
+    assert.deepEqual(mod.requestActions({ Status: 'Available', LibraryItemId: 'x' }), ['remove']);
+    assert.deepEqual(mod.requestActions({ Status: 'Declined' }), ['remove']);
 });
 
 test('a bulk result says what was done, what was not sent, and what was skipped', async function () {
@@ -211,7 +211,7 @@ test('a request opens in a sidecar with its actions, and Approve sends it with t
     await settle(50);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
     assert.equal(sidecar.querySelector('.stolon-sidecar-title').textContent, 'Dune');
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Cancel', 'Mark available', 'Reject', 'Edit', 'Approve']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Mark available', 'Reject', 'Edit', 'Approve']);
     var picker = sidecar.querySelector('select');
     assert.deepEqual(texts(picker, 'option'), ['1080p', '4K']);
     picker.value = 'p2';
@@ -253,7 +253,7 @@ test('a sent request links to its page in Radarr and to the title in the library
 
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
     assert.match(sidecar.textContent, /Open in Radarr/);
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Cancel', 'Mark available', 'Reject']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Mark available', 'Reject']);
     var library = Array.prototype.filter.call(sidecar.querySelectorAll('.stolon-sidecar-body a'), function (a) { return a.textContent === 'Open in library'; })[0];
     library.click();
     assert.equal(opened.page.navigated, 'details?id=lib1');
@@ -388,5 +388,5 @@ test('the sidecar shows the status once, in its header, and a movie with one pro
 
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
     assert.equal((sidecar.textContent.match(/Pending/g) || []).length, 1);
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Cancel', 'Mark available', 'Reject', 'Edit note', 'Approve']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Mark available', 'Reject', 'Edit note', 'Approve']);
 });

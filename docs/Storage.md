@@ -79,15 +79,15 @@ Run Jellyfin as a service under LocalSystem, as the installer does, or as an adm
 
 ## Disks
 
-The top of **Storage** names what needs a look, one line each. It is red when any disk is missing, unresponsive, failing, or full, or when Jellyfin cannot write to one of its own folders. It is orange for a disk that is low on space, too hot, or worn out, and for library folders that are gone or that Jellyfin cannot write to. When nothing needs a look, it says every disk is healthy.
+Each disk's row shows its own state, so a disk that is missing, unresponsive, failing, full, low, too hot, worn out, or missing folders reads from its badge, its tags, and its bar. The top of **Storage** names only what no row shows, one line each: red when Jellyfin cannot write to one of its own folders, and orange when it cannot write to some library folders. It is hidden while there is nothing of the kind.
 
 | Storage | Storage on a phone |
 | :---: | :---: |
 | ![Storage](screenshots/Storage.png) | ![Storage on a phone](screenshots/Storage%20Phone.png) |
 
-The cards add up the size, used space, and free space of every disk Jellyfin uses that could be read. **Free** takes the color of the fullest disk's alert.
+The cards count the disks Jellyfin uses, and add up the used and free space of those that could be read. **Free** takes the color of the fullest disk's alert.
 
-The **Disks** section holds one row per disk or share, with its name, its mount point, its type, its status, and a bar of its used space. The bar turns orange and red at the disk's **Storage low** and **Storage full** alerts. Its **Jellyfin** sub-tab lists the disks that hold a library folder or one of Jellyfin's own folders. **All** also lists mounted disks Jellyfin does not use, disks with no file system, and on Linux, disks that hold data but are not mounted. **Refresh**, under the rows, checks every disk again. Hover over it to see when the disks were last checked. On a phone, the notice, the cards, and the rows stack to fit, and each row's bar takes the row's full width. On Windows, disks show by drive letter and volume label, and shares by their `\\server\share` path.
+The **Disks** section holds one row per disk or share, with its name, its mount point, and its type as tags, then a bar of its used space under its share and its "X of Y used" line, and its one status badge. The system disk reads **System** and takes no type tag. The bar turns orange and red at the disk's **Storage low** and **Storage full** alerts. Its **Jellyfin** sub-tab lists the disks that hold a library folder or one of Jellyfin's own folders. **All** also lists mounted disks Jellyfin does not use, disks with no file system, and on Linux, disks that hold data but are not mounted. **Refresh**, the icon at the end of the **Disks** header, checks every disk again. Hover over it to see when the disks were last checked. On a phone, the notice, the cards, and the rows stack to fit, and each row's bar takes the row's full width. On Windows, disks show by drive letter and volume label, and shares by their `\\server\share` path.
 
 | Status | Meaning |
 | :--- | :--- |
@@ -121,7 +121,7 @@ Select a row to open the disk in a sidecar. It lists the disk's status, type, fi
 
 ### Its Own Alerts
 
-A disk uses the alerts in **Settings > Storage** unless it has its own. Turn on **Use its own alerts** to set this disk's **Storage low** and **Storage full**, then select **Save** at the foot of the sidecar. Turn it off and select **Save** to use the alerts in **Settings** again. **Save** writes the alerts and the **Share address** together, then closes the sidecar and checks the disks again. **Cancel** closes it without saving.
+A disk uses the alerts in **Settings > Storage** unless it has its own. Turn on **Use its own alerts** to set this disk's **Storage low** and **Storage full**, then select **Save** at the foot of the sidecar. Turn it off and select **Save** to use the alerts in **Settings** again. **Save** writes the alerts and the **Share address** together, then closes the sidecar and checks the disks again. The close button in its header closes it without saving.
 
 ### Share Address
 
