@@ -75,7 +75,7 @@ public sealed class RequestHarness : IDisposable
 
         Db = new RequestDatabase(Path.Join(_folder, "requests.db"), NullLogger<RequestDatabase>.Instance);
         var matcher = new LibraryMatcher(_library, InterfaceStub.Of<IUserDataManager>(), Users.Manager);
-        Arr = new ArrClient(http, NullLogger<ArrClient>.Instance);
+        Arr = new ArrClient(NullLogger<ArrClient>.Instance, null, http);
         var tmdb = new TmdbDiscovery(http, InterfaceStub.Of<IPluginManager>(), InterfaceStub.Of<IServerConfigurationManager>(), NullLogger<TmdbDiscovery>.Instance);
         Notifier = new RequestNotifier(Events, NullLogger<RequestNotifier>.Instance, FakeServerConfig.Create());
         Requests = new RequestService(

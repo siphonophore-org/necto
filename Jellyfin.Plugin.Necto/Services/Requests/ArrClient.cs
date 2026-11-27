@@ -30,7 +30,7 @@ namespace Jellyfin.Plugin.Necto.Services.Requests;
 [PluginService(ServiceLifetime.Singleton)]
 public class ArrClient : IDisposable
 {
-    private readonly NoRedirectHttpClientFactory _httpClientFactory;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ArrClient> _logger;
     private readonly MediaBrowser.Common.Configuration.IApplicationPaths? _paths;
     // One breaker per server, so one that is down doesn't stop requests to the others. Lookups requesters drive
@@ -67,8 +67,19 @@ public class ArrClient : IDisposable
     /// <param name="logger">The logger.</param>
     /// <param name="paths">The server's folders, for the cache folder the libraries read are kept in; none keeps them in memory only.</param>
     public ArrClient(IHttpClientFactory httpClientFactory, ILogger<ArrClient> logger, MediaBrowser.Common.Configuration.IApplicationPaths? paths = null)
+        : this(logger, paths, new NoRedirectHttpClientFactory(httpClientFactory))
     {
-        _httpClientFactory = new NoRedirectHttpClientFactory(httpClientFactory);
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ArrClient"/> class that sends every call through the factory given.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="paths">The server's folders, for the cache folder the libraries read are kept in.</param>
+    /// <param name="sender">Sends the calls, such as a test's stand-in for Radarr and Sonarr.</param>
+    internal ArrClient(ILogger<ArrClient> logger, MediaBrowser.Common.Configuration.IApplicationPaths? paths, IHttpClientFactory sender)
+    {
+        _httpClientFactory = sender;
         _logger = logger;
         _paths = paths;
     }
