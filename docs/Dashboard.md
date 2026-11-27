@@ -8,7 +8,7 @@
 
 ## Cards
 
-A status card sums up each tool that is on, in sidebar order, every card the same width and every card in a row the same height. Select a card to open its tool. **Issues** has a card only with **Enable issues** on, and **Proxy** and **VPN** only while each is on. A card whose tool could not be read shows **Error** and "Could not read this tool".
+A status card sums up each tool that is on, in sidebar order, at most two to a row, every card the same width and every card in a row the same height. On a phone they stack one to a row. Select a card to open its tool. **Issues** has a card only with **Enable issues** on, and **Proxy** and **VPN** only while each is on. A card whose tool could not be read shows **Error** and "Could not read this tool".
 
 Each card leads with one number and the word for what it counts, such as "1 pending". Under it, one bar split into parts shows the states that hold anything, in the colors the tool's own page uses, and a legend names each of those parts with a dot in its color and its count. A state at 0 is left out. A bar of one part that says what the number already says, such as **Published** under "2 published", takes no legend. While nothing holds anything, the card shows no bar, only a line that says the tool has nothing yet, such as "No requests yet". The pill uses the same words and colors across Necto.
 

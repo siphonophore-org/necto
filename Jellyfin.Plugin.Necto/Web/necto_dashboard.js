@@ -807,8 +807,9 @@ export default function (view) {
     function drawCards(cards) {
         clearCards();
         // The grid goes on the page before its cards, so its rows are balanced to the width they have.
-        // Every card takes one width, so ten cards never read as two kinds.
-        grid = nectoModule.createStatusCardGrid({ minWidth: 300, even: true });
+        // Every card takes one width, so ten cards never read as two kinds, and at most two share a row, so each card
+        // stays wide enough for its bar and legend.
+        grid = nectoModule.createStatusCardGrid({ minWidth: 300, maxColumns: 2, even: true });
         getEl('dashboardCards').appendChild(grid.element);
         grid.setCards(cards.map(function (card) {
             var options = Object.assign({}, card);
