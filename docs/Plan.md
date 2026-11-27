@@ -59,7 +59,8 @@ Groups are the only place a permission is set. A tool's own page sets how the to
 * A count or limit of 0 is no limit, so it is the largest. A limit counts only from groups that allow the action. **Review**
 * Account rules combine the other way, since any one group may keep an account. Password rules hold when any group enforces them, at their strictest, with the most generous change mode. Expiry, inactivity, and session cleanup hold only when every group has them, at the largest window, and expiry deletes only when every group asks for it. **Review**
 * User Management's default group is **Settings > Groups > Group for new users**. Existing users in no group stay in **Everyone** rather than being moved into it. **Review**
-* User Management's Jellyfin policy and preference templates (**Access and features**, **Preferences**) are not carried over yet. They write Jellyfin's own user policy, and several groups need a merge rule for each field first. **Review**
+* User Management's Jellyfin policy and preference templates (**Access and features**, **Preferences**) sit on groups. A member takes the template of the first of their groups, in group order, that has one on, since a whole policy cannot be merged field by field. Groups have an order the Groups tool changes, and Everyone stays first. **Review**
+* A template is written onto every user after any group save or reorder, and when the server starts, as User Management's sync did. **Review**
 * The request quota window is a Requests setting, and the quotas by type are permissions. **Review**
 * See [Groups](Groups.md) for what is built.
 
@@ -128,7 +129,22 @@ One service every tool sends events to, and one set of channels.
 * **Channels:** browser push, email, Discord, webhooks, and Jellyfin's activity log.
 * **Events:** new and changed requests, issue reports and updates, invite use, proxy bans and certificate expiry, WireGuard connections, script failures, disk alerts and missing disks, DDNS failures.
 * Who receives an event is set on groups. Administrators may receive everything.
-* User pages (Requests, Issues, Invites, custom pages) carry one service worker and one push subscription.
+* User pages (Requests, Issues, Invites, custom pages) carry one service worker and one push subscription. The worker is `Notifications/Push/Worker.js`, registered at the server's root with `Service-Worker-Allowed`, so one subscription serves every user page. It has no fetch handler, so it never answers for Jellyfin's own pages. **Review**
+* Requests' Jellyfin messages to the requester and to administrators are kept: **Jellyfin messages** is a user channel, and the **Administrators** channel sends to every administrator's apps and browsers. **Review**
+* **Administrators** takes every event and **Activity log** none by default, since each tool already writes its own activity entries. **Review**
+* Email is sent with .NET's SMTP client and STARTTLS. A server that takes only TLS from the start, on port 465, cannot be used. **Review**
+* The send log keeps the latest 200 sends in memory. **Review**
+* The Notifications section of Settings saves through `/Notifications/Settings`, so stored addresses, headers, and the SMTP password never reach the page. **Review**
+* A tool writes its own event's words. Requests' per update wording and post fields move with Requests, and every channel's **Use a custom body** covers a custom format. **Review**
+* See [Notifications](Notifications.md) for what is built.
+
+### Invites
+
+* Invites keep User Management's links, PINs, limits, expiry, and signup page, at `/invites/{token}`. See [Invites](Invites.md).
+* A member whose groups allow invites makes their own at `/invites`, the user page the Plan names, so **Allow invites**, **Open invites**, and the invite groups take effect. **Review**
+* The Invites tool lists invites at `GET /Invites/List`, since `/invites` is the member page and routes do not tell case apart. **Review**
+* An invite's group of **Group for new users** follows **Settings > Groups** when the link is used, as User Management's default group did. **Review**
+* A signup holds the account disabled until its password is set, leaves it out of the group for new users, and counts its first password as a creation, not a member's own change.
 
 ## Routes
 

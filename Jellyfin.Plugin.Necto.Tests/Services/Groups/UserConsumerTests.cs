@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Jellyfin.Data.Events.Users;
 using Jellyfin.Plugin.Necto.Services.Accounts;
 using Jellyfin.Plugin.Necto.Services.Groups;
+using Jellyfin.Plugin.Necto.Services.Policies;
 using Jellyfin.Plugin.Necto.Tests.Fakes;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -16,7 +17,7 @@ public class UserConsumerTests
     private readonly FakeUsers _users = new();
     private readonly FakeConfigurationStore _config = new();
 
-    private UserCreatedConsumer Created() => new(_config, new PasswordEnrollment(_config, _users.Manager, new AccountActivity(new FakeActivity().Logger, FakeServerConfig.Create()), NullLogger<PasswordEnrollment>.Instance), NullLogger<UserCreatedConsumer>.Instance);
+    private UserCreatedConsumer Created() => new(_config, new PasswordEnrollment(_config, _users.Manager, new AccountActivity(new FakeActivity().Logger, FakeServerConfig.Create()), NullLogger<PasswordEnrollment>.Instance), new PolicyTemplateService(_config, _users.Manager, NullLogger<PolicyTemplateService>.Instance), _users.Manager, NullLogger<UserCreatedConsumer>.Instance);
 
     /// <summary>
     /// A new user joins the group for new users and its password rules.

@@ -101,7 +101,7 @@ public sealed class PasswordRuleAuthenticationProvider : IAuthenticationProvider
         var language = StolonTranslations.ServerLanguage(_serverConfig);
 
         // Rules hold only a member changing their own password. Every other path is a rescue or a creation with its own check.
-        if (!user.HasPermission(PermissionKind.IsAdministrator) && CallerIsSelfService())
+        if (!user.HasPermission(PermissionKind.IsAdministrator) && CallerIsSelfService() && !Invites.InviteRedemptionScope.IsActive)
         {
             var rules = _store.Read(c => AccountRuleMerger.Password(GroupMembership.GroupsOf(c, user.Id)));
             if (rules is not null && rules.ChangeMode != PasswordChangeMode.Allowed)

@@ -1,12 +1,28 @@
 <!-- necto_invites.html -->
-<!-- The Invites tool. It shows an empty state that says the tool is coming. -->
+<!-- The Invites tool. It lists every invite link, and each opens a sidecar that edits it. -->
 
 <div id="NectoInvitesPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox"
      data-controller="__plugin/necto_invites.js">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
-                <div class="stolon-empty-section" data-str="MessageToolComing">This tool is coming.</div>
+                <div class="fieldDescription" data-str="InvitesHelpPage">Each invite is a link anyone may use to make their own account, in the invite's group. Who else may make invites is set on groups.</div>
+
+                <!-- Counts -->
+                <!-- How many invites are in each state. -->
+                <div id="inviteCards" class="stolon-cards"></div>
+
+                <!-- Invites -->
+                <!-- Every invite, oldest first, each opening its editor. -->
+                <div id="inviteList"></div>
+                <div class="stolon-card-list-actions">
+                    <button is="emby-button" type="button" id="btnAddInvite" class="raised stolon-button stolon-primary">
+                        <span class="material-icons" aria-hidden="true">add</span>
+                        <span data-str="InvitesButtonAdd">Add invite</span>
+                    </button>
+                    <span id="invitesStatus" class="stolon-status-text" role="status"></span>
+                </div>
             </div>
         </div>
     </div>

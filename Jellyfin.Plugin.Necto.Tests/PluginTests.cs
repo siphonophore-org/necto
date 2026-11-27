@@ -103,7 +103,7 @@ public class PluginTests
     }
 
     /// <summary>
-    /// Every file in Web/ is embedded and registered as a page.
+    /// Every file in Web/ is embedded and registered as a page, except the user page fragments HostedPage serves.
     /// True: each file a page loads is served.
     /// False: a file added to Web/ would never reach the browser.
     /// </summary>
@@ -114,9 +114,11 @@ public class PluginTests
         var registered = TestPlugin.Create().GetPages().Select(p => p.EmbeddedResourcePath).ToHashSet(StringComparer.Ordinal);
         var files = Directory.EnumerateFiles(Path.Combine(ProjectFolder(), "Web")).Select(f => "Jellyfin.Plugin.Necto.Web." + Path.GetFileName(f)).ToList();
 
-        Assert.Equal(40, files.Count);
+        var hosted = new[] { "Jellyfin.Plugin.Necto.Web.necto_invite_signup.html", "Jellyfin.Plugin.Necto.Web.necto_invites_member.html" };
+
+        Assert.NotEmpty(files);
         Assert.All(files, f => Assert.Contains(f, embedded));
-        Assert.All(files, f => Assert.Contains(f, registered));
+        Assert.All(files.Except(hosted), f => Assert.Contains(f, registered));
     }
 
     /// <summary>

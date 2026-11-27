@@ -205,7 +205,7 @@ export function buildTroubleshooting(content, ctx) {
     // clearHistory
     // Asks first, then deletes every recorded run.
     function clearHistory() {
-        confirmDialog(t.tr('ScriptsConfirmClearHistory'), { title: t.tr('ScriptsTitleClearHistory'), confirmText: t.tr('PagesButtonClear'), destructive: true }).then(function (ok) {
+        confirmDialog(t.tr('ScriptsConfirmClearHistory'), { title: t.tr('ScriptsTitleClearHistory'), confirmText: t.tr('NotificationsButtonClear'), destructive: true }).then(function (ok) {
             if (!ok) return;
             Shared.request('Scripts/History', 'DELETE').then(function () {
                 Shared.setStatus(status, t.tr('ScriptsStatusHistoryCleared'), false);
@@ -237,7 +237,7 @@ export function buildTroubleshooting(content, ctx) {
                 label: t.tr('ScriptsLabelRuns'),
                 options: [
                     { value: 'failed', label: t.tr('LabelFailed') },
-                    { value: 'test', label: t.tr('ScriptsFilterTests') }
+                    { value: 'test', label: t.tr('NotificationsHeaderTests') }
                 ].concat(scripts.map(function (s) { return { value: s.Id, label: s.Name }; }))
             }],
             actions: [{ id: 'clear', label: t.tr('ScriptsTitleClearHistory'), icon: 'delete', variant: 'destructive', onClick: clearHistory }],

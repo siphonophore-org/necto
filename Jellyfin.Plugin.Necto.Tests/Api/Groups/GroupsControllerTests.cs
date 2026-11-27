@@ -9,6 +9,7 @@ using Jellyfin.Plugin.Necto.Api.Groups;
 using Jellyfin.Plugin.Necto.Configuration.Groups;
 using Jellyfin.Plugin.Necto.Services.Accounts;
 using Jellyfin.Plugin.Necto.Services.Groups;
+using Jellyfin.Plugin.Necto.Services.Policies;
 using Jellyfin.Plugin.Necto.Tests.Fakes;
 using MediaBrowser.Common.Configuration;
 using Microsoft.AspNetCore.Authorization;
@@ -41,7 +42,8 @@ public class GroupsControllerTests
             new PasswordEnrollment(_config, _users.Manager, new AccountActivity(activity.Logger, server), NullLogger<PasswordEnrollment>.Instance),
             new ResetCodeService(paths, NullLogger<ResetCodeService>.Instance),
             _config,
-            _users.Manager);
+            _users.Manager,
+            new PolicyTemplateService(_config, _users.Manager, NullLogger<PolicyTemplateService>.Instance));
         controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
         return controller;
     }

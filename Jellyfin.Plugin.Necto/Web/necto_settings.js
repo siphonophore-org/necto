@@ -8,6 +8,8 @@ import './configurationpage?name=necto_wireguard_sections.js';
 import './configurationpage?name=necto_scripts_sections.js';
 import './configurationpage?name=necto_storage_sections.js';
 import './configurationpage?name=necto_pages_sections.js';
+import './configurationpage?name=necto_notifications_sections.js';
+import './configurationpage?name=necto_invites_sections.js';
 
 export default function (view) {
     'use strict';
@@ -16,7 +18,8 @@ export default function (view) {
     var bars = [];
 
     // saveSection
-    // Saves one section's fields into a fresh copy of the config.
+    // Saves one section's fields into a fresh copy of the config, or through the section's own save when it keeps
+    // secrets the config must not carry to the page.
     //
     // Inputs
     // shared [object]: The Necto helper bag.
@@ -25,6 +28,7 @@ export default function (view) {
     // Output
     // [Promise]: Resolves once the save landed.
     function saveSection(shared, handle) {
+        if (handle.save) return handle.save();
         return shared.saveConfigWith(function (config) { handle.apply(config); });
     }
 

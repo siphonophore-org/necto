@@ -146,6 +146,16 @@ public sealed class Plugin : PluginBase<Plugin, PluginConfiguration>
             Name = "necto_pages_sections.js",
             EmbeddedResourcePath = $"{ns}.Web.necto_pages_sections.js"
         };
+        // The modules of Notifications, Invites, and the group templates: their sections, the group editor's template
+        // sections, and the scripts of the user pages and the browser notification switch they share.
+        foreach (var module in new[] { "necto_notifications_sections", "necto_invites_sections", "necto_groups_templates", "necto_invite_signup", "necto_invites_member", "necto_push" })
+        {
+            yield return new PluginPageInfo
+            {
+                Name = module + ".js",
+                EmbeddedResourcePath = $"{ns}.Web.{module}.js"
+            };
+        }
 
         foreach (var page in GetSharedPages("necto"))
         {

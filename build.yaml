@@ -23,6 +23,9 @@ changelog:
   - "Scripts from the Scripts plugin, with triggers, conditions, steps, secrets, variables, history, export, and import, run for the groups that run them"
   - "Custom pages from Custom Pages, with pages, images, server routes, and stores. Who may open a signed in page is set on groups, and store writes go to Notifications"
   - "Storage from Storage Manager, with disks, space, SMART health, missing disks and remounting, formatting, new folders, and libraries per disk. Its alerts go to Notifications"
+  - "Notifications, with browser notifications, Jellyfin messages, Discord, webhooks, email, and the activity log, a test for each channel, and a send log"
+  - "Invites from User Management, with PINs, limits, expiry, QR codes, and the signup page at /invites, and a page where members make their own invites as their groups allow"
+  - "Group templates from User Management, which write Access and features and Preferences onto members, taking the first group's in group order"
   developer:
   - "Routes under /Groups list, create, save, and delete groups, list users with their groups, and give a user's permissions"
   - "Routes under /WireGuard give the tunnels' state and usage, the tunnel ends for the Dashboard map, change peers and connections, and download wireguard-go"
@@ -31,3 +34,7 @@ changelog:
   - "Events wireguard.connected, wireguard.disconnected, wireguard.connection-established, wireguard.connection-lost, wireguard.data-limit, wireguard.failed, and scripts.failed go to Notifications"
   - "Routes under /Pages list the pages, give and clear a store's records, and check a configuration. The pages keep their own addresses under /pages"
   - "Routes under /Storage check the disks, give the format options, format a disk, and make a folder"
+  - "Routes under /Notifications serve the channels, tests, settings, send log, VAPID key, subscriptions, and the shared service worker"
+  - "Routes under /Invites serve the Invites tool and members' invites, and /invites serves the member page and the signup page"
+  - "PUT /Groups/Order reorders the groups and POST /Groups/Templates/Apply writes the templates"
+  - "Each tool lists its events in a static <Tool>Events class that Notifications finds by reflection"

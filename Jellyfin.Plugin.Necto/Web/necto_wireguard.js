@@ -153,7 +153,7 @@ export default function (view) {
         var host = ends.filter(function (e) { return e.Kind === 'Host'; })[0];
         var cards = [];
         if (w.HostEnabled) cards.push({ count: tunnelStateLabel(t, host ? host.State : 'Stopped'), label: t.tr('WireGuardTabHost'), color: host && host.State === 'Running' ? 'green' : host && host.State === 'Failed' ? 'red' : 'gray' });
-        if (w.ConnectEnabled || (w.Connections || []).length) cards.push({ count: t.tr(w.ConnectEnabled ? 'WireGuardStatusActive' : 'WireGuardStatusInactive'), label: t.tr('WireGuardLabelConnectEnabled'), color: w.ConnectEnabled ? 'green' : 'gray' });
+        if (w.ConnectEnabled || (w.Connections || []).length) cards.push({ count: t.tr(w.ConnectEnabled ? 'InvitesStateActive' : 'WireGuardStatusInactive'), label: t.tr('WireGuardLabelConnectEnabled'), color: w.ConnectEnabled ? 'green' : 'gray' });
         cards.push({ count: counts.peers, label: t.tr('WireGuardHeaderPeers') });
         cards.push({ count: counts.connections, label: t.tr('WireGuardHeaderConnections') });
         cards.push({ count: counts.connected, label: t.tr('WireGuardCardConnected'), color: counts.connected ? 'green' : 'gray' });
@@ -264,7 +264,7 @@ export default function (view) {
             items: [
                 { label: t.tr('LabelStatus'), value: { text: '', badge: { label: tag.label, color: tag.color || 'gray' } } },
                 { label: t.tr('WireGuardLabelOwner'), value: userName(peer.UserId) },
-                { label: t.tr('ScriptsLabelAddress'), value: peer.Address, mono: true },
+                { label: t.tr('InvitesLabelResourceUrl'), value: peer.Address, mono: true },
                 { label: t.tr('WireGuardLabelRoutedSubnets'), value: (peer.RoutedSubnets || []).join(', ') || null, mono: true },
                 { label: t.tr('WireGuardLabelLastHandshake'), value: state.LastHandshakeUtc ? shared.formatDate(state.LastHandshakeUtc) : null },
                 { label: t.tr('LabelSource'), value: state.Endpoint || null, mono: true },
@@ -411,7 +411,7 @@ export default function (view) {
     // Asks first, then removes a peer or connection and closes its sidecar.
     function removeRecord(route, id, name, messageKey, close) {
         nectoModule.confirmDialog(t.tr(messageKey), {
-            title: t.format('PagesTitleRemoveStore', name),
+            title: t.format('NotificationsRemoveName', name),
             confirmText: t.tr('ButtonRemove'),
             destructive: true
         }).then(function (yes) {
@@ -434,7 +434,7 @@ export default function (view) {
         var status = el('div', { class: 'stolon-status-text', role: 'status' });
         var name = field('LabelName', 'text', peer.Name, null, t.tr('WireGuardPlaceholderPeerName'));
         var owner = shared.createUserSelector({ value: peer.UserId, includeEmptyOption: false });
-        var address = field('ScriptsLabelAddress', 'text', peer.Address, null, t.tr('WireGuardPlaceholderNextFree'));
+        var address = field('InvitesLabelResourceUrl', 'text', peer.Address, null, t.tr('WireGuardPlaceholderNextFree'));
         var subnets = field('WireGuardLabelRoutedSubnets', 'text', (peer.RoutedSubnets || []).join(', '), 'WireGuardRoutedSubnetsHelp', '192.168.1.0/24');
         var enabled = nectoModule.createCheckbox({ label: t.tr('ScriptsLabelEnabled'), checked: peer.Enabled !== false });
         var publicKey = field('WireGuardLabelPublicKey', 'text', isNew ? '' : peer.PublicKey, isNew ? 'WireGuardPublicKeyHelp' : null, isNew ? t.tr('WireGuardPlaceholderMadeForYou') : '');
@@ -445,7 +445,7 @@ export default function (view) {
         var body = el('div', {}, [
             status,
             collapsible('WireGuardHeaderPeer', [name, labelled('WireGuardLabelOwner', owner.element, 'WireGuardOwnerHelp'), address, publicKey, enabled], true),
-            collapsible('WireGuardHeaderLimits', [down, up, data]),
+            collapsible('InvitesHeaderLimits', [down, up, data]),
             collapsible('TabAdvanced', [subnets])
         ]);
 
@@ -548,7 +548,7 @@ export default function (view) {
             collapsible('WireGuardHeaderImport', [importArea]),
             collapsible('WireGuardHeaderConnection', [name, endpoint, peerKey, psk, address, privateKey, enabled], true),
             collapsible('WireGuardLabelForwards', [forwards]),
-            collapsible('WireGuardHeaderLimits', [down, up, data]),
+            collapsible('InvitesHeaderLimits', [down, up, data]),
             collapsible('TabAdvanced', [keepalive])
         ]);
 

@@ -93,7 +93,7 @@ export function normalizeScope(value) {
 // [string]: The tier's name.
 export function tierLabel(value, t) {
     var v = normalizeVisibility(value);
-    if (v === 'Admin') return t.tr('PagesTierAdmin');
+    if (v === 'Admin') return t.tr('NotificationsChannelAdministrators');
     if (v === 'User') return t.tr('PagesTierUser');
     return t.tr('PagesTierAnyone');
 }
@@ -779,7 +779,7 @@ export default function (view) {
         shared.renderCards(panel.querySelector('[data-role="page-counts"]'), [
             { count: c.anyone, label: t.tr('PagesTierAnyone'), color: 'green' },
             { count: c.user, label: t.tr('PagesTierUser'), color: 'blue' },
-            { count: c.admin, label: t.tr('PagesTierAdmin'), color: 'purple' },
+            { count: c.admin, label: t.tr('NotificationsChannelAdministrators'), color: 'purple' },
             { count: c.unpublished, label: t.tr('PagesStatusUnpublished'), color: 'gray' }
         ]);
         var items = pageItems(settings.Pages, t);
@@ -1040,7 +1040,7 @@ export default function (view) {
     function deleteStore(original, close) {
         var t = shared.t;
         nectoModule.confirmDialog(t.tr('PagesConfirmRemoveStore'), {
-            title: t.format('PagesTitleRemoveStore', original.Name),
+            title: t.format('NotificationsRemoveName', original.Name),
             confirmText: t.tr('ButtonRemove'),
             destructive: true
         }).then(function (ok) {

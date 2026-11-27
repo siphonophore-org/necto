@@ -1,0 +1,48 @@
+<!-- necto_invites_member.html -->
+<!-- The page at /invites where a signed in member makes and shares invites, as their groups allow, served by HostedPage. -->
+
+<!-- Invites -->
+<!-- The member's own invites, and a form for a new one. -->
+<section class="stolon-user-page-card" data-stolon-view="invites">
+    <h1 class="stolon-user-page-title" data-str="InvitesMemberTitle">Your invites</h1>
+    <p class="stolon-user-page-lead" id="memberLead" data-str="InvitesMemberLead">Share a link so someone can make their own account on this server.</p>
+    <div id="memberMessage" class="stolon-user-page-message" hidden></div>
+    <div id="memberList"></div>
+</section>
+
+<!-- New invite -->
+<section class="stolon-user-page-card" data-role="new-invite" id="newInvite" hidden>
+    <h2 class="stolon-user-page-subtitle" data-str="InvitesMemberNew">New invite</h2>
+    <form class="stolon-user-page-form" id="newInviteForm" novalidate>
+        <div class="stolon-user-page-field">
+            <label for="inviteLabel" data-str="LabelName">Name</label>
+            <input id="inviteLabel" type="text" />
+            <p class="stolon-user-page-hint" data-str="InvitesNameHelp">Only you and administrators see it.</p>
+        </div>
+        <div class="stolon-user-page-field">
+            <label for="inviteGroup" data-str="GroupsTemplateGroup">Group</label>
+            <select id="inviteGroup"></select>
+        </div>
+        <div class="stolon-user-page-field">
+            <label for="inviteUses" data-str="InvitesLabelMaxUses">Accounts it may make</label>
+            <input id="inviteUses" type="number" min="0" value="1" />
+            <p class="stolon-user-page-hint" data-str="GroupsTemplateZeroNoLimit">0 is no limit.</p>
+        </div>
+        <div class="stolon-user-page-field">
+            <label for="inviteExpiry" data-str="LabelExpiryDate">Expiry date</label>
+            <input id="inviteExpiry" type="date" />
+            <p class="stolon-user-page-hint" data-str="InvitesExpiryHelp">Leave blank to keep it until it is used up.</p>
+        </div>
+        <div class="stolon-user-page-actions">
+            <button class="raised stolon-button stolon-primary stolon-large stolon-fill" type="submit" id="createInvite" data-str="InvitesButtonCreate">Create invite</button>
+        </div>
+    </form>
+</section>
+
+<!-- Notifications -->
+<!-- The browser notification switch every user page shares. -->
+<section class="stolon-user-page-card" id="pushCard">
+    <h2 class="stolon-user-page-subtitle" data-str="NotificationsChannelBrowsers">Browser notifications</h2>
+</section>
+
+<script type="module" src="web/configurationpage?name=necto_invites_member.js"></script>

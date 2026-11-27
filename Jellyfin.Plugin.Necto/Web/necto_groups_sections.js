@@ -148,6 +148,7 @@ function buildTroubleshooting(content, ctx) {
     var status = el('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var resets = el('div', { 'data-role': 'resets' });
     var apply = resetRow(t.tr('TaskApplyPasswordRules'), t.tr('HelpApplyPasswordRules'), t.tr('ButtonApplyRules'), 'apply-rules');
+    var templates = resetRow(t.tr('GroupsTaskApplyTemplates'), t.tr('GroupsTaskApplyTemplatesDescription'), t.tr('GroupsButtonApplyTemplates'), 'apply-templates');
     var expired = resetRow(t.tr('TaskProcessExpired'), t.tr('HelpProcessExpiredTask'), t.tr('ButtonRunTask'), 'run-account-rules');
     var sessions = resetRow(t.tr('TaskCleanSessions'), t.tr('HelpCleanSessionsTask'), t.tr('ButtonRunTask'), 'run-session-cleanup');
 
@@ -155,6 +156,8 @@ function buildTroubleshooting(content, ctx) {
         status,
         el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderPasswordRequirements') }),
         el('div', { class: 'stolon-reset-group' }, [apply]),
+        el('h3', { class: 'stolon-subsection-title', text: t.tr('GroupsHeaderTemplates') }),
+        el('div', { class: 'stolon-reset-group' }, [templates]),
         el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderScheduledChecks') }),
         el('div', { class: 'stolon-reset-group' }, [expired, sessions]),
         el('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderPasswordResets') }),
@@ -232,6 +235,13 @@ function buildTroubleshooting(content, ctx) {
     }
 
     button('apply-rules').addEventListener('click', applyRules);
+    button('apply-templates').addEventListener('click', function () {
+        shared.request('Groups/Templates/Apply', 'POST').then(function (result) {
+            report(shared.plural((result && result.Count) || 0, 'GroupsTemplatesAppliedOne', 'GroupsTemplatesAppliedMany'), false);
+        }).catch(function (err) {
+            return shared.errorText(err, t.tr('GroupsErrorApplyTemplates')).then(function (text) { report(text, true); });
+        });
+    });
     button('run-account-rules').addEventListener('click', runAccountRules);
     button('run-session-cleanup').addEventListener('click', function () { runTask('run-session-cleanup', SESSION_CLEANUP_TASK); });
 

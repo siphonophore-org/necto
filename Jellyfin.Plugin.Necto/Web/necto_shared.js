@@ -41,7 +41,10 @@ export {
     openDialog, promptSidecar, createTagInput, createComboBox, adornField, createUserMultiSelector,
     createSortableCardList, createTimeline, createDataTable, createPaginatedTable, createDurationField,
     createBarChart, createQrCode, createNumberUnitField, createInheritField, generateGuid, downloadJson, pickJsonFile,
-    setFieldState, createTranslations as createToolTranslations
+    setFieldState, createTranslations as createToolTranslations, createAccessSchedule, createOrderedList,
+    createNotifyPreview, bindSecretField, readSecretField, clearSecretField, placeholderHint, bindPlaceholders,
+    subscribeWebPush, unsubscribeWebPush, webPushState, webPushLabel, startUserPage, startWebClientShell,
+    showUserPageView, setUserPageMessage, loadTranslations, createTranslations
 } from './configurationpage?name=necto_stolon.js';
 
 var PLUGIN_ID = 'a8b5ecb0-fc00-428b-85e8-74b85820166d';
@@ -310,3 +313,4 @@ export function createNectoShared(view, bag) {
 
     return shared;
 }
+

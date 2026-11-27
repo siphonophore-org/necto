@@ -90,6 +90,8 @@ public static class GroupNormalizer
             group.Permissions.Invites.TargetGroupIds = group.Permissions.Invites.TargetGroupIds.Where(ids.Contains).Distinct().ToList();
         }
 
+        Invites.InviteNormalizer.Normalize(config);
+
         return !string.Equals(before, Snapshot(config), StringComparison.Ordinal);
     }
 
@@ -125,6 +127,7 @@ public static class GroupNormalizer
         pages.PageIds = Clean(pages.PageIds);
         var notifications = p.Notifications ??= new NotificationPermissions();
         notifications.EventKeys = Clean(notifications.EventKeys);
+        Policies.PolicyTemplateNormalizer.Complete(group.Template ??= new Jellyfin.Plugin.Necto.Configuration.Policies.PolicyTemplate());
     }
 
     private static List<string> Clean(List<string>? values)

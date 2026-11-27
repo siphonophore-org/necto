@@ -38,6 +38,15 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>Gets or sets the Custom pages settings: pages, images, and stores.</summary>
     public CustomPages.CustomPagesSettings CustomPages { get; set; } = new();
 
+    /// <summary>Gets or sets the Notifications settings and channels.</summary>
+    public Notifications.NotificationSettings Notifications { get; set; } = new();
+
+    /// <summary>Gets or sets the Invites settings.</summary>
+    public Invites.InviteSettings InviteSettings { get; set; } = new();
+
+    /// <summary>Gets or sets the invites.</summary>
+    public List<Invites.Invite> Invites { get; set; } = new();
+
     /// <summary>
     /// Builds the Everyone group as a fresh install has it, which gives nothing.
     /// </summary>

@@ -45,25 +45,35 @@ public class AuthorizationTests
     }
 
     /// <summary>
-    /// Only the strings route allows anonymous callers.
-    /// True: nothing but the page's words is served without a sign in.
+    /// Only the strings, the shared service worker, and the invite signup routes allow anonymous callers.
+    /// True: nothing but the page's words, the worker, and an invite's own signup is served without a sign in.
     /// False: a route would answer anyone.
     /// </summary>
     [Fact]
-    public void OnlyTranslations_AllowsAnonymous()
+    public void OnlyPublicRoutes_AllowAnonymous()
     {
         var open = Controllers
             .SelectMany(c => c.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             .Where(m => m.GetCustomAttribute<AllowAnonymousAttribute>() is not null)
             .ToList();
 
-        var expected = new[] { typeof(NectoController).GetMethod(nameof(NectoController.Translations))! }
-            .Concat(OpenPageRoutes.Select(n => typeof(CustomPagesController).GetMethod(n)!))
-            .ToHashSet();
+        var expected = new[]
+        {
+            typeof(NectoController).GetMethod(nameof(NectoController.Translations)),
+            typeof(Jellyfin.Plugin.Necto.Api.Notifications.NotificationsController).GetMethod(nameof(Jellyfin.Plugin.Necto.Api.Notifications.NotificationsController.Worker))
+        }.Concat(PublicInviteRoutes()).Concat(OpenPageRoutes.Select(n => typeof(CustomPagesController).GetMethod(n))).ToList();
 
-        Assert.Equal(expected, open.ToHashSet());
+        Assert.Equal(expected.Select(m => m!.DeclaringType!.Name + "." + m.Name).OrderBy(n => n, StringComparer.Ordinal), open.Select(m => m.DeclaringType!.Name + "." + m.Name).OrderBy(n => n, StringComparer.Ordinal));
         Assert.All(Controllers, c => Assert.Null(c.GetCustomAttribute<AllowAnonymousAttribute>()));
     }
+
+    private static MethodInfo?[] PublicInviteRoutes() => new[]
+    {
+        typeof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController).GetMethod(nameof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController.MemberInvites)),
+        typeof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController).GetMethod(nameof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController.Signup)),
+        typeof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController).GetMethod(nameof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController.Info)),
+        typeof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController).GetMethod(nameof(Jellyfin.Plugin.Necto.Api.Invites.InvitesController.Redeem))
+    };
 
     /// <summary>
     /// No route starts with a segment Jellyfin 12.4 answers at.

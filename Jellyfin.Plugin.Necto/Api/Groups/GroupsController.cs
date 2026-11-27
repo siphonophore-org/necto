@@ -10,6 +10,7 @@ using Jellyfin.Plugin.Necto.Configuration.Groups;
 using Jellyfin.Plugin.Necto.Services.Accounts;
 using Jellyfin.Plugin.Necto.Services.Configuration;
 using Jellyfin.Plugin.Necto.Services.Groups;
+using Jellyfin.Plugin.Necto.Services.Policies;
 using MediaBrowser.Controller.Library;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -34,6 +35,7 @@ public class GroupsController : ControllerBase
     private readonly ResetCodeService _resetCodes;
     private readonly IConfigurationStore _store;
     private readonly IUserManager _userManager;
+    private readonly PolicyTemplateService _templates;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GroupsController"/> class.
@@ -44,8 +46,11 @@ public class GroupsController : ControllerBase
     /// <param name="resetCodes">Reads the pending password resets.</param>
     /// <param name="store">Reads the settings and the groups.</param>
     /// <param name="userManager">Lists the server's users.</param>
-    public GroupsController(GroupStore groups, PermissionService permissions, PasswordEnrollment enrollment, ResetCodeService resetCodes, IConfigurationStore store, IUserManager userManager)
+    /// <param name="templates">Writes each user's group template after a change.</param>
+    public GroupsController(GroupStore groups, PermissionService permissions, PasswordEnrollment enrollment, ResetCodeService resetCodes, IConfigurationStore store, IUserManager userManager, PolicyTemplateService templates)
     {
+        ArgumentNullException.ThrowIfNull(templates);
+        _templates = templates;
         ArgumentNullException.ThrowIfNull(groups);
         ArgumentNullException.ThrowIfNull(permissions);
         ArgumentNullException.ThrowIfNull(enrollment);
@@ -80,7 +85,7 @@ public class GroupsController : ControllerBase
         => _groups.Get(id) is { } group ? Ok(group) : NotFound(Error(GroupChangeError.NotFound));
 
     /// <summary>
-    /// Creates a group, then moves its members onto or off password rules.
+    /// Creates a group, then moves its members onto or off password rules and writes their templates.
     /// </summary>
     /// <param name="group">The group's name, members, and permissions. Any id it carries is replaced.</param>
     /// <returns>The group as saved, or 400 with the reason.</returns>
@@ -101,11 +106,12 @@ public class GroupsController : ControllerBase
         }
 
         await _enrollment.ReconcileAsync(CancellationToken.None).ConfigureAwait(false);
+        await _templates.ApplyAllAsync(null, CancellationToken.None).ConfigureAwait(false);
         return Ok(change.Group);
     }
 
     /// <summary>
-    /// Saves a group's name, members, and permissions, then moves users onto or off password rules.
+    /// Saves a group's name, members, and permissions, then moves users onto or off password rules and writes their templates.
     /// </summary>
     /// <param name="id">The group's id.</param>
     /// <param name="group">The group's new name, members, and permissions.</param>
@@ -133,11 +139,12 @@ public class GroupsController : ControllerBase
         }
 
         await _enrollment.ReconcileAsync(CancellationToken.None).ConfigureAwait(false);
+        await _templates.ApplyAllAsync(null, CancellationToken.None).ConfigureAwait(false);
         return Ok(change.Group);
     }
 
     /// <summary>
-    /// Deletes a group, then moves users onto or off password rules. Its members keep their other groups, and a
+    /// Deletes a group, then moves users onto or off password rules and writes their templates. Its members keep their other groups, and a
     /// member in no other group takes Everyone.
     /// </summary>
     /// <param name="id">The group's id.</param>
@@ -160,6 +167,7 @@ public class GroupsController : ControllerBase
         }
 
         await _enrollment.ReconcileAsync(CancellationToken.None).ConfigureAwait(false);
+        await _templates.ApplyAllAsync(null, CancellationToken.None).ConfigureAwait(false);
         return NoContent();
     }
 

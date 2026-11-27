@@ -934,7 +934,7 @@ export default function (view) {
                     input(op, 'Url', t.tr('PagesLabelUrl'), { placeholder: 'https://example.com/hook?item={{ITEM_NAME:url}}' }) +
                     input(op, 'Headers', t.tr('ScriptsLabelHeaders'), { textarea: true, rows: 2, placeholder: 'Authorization: Bearer {{SECRET_TOKEN}}' }) +
                     input(op, 'ContentType', t.tr('LabelContentType'), { placeholder: 'application/json', variables: false }) +
-                    input(op, 'Body', t.tr('ScriptsLabelBody'), { textarea: true, rows: 5, placeholder: '{ "text": "{{USER_NAME:json}} started {{ITEM_NAME:json}}" }' }) +
+                    input(op, 'Body', t.tr('NotificationsLabelBody'), { textarea: true, rows: 5, placeholder: '{ "text": "{{USER_NAME:json}} started {{ITEM_NAME:json}}" }' }) +
                     input(op, 'Retries', t.tr('ScriptsLabelRetries'), { number: true, help: t.tr('ScriptsHelpRetries') });
             case 'SendMessage':
                 return select(op, 'Target', t.tr('ScriptsLabelSendTo'), messageTargets()) +
@@ -1658,7 +1658,7 @@ export default function (view) {
         el('btnTestScript').addEventListener('click', runTest);
         el('testTrigger').addEventListener('change', renderSummaries);
         el('btnRunScript').addEventListener('click', runNow);
-        webhookField = createCopyField({ label: t.tr('ScriptsLabelWebhookAddress') });
+        webhookField = createCopyField({ label: t.tr('NotificationsLabelWebhookUrl') });
         el('webhookUrlMount').appendChild(webhookField.element);
 
         Shared.initCollapsibles();

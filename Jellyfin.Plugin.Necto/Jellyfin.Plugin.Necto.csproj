@@ -80,6 +80,86 @@
     <JellyfinString Include="LabelTitle" />
     <JellyfinString Include="LabelUsername" />
     <JellyfinString Include="Other" />
+
+    <!-- The group templates use Jellyfin's own words for its settings. -->
+    <JellyfinString Include="AllowCollectionManagement" />
+    <JellyfinString Include="AllowMediaConversion" />
+    <JellyfinString Include="AllowRemoteAccess" />
+    <JellyfinString Include="AllowSubtitleManagement" />
+    <JellyfinString Include="AnyLanguage" />
+    <JellyfinString Include="Books" />
+    <JellyfinString Include="Channels" />
+    <JellyfinString Include="Default" />
+    <JellyfinString Include="Display" />
+    <JellyfinString Include="DisplayMissingEpisodesWithinSeasons" />
+    <JellyfinString Include="HeaderPlayback" />
+    <JellyfinString Include="Home" />
+    <JellyfinString Include="LabelAllowContentWithTags" />
+    <JellyfinString Include="LabelAudioLanguagePreference" />
+    <JellyfinString Include="LabelBlockContentWithTags" />
+    <JellyfinString Include="LabelHomeScreenSectionValue" />
+    <JellyfinString Include="LabelMaxParentalRating" />
+    <JellyfinString Include="LabelPlayDefaultAudioTrack" />
+    <JellyfinString Include="Off" />
+    <JellyfinString Include="LabelFailed" />
+    <JellyfinString Include="ButtonRemove" />
+    <JellyfinString Include="Refresh" />
+    <JellyfinString Include="Preview" />
+    <JellyfinString Include="LabelPassword" />
+    <JellyfinString Include="LabelPreferredSubtitleLanguage" />
+    <JellyfinString Include="LabelRemoteClientBitrateLimit" />
+    <JellyfinString Include="LabelSubtitlePlaybackMode" />
+    <JellyfinString Include="LabelSyncPlayAccess" />
+    <JellyfinString Include="LabelSyncPlayAccessCreateAndJoinGroups" />
+    <JellyfinString Include="LabelSyncPlayAccessJoinGroups" />
+    <JellyfinString Include="LabelSyncPlayAccessNone" />
+    <JellyfinString Include="LabelUserLoginAttemptsBeforeLockout" />
+    <JellyfinString Include="LabelUserMaxActiveSessions" />
+    <JellyfinString Include="LiveTV" />
+    <JellyfinString Include="Movies" />
+    <JellyfinString Include="None" />
+    <JellyfinString Include="OptionAllowAudioPlaybackTranscoding" />
+    <JellyfinString Include="OptionAllowBrowsingLiveTv" />
+    <JellyfinString Include="OptionAllowContentDownload" />
+    <JellyfinString Include="OptionAllowManageLiveTv" />
+    <JellyfinString Include="OptionAllowMediaPlayback" />
+    <JellyfinString Include="OptionAllowRemoteControlOthers" />
+    <JellyfinString Include="OptionAllowRemoteSharedDevices" />
+    <JellyfinString Include="OptionAllowVideoPlaybackRemuxing" />
+    <JellyfinString Include="OptionAllowVideoPlaybackTranscoding" />
+    <JellyfinString Include="OptionDisableUser" />
+    <JellyfinString Include="OptionEnableAccessFromAllDevices" />
+    <JellyfinString Include="OptionEnableAccessToAllChannels" />
+    <JellyfinString Include="OptionEnableAccessToAllLibraries" />
+    <JellyfinString Include="OptionForceRemoteSourceTranscoding" />
+    <JellyfinString Include="OptionHideUser" />
+    <JellyfinString Include="PlayNextEpisodeAutomatically" />
+    <JellyfinString Include="Profile" />
+    <JellyfinString Include="RememberAudioSelections" />
+    <JellyfinString Include="RememberSubtitleSelections" />
+    <JellyfinString Include="Shows" />
+    <JellyfinString Include="Smart" />
+    <JellyfinString Include="Subtitles" />
+    <JellyfinString Include="TabMusic" />
+    <JellyfinString Include="TitlePlayback" />
+    <JellyfinString Include="Trailers" />
+    <JellyfinString Include="AlwaysPlaySubtitles" Case="sentence" />
+    <JellyfinString Include="HeaderAccessSchedule" Case="sentence" />
+    <JellyfinString Include="HeaderActiveRecordings" Case="sentence" />
+    <JellyfinString Include="HeaderBlockItemsWithNoRating" Case="sentence" />
+    <JellyfinString Include="HeaderContinueListening" Case="sentence" />
+    <JellyfinString Include="HeaderContinueReading" Case="sentence" />
+    <JellyfinString Include="HeaderContinueWatching" Case="sentence" />
+    <JellyfinString Include="HeaderDeviceAccess" Case="sentence" />
+    <JellyfinString Include="HeaderLatestMedia" Case="sentence" />
+    <JellyfinString Include="HeaderLibraryAccess" Case="sentence" />
+    <JellyfinString Include="HeaderMyMedia" Case="sentence" />
+    <JellyfinString Include="HeaderMyMediaSmall" Case="sentence" />
+    <JellyfinString Include="HeaderRemoteControl" Case="sentence" />
+    <JellyfinString Include="LabelChromecastVersion" Case="sentence" />
+    <JellyfinString Include="NextUp" Case="sentence" />
+    <JellyfinString Include="OnlyForcedSubtitles" Case="sentence" />
+    <JellyfinString Include="TabParentalControl" Case="sentence" />
     <!-- The plugin's own key keeps English Jellyfin also says, with another meaning. -->
     <JellyfinTextMatch Include="TitleNewGroup" />
     <JellyfinTextMatch Include="WireGuardTabHost" />

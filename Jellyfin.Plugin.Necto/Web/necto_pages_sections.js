@@ -174,7 +174,7 @@ function buildTroubleshooting(content, ctx) {
     function clearStore(name, count) {
         return nectoModule.confirmDialog(clearMessage(count, t), {
             title: t.format('PagesTitleClearStore', name),
-            confirmText: t.tr('PagesButtonClear'),
+            confirmText: t.tr('NotificationsButtonClear'),
             destructive: true
         }).then(function (ok) {
             if (!ok) return null;
@@ -208,7 +208,7 @@ function buildTroubleshooting(content, ctx) {
                 var help = typeof row.count === 'number'
                     ? t.format('PagesUsageRecords', row.count, row.limit || row.store.MaxRecords || 1000)
                     : t.tr('PagesStoreDisabledHelp');
-                var node = resetRow(row.store.Name, help, t.tr('PagesButtonClear'), 'clear-store', true);
+                var node = resetRow(row.store.Name, help, t.tr('NotificationsButtonClear'), 'clear-store', true);
                 node.setAttribute('data-store', row.store.Name);
                 var btn = node.querySelector('button');
                 btn.disabled = typeof row.count !== 'number';
