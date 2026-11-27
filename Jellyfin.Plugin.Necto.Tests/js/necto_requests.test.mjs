@@ -159,8 +159,8 @@ test('each status offers its own actions in shelf order', async function () {
 
     assert.deepEqual(mod.requestActions({ Status: 'Pending' }), ['remove', 'cancel', 'available', 'reject', 'edit', 'approve']);
     assert.deepEqual(mod.requestActions({ Status: 'Failed' }), ['remove', 'cancel', 'available', 'reject', 'retry']);
-    assert.deepEqual(mod.requestActions({ Status: 'Approved', LibraryItemId: 'x' }), ['remove', 'cancel', 'library', 'available', 'reject']);
-    assert.deepEqual(mod.requestActions({ Status: 'Available', LibraryItemId: 'x' }), ['remove', 'cancel', 'library']);
+    assert.deepEqual(mod.requestActions({ Status: 'Approved', LibraryItemId: 'x' }), ['remove', 'cancel', 'available', 'reject']);
+    assert.deepEqual(mod.requestActions({ Status: 'Available', LibraryItemId: 'x' }), ['remove', 'cancel']);
     assert.deepEqual(mod.requestActions({ Status: 'Declined' }), ['remove', 'cancel']);
 });
 
@@ -246,14 +246,16 @@ test('Remove asks first with the title, and Cancel sends nothing', async functio
     assert.equal(sent(opened)[0].url, 'Requests/r1');
 });
 
-test('a sent request links to its page in Radarr', async function () {
+test('a sent request links to its page in Radarr and to the title in the library, which leaves the shelf', async function () {
     var opened = await openPage({ 'GET Requests/r1/ArrLink': { Url: 'https://radarr.example.com/movie/1', Server: 'Radarr' } });
     opened.handle.showRequest(dune({ Status: 'Approved', ArrId: 7, LibraryItemId: 'lib1' }));
     await settle(50);
 
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
     assert.match(sidecar.textContent, /Open in Radarr/);
-    clickButton(sidecar.querySelector('.stolon-sidecar-shelf'), 'Open in library');
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Cancel', 'Mark available', 'Reject']);
+    var library = Array.prototype.filter.call(sidecar.querySelectorAll('.stolon-sidecar-body a'), function (a) { return a.textContent === 'Open in library'; })[0];
+    library.click();
     assert.equal(opened.page.navigated, 'details?id=lib1');
 });
 

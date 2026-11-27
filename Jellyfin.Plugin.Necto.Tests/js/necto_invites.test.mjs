@@ -4,7 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton, clickDialogButton } from './support.mjs';
+import { installPage, loadScript, pageView, settle, routeApi, texts, clickButton, clickDialogButton, dialogText } from './support.mjs';
 
 globalThis.setTimeout = function () { return 1; };
 globalThis.clearTimeout = function () {};
@@ -63,7 +63,9 @@ test('each invite row ends with Copy and Show QR code for its link, and Copy cop
 
     assert.equal(asides.length, 2);
     assert.ok(asides[0].querySelector('[data-action="copy-link"]'));
-    assert.ok(asides[0].querySelector('[data-action="show-qr"]'));
+    var qr = asides[0].querySelector('.stolon-qr-code.stolon-button-only .stolon-qr-code-open');
+    assert.ok(qr);
+    assert.equal(qr.getAttribute('aria-label'), 'Show QR code');
     assert.equal(asides[0].querySelector('.stolon-copy-field'), null);
     asides[0].querySelector('[data-action="copy-link"]').click();
     await settle(50);
@@ -72,7 +74,7 @@ test('each invite row ends with Copy and Show QR code for its link, and Copy cop
     Object.defineProperty(globalThis.navigator, 'clipboard', { configurable: true, value: clipboard });
 });
 
-test('an invite opens with its link, its fields, and Turn off, Duplicate, Delete, Cancel, and Save', async function () {
+test('an invite opens with its link, its fields, and Turn off, Duplicate, Remove, Cancel, and Save', async function () {
     var opened = await openPage();
     opened.view.querySelectorAll('.stolon-record-list-row')[0].click();
     await settle(50);
@@ -82,7 +84,7 @@ test('an invite opens with its link, its fields, and Turn off, Duplicate, Delete
     assert.equal(sidecar.querySelector('[data-field="Label"]').value, 'Family');
     assert.equal(sidecar.querySelector('[data-field="GroupId"]').value, FAMILY);
     assert.deepEqual(texts(sidecar.querySelector('[data-field="GroupId"]'), 'option'), ['Group for new users', 'Everyone', 'Family']);
-    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Delete', 'Turn off', 'Duplicate', 'Cancel', 'Save']);
+    assert.deepEqual(texts(sidecar.querySelector('.stolon-sidecar-shelf'), 'button'), ['Remove', 'Turn off', 'Duplicate', 'Cancel', 'Save']);
 });
 
 test('the editor sets out its steps under icon tiles, never uppercase headings', async function () {
@@ -138,13 +140,14 @@ test('Add invite posts a new invite, and a short PIN keeps the sidecar open', as
     assert.equal(JSON.parse(post.data).Pin, '123456');
 });
 
-test('Delete asks first, then deletes the invite', async function () {
+test('Remove asks first, then removes the invite', async function () {
     var opened = await openPage({ ['DELETE Invites/' + INVITE]: {} });
     opened.view.querySelectorAll('.stolon-record-list-row')[0].click();
     await settle(50);
-    clickButton(opened.dom.document.querySelector('.stolon-sidecar .stolon-sidecar-shelf'), 'Delete');
+    clickButton(opened.dom.document.querySelector('.stolon-sidecar .stolon-sidecar-shelf'), 'Remove');
     await settle(50);
-    clickDialogButton(opened.dom, 'Delete');
+    assert.equal(dialogText(opened.dom).title, 'Remove Family');
+    clickDialogButton(opened.dom, 'Remove');
     await settle(50);
 
     assert.ok(opened.page.requests.some(function (r) { return r.type === 'DELETE' && r.url === 'Invites/' + INVITE; }));

@@ -87,7 +87,7 @@
 .necto-icon-grid { display: flex; flex-wrap: wrap; gap: var(--stolon-gap-narrow); margin-top: var(--stolon-gap-narrow); max-height: 12rem; overflow-y: auto; }
 .necto-icon-choice[aria-selected="true"] { outline: 2px solid var(--stolon-accent); }
 
-/* necto-invite-aside */
-/* The end of an invite's row: its state badge, then Copy and Show QR code side by side. */
-/* Example: <div class="necto-invite-aside"><span class="stolon-badge stolon-green">Active</span><button class="stolon-row-btn"></button></div> */
-.necto-invite-aside { display: flex; align-items: center; gap: var(--stolon-gap-narrow); }
+/* necto-row-aside */
+/* The end of a record row: its state badge, then the row's buttons side by side. */
+/* Example: <div class="necto-row-aside"><span class="stolon-badge stolon-green">Active</span><button class="stolon-row-btn"></button></div> */
+.necto-row-aside { display: flex; align-items: center; gap: var(--stolon-gap-narrow); }

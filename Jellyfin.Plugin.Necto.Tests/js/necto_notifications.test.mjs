@@ -74,8 +74,10 @@ test('the page lists every channel with its kind, its state, and a Test that rep
     var rows = view.querySelectorAll('.stolon-record-list-row');
     assert.equal(rows.length, 4);
     assert.match(rows[0].textContent, /Browser notifications/);
-    assert.match(rows[1].textContent, /Off/);
-    assert.match(rows[3].textContent, /Home Assistant[\s\S]*2 events[\s\S]*Not set up/);
+    assert.equal(rows[0].querySelector('[data-role="channel-state"]'), null);
+    assert.match(rows[1].querySelector('.stolon-record-list-aside [data-role="channel-state"]').innerHTML, /Off/);
+    assert.match(rows[3].textContent, /Home Assistant[\s\S]*2 events/);
+    assert.match(rows[3].querySelector('.stolon-record-list-aside [data-role="channel-state"]').innerHTML, /Not set up/);
 
     rows[3].querySelector('[data-action="test"]').click();
     await settle(50);

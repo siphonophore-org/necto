@@ -77,7 +77,7 @@ export function inviteAside(invite, shared, link, onCopied) {
     var state = stateName(invite.State);
     var badge = h('span', { 'data-role': 'invite-state' });
     badge.innerHTML = shared.badge(STATE_COLORS[state], t.tr(STATE_KEYS[state]));
-    var box = h('div', { class: 'necto-invite-aside', 'data-role': 'invite-aside' }, [badge]);
+    var box = h('div', { class: 'necto-row-aside', 'data-role': 'invite-aside' }, [badge]);
     if (!link) return box;
     var iconButton = function (icon, label, action) {
         return h('button', { is: 'emby-button', type: 'button', class: 'stolon-row-btn', title: label, 'aria-label': label, 'data-action': action }, [
@@ -85,16 +85,13 @@ export function inviteAside(invite, shared, link, onCopied) {
         ]);
     };
     var copy = iconButton('content_copy', t.tr('InvitesButtonCopyLink'), 'copy-link');
-    var show = iconButton('qr_code_2', t.tr('InvitesButtonShowQr'), 'show-qr');
     copy.addEventListener('click', function () {
         shared.copyToClipboard(link).then(function (ok) { if (onCopied) onCopied(ok); });
     });
-    show.addEventListener('click', function () {
-        var qr = nectoModule.createQrCode({ value: link, layout: 'inline', label: invite.Label || t.tr('InvitesUntitled'), fileName: 'invite.png' });
-        qr.open();
-    });
+    // The row's own button copies the link, so the code is its QR button alone.
+    var qr = nectoModule.createQrCode({ value: link, layout: 'inline', showValue: false, showText: t.tr('InvitesButtonShowQr'), label: invite.Label || t.tr('InvitesUntitled'), fileName: 'invite.png' });
     box.appendChild(copy);
-    box.appendChild(show);
+    box.appendChild(qr.element);
     return box;
 }
 
@@ -402,7 +399,7 @@ export default function (view) {
             isNew: isNew,
             serialize: function () { return JSON.stringify(editor.getValue()); },
             saveText: t.tr('Save'),
-            deleteText: t.tr('Delete'),
+            deleteText: t.tr('ButtonRemove'),
             actions: actions,
             onSave: function () {
                 var problem = editor.validate();
@@ -415,13 +412,13 @@ export default function (view) {
                 }).catch(fail(editor, 'InvitesErrorSave'));
             },
             onDelete: function (close) {
-                nectoModule.confirmDialog(t.tr('InvitesConfirmDelete'), { title: t.format('DeleteName', invite.Label || t.tr('InvitesUntitled')), confirmText: t.tr('Delete'), destructive: true }).then(function (ok) {
+                nectoModule.confirmDialog(t.tr('InvitesConfirmDelete'), { title: t.format('TitleRemoveName', invite.Label || t.tr('InvitesUntitled')), confirmText: t.tr('ButtonRemove'), destructive: true }).then(function (ok) {
                     if (!ok) return;
                     shared.request('Invites/' + invite.Id, 'DELETE').then(function () {
                         close('deleted');
-                        report(t.tr('InvitesDeleted'), false);
+                        report(t.tr('InvitesRemoved'), false);
                         loadInvites();
-                    }).catch(fail(editor, 'InvitesErrorDelete'));
+                    }).catch(fail(editor, 'InvitesErrorRemove'));
                 });
             },
             onClose: function () { editor.destroy(); }

@@ -310,12 +310,12 @@ export function progressLine(r, t, now) {
 // r [object]: The request.
 //
 // Output
-// [string[]]: remove, cancel, library, available, reject, edit, and approve or retry, as they apply.
+// [string[]]: remove, cancel, available, reject, edit, and approve or retry, as they apply. The title in the library
+// is a link in the details, so the shelf keeps to what changes the request.
 export function requestActions(r) {
     var canApprove = r.Status === 'Pending' || r.Status === 'Failed';
     var open = canApprove || r.Status === 'Approved' || r.Status === 'PartiallyAvailable';
     var out = ['remove', 'cancel'];
-    if (r.LibraryItemId) out.push('library');
     if (open) out.push('available', 'reject');
     if (r.Status === 'Pending') out.push('edit');
     if (canApprove) out.push(r.Status === 'Failed' ? 'retry' : 'approve');
@@ -707,7 +707,7 @@ export default function (view) {
 
     // showRequest
     // Opens a request in a sidecar: its poster, title, and status, its details, its overview, and its actions.
-    // Radarr's or Sonarr's page for it is linked once found.
+    // The title in the library is linked in the details, and Radarr's or Sonarr's page for it once found.
     function showRequest(r) {
         var t = shared.t;
         var canApprove = r.Status === 'Pending' || r.Status === 'Failed';
@@ -727,6 +727,16 @@ export default function (view) {
             error: r.Note && r.Status === 'Failed' ? r.Note : null
         });
         var items = detailItems(r, t, goesTo);
+        var sidecar = null;
+        if (r.LibraryItemId) {
+            var library = h('a', { is: 'emby-linkbutton', class: 'button-link', href: '#', text: t.tr('ButtonOpenInLibrary') });
+            library.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (sidecar) sidecar.close();
+                Dashboard.navigate('details?id=' + r.LibraryItemId);
+            });
+            items.push({ label: t.tr('LabelJellyfin'), value: library });
+        }
         var details = nectoModule.createDefinitionList({ items: items });
         var status = h('div', { class: 'stolon-status-text', role: 'alert', 'data-role': 'status' });
         var body = h('div', { class: 'stolon-stack', 'data-role': 'request-detail' }, [
@@ -737,13 +747,12 @@ export default function (view) {
         ]);
 
         var labels = {
-            remove: ['ButtonRemove', 'stolon-destructive'], library: ['ButtonOpenInLibrary', 'stolon-secondary'],
+            remove: ['ButtonRemove', 'stolon-destructive'],
             available: ['RequestsButtonMarkAvailable', 'stolon-secondary'], reject: ['RequestsButtonReject', 'stolon-secondary'],
             cancel: ['ButtonCancel', 'stolon-secondary'], edit: [noteOnly(r) ? 'RequestsButtonEditNote' : 'Edit', 'stolon-secondary'], approve: ['RequestsButtonApprove', 'stolon-primary'], retry: ['Retry', 'stolon-primary']
         };
         var run = {
             remove: function (close) { act(r, 'remove', close, null, status); },
-            library: function (close) { close(); Dashboard.navigate('details?id=' + r.LibraryItemId); },
             available: function (close) { act(r, 'available', close, null, status); },
             reject: function (close) { act(r, 'decline', close, null, status); },
             cancel: function (close) { close(); },
@@ -751,7 +760,7 @@ export default function (view) {
             approve: function (close) { act(r, 'approve', close, picker && picker.value, status); },
             retry: function (close) { act(r, 'approve', close, picker && picker.value, status); }
         };
-        var sidecar = nectoModule.openSidecar({
+        sidecar = nectoModule.openSidecar({
             page: page,
             size: 'large',
             title: r.Title,

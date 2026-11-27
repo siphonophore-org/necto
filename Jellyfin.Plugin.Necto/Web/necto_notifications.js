@@ -89,7 +89,8 @@ export function sendCards(counts, t) {
 }
 
 // channelItems
-// Turns the channels into rows, each with its kind when it has a name of its own, its state, and a Test button.
+// Turns the channels into rows, each with its kind when it has a name of its own, and at its end its state badge
+// while it is off or not set up, then a Test button.
 //
 // Inputs
 // channels [object[]]: The channels from Notifications/Channels.
@@ -104,11 +105,17 @@ export function channelItems(channels, shared, onTest) {
         var kind = t.tr(KIND_KEYS[channel.Kind] || 'LabelWebhook');
         // A channel Necto keeps is named by its kind, so its kind tag would only repeat the name.
         var tags = channelName(channel, t) === kind ? [] : [{ label: kind, icon: KIND_ICONS[channel.Kind] || 'send' }];
-        if (!channel.Enabled) tags.push({ label: t.tr('Off'), color: 'gray', off: true });
-        else if (!channel.Ready) tags.push({ label: t.tr('NotificationsTagNotSetUp'), color: 'orange' });
+        var aside = h('div', { class: 'necto-row-aside', 'data-role': 'channel-aside' });
+        var state = !channel.Enabled ? ['gray', 'Off'] : !channel.Ready ? ['orange', 'NotificationsTagNotSetUp'] : null;
+        if (state) {
+            var badge = h('span', { 'data-role': 'channel-state' });
+            badge.innerHTML = shared.badge(state[0], t.tr(state[1]));
+            aside.appendChild(badge);
+        }
         var button = h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'test', 'data-channel': channel.Id }, [h('span', { text: t.tr('ButtonTest') })]);
         button.addEventListener('click', function (e) { e.stopPropagation(); onTest(channel, button); });
-        return { id: channel.Id, title: channelName(channel, t), secondary: channelSummary(channel, shared), tags: tags, aside: button, channel: channel };
+        aside.appendChild(button);
+        return { id: channel.Id, title: channelName(channel, t), secondary: channelSummary(channel, shared), tags: tags, aside: aside, channel: channel };
     });
 }
 
