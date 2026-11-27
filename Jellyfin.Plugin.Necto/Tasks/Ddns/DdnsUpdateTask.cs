@@ -31,7 +31,7 @@ public sealed class DdnsUpdateTask : PluginScheduledTask
     }
 
     /// <inheritdoc />
-    public override string Name => ServerText.Get(TranslationKeys.DdnsTaskUpdateDdns);
+    public override string Name => ServerText.Get(TranslationKeys.DdnsTaskUpdate);
 
     /// <inheritdoc />
     public override string Key => "NectoDdnsUpdate";
@@ -52,7 +52,7 @@ public sealed class DdnsUpdateTask : PluginScheduledTask
     public override IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
     {
         // Seeds the default schedule only. Administrators change these under Scheduled Tasks.
-        yield return EveryInterval(TimeSpan.FromMinutes(15));
+        yield return EveryInterval(TimeSpan.FromMinutes(DdnsLimits.MinUpdateEveryMinutes));
         yield return OnStartup();
     }
 }

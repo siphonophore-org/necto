@@ -74,10 +74,24 @@ The proxy forwards to any service, not only Jellyfin. A route is a host name, an
 * **Certificates:** ACME by HTTP or DNS challenge, using the DDNS providers' credentials for DNS, or an uploaded certificate. Renewal is a scheduled task.
 * **Protection:** bans, rate limits, locations, trusted proxies, and the Jellyfin side settings Remote Access checked.
 * Dropped: automatic port forwarding (UPnP and NAT-PMP), router steps, and the step by step setup. The docs carry a Getting Started page for the templates instead.
+* Protection is set once for the proxy, and a route chooses only **Local network only**. The Jellyfin side checks, trusting the proxy, sign-in bans, and refusing the startup wizard and API docs, apply to the routes that forward to this Jellyfin. **Review**
+* A local client that asks by this server's address, or by a name no route has, reaches the first Jellyfin route, as it reached Jellyfin before. **Review**
+* **Trust the proxy** and **Undo** stay on the Proxy page, since they are actions rather than settings, and **Undo** is also a Troubleshooting repair. **Review**
+* The check from outside (check-host.net) is not a router step, so it stays as a Troubleshooting test and its hourly task. The router's shared address (CGNAT) check went with the router steps. **Review**
+* The visitor tables (bans, activity, countries) stay on the Proxy page. The world map and the share card are the Dashboard's, which reads `GET /Proxy/Visitors` and `GET /Proxy/PublicAddress`. **Review**
+* Proxy carries no group permission, since only administrators use it. Groups choose who receives its events. **Review**
+* Routes and certificate passwords change only through the `/Proxy` routes. A save of the whole configuration, such as from another tool's Settings section, keeps them as stored. **Review**
+* Every tool's secrets share one key ring, `Jellyfin.Plugin.Necto.Keys`, through Stolon's `AddPluginSecretProtector`. On Windows its keys are wrapped with DPAPI, as Remote Access wrapped its own. **Review**
 
 ### DDNS
 
 Several records, each with its own provider, credentials, name, and how often it updates. The public IP lookup is shared. A record may follow the proxy's host names.
+
+* The update task runs every 5 minutes and checks only the records whose **Update every (minutes)** has passed, 15 by default and 5 at the shortest. **Update now** checks every record. **Review**
+* A record that follows the proxy pushes each enabled internet route's exact name under its zone, or every one when it names no zone. Wildcards and local only routes are left out, since neither can point at the public address. **Review**
+* DDNS carries no group permission, since only administrators use it. Groups choose who receives its events. **Review**
+* Records and their credentials change only through the `/Ddns` routes, for the same reason as the proxy's routes. **Review**
+* A Settings section may save through its tool's own route, with a `save()` on its handle, which `necto_settings.js` calls in place of the generic configuration save. **Review**
 
 ### WireGuard
 

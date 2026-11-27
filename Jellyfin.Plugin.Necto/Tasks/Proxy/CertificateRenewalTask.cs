@@ -47,7 +47,7 @@ public sealed class CertificateRenewalTask : PluginScheduledTask
     }
 
     /// <inheritdoc />
-    public override string Name => ServerText.Get(TranslationKeys.ProxyTaskRefreshCertificate);
+    public override string Name => ServerText.Get(TranslationKeys.ProxyTaskCertificates);
 
     /// <inheritdoc />
     public override string Key => "NectoProxyCertificates";

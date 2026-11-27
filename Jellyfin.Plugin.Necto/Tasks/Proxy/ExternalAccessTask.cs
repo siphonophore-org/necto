@@ -52,7 +52,7 @@ public sealed class ExternalAccessTask : PluginScheduledTask
     }
 
     /// <inheritdoc />
-    public override string Name => ServerText.Get(TranslationKeys.ProxyTaskVerifyExternalAccess);
+    public override string Name => ServerText.Get(TranslationKeys.ProxyTaskExternal);
 
     /// <inheritdoc />
     public override string Key => "NectoProxyExternalAccess";

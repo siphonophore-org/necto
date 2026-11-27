@@ -34,7 +34,7 @@ public sealed class LocationDatabaseTask : PluginScheduledTask
     }
 
     /// <inheritdoc />
-    public override string Name => ServerText.Get(TranslationKeys.ProxyTaskRefreshLocations);
+    public override string Name => ServerText.Get(TranslationKeys.ProxyTaskLocations);
 
     /// <inheritdoc />
     public override string Key => "NectoProxyLocations";

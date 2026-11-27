@@ -42,7 +42,10 @@ markdown_extensions:
 
 nav:
   - Overview: index.md
+  - Getting Started: GettingStarted.md
   - Tools:
       - Groups: Groups.md
+      - Proxy: Proxy.md
+      - DDNS: DDNS.md
   - Development:
       - Plan: Plan.md
