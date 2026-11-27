@@ -22,7 +22,7 @@
 /* necto-storage-disk-aside */
 /* The end of a disk row: the state badge over a usage meter, right aligned, a fixed width so meters line up down the list. */
 /* Example: <div class="necto-storage-disk-aside"><span><span class="stolon-badge stolon-green">Available</span></span><div class="stolon-usage-meter"></div></div> */
-.necto-storage-disk-aside { display: flex; flex-direction: column; align-items: stretch; text-align: end; gap: var(--stolon-gap-narrow); width: 14rem; max-width: 40vw; }
+.necto-storage-disk-aside { display: flex; flex-direction: column; align-items: stretch; text-align: end; gap: var(--stolon-gap-narrow); width: 14rem; max-width: 35vw; }
 
 /* necto-storage-toolbar */
 /* The line above the disk list: the Jellyfin and All filter on the left, Refresh on the right. */
