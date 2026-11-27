@@ -42,7 +42,7 @@ var CARD_STATES = {
 // a mark on the map only, since a count of one says nothing a column would.
 var MAP_LAYERS = [
     { key: 'visitors', tool: 'proxy', field: 'Visitors', label: 'HeaderVisitors', color: 'blue', icon: 'person' },
-    { key: 'failed', tool: 'proxy', field: 'Failed', label: 'HeaderFailedSignIns', color: 'red', icon: 'no_accounts' },
+    { key: 'failed', tool: 'proxy', field: 'Failed', label: 'LabelFailed', color: 'red', icon: 'no_accounts' },
     { key: 'blocked', tool: 'proxy', field: 'Blocked', label: 'HeaderRefused', color: 'purple', icon: 'block' },
     { key: 'peers', tool: 'wireguard', field: 'Peers', label: 'HeaderPeers', color: 'green', icon: 'devices' },
     { key: 'connections', tool: 'wireguard', field: 'Connections', label: 'HeaderConnections', color: 'orange', icon: 'lan' },

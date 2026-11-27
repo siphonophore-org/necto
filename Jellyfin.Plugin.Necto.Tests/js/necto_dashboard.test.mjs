@@ -306,7 +306,7 @@ test('the map keeps only the layers of the tools that are on, and counts the ser
 
     var layers = dashboard.mapLayers(t, map);
     assert.deepEqual(layers.map(function (l) { return l.key; }), ['visitors', 'failed', 'blocked', 'server']);
-    assert.deepEqual(layers.map(function (l) { return l.label; }), ['Visitors', 'Failed sign-ins', 'Refused', 'This server']);
+    assert.deepEqual(layers.map(function (l) { return l.label; }), ['Visitors', 'Failed', 'Refused', 'This server']);
     assert.deepEqual(dashboard.mapCounts(map, layers), { US: { visitors: 4, failed: 1, server: 1 }, DE: { blocked: 7 } });
     assert.deepEqual(dashboard.mapLayers(t, { WireGuard: true }).map(function (l) { return l.key; }), ['peers', 'connections', 'server']);
     assert.deepEqual(dashboard.mapLayers(t, { Proxy: { Enabled: false }, WireGuard: { Enabled: true } }).map(function (l) { return l.key; }), ['peers', 'connections', 'server']);
@@ -396,7 +396,7 @@ test('with the proxy on the page shows the map, the country table, and the share
     var layerButtons = mapHost.querySelectorAll('.stolon-world-layer');
     assert.deepEqual(Array.prototype.map.call(layerButtons, function (b) { return b.getAttribute('data-value'); }), ['visitors', 'failed', 'blocked', 'server']);
     var headings = texts(mapHost, '.stolon-data-heading').join('|');
-    ['Country', 'Visitors', 'Failed sign-ins', 'Refused'].forEach(function (label) { assert.ok(headings.indexOf(label) >= 0, label); });
+    ['Country', 'Visitors', 'Failed', 'Refused'].forEach(function (label) { assert.ok(headings.indexOf(label) >= 0, label); });
     assert.equal(headings.indexOf('This server'), -1);
     assert.equal(headings.indexOf('Peers'), -1);
     assert.match(mapHost.textContent, /United States/);

@@ -43,7 +43,7 @@ Each card leads with one number and the word for what it counts, such as "1 pend
 | Layer | Shows | Tool |
 | :--- | :--- | :--- |
 | **Visitors** | The people the proxy saw | Proxy |
-| **Failed sign-ins** | Failed sign-ins through the proxy | Proxy |
+| **Failed** | Failed sign-ins through the proxy | Proxy |
 | **Refused** | Connections the proxy refused | Proxy |
 | **Peers** | WireGuard peers, by the address they connect from | WireGuard |
 | **Connections** | WireGuard connections, by the host they connect to | WireGuard |
