@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Jellyfin.Plugin.Necto.Services.Requests.Models;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Services.Notifications;
 
@@ -16,6 +17,18 @@ public static class IssueEvents
 
     /// <summary>Gets every Issues event key.</summary>
     public static IReadOnlyList<string> All { get; } = new[] { Created, Updated };
+
+    /// <summary>
+    /// Gets the name of an event, in the server's display language, for Notifications to list it by.
+    /// </summary>
+    /// <param name="key">The event's key.</param>
+    /// <returns>The name, or the key for one Issues does not send.</returns>
+    public static string Name(string key) => key switch
+    {
+        Created => Requests.ServerWording.Get(TranslationKeys.RequestsEventIssueReported),
+        Updated => Requests.ServerWording.Get(TranslationKeys.RequestsEventIssueResolved),
+        _ => key
+    };
 
     /// <summary>
     /// Gets the key of an issue's event.

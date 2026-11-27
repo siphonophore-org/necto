@@ -152,8 +152,8 @@
     <JellyfinString Include="Writer" />
     <JellyfinString Include="Writers" />
     <JellyfinString Include="Yes" />
-    <!-- Requests keys whose English Jellyfin also says, with another meaning: a TV network, streaming providers, and the Upcoming row. -->
-    <JellyfinTextMatch Include="RequestsLabelNetwork;RequestsFilterStreaming;RequestsUpcoming" />
+    <!-- Requests keys whose English Jellyfin also says, with another meaning: a TV network and streaming providers. -->
+    <JellyfinTextMatch Include="RequestsLabelNetwork;RequestsFilterStreaming" />
   </ItemGroup>
 
 </Project>

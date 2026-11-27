@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Jellyfin.Plugin.Necto.Services.Requests.Models;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Services.Notifications;
 
@@ -31,6 +32,23 @@ public static class RequestEvents
 
     /// <summary>Gets every Requests event key, in the order a request lives through them.</summary>
     public static IReadOnlyList<string> All { get; } = new[] { Created, Approved, Declined, Available, Failed, Aging, Expiring };
+
+    /// <summary>
+    /// Gets the name of an event, in the server's display language, for Notifications to list it by.
+    /// </summary>
+    /// <param name="key">The event's key.</param>
+    /// <returns>The name, or the key for one Requests does not send.</returns>
+    public static string Name(string key) => key switch
+    {
+        Created => Requests.ServerWording.Get(TranslationKeys.RequestsEventCreated),
+        Approved => Requests.ServerWording.Get(TranslationKeys.RequestsActivityApprovedName),
+        Declined => Requests.ServerWording.Get(TranslationKeys.RequestsActivityRejectedName),
+        Available => Requests.ServerWording.Get(TranslationKeys.RequestsActivitySummaryAvailableOne),
+        Failed => Requests.ServerWording.Get(TranslationKeys.RequestsActivitySummaryNotSentOne),
+        Aging => Requests.ServerWording.Get(TranslationKeys.RequestsEventAging),
+        Expiring => Requests.ServerWording.Get(TranslationKeys.RequestsEventExpiring),
+        _ => key
+    };
 
     /// <summary>
     /// Gets the key of a request's event.
