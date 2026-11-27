@@ -95,8 +95,8 @@ public sealed class StoreActivityTests : IDisposable
         _activity.Flush();
         _activity.StoreCleared("queue", 1);
 
-        Assert.All(_notifier.Events, e => Assert.Contains(e.Key, CustomPageEvents.All));
+        Assert.All(_notifier.Events, e => Assert.Contains(e.Key, CustomPageEvents.All.Select(x => x.Key)));
         Assert.Equal(CustomPageEvents.All.Count, _notifier.Events.Select(e => e.Key).Distinct().Count());
-        Assert.All(CustomPageEvents.All, k => Assert.StartsWith("pages.", k, StringComparison.Ordinal));
+        Assert.All(CustomPageEvents.All.Select(x => x.Key), k => Assert.StartsWith("pages.", k, StringComparison.Ordinal));
     }
 }

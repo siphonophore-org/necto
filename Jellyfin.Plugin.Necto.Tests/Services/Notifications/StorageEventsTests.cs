@@ -20,11 +20,11 @@ public class StorageEventsTests
     [Fact]
     public void All_IsUniqueAndStorageScoped()
     {
-        Assert.Equal(StorageEvents.All.Count, StorageEvents.All.Distinct(StringComparer.Ordinal).Count());
-        Assert.All(StorageEvents.All, key => Assert.StartsWith("storage.", key, StringComparison.Ordinal));
-        Assert.Contains("storage.disk_missing", StorageEvents.All);
-        Assert.Contains("storage.smart_warning", StorageEvents.All);
-        Assert.Contains("storage.space_low", StorageEvents.All);
+        Assert.Equal(StorageEvents.All.Count, StorageEvents.All.Select(x => x.Key).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(StorageEvents.All.Select(x => x.Key), key => Assert.StartsWith("storage.", key, StringComparison.Ordinal));
+        Assert.Contains("storage.disk_missing", StorageEvents.All.Select(x => x.Key));
+        Assert.Contains("storage.smart_warning", StorageEvents.All.Select(x => x.Key));
+        Assert.Contains("storage.space_low", StorageEvents.All.Select(x => x.Key));
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ public class StorageEventsTests
     public void For_MapsEachKind_ToARegisteredKey(DiskEventKind kind, string key)
     {
         Assert.Equal(key, StorageEvents.For(kind));
-        Assert.Contains(StorageEvents.For(kind), StorageEvents.All);
+        Assert.Contains(StorageEvents.For(kind), StorageEvents.All.Select(x => x.Key));
     }
 
     /// <summary>

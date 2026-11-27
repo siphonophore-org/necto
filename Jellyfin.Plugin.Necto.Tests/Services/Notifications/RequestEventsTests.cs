@@ -19,9 +19,9 @@ public class RequestEventsTests
     [Fact]
     public void All_Keys_AreEachListedOnceUnderRequests()
     {
-        Assert.Equal(new[] { "requests.created", "requests.approved", "requests.declined", "requests.available", "requests.failed", "requests.aging", "requests.expiring" }, RequestEvents.All);
-        Assert.Equal(RequestEvents.All.Count, RequestEvents.All.Distinct(StringComparer.Ordinal).Count());
-        Assert.All(RequestEvents.All, k => Assert.StartsWith("requests.", k, StringComparison.Ordinal));
+        Assert.Equal(new[] { "requests.created", "requests.approved", "requests.declined", "requests.available", "requests.failed", "requests.aging", "requests.expiring" }, RequestEvents.All.Select(x => x.Key));
+        Assert.Equal(RequestEvents.All.Count, RequestEvents.All.Select(x => x.Key).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(RequestEvents.All.Select(x => x.Key), k => Assert.StartsWith("requests.", k, StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -50,6 +50,6 @@ public class RequestEventsTests
     {
         var requestEvents = Enum.GetValues<NotificationEvent>().Where(e => e is not NotificationEvent.IssueReported and not NotificationEvent.IssueResolved);
 
-        Assert.All(requestEvents, e => Assert.Contains(RequestEvents.KeyFor(e), RequestEvents.All));
+        Assert.All(requestEvents, e => Assert.Contains(RequestEvents.KeyFor(e), RequestEvents.All.Select(x => x.Key)));
     }
 }

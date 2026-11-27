@@ -12,10 +12,10 @@ public static class ScriptsEvents
     public const string Failed = "scripts.failed";
 
     /// <summary>
-    /// Gets every Scripts event key, with the key of its name in the plugin's strings.
+    /// Gets every Scripts event.
     /// </summary>
-    public static IReadOnlyDictionary<string, string> All { get; } = new Dictionary<string, string>
+    public static IReadOnlyList<NectoEventInfo> All { get; } = new[]
     {
-        [Failed] = TranslationKeys.ScriptsActivityNameRunFailedOne
+        new NectoEventInfo(Failed, TranslationKeys.ScriptsActivityNameRunFailedOne)
     };
 }

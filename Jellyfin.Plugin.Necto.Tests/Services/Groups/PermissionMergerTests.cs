@@ -105,6 +105,27 @@ public class PermissionMergerTests
     }
 
     /// <summary>
+    /// A member gets their events on each channel one of their groups that gives events turns on.
+    /// True: a group that gives events with browsers off and one with no events never add browsers between them.
+    /// False: a group with no events could turn a channel on for events another group gives.
+    /// </summary>
+    [Fact]
+    public void Merge_NotificationChannels_ComeFromGroupsThatGiveEvents()
+    {
+        var quiet = TestGroups.Make("Quiet", p => { p.Notifications.EventKeys.Add("requests.approved"); p.Notifications.BrowserNotifications = false; }, User);
+        var none = TestGroups.Make("None", _ => { }, User);
+        var loud = TestGroups.Make("Loud", p => p.Notifications.AllEvents = true, User);
+
+        var merged = PermissionMerger.Merge(User, new[] { quiet, none });
+        var both = PermissionMerger.Merge(User, new[] { quiet, loud });
+
+        Assert.False(merged.Notifications.BrowserNotifications);
+        Assert.True(merged.Notifications.JellyfinMessages);
+        Assert.True(both.Notifications.BrowserNotifications);
+        Assert.True(PermissionMerger.Administrator(User).Notifications.BrowserNotifications);
+    }
+
+    /// <summary>
     /// Everyone applies to a user in no group.
     /// True: an ungrouped user gets what Everyone gives.
     /// False: users outside every group would get nothing, or something else.

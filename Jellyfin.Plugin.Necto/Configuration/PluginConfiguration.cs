@@ -62,8 +62,20 @@ public class PluginConfiguration : BasePluginConfiguration
     public IssueSettings Issues { get; set; } = new();
 
     /// <summary>
-    /// Builds the Everyone group as a fresh install has it, which gives nothing.
+    /// Builds the Everyone group as a fresh install has it, which gives nothing but the updates about a user's own
+    /// requests and issues.
     /// </summary>
     /// <returns>The Everyone group.</returns>
-    public static Group NewEveryone() => new() { Id = Group.EveryoneId, Name = "Everyone" };
+    public static Group NewEveryone()
+    {
+        var everyone = new Group { Id = Group.EveryoneId, Name = "Everyone" };
+        everyone.Permissions.Notifications.EventKeys.AddRange(new[]
+        {
+            Services.Notifications.RequestEvents.Approved,
+            Services.Notifications.RequestEvents.Declined,
+            Services.Notifications.RequestEvents.Available,
+            Services.Notifications.IssueEvents.Updated
+        });
+        return everyone;
+    }
 }

@@ -770,7 +770,7 @@ public sealed class RequestServiceTests : IDisposable
         await H.Requests.ApproveAsync(first.Id, "admin", CancellationToken.None, waitFor: SendWait);
         H.Requests.Decline(second.Id, "admin", "Not on this server");
 
-        Assert.Equal(new[] { RequestEvents.Created, RequestEvents.Created, RequestEvents.Approved, RequestEvents.Declined }, H.Events.Keys);
+        Assert.Equal(new[] { RequestEvents.Created, RequestEvents.Created, RequestEvents.Approved, RequestEvents.Declined }, H.Events.ChannelKeys);
         Assert.All(H.Events.Sent, e => Assert.Equal(viewer.Id, e.UserId));
     }
 
@@ -845,7 +845,7 @@ public sealed class RequestServiceTests : IDisposable
         Assert.Equal(RequestStatus.Failed, failed!.Status);
         Assert.Equal(1, failed.SendFailures);
         Assert.NotNull(failed.RetryAfterUtc);
-        Assert.Single(H.Events.Keys, k => k == RequestEvents.Failed);
+        Assert.Single(H.Events.ChannelKeys, k => k == RequestEvents.Failed);
     }
 
     /// <summary>
@@ -895,7 +895,7 @@ public sealed class RequestServiceTests : IDisposable
         Assert.Equal(movie.Id, fulfilled.LibraryItemId);
         Assert.Equal(RequestStatus.Approved, gone.Status);
         Assert.Equal(RequestStatus.Available, back.Status);
-        Assert.Single(H.Events.Keys, k => k == RequestEvents.Available);
+        Assert.Single(H.Events.ChannelKeys, k => k == RequestEvents.Available);
     }
 
     /// <summary>

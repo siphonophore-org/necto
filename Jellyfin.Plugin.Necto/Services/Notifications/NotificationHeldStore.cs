@@ -104,6 +104,27 @@ public sealed class NotificationHeldStore : INotifyHeldStore
     }
 
     /// <summary>
+    /// Drops the messages held about one subject, such as a request that was removed.
+    /// </summary>
+    /// <param name="subject">The subject the messages were sent with.</param>
+    /// <returns>How many were dropped.</returns>
+    public int RemoveSubject(string subject)
+    {
+        var removed = 0;
+        if (string.IsNullOrWhiteSpace(subject))
+        {
+            return removed;
+        }
+
+        _file.UpdateIf(list =>
+        {
+            removed = list.RemoveAll(m => string.Equals(m.Subject, subject, StringComparison.Ordinal));
+            return removed > 0;
+        });
+        return removed;
+    }
+
+    /// <summary>
     /// Drops the messages held for a user, such as one who was deleted.
     /// </summary>
     /// <param name="userId">The user.</param>

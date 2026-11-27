@@ -15,19 +15,11 @@ public static class IssueEvents
     /// <summary>An issue was resolved or declined.</summary>
     public const string Updated = "issues.updated";
 
-    /// <summary>Gets every Issues event key.</summary>
-    public static IReadOnlyList<string> All { get; } = new[] { Created, Updated };
-
-    /// <summary>
-    /// Gets the name of an event, in the server's display language, for Notifications to list it by.
-    /// </summary>
-    /// <param name="key">The event's key.</param>
-    /// <returns>The name, or the key for one Issues does not send.</returns>
-    public static string Name(string key) => key switch
+    /// <summary>Gets every Issues event. Each goes to the issue's reporters.</summary>
+    public static IReadOnlyList<NectoEventInfo> All { get; } = new[]
     {
-        Created => Requests.ServerWording.Get(TranslationKeys.IssuesEventReported),
-        Updated => Requests.ServerWording.Get(TranslationKeys.IssuesEventResolved),
-        _ => key
+        new NectoEventInfo(Created, TranslationKeys.IssuesEventReported, ForUsers: true),
+        new NectoEventInfo(Updated, TranslationKeys.IssuesEventResolved, ForUsers: true)
     };
 
     /// <summary>

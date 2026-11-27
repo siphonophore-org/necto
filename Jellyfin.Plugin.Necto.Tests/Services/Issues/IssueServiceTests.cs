@@ -541,8 +541,8 @@ public sealed class IssueServiceTests : IDisposable
         Assert.Equal(2, updates.Count);
         Assert.Equal(("Issue resolved", "The issue with The Lighthouse Keeper (2019) was resolved. Replaced the file."), (updates[0].Title, updates[0].Body));
         Assert.Equal(("Issue declined", "The issue with The Lighthouse Keeper (2019) was declined. Plays fine here."), (updates[1].Title, updates[1].Body));
-        Assert.Equal(string.Join(',', new[] { _viewer.Id, _other.Id }.Select(i => i.ToString("N"))), updates[1].Data["reporterIds"]);
+        Assert.Equal(string.Join(',', new[] { _viewer.Id, _other.Id }.Select(i => i.ToString("N"))), updates[1].Values["reporterIds"]);
         Assert.Equal(issue.Id.ToString("N"), updates[1].Data["issueId"]);
-        Assert.Equal("declined", updates[1].Data["state"]);
+        Assert.Equal("declined", updates[1].Values["state"]);
     }
 }

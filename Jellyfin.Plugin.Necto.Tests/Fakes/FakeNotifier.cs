@@ -29,6 +29,18 @@ public sealed class FakeNotifier : INotifier
         }
     }
 
+    /// <summary>Gets the keys of every event sent to channels, in order, leaving out the copies only users get.</summary>
+    public IReadOnlyList<string> ChannelKeys
+    {
+        get
+        {
+            lock (Sent)
+            {
+                return Sent.Where(e => e.Audience != NectoEventAudience.Users).Select(e => e.Key).ToList();
+            }
+        }
+    }
+
     /// <inheritdoc />
     public Task SendAsync(NectoEvent nectoEvent, CancellationToken cancellationToken = default)
     {

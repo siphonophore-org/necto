@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Siphonophore.Stolon;
 
 namespace Jellyfin.Plugin.Necto.Services.Notifications;
 
@@ -29,16 +30,16 @@ public static class ProxyEvents
     public const string VisitorsHidden = "proxy.visitors_hidden";
 
     /// <summary>
-    /// Gets every event key with the key of its name, in the order Notifications lists them.
+    /// Gets every event, in the order Notifications lists them.
     /// </summary>
-    public static IReadOnlyDictionary<string, string> All { get; } = new Dictionary<string, string>
+    public static IReadOnlyList<NectoEventInfo> All { get; } = new[]
     {
-        [Banned] = "ProxyEventBanned",
-        [CertificateExpiring] = "ProxyEventCertificateExpiring",
-        [CertificateFailed] = "ProxyTagCertificateFailed",
-        [CertificateIssued] = "ProxyEventCertificateIssued",
-        [StartFailed] = "ProxyEventStartFailed",
-        [Unreachable] = "ProxyEventUnreachable",
-        [VisitorsHidden] = "ProxyEventVisitorsHidden"
+        new NectoEventInfo(Banned, TranslationKeys.ProxyEventBanned),
+        new NectoEventInfo(CertificateExpiring, TranslationKeys.ProxyEventCertificateExpiring),
+        new NectoEventInfo(CertificateFailed, TranslationKeys.ProxyTagCertificateFailed),
+        new NectoEventInfo(CertificateIssued, TranslationKeys.ProxyEventCertificateIssued),
+        new NectoEventInfo(StartFailed, TranslationKeys.ProxyEventStartFailed),
+        new NectoEventInfo(Unreachable, TranslationKeys.ProxyEventUnreachable),
+        new NectoEventInfo(VisitorsHidden, TranslationKeys.ProxyEventVisitorsHidden)
     };
 }
