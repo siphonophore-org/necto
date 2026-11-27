@@ -148,9 +148,9 @@ export function createPendingResets(shared, page) {
     var esc = nectoModule.escapeHtml;
     var status = h('div', { class: 'stolon-status-text', role: 'status' });
     var table = nectoModule.createRowsTable(shared, {
-        search: { enabled: false },
+        search: { enabled: true, placeholder: t.tr('ResetsSearch') },
         text: function (row) { return row.title; },
-        emptyState: { message: t.tr('EmptyPendingResets') },
+        emptyState: { message: t.tr('EmptyPendingResets'), filteredMessage: t.tr('EmptyPendingResetsMatch') },
         columns: [
             {
                 key: 'title', type: 'custom', label: t.tr('LabelUser'),
