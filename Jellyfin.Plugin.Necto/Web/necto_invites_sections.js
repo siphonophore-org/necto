@@ -84,10 +84,13 @@ function buildSettings(content, ctx) {
     var windowField = numberField(t.tr('InvitesLabelRateWindow'), t.tr('InvitesRateWindowHelp'), 'RateLimitWindowMinutes', 0);
     var pins = numberField(t.tr('InvitesLabelPinAttempts'), t.tr('InvitesPinAttemptsHelp'), 'MaxPinAttempts', 1);
     var httpsWarn = h('div', { class: 'stolon-warn stolon-hidden', 'data-role': 'https-warning', text: t.tr('InvitesHttpsWarning') });
+    var linkHelp = h('div', { class: 'fieldDescription', text: t.tr('InvitesLinkUrlHelp') });
     // checkHttps
-    // Shows the warning while links would use plain http, which carries the new password unencrypted.
+    // Shows the warning in place of the help while links would use plain http, which carries the new password unencrypted.
     var checkHttps = function () {
-        httpsWarn.classList.toggle('stolon-hidden', !linksInsecure(link.value, globalThis.location && globalThis.location.protocol));
+        var insecure = linksInsecure(link.value, globalThis.location && globalThis.location.protocol);
+        httpsWarn.classList.toggle('stolon-hidden', !insecure);
+        linkHelp.classList.toggle('stolon-hidden', insecure);
     };
     link.addEventListener('input', checkHttps);
     var enabled = nectoModule.createCheckboxField({ label: t.tr('InvitesLabelEnable'), help: t.tr('InvitesHelpEnabled'), field: 'Enabled' });
@@ -98,9 +101,9 @@ function buildSettings(content, ctx) {
         h('div', { class: 'inputContainer' }, [
             h('label', { class: 'inputLabel inputLabelUnfocused', for: linkId, text: t.tr('InvitesLabelLinkUrl') }),
             link,
-            h('div', { class: 'fieldDescription', text: t.tr('InvitesLinkUrlHelp') })
+            linkHelp,
+            httpsWarn
         ]),
-        httpsWarn,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderLimits') }),
         count.wrap, windowField.wrap, pins.wrap
     ].forEach(function (node) { content.appendChild(node); });

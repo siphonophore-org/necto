@@ -9,9 +9,7 @@ using Xunit;
 namespace Jellyfin.Plugin.Necto.Tests.Services.Accounts;
 
 /// <summary>
-/// Account rules merge across a user's groups: password rules from any group at their strictest, with the most
-/// generous change mode, and expiry, inactivity, and session cleanup only when every group has them, at the largest
-/// window.
+/// Account rules come from a user's one group: each rule holds while the group has it on, at the group's own values.
 /// </summary>
 public class AccountRuleMergerTests
 {
@@ -24,29 +22,28 @@ public class AccountRuleMergerTests
         => TestGroups.Make("S", p => { p.Accounts.Sessions.Enabled = true; p.Accounts.Sessions.Rules.AddRange(rules); });
 
     /// <summary>
-    /// No group enforcing password rules leaves the user free.
-    /// True: a user outside every enforcing group sets any password.
+    /// A group with password rules off leaves the user free, whatever values it keeps.
+    /// True: a member of a group without rules sets any password.
     /// False: a group with rules turned off would still hold its members.
     /// </summary>
     [Fact]
-    public void Password_NoGroupEnforces_IsNull()
+    public void Password_GroupDoesNotEnforce_IsNull()
     {
-        Assert.Null(AccountRuleMerger.Password(new[] { TestGroups.Make("A"), TestGroups.Make("B") }));
+        Assert.Null(AccountRuleMerger.Password(TestGroups.Make("A")));
+        Assert.Null(AccountRuleMerger.Password(TestGroups.Make("Off", p => { p.Accounts.Password.MinLength = 40; p.Accounts.Password.RequireUppercase = true; })));
     }
 
     /// <summary>
-    /// The rules of the enforcing groups merge at their strictest, with the most generous change mode.
-    /// True: a member of two enforcing groups meets both groups' requirements and gets the freer change mode.
-    /// False: a second group could weaken a requirement, or block a change the first allows.
+    /// An enforcing group's rules come back as a copy with every requirement and its change mode.
+    /// True: members meet exactly what the group asks.
+    /// False: a requirement would be lost, or a change to the copy would reach the stored group.
     /// </summary>
     [Fact]
-    public void Password_EnforcingGroups_MergeStrictestRulesAndFreestChangeMode()
+    public void Password_EnforcingGroup_CopiesItsRules()
     {
-        var a = TestGroups.Make("A", p => { var r = p.Accounts.Password; r.Enabled = true; r.MinLength = 6; r.RequireNumber = true; r.DisallowEmpty = false; r.ChangeMode = PasswordChangeMode.Disallowed; });
-        var b = TestGroups.Make("B", p => { var r = p.Accounts.Password; r.Enabled = true; r.MinLength = 10; r.RequireSymbol = true; r.DisallowEmpty = false; r.ChangeMode = PasswordChangeMode.InitialOnly; });
-        var off = TestGroups.Make("Off", p => { var r = p.Accounts.Password; r.MinLength = 40; r.RequireUppercase = true; });
+        var a = TestGroups.Make("A", p => { var r = p.Accounts.Password; r.Enabled = true; r.MinLength = 10; r.RequireNumber = true; r.RequireSymbol = true; r.DisallowEmpty = false; r.ChangeMode = PasswordChangeMode.InitialOnly; });
 
-        var rules = AccountRuleMerger.Password(new[] { a, b, off })!;
+        var rules = AccountRuleMerger.Password(a)!;
 
         Assert.True(rules.Enabled);
         Assert.Equal(10, rules.MinLength);
@@ -55,66 +52,65 @@ public class AccountRuleMergerTests
         Assert.False(rules.RequireUppercase);
         Assert.False(rules.DisallowEmpty);
         Assert.Equal(PasswordChangeMode.InitialOnly, rules.ChangeMode);
+        Assert.NotSame(a.Permissions.Accounts.Password, rules);
     }
 
     /// <summary>
-    /// A user expires only once every group has expired.
-    /// True: a group with no expiry keeps the member's account.
-    /// False: an expired group would disable a member another group still holds.
+    /// A group with no expiry date keeps the account.
+    /// True: a member of a group that never expires stays.
+    /// False: an account would expire with no date set.
     /// </summary>
     [Fact]
-    public void Expiry_OneGroupNeverExpires_KeepsTheAccount()
+    public void Expiry_NoDate_KeepsTheAccount()
     {
-        Assert.Null(AccountRuleMerger.Expiry(new[] { Expiring(Today.AddDays(-3)), Expiring(null) }, Today));
+        Assert.Null(AccountRuleMerger.Expiry(Expiring(null), Today));
+        Assert.Null(AccountRuleMerger.ExpiryActionOf(Expiring(null)));
     }
 
     /// <summary>
-    /// The account expires on the latest date of its groups, counted by day.
-    /// True: a member expires once the last of their groups does, from that day on.
-    /// False: the first group to expire would end the account.
+    /// The account expires on the group's date, counted by day.
+    /// True: a member expires from that day on, whatever the hour.
+    /// False: an account would expire a day early or late.
     /// </summary>
     [Theory]
-    [InlineData(-1, -5, ExpiryAction.Disable)]
-    [InlineData(0, -5, ExpiryAction.Disable)]
-    [InlineData(1, -5, null)]
-    public void Expiry_EveryGroupHasADate_ExpiresOnTheLatest(int latest, int earliest, ExpiryAction? expected)
+    [InlineData(-1, ExpiryAction.Disable)]
+    [InlineData(0, ExpiryAction.Disable)]
+    [InlineData(1, null)]
+    public void Expiry_GroupHasADate_ExpiresOnIt(int days, ExpiryAction? expected)
     {
-        var groups = new[] { Expiring(Today.AddDays(earliest)), Expiring(Today.AddDays(latest).AddHours(15)) };
+        var group = Expiring(Today.AddDays(days).AddHours(15));
 
-        Assert.Equal(expected, AccountRuleMerger.Expiry(groups, Today.AddHours(9)));
-        Assert.Equal(Today.AddDays(latest), AccountRuleMerger.ExpiresOn(groups));
+        Assert.Equal(expected, AccountRuleMerger.Expiry(group, Today.AddHours(9)));
+        Assert.Equal(Today.AddDays(days), AccountRuleMerger.ExpiresOn(group));
     }
 
     /// <summary>
-    /// Delete takes every expired group asking for it.
-    /// True: an account is deleted only when no group would only disable it.
-    /// False: one group could delete an account another group only disables.
+    /// Expiry does what the group asks, Delete or Disable.
+    /// True: a group set to delete deletes, and any other disables.
+    /// False: an account would be deleted when the group only disables.
     /// </summary>
     [Theory]
-    [InlineData(ExpiryAction.Delete, ExpiryAction.Delete, ExpiryAction.Delete)]
-    [InlineData(ExpiryAction.Delete, ExpiryAction.Disable, ExpiryAction.Disable)]
-    [InlineData(ExpiryAction.Disable, ExpiryAction.Disable, ExpiryAction.Disable)]
-    public void Expiry_Delete_TakesEveryGroup(ExpiryAction first, ExpiryAction second, ExpiryAction expected)
+    [InlineData(ExpiryAction.Delete, ExpiryAction.Delete)]
+    [InlineData(ExpiryAction.Disable, ExpiryAction.Disable)]
+    public void Expiry_TakesTheGroupsAction(ExpiryAction action, ExpiryAction expected)
     {
-        var groups = new[] { Expiring(Today.AddDays(-1), first), Expiring(Today.AddDays(-2), second) };
-
-        Assert.Equal(expected, AccountRuleMerger.Expiry(groups, Today));
+        Assert.Equal(expected, AccountRuleMerger.Expiry(Expiring(Today.AddDays(-1), action), Today));
     }
 
     /// <summary>
-    /// Inactivity holds only when every group has it, at the largest window.
-    /// True: a member is disabled only after the longest window any of their groups gives.
-    /// False: a member would be disabled sooner than one of their groups allows.
+    /// Inactivity holds while the group has it on with a window.
+    /// True: a member is disabled after the group's window.
+    /// False: a group with inactivity off would disable members.
     /// </summary>
     [Fact]
-    public void InactiveDays_EveryGroupHasIt_TakesTheLargest()
+    public void InactiveDays_GroupHasIt_TakesItsWindow()
     {
-        var a = TestGroups.Make("A", p => { p.Accounts.Inactivity.Enabled = true; p.Accounts.Inactivity.Days = 30; });
-        var b = TestGroups.Make("B", p => { p.Accounts.Inactivity.Enabled = true; p.Accounts.Inactivity.Days = 90; });
-        var off = TestGroups.Make("Off");
+        var a = TestGroups.Make("A", p => { p.Accounts.Inactivity.Enabled = true; p.Accounts.Inactivity.Days = 90; });
+        var zero = TestGroups.Make("Z", p => { p.Accounts.Inactivity.Enabled = true; p.Accounts.Inactivity.Days = 0; });
 
-        Assert.Equal(90, AccountRuleMerger.InactiveDays(new[] { a, b }));
-        Assert.Null(AccountRuleMerger.InactiveDays(new[] { a, off }));
+        Assert.Equal(90, AccountRuleMerger.InactiveDays(a));
+        Assert.Null(AccountRuleMerger.InactiveDays(TestGroups.Make("Off")));
+        Assert.Null(AccountRuleMerger.InactiveDays(zero));
     }
 
     /// <summary>
@@ -157,21 +153,23 @@ public class AccountRuleMergerTests
     }
 
     /// <summary>
-    /// Across groups a client is cleaned only when every group cleans it, after the largest window.
-    /// True: a member's device stays as long as any of their groups lets it.
-    /// False: one group's short window would log out a device another group keeps.
+    /// A client is cleaned while the group cleans sessions with a rule that covers it, after that rule's window.
+    /// True: a member's device goes after the group's window for its client.
+    /// False: a device would be logged out by a group with cleanup off, or by a rule for another client.
     /// </summary>
     [Fact]
-    public void SessionDays_AcrossGroups_EveryGroupAndTheLargestWindow()
+    public void SessionDays_TheGroupsRules()
     {
         var week = Cleaning(new SessionCleanupRule { Days = 7 });
-        var month = Cleaning(new SessionCleanupRule { Days = 30 });
         var onlyInfuse = Cleaning(new SessionCleanupRule { Mode = SessionClientMode.Only, Clients = { "Infuse" }, Days = 1 });
+        var empty = Cleaning();
 
-        Assert.Equal(30, AccountRuleMerger.SessionDays(new[] { week, month }, "Swiftfin"));
-        Assert.Null(AccountRuleMerger.SessionDays(new[] { week, onlyInfuse }, "Swiftfin"));
-        Assert.Null(AccountRuleMerger.SessionDays(new[] { week, TestGroups.Make("Off") }, "Swiftfin"));
-        Assert.True(AccountRuleMerger.CleansSessions(new[] { week, month }));
-        Assert.False(AccountRuleMerger.CleansSessions(new[] { week, TestGroups.Make("Off") }));
+        Assert.Equal(7, AccountRuleMerger.SessionDays(week, "Swiftfin"));
+        Assert.Null(AccountRuleMerger.SessionDays(onlyInfuse, "Swiftfin"));
+        Assert.Equal(1, AccountRuleMerger.SessionDays(onlyInfuse, "Infuse"));
+        Assert.Null(AccountRuleMerger.SessionDays(TestGroups.Make("Off"), "Swiftfin"));
+        Assert.True(AccountRuleMerger.CleansSessions(week));
+        Assert.False(AccountRuleMerger.CleansSessions(TestGroups.Make("Off")));
+        Assert.False(AccountRuleMerger.CleansSessions(empty));
     }
 }

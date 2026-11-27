@@ -72,7 +72,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 
 ### Session Management
 
-* **Clean up old sessions** logs out members' devices that go too long without checking in.
+* **Clean up old sessions** logs out members' devices that go too long without checking in, each time **Clean expired sessions** runs.
 * Each rule sets **Applies to**, its **Clients**, and **Days before logout**. **All clients** covers every client, **Only these clients** covers the picked ones, and **All except these clients** covers the rest.
 * **Clients** lists the clients seen on the server, from its devices and sessions, and the common Jellyfin clients, to pick from. **Other clients** takes any other name.
 * Where several rules of one group cover a client, the shortest window wins, and the editor names the clients that overlap.

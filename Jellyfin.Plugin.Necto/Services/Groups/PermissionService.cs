@@ -67,6 +67,6 @@ public sealed class PermissionService
         ArgumentNullException.ThrowIfNull(config);
         return isAdministrator
             ? PermissionMerger.Administrator(userId)
-            : PermissionMerger.Merge(userId, GroupMembership.GroupsOf(config, userId));
+            : PermissionMerger.Merge(userId, GroupMembership.GroupOf(config, userId));
     }
 }

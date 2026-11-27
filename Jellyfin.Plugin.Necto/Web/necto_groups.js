@@ -337,7 +337,7 @@ export function accountSpecs() {
         {
             key: 'sessions', icon: 'logout', title: 'HeaderSessionManagement', fields: [
                 { path: 'Accounts.Sessions.Enabled', kind: 'check', label: 'LabelCleanUpOldSessions', help: 'CleanUpOldSessionsHelp', reveals: [
-                    { path: 'Accounts.Sessions.Rules', kind: 'sessions', help: 'SessionRulesHelp' }
+                    { path: 'Accounts.Sessions.Rules', kind: 'sessions' }
                 ] }
             ]
         },

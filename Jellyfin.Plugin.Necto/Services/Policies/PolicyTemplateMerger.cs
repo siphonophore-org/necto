@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Jellyfin.Plugin.Necto.Configuration;
 using Jellyfin.Plugin.Necto.Configuration.Policies;
 using Jellyfin.Plugin.Necto.Services.Groups;
@@ -14,22 +13,17 @@ namespace Jellyfin.Plugin.Necto.Services.Policies;
 public static class PolicyTemplateMerger
 {
     /// <summary>
-    /// Builds the template a user takes from their groups.
+    /// Builds the template a user takes from their group.
     /// </summary>
     /// <param name="config">The configuration that holds the groups.</param>
     /// <param name="userId">The user.</param>
-    /// <returns>A new template, which sets no row when none of the user's groups sets one.</returns>
+    /// <returns>A new template, which sets no row when the user's group sets none.</returns>
     public static PolicyTemplate For(PluginConfiguration config, Guid userId)
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        // GroupsOf keeps the order of the group list, so the first group to set a row is the highest one.
-        var templates = GroupMembership.GroupsOf(config, userId).Select(g =>
-        {
-            var copy = SecretJson.Copy(g.Template ?? new PolicyTemplate());
-            PolicyTemplateNormalizer.Complete(copy);
-            return copy;
-        });
-        return PolicyTemplateRows.Merge(templates);
+        var copy = SecretJson.Copy(GroupMembership.GroupOf(config, userId).Template ?? new PolicyTemplate());
+        PolicyTemplateNormalizer.Complete(copy);
+        return PolicyTemplateRows.CopySetRows(copy);
     }
 }

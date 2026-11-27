@@ -80,7 +80,7 @@ public sealed class PasswordEnrollment
     {
         ArgumentNullException.ThrowIfNull(user);
         var isAdmin = user.HasPermission(PermissionKind.IsAdministrator);
-        var ruled = !isAdmin && _store.Read(c => AccountRuleMerger.Password(GroupMembership.GroupsOf(c, user.Id))) is not null;
+        var ruled = !isAdmin && _store.Read(c => AccountRuleMerger.Password(GroupMembership.GroupOf(c, user.Id))) is not null;
         try
         {
             return ruled ? await EnrollAsync(user).ConfigureAwait(false) : await UnenrollAsync(user).ConfigureAwait(false);

@@ -7,69 +7,74 @@ using Jellyfin.Plugin.Necto.Services.Accounts;
 namespace Jellyfin.Plugin.Necto.Services.Groups;
 
 /// <summary>
-/// Merges the permissions of the groups that apply to a user. An allow from any group allows, a list holds what any
-/// group lists, and a count or limit takes the largest any allowing group gives, where 0 is no limit and so the largest.
+/// Works out what a user may do from their one group. A count or limit counts only while the group allows the action,
+/// where 0 is no limit, and a list holds each entry once.
 /// </summary>
 public static class PermissionMerger
 {
     /// <summary>
-    /// Merges the groups that apply to a user into what the user may do.
+    /// Works out what a user may do from the group that applies to them.
     /// </summary>
     /// <param name="userId">The user.</param>
-    /// <param name="groups">The groups that apply to the user, Everyone when the user is in no group.</param>
+    /// <param name="group">The group that applies to the user, Everyone when the user is in no group.</param>
     /// <returns>The user's permissions.</returns>
-    public static EffectivePermissions Merge(Guid userId, IReadOnlyList<Group> groups)
+    public static EffectivePermissions Merge(Guid userId, Group group)
     {
-        ArgumentNullException.ThrowIfNull(groups);
-        var p = groups.Select(g => g.Permissions ?? new GroupPermissions()).ToList();
-
-        var requesters = p.Where(x => x.Requests.MayRequest).ToList();
-        var peerHolders = p.Where(x => x.WireGuard.MayHavePeers).ToList();
-        var inviters = p.Where(x => x.Invites.MayCreate).ToList();
+        ArgumentNullException.ThrowIfNull(group);
+        var p = group.Permissions ?? new GroupPermissions();
+        var invites = p.Invites;
+        var peers = p.WireGuard;
+        var issues = p.Issues;
+        var limited = peers.MayHavePeers && peers.DataLimit > 0;
 
         return new EffectivePermissions
         {
             UserId = userId,
-            GroupIds = groups.Select(g => g.Id).ToList(),
+            GroupIds = new List<Guid> { group.Id },
             Accounts = new EffectiveAccounts
             {
-                Password = AccountRuleMerger.Password(groups),
-                ExpiresOn = AccountRuleMerger.ExpiresOn(groups),
-                ExpiryAction = AccountRuleMerger.ExpiryActionOf(groups),
-                InactiveDays = AccountRuleMerger.InactiveDays(groups),
-                CleansSessions = AccountRuleMerger.CleansSessions(groups)
+                Password = AccountRuleMerger.Password(group),
+                ExpiresOn = AccountRuleMerger.ExpiresOn(group),
+                ExpiryAction = AccountRuleMerger.ExpiryActionOf(group),
+                InactiveDays = AccountRuleMerger.InactiveDays(group),
+                CleansSessions = AccountRuleMerger.CleansSessions(group)
             },
-            Requests = RequestMerge(requesters, p),
-            Issues = IssueMerge(p.Where(x => x.Issues.MayReport).ToList(), p),
+            Requests = Requests(p.Requests),
+            Issues = new IssuePermissions
+            {
+                MayReport = issues.MayReport,
+                Limit = issues.MayReport ? Limit(issues.Limit) : 0,
+                MayManage = issues.MayManage
+            },
             Invites = new InvitePermissions
             {
-                MayCreate = inviters.Count > 0,
-                MaxInvites = Largest(inviters.Select(x => x.Invites.MaxInvites)),
-                AnyGroup = inviters.Any(x => x.Invites.AnyGroup),
-                TargetGroupIds = inviters.SelectMany(x => x.Invites.TargetGroupIds).Distinct().ToList()
+                MayCreate = invites.MayCreate,
+                MaxInvites = invites.MayCreate ? Limit(invites.MaxInvites) : 0,
+                AnyGroup = invites.MayCreate && invites.AnyGroup,
+                TargetGroupIds = invites.MayCreate ? invites.TargetGroupIds.Distinct().ToList() : new List<Guid>()
             },
             WireGuard = new WireGuardPermissions
             {
-                MayHavePeers = peerHolders.Count > 0,
-                MaxPeers = Largest(peerHolders.Select(x => x.WireGuard.MaxPeers)),
-                DataLimit = LargestData(peerHolders.Select(x => x.WireGuard)).DataLimit,
-                DataPeriod = LargestData(peerHolders.Select(x => x.WireGuard)).DataPeriod
+                MayHavePeers = peers.MayHavePeers,
+                MaxPeers = peers.MayHavePeers ? Limit(peers.MaxPeers) : 0,
+                DataLimit = limited ? peers.DataLimit : 0,
+                DataPeriod = limited ? peers.DataPeriod : new WireGuardPermissions().DataPeriod
             },
             Scripts = new ScriptPermissions
             {
-                AllScripts = p.Any(x => x.Scripts.AllScripts),
-                ScriptIds = Union(p.SelectMany(x => x.Scripts.ScriptIds))
+                AllScripts = p.Scripts.AllScripts,
+                ScriptIds = Union(p.Scripts.ScriptIds)
             },
             CustomPages = new CustomPagePermissions
             {
-                AllPages = p.Any(x => x.CustomPages.AllPages),
-                PageIds = Union(p.SelectMany(x => x.CustomPages.PageIds))
+                AllPages = p.CustomPages.AllPages,
+                PageIds = Union(p.CustomPages.PageIds)
             },
             Notifications = new NotificationPermissions
             {
                 ByMethod = true,
-                BrowserEventKeys = Union(p.SelectMany(x => Notifications.NotificationDelivery.Browser(x.Notifications))),
-                MessageEventKeys = Union(p.SelectMany(x => Notifications.NotificationDelivery.Messages(x.Notifications)))
+                BrowserEventKeys = Union(Notifications.NotificationDelivery.Browser(p.Notifications)),
+                MessageEventKeys = Union(Notifications.NotificationDelivery.Messages(p.Notifications))
             }
         };
     }
@@ -111,87 +116,41 @@ public static class PermissionMerger
     };
 
     /// <summary>
-    /// Takes the largest of several limits, where 0 is no limit and so beats any number.
+    /// Reads a limit, where 0 or less is no limit.
     /// </summary>
-    /// <param name="limits">The limits the allowing groups give.</param>
-    /// <returns>The largest limit, or 0 when there is none, which only counts while a group allows the action.</returns>
-    public static int Largest(IEnumerable<int> limits)
-    {
-        ArgumentNullException.ThrowIfNull(limits);
-        var list = limits.Select(l => Math.Max(0, l)).ToList();
-        return list.Count == 0 || list.Contains(0) ? 0 : list.Max();
-    }
+    /// <param name="limit">The group's limit.</param>
+    /// <returns>The limit, or 0 for no limit.</returns>
+    public static int Limit(int limit) => Math.Max(0, limit);
 
     /// <summary>
-    /// Takes the most generous data limit of several groups, with its period. 0 is no limit, so it beats any number.
+    /// Works out what a group gives in Requests. Types, quotas, profiles, and seeing others' requests count only while
+    /// the group allows requesting, and an empty profile list holds every profile. Managing requests needs no request
+    /// of one's own.
     /// </summary>
-    /// <param name="limits">The WireGuard sections of the groups that allow peers.</param>
-    /// <returns>The section whose limit is largest, or one with no limit when there is none.</returns>
-    public static WireGuardPermissions LargestData(IEnumerable<WireGuardPermissions> limits)
+    /// <param name="r">The group's Requests section.</param>
+    /// <returns>The user's Requests section.</returns>
+    public static RequestPermissions Requests(RequestPermissions r)
     {
-        ArgumentNullException.ThrowIfNull(limits);
-        var list = limits.ToList();
-        return list.Count == 0 || list.Any(l => l.DataLimit <= 0)
-            ? new WireGuardPermissions { DataLimit = 0 }
-            : list.OrderByDescending(l => l.DataLimit).First();
-    }
-
-    /// <summary>
-    /// Merges what the groups that allow requesting give. A type or unreleased titles count when any of them allows it,
-    /// a profile list holds every profile when any of them lists none, and seeing others' requests needs a group
-    /// that allows requesting. Managing requests needs no request of one's own.
-    /// </summary>
-    /// <param name="requesters">The sections of the groups that allow requesting.</param>
-    /// <param name="all">Every group's sections.</param>
-    /// <returns>The merged Requests section.</returns>
-    public static RequestPermissions RequestMerge(IReadOnlyList<GroupPermissions> requesters, IReadOnlyList<GroupPermissions> all)
-    {
-        ArgumentNullException.ThrowIfNull(requesters);
-        ArgumentNullException.ThrowIfNull(all);
-        var r = requesters.Select(x => x.Requests).ToList();
+        ArgumentNullException.ThrowIfNull(r);
+        var may = r.MayRequest;
         return new RequestPermissions
         {
-            MayRequest = r.Count > 0,
-            Movies = r.Any(x => x.Movies),
-            Series = r.Any(x => x.Series),
-            Unreleased = r.Any(x => x.Unreleased),
-            AutoApproveMovies = r.Any(x => x.AutoApproveMovies),
-            AutoApproveSeries = r.Any(x => x.AutoApproveSeries),
-            MaxOpenRequests = Largest(r.Select(x => x.MaxOpenRequests)),
-            MovieQuota = Largest(r.Select(x => x.MovieQuota)),
-            SeriesQuota = Largest(r.Select(x => x.SeriesQuota)),
-            MaxSeasons = Largest(r.Select(x => x.MaxSeasons)),
-            MovieProfiles = Profiles(r.Select(x => x.MovieProfiles)),
-            SeriesProfiles = Profiles(r.Select(x => x.SeriesProfiles)),
-            MaySeeOthers = r.Any(x => x.MaySeeOthers),
-            MaySeeRequesters = r.Any(x => x.MaySeeRequesters),
-            MayManage = all.Any(x => x.Requests.MayManage)
+            MayRequest = may,
+            Movies = may && r.Movies,
+            Series = may && r.Series,
+            Unreleased = may && r.Unreleased,
+            AutoApproveMovies = may && r.AutoApproveMovies,
+            AutoApproveSeries = may && r.AutoApproveSeries,
+            MaxOpenRequests = may ? Limit(r.MaxOpenRequests) : 0,
+            MovieQuota = may ? Limit(r.MovieQuota) : 0,
+            SeriesQuota = may ? Limit(r.SeriesQuota) : 0,
+            MaxSeasons = may ? Limit(r.MaxSeasons) : 0,
+            MovieProfiles = may ? Union(r.MovieProfiles ?? new List<string>()) : new List<string>(),
+            SeriesProfiles = may ? Union(r.SeriesProfiles ?? new List<string>()) : new List<string>(),
+            MaySeeOthers = may && r.MaySeeOthers,
+            MaySeeRequesters = may && r.MaySeeRequesters,
+            MayManage = r.MayManage
         };
-    }
-
-    /// <summary>
-    /// Merges what the groups give in Issues. The limit counts only from the groups that allow reporting.
-    /// </summary>
-    /// <param name="reporters">The sections of the groups that allow reporting.</param>
-    /// <param name="all">Every group's sections, since managing issues needs no report.</param>
-    /// <returns>The merged Issues section.</returns>
-    public static IssuePermissions IssueMerge(IReadOnlyList<GroupPermissions> reporters, IReadOnlyList<GroupPermissions> all)
-    {
-        ArgumentNullException.ThrowIfNull(reporters);
-        ArgumentNullException.ThrowIfNull(all);
-        return new IssuePermissions
-        {
-            MayReport = reporters.Count > 0,
-            Limit = Largest(reporters.Select(x => x.Issues.Limit)),
-            MayManage = all.Any(x => x.Issues.MayManage)
-        };
-    }
-
-    // Every profile when any group lists none, else each listed profile once.
-    private static List<string> Profiles(IEnumerable<IReadOnlyList<string>?> lists)
-    {
-        var all = lists.Select(l => l ?? new List<string>()).ToList();
-        return all.Count == 0 || all.Any(l => l.Count == 0) ? new List<string>() : Union(all.SelectMany(l => l));
     }
 
     private static List<string> Union(IEnumerable<string> values) => values.Distinct(StringComparer.Ordinal).ToList();

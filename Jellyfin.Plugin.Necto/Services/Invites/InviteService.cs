@@ -639,7 +639,7 @@ public sealed class InviteService : IDisposable
             return InviteRedeemResult.Fail(StolonTranslations.Get(TranslationKeys.InvitesErrorExpired, language));
         }
 
-        var errors = PasswordValidator.Validate(password, AccountRuleMerger.Password(new[] { group }), language);
+        var errors = PasswordValidator.Validate(password, AccountRuleMerger.Password(group), language);
         if (errors.Count > 0)
         {
             return InviteRedeemResult.Fail(string.Join(" ", errors));

@@ -94,8 +94,8 @@ public sealed class SessionCleanupService
         {
             cancellationToken.ThrowIfCancellationRequested();
             var user = users[i];
-            var groups = GroupMembership.GroupsOf(config, user.Id);
-            if (!AccountRuleMerger.CleansSessions(groups))
+            var group = GroupMembership.GroupOf(config, user.Id);
+            if (!AccountRuleMerger.CleansSessions(group))
             {
                 progress?.Report((i + 1) * 100.0 / users.Count);
                 continue;
@@ -103,7 +103,7 @@ public sealed class SessionCleanupService
 
             foreach (var device in _deviceManager.GetDevices(new DeviceQuery { UserId = user.Id }).Items)
             {
-                if (AccountRuleMerger.SessionDays(groups, device.AppName) is not { } days || device.DateLastActivity >= now.AddDays(-days))
+                if (AccountRuleMerger.SessionDays(group, device.AppName) is not { } days || device.DateLastActivity >= now.AddDays(-days))
                 {
                     continue;
                 }

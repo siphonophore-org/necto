@@ -185,7 +185,7 @@ public class GroupsController : ControllerBase
         var result = _store.Read(c => users.Select(u =>
         {
             var admin = u.HasPermission(PermissionKind.IsAdministrator);
-            var groups = admin ? Array.Empty<Group>() : GroupMembership.GroupsOf(c, u.Id);
+            var group = GroupMembership.GroupOf(c, u.Id);
             return new GroupUser
             {
                 Id = u.Id,
@@ -193,8 +193,8 @@ public class GroupsController : ControllerBase
                 IsAdministrator = admin,
                 IsDisabled = u.HasPermission(PermissionKind.IsDisabled),
                 GroupIds = admin ? new List<Guid>() : GroupMembership.GroupIdsOf(c, u.Id),
-                ExpiresOn = admin ? null : AccountRuleMerger.ExpiresOn(groups),
-                InactiveDays = admin ? null : AccountRuleMerger.InactiveDays(groups)
+                ExpiresOn = admin ? null : AccountRuleMerger.ExpiresOn(group),
+                InactiveDays = admin ? null : AccountRuleMerger.InactiveDays(group)
             };
         }).ToList());
 

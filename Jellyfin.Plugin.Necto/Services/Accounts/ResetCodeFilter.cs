@@ -46,7 +46,7 @@ public static class ResetCodeFilter
                 return false;
             }
 
-            return all || GroupMembership.GroupsOf(config, user.Id).Any(g => g.Permissions?.Accounts?.Resets?.ShowCodes == true);
+            return all || GroupMembership.GroupOf(config, user.Id).Permissions?.Accounts?.Resets?.ShowCodes == true;
         }).ToList();
     }
 }

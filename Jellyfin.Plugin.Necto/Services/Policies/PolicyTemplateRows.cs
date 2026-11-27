@@ -43,19 +43,23 @@ public static class PolicyTemplateRows
     }
 
     /// <summary>
-    /// Builds one template from several, taking each row from the first template that sets it, and the preferences mode
-    /// from the first.
+    /// Builds a template that holds only the rows a template sets, with its preferences mode. A template that is off
+    /// sets no row.
     /// </summary>
-    /// <param name="templates">The templates, the one that wins first.</param>
-    /// <returns>A new template with every row some template sets.</returns>
-    public static PolicyTemplate Merge(IEnumerable<PolicyTemplate> templates)
+    /// <param name="template">The template.</param>
+    /// <returns>A new template with every row the template sets.</returns>
+    public static PolicyTemplate CopySetRows(PolicyTemplate template)
     {
-        ArgumentNullException.ThrowIfNull(templates);
-        var list = templates.Where(t => t is { Enabled: true }).ToList();
-        var merged = new PolicyTemplate { PreferencesMode = list.Count > 0 ? list[0].PreferencesMode : PreferencesMode.Maintain };
-        MergePart(list.Select(t => (object)t.Access), merged.Access);
-        MergePart(list.Select(t => (object)t.Preferences), merged.Preferences);
-        return merged;
+        ArgumentNullException.ThrowIfNull(template);
+        var on = template.Enabled;
+        var copy = new PolicyTemplate { PreferencesMode = on ? template.PreferencesMode : PreferencesMode.Maintain };
+        if (on)
+        {
+            CopyPart(template.Access, copy.Access);
+            CopyPart(template.Preferences, copy.Preferences);
+        }
+
+        return copy;
     }
 
     /// <summary>
@@ -93,13 +97,16 @@ public static class PolicyTemplateRows
     private static bool Sets(object? part)
         => part is not null && Of(part.GetType()).Any(row => (bool)row.Switch.GetValue(part)!);
 
-    private static void MergePart(IEnumerable<object> parts, object target)
+    private static void CopyPart(object? source, object target)
     {
-        var sources = parts.Where(p => p is not null).ToList();
+        if (source is null)
+        {
+            return;
+        }
+
         foreach (var (on, values) in Of(target.GetType()))
         {
-            var source = sources.FirstOrDefault(p => (bool)on.GetValue(p)!);
-            if (source is null)
+            if (!(bool)on.GetValue(source)!)
             {
                 continue;
             }

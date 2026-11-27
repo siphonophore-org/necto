@@ -17,16 +17,16 @@ public class GroupMembershipTests
     /// False: a second group would still add to a user's permissions.
     /// </summary>
     [Fact]
-    public void GroupsOf_UserListedTwice_GetsTheFirst()
+    public void GroupOf_UserListedTwice_GetsTheFirst()
     {
         var user = Guid.NewGuid();
         var a = TestGroups.Make("A", user);
         var b = TestGroups.Make("B");
         var c = TestGroups.Make("C", user);
 
-        var groups = GroupMembership.GroupsOf(TestGroups.Config(a, b, c), user);
+        var group = GroupMembership.GroupOf(TestGroups.Config(a, b, c), user);
 
-        Assert.Equal(a.Id, Assert.Single(groups).Id);
+        Assert.Equal(a.Id, group.Id);
     }
 
     /// <summary>
@@ -35,7 +35,7 @@ public class GroupMembershipTests
     /// False: an ungrouped user would have no group at all.
     /// </summary>
     [Fact]
-    public void GroupsOf_UserInNoGroup_GetsEveryone()
+    public void GroupOf_UserInNoGroup_GetsEveryone()
     {
         var groups = GroupMembership.GroupIdsOf(TestGroups.Config(TestGroups.Make("A", Guid.NewGuid())), Guid.NewGuid());
 

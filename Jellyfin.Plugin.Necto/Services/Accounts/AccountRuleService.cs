@@ -82,12 +82,12 @@ public sealed class AccountRuleService
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var user = users[i];
-                var groups = GroupMembership.GroupsOf(config, user.Id);
-                var names = string.Join(", ", groups.Select(g => g.IsEveryone ? everyone : g.Name));
+                var group = GroupMembership.GroupOf(config, user.Id);
+                var names = group.IsEveryone ? everyone : group.Name;
                 try
                 {
                     var dto = _userManager.GetUserDto(user, string.Empty);
-                    var action = AccountRuleMerger.Expiry(groups, now.Date);
+                    var action = AccountRuleMerger.Expiry(group, now.Date);
                     if (action == ExpiryAction.Delete)
                     {
                         var username = user.Username;
@@ -106,7 +106,7 @@ public sealed class AccountRuleService
                             _logger.LogDebug("Disabled expired user {UserId}", user.Id);
                         }
                     }
-                    else if (AccountRuleMerger.InactiveDays(groups) is { } days
+                    else if (AccountRuleMerger.InactiveDays(group) is { } days
                         && (dto.LastActivityDate ?? dto.LastLoginDate) is { } last
                         && last < now.AddDays(-days)
                         && !dto.Policy.IsDisabled)
