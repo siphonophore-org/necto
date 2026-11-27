@@ -2889,8 +2889,6 @@
   "StorageNoticeFormatUnavailable": "This server cannot format disks.",
   "StorageNoticeLibraryDisk": "This is the disk a library expects at {0}. It is not mounted, so its library items cannot play. Mount it again instead of erasing it.",
   "StorageNoticeNoDisks": "None of your libraries has a folder yet.",
-  "StoragePathImageCache": "Image cache",
-  "StoragePathProgramData": "Program data",
   "StorageRemountDenied": "Jellyfin is not allowed to mount disks",
   "StorageRemountError": "error {0}",
   "StorageRemountNotMounted": "it did not show up after mounting",

@@ -81,6 +81,8 @@
     <JellyfinString Include="External" />
     <JellyfinString Include="StorageType.Network" />
     <JellyfinString Include="Name" />
+    <JellyfinString Include="LabelProgramData" Case="sentence" />
+    <JellyfinString Include="LabelImageCache" Case="sentence" />
     <JellyfinString Include="LabelWeb" />
     <JellyfinString Include="LabelLogs" />
     <JellyfinString Include="LabelMetadata" />
