@@ -31,7 +31,7 @@ export function advancedSpecs() {
             ]
         },
         {
-            title: 'ProxyHeaderJellyfinSide', icon: 'lan', fields: [
+            title: 'LabelJellyfin', icon: 'lan', fields: [
                 { key: 'JellyfinLoopbackOnly', kind: 'bool', label: 'ProxyLabelLoopbackOnly', help: 'ProxyLoopbackOnlyHelp' },
                 { key: 'TrustedNetworks', kind: 'lines', label: 'ProxyLabelTrustedNetworks', help: 'ProxyTrustedNetworksHelp', placeholder: '100.64.0.0/10' }
             ]
@@ -455,7 +455,8 @@ function buildTroubleshooting(content, ctx) {
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var state = nectoModule.createDefinitionList({ items: [] });
     var reach = nectoModule.createDefinitionList({ items: [] });
-    var recovery = h('div', { class: 'stolon-info' });
+    var undoRow = nectoModule.createResetRow({ icon: 'undo', label: t.tr('ProxyUndoTrust'), help: t.tr('ProxyUndoTrustHelp'), button: t.tr('ButtonUndo'), action: 'undo', destructive: true });
+    var recoveryPath = h('pre', { class: 'stolon-code stolon-code-block', 'data-role': 'recovery-path' });
     [
         status,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderState') }),
@@ -471,12 +472,13 @@ function buildTroubleshooting(content, ctx) {
         h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') }),
         nectoModule.createResetGroup([
             nectoModule.createResetRow({ icon: 'restart_alt', label: t.tr('ProxyRestart'), help: t.tr('ProxyRestartHelp'), button: t.tr('Restart'), action: 'restart' }),
-            nectoModule.createResetRow({ icon: 'undo', label: t.tr('ProxyUndoTrust'), help: t.tr('ProxyUndoTrustHelp'), button: t.tr('ButtonUndo'), action: 'undo', destructive: true }),
+            undoRow,
             nectoModule.createResetRow({ icon: 'settings_backup_restore', label: t.tr('ProxyResetDefaults'), help: t.tr('ProxyResetDefaultsHelp'), button: t.tr('Reset'), action: 'reset', destructive: true }),
             nectoModule.createResetRow({ icon: 'delete_sweep', label: t.tr('ProxyClearHistory'), help: t.tr('ProxyClearHistoryHelp'), button: t.tr('ButtonClear'), action: 'clear', destructive: true })
         ]).element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderRecovery') }),
-        recovery
+        h('div', { class: 'fieldDescription', text: t.tr('ProxyRecoveryHelp') }),
+        recoveryPath
     ].forEach(function (n) { content.appendChild(n); });
 
     // report
@@ -534,10 +536,9 @@ function buildTroubleshooting(content, ctx) {
             if (s.Error) items.push({ label: t.tr('LabelProblem'), value: s.Error });
             state.setItems(items);
             showReach(s.Reachability);
-            var parts = t.tr('ProxyRecoveryHelp').split('{0}');
-            recovery.textContent = '';
-            [h('span', { text: parts[0] || '' }), h('span', { class: 'stolon-code', text: s.DisableFlagPath || 'DISABLE' }), h('span', { text: parts.slice(1).join('{0}') })]
-                .forEach(function (n) { recovery.appendChild(n); });
+            recoveryPath.textContent = s.DisableFlagPath || 'DISABLE';
+            // Undo turns gray while Jellyfin has nothing of the proxy's to undo.
+            undoRow.setEmpty(fields.enumName(s.TakeoverPhase, ['Unmanaged', 'PendingRestart', 'Managed', 'Degraded']) === 'Unmanaged');
         }).catch(fail('ProxyErrorLoad'));
     }
 

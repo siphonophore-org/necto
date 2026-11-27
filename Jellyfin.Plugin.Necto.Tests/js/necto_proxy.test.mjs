@@ -530,7 +530,7 @@ test('every text field of the Proxy settings is sent as text, never null', async
     texts.forEach(function (key) { assert.equal(typeof out[key], 'string', key); });
 });
 
-test('the Jellyfin section offers Trust and Undo as rows with their tiles, and its badge alone says where trust stands', async function () {
+test('the Jellyfin section offers Trust, and Undo only once trusted, as rows with their tiles, and its badge says where trust stands', async function () {
     var opened = await openProxyPage();
     var section = opened.view.querySelector('#proxyJellyfin');
 
@@ -538,6 +538,7 @@ test('the Jellyfin section offers Trust and Undo as rows with their tiles, and i
     assert.equal(section.querySelectorAll('.stolon-collapsible-content > div > .fieldDescription').length, 0);
     assert.equal(section.querySelector('[data-role="trust-state"]'), null);
     assert.equal(section.querySelector('[data-action="undo"]').disabled, true);
+    assert.ok(section.querySelector('[data-action="undo"]').closest('.stolon-reset-row').classList.contains('stolon-hidden'));
 });
 
 test('the Proxy section of Settings folds each group of settings into its own part with a tile', async function () {

@@ -200,8 +200,8 @@ A test checks that every key a tool sends is in a list, so no event is left out 
 
 * **Send test** beside **Send a test to me** sends the test to your browsers and your Jellyfin apps.
 * **Send log** lists the latest 200 sends, newest first, with what happened. It starts empty when the server starts. **Refresh** reads it again, and **Clear** beside **Clear the send log** empties it.
-* **Browsers** lists the browsers with notifications on, by user, with the count of Jellyfin messages waiting for an app.
-* **Clear waiting messages** asks first, then drops every held Jellyfin message.
+* **Browsers** lists the browsers with notifications on, by user, and the count of Jellyfin messages waiting for an app while any wait.
+* **Clear waiting messages** asks first, then drops every held Jellyfin message. Its tile is gray while none wait, and the tile of **Clear the send log** is gray while the log is empty.
 * **Replace** beside **Make new push keys** asks first, then makes a new key pair. Every browser must turn notifications on again.
 
 | Reason | What to do |

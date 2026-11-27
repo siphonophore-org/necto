@@ -339,7 +339,7 @@ A test of a script that runs for each item or user uses one sample item or user.
 
 ### History
 
-A chart at the top of **History** shows how many runs succeeded and failed on each of the last 14 days, or 7 on a phone, in the server's time zone. Test runs are left out of it.
+A chart at the top of **History** shows how many runs succeeded and failed on each of the last 14 days, or 7 on a phone, in the server's time zone. Test runs are left out of it, and it is hidden while those days have no run.
 
 Every run, tests included, is listed under the chart, newest first. The table grows with its rows, and more load as you scroll. Its columns are **Run**, **Trigger**, **Started**, **Duration**, and **Result**, and a test shows *(test)* after its script's name. Drag the edge of a heading to resize its column, and the width is kept for the next visit. On a phone the table shows only the run and its result.
 

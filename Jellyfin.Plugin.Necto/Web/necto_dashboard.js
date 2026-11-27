@@ -79,8 +79,7 @@ export function setState(card, t, state) {
 }
 
 // emptyLine
-// The card's detail line, which says the card has nothing to count while every part of its bar is 0. The legend
-// under the bar names each part with its value.
+// The card's detail line, which says the card has nothing to count while every part of its bar is 0.
 //
 // Inputs
 // t [object]: The strings.
@@ -123,11 +122,40 @@ export function fromCountCards(cards) {
     return cards.filter(function (c) { return !!c.color; }).map(function (c) { return { label: c.label, value: Number(c.count) || 0, color: c.color }; });
 }
 
-// withBar
-// Gives a card its bar, the legend under it, and the line that says when it has nothing to count.
+// barParts
+// Keeps the parts of a card's bar that hold anything, so the bar and its legend never list a state at 0.
 //
 // Inputs
-// card [object]: The card.
+// segments [object[]]: The bar's parts, each with a label and a value.
+//
+// Output
+// [object[]]: The parts whose value is above 0, in their order.
+export function barParts(segments) {
+    return (segments || []).filter(function (s) { return (Number(s.value) || 0) > 0; });
+}
+
+// showsLegend
+// Whether a card lists its bar's parts under it. A bar of one part that says what the card's number already says,
+// such as Published under "2 published", needs no legend.
+//
+// Inputs
+// parts [object[]]: The bar's parts that hold anything, from barParts.
+// valueLabel [string]: The word after the card's number, or empty.
+//
+// Output
+// [boolean]: true when the legend adds something.
+export function showsLegend(parts, valueLabel) {
+    if (!parts.length) return false;
+    if (parts.length > 1) return true;
+    return String(parts[0].label || '').toLowerCase() !== String(valueLabel || '').toLowerCase();
+}
+
+// withBar
+// Gives a card its bar and legend from the parts that hold anything. With nothing to count it takes no bar, only the
+// line that says so.
+//
+// Inputs
+// card [object]: The card, with its valueLabel already set.
 // t [object]: The strings.
 // segments [object[]]: The bar's parts.
 // emptyKey [string]: The key of the line shown while every part is 0.
@@ -135,9 +163,10 @@ export function fromCountCards(cards) {
 // Output
 // [object]: The card.
 function withBar(card, t, segments, emptyKey) {
-    card.segments = segments;
-    card.legend = true;
-    card.detail = emptyLine(t, segments, emptyKey);
+    var parts = barParts(segments);
+    card.segments = parts.length ? parts : null;
+    card.legend = showsLegend(parts, card.valueLabel);
+    card.detail = emptyLine(t, parts, emptyKey);
     return card;
 }
 
@@ -151,7 +180,7 @@ function withBar(card, t, segments, emptyKey) {
 // Output
 // [object]: The card, with a dash for its value, an empty bar, and a red status.
 function failedCard(t, card) {
-    return setState(Object.assign(card, { value: DASH, segments: [], detail: t.tr('DashboardCardFailed') }), t, 'error');
+    return setState(Object.assign(card, { value: DASH, segments: null, legend: false, detail: t.tr('DashboardCardFailed') }), t, 'error');
 }
 
 // toolCard
@@ -241,8 +270,8 @@ export function invitesCard(t, invites) {
 }
 
 // groupsCard
-// Sums up the groups: how many there are besides Everyone, and the users in one beside those only Everyone holds.
-// Administrators are in no group, so they are left out.
+// Sums up the groups: how many there are besides Everyone as the number, and the users as members of a group, users
+// in no group, and administrators, who are never in a group.
 //
 // Inputs
 // t [object]: The strings.
@@ -254,12 +283,14 @@ export function invitesCard(t, invites) {
 export function groupsCard(t, config, users) {
     var card = toolCard('groups');
     if (!Array.isArray(users)) return failedCard(t, card);
+    var admins = users.filter(function (u) { return u.IsAdministrator; }).length;
     var people = users.filter(function (u) { return !u.IsAdministrator; });
     var grouped = people.filter(function (u) { return (u.GroupIds || []).some(function (id) { return !sameId(id, EVERYONE_ID); }); }).length;
     card.value = ((config && config.Groups) || []).filter(function (g) { return !sameId(g.Id, EVERYONE_ID); }).length;
     withBar(card, t, [
         { label: t.tr('HeaderMembers'), value: grouped, color: 'green' },
-        { label: t.tr('ScriptsSummaryNoGroups'), value: people.length - grouped, color: 'gray' }
+        { label: t.tr('ScriptsSummaryNoGroups'), value: people.length - grouped, color: 'gray' },
+        { label: t.tr('DashboardAdmins'), value: admins, color: 'blue' }
     ], 'DashboardEmptyUsers');
     return setState(card, t, grouped > 0 ? 'active' : 'idle');
 }
@@ -322,8 +353,8 @@ export function proxyCard(t, shared, status, now) {
 }
 
 // ddnsCard
-// Sums up the DDNS records: every record and every name a record follows as the number, and a part per last result,
-// with the records that are off as their own part.
+// Sums up the DDNS records, counting every name a record follows: those up to date as the number, and a part per
+// last result, with the records that are off as their own part.
 //
 // Inputs
 // t [object]: The strings.
@@ -352,7 +383,8 @@ export function ddnsCard(t, answer) {
     var segments = tally(tags.filter(function (tag) { return tag !== off; })).sort(function (a, b) { return order.indexOf(a.color) - order.indexOf(b.color); });
     var offCount = tags.filter(function (tag) { return tag === off; }).length;
     if (offCount) segments.push({ label: off.label, value: offCount, color: off.color });
-    card.value = records.length;
+    card.value = tags.filter(function (tag) { return tag === good; }).length;
+    card.valueLabel = good.label.toLowerCase();
     withBar(card, t, segments, 'DashboardNoRecords');
     var colors = tags.map(function (tag) { return tag.color; });
     if (colors.indexOf('red') >= 0) return setState(card, t, 'failed');
@@ -463,7 +495,7 @@ export function storageCard(t, disks) {
 }
 
 // notificationsCard
-// Sums up the send log: the sends it holds as the number, and those that went beside those that failed.
+// Sums up the send log: the sends that went as the number, beside those that failed.
 //
 // Inputs
 // t [object]: The strings.
@@ -475,7 +507,8 @@ export function notificationsCard(t, log) {
     var card = toolCard('notifications');
     if (!Array.isArray(log)) return failedCard(t, card);
     var counts = sendCounts(log);
-    card.value = log.length;
+    card.value = counts.sent;
+    card.valueLabel = t.tr('StateSent').toLowerCase();
     withBar(card, t, [
         { label: t.tr('StateSent'), value: counts.sent, color: 'green' },
         { label: t.tr('LabelFailed'), value: counts.failed, color: 'red' }
@@ -699,12 +732,12 @@ export function toolOfType(type) {
 var SEVERITY_STATUS = { Critical: 'red', Error: 'red', Warning: 'orange' };
 
 // activityItems
-// Turns Necto's activity log entries into timeline events, each marked with its tool's icon, and with its severity
-// when it is a warning or an error.
+// Turns Necto's activity log entries into timeline events, each with how long ago it happened, marked with its tool's
+// icon, and with its severity when it is a warning or an error.
 //
 // Inputs
 // entries [object[]]: What Dashboard/Activity answered, newest first.
-// shared [object]: The helper bag, for formatDate.
+// shared [object]: The helper bag, for formatRelativeTime.
 //
 // Output
 // [object[]]: Timeline items of { time, datetime, title, body, status, icon }.
@@ -714,7 +747,7 @@ export function activityItems(entries, shared) {
     return (Array.isArray(entries) ? entries : []).map(function (entry) {
         var tool = toolOfType(entry.Type);
         var item = {
-            time: shared.formatDate(entry.Date),
+            time: shared.formatRelativeTime(new Date(entry.Date)),
             datetime: entry.Date,
             title: entry.Name
         };
@@ -775,7 +808,7 @@ export default function (view) {
         clearCards();
         // The grid goes on the page before its cards, so its rows are balanced to the width they have.
         // Every card takes one width, so ten cards never read as two kinds.
-        grid = nectoModule.createStatusCardGrid({ minWidth: 150, even: true });
+        grid = nectoModule.createStatusCardGrid({ minWidth: 300, even: true });
         getEl('dashboardCards').appendChild(grid.element);
         grid.setCards(cards.map(function (card) {
             var options = Object.assign({}, card);

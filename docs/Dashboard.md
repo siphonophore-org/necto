@@ -8,9 +8,9 @@
 
 ## Cards
 
-A status card sums up each tool that is on, in sidebar order, every card the same width. Select a card to open its tool. **Issues** has a card only with **Enable issues** on, and **Proxy** and **VPN** only while each is on. A card whose tool could not be read shows **Error** and "Could not read this tool".
+A status card sums up each tool that is on, in sidebar order, every card the same width and every card in a row the same height. Select a card to open its tool. **Issues** has a card only with **Enable issues** on, and **Proxy** and **VPN** only while each is on. A card whose tool could not be read shows **Error** and "Could not read this tool".
 
-Each card ends in one bar split into parts, in the colors the tool's own page uses. A legend under the bar names every part with a dot in its color and its count, in bar order. While every part is 0, a line under it says the tool has nothing yet, such as "No requests yet". The pill uses the same words and colors across Necto.
+Each card leads with one number and the word for what it counts, such as "1 pending". Under it, one bar split into parts shows the states that hold anything, in the colors the tool's own page uses, and a legend names each of those parts with a dot in its color and its count. A state at 0 is left out. A bar of one part that says what the number already says, such as **Published** under "2 published", takes no legend. While nothing holds anything, the card shows no bar, only a line that says the tool has nothing yet, such as "No requests yet". The pill uses the same words and colors across Necto.
 
 | Pill | Color | Means |
 | :--- | :--- | :--- |
@@ -24,17 +24,17 @@ Each card ends in one bar split into parts, in the colors the tool's own page us
 
 | Card | Number | Bar |
 | :--- | :--- | :--- |
-| **Groups** | Groups besides **Everyone** | **Members** of a group beside users in **No group**. Administrators are left out |
+| **Groups** | Groups besides **Everyone** | Users who are **Members** of a group, users in **No group**, and **Admins**, who are never in a group |
 | **Requests** | Requests waiting for approval | A part per request status |
 | **Issues** | Open issue reports, reported or confirmed | A part per issue state |
 | **Invites** | Active invites | A part per invite state |
 | **Proxy** | Active routes | Active, failed, and off routes. A certificate that expires within 14 days names its date in place of the line |
-| **DDNS** | Records, counting each name a record follows | A part per last result, and the records that are off |
+| **DDNS** | Records up to date, counting each name a record follows | A part per last result, and the records that are off |
 | **VPN** | Connected peers and connections | A part per peer and connection state |
 | **Scripts** | Runs that failed in the last 14 days | Runs that succeeded and failed |
 | **Pages** | Published pages | Published and unpublished pages |
 | **Storage** | Disks Jellyfin uses, as the **Storage** tool counts them | A part per disk state |
-| **Notifications** | Sends in the send log | Sends that went and that failed |
+| **Notifications** | Sends in the send log that went | Sends that went and that failed |
 
 ## Locations
 
@@ -59,7 +59,7 @@ Places come from the location database the proxy uses, DB-IP's free database, ke
 
 ## Recent Activity
 
-**Recent activity** lists Necto's newest activity log entries, newest first, each with its tool's icon. An error is marked red and a warning orange, and other entries take no mark. It reads the latest 500 entries of Jellyfin's activity log and lists up to 20 of Necto's.
+**Recent activity** lists Necto's newest activity log entries, newest first, each with how long ago it happened and its tool's icon. An error is marked red and a warning orange, and other entries take no mark. It reads the latest 500 entries of Jellyfin's activity log and lists up to 20 of Necto's.
 
 The map and **Recent activity** are read again every minute while the page is open, and the cards each time it opens.
 

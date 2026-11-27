@@ -382,7 +382,7 @@ function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
     var state = h('div', { role: 'status', 'data-role': 'file-state' });
-    var path = h('div', { class: 'stolon-code-block', 'data-role': 'file-path' });
+    var path = h('pre', { class: 'stolon-code stolon-code-block', 'data-role': 'file-path' });
     content.appendChild(h('h3', { class: 'stolon-subsection-title', text: t.tr('MenuLinksTroubleFile') }));
     content.appendChild(state);
     content.appendChild(path);

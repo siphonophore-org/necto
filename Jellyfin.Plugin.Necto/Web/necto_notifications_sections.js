@@ -515,7 +515,9 @@ function buildTroubleshooting(content, ctx) {
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
     var logBox = h('div', { 'data-role': 'log' });
     var browserBox = h('div', { 'data-role': 'browsers' });
-    var heldLine = h('div', { class: 'fieldDescription', 'data-role': 'held' });
+    var heldLine = h('div', { class: 'fieldDescription stolon-hidden', 'data-role': 'held' });
+    var clearLogRow = nectoModule.createResetRow({ icon: 'clear_all', label: t.tr('NotificationsClearLog'), help: t.tr('NotificationsClearLogHelp'), button: t.tr('ButtonClear'), action: 'clear-log', destructive: true });
+    var clearHeldRow = nectoModule.createResetRow({ icon: 'speaker_notes_off', label: t.tr('NotificationsClearHeld'), help: t.tr('NotificationsClearHeldHelp'), button: t.tr('ButtonClear'), action: 'clear-held', destructive: true });
 
     [
         status,
@@ -529,14 +531,12 @@ function buildTroubleshooting(content, ctx) {
         h('div', { class: 'stolon-card-list-actions' }, [
             h('button', { is: 'emby-button', type: 'button', class: 'raised stolon-button stolon-secondary', 'data-action': 'refresh-log' }, [h('span', { class: 'material-icons', 'aria-hidden': 'true', text: 'refresh' }), h('span', { text: t.tr('Refresh') })])
         ]),
-        nectoModule.createResetGroup([
-            nectoModule.createResetRow({ icon: 'clear_all', label: t.tr('NotificationsClearLog'), help: t.tr('NotificationsClearLogHelp'), button: t.tr('ButtonClear'), action: 'clear-log', destructive: true })
-        ]).element,
+        nectoModule.createResetGroup([clearLogRow]).element,
         h('h3', { class: 'stolon-subsection-title', text: t.tr('NotificationsHeaderBrowsers') }),
         browserBox,
         heldLine,
         nectoModule.createResetGroup([
-            nectoModule.createResetRow({ icon: 'speaker_notes_off', label: t.tr('NotificationsClearHeld'), help: t.tr('NotificationsClearHeldHelp'), button: t.tr('ButtonClear'), action: 'clear-held', destructive: true }),
+            clearHeldRow,
             nectoModule.createResetRow({ icon: 'vpn_key', label: t.tr('NotificationsResetKeys'), help: t.tr('NotificationsResetKeysHelp'), button: t.tr('WireGuardButtonReplace'), action: 'reset-keys', destructive: true })
         ]).element
     ].forEach(function (node) { content.appendChild(node); });
@@ -569,6 +569,7 @@ function buildTroubleshooting(content, ctx) {
                 logList = nectoModule.createRecordList({ items: items, label: t.tr('NotificationsHeaderLog'), emptyText: t.tr('NotificationsEmptyLog'), maxHeight: 420 });
                 logBox.appendChild(logList.element);
             }
+            clearLogRow.setEmpty(!items.length);
         }).catch(fail('NotificationsErrorLoadLog'));
     }
 
@@ -582,7 +583,11 @@ function buildTroubleshooting(content, ctx) {
                 browserList = nectoModule.createRecordList({ items: items, label: t.tr('NotificationsHeaderBrowsers'), emptyText: t.tr('NotificationsEmptyBrowsers') });
                 browserBox.appendChild(browserList.element);
             }
-            heldLine.textContent = shared.t.plural((push && push.Held) || 0, 'NotificationsHeldOne', 'NotificationsHeldMany');
+            // The count shows only while messages wait, and Clear waiting messages turns gray while none do.
+            var held = (push && push.Held) || 0;
+            heldLine.textContent = held ? shared.t.plural(held, 'NotificationsHeldOne', 'NotificationsHeldMany') : '';
+            shared.setVisible(heldLine, held > 0);
+            clearHeldRow.setEmpty(!held);
         }).catch(fail('NotificationsErrorLoadPush'));
     }
 
