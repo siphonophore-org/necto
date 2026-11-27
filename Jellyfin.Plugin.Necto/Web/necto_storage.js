@@ -44,12 +44,12 @@ export function serverText(t, key) {
 // [object]: { label, color }. Each state a disk in use can have takes its own color, so the Dashboard's bar tells them
 // apart.
 export function stateOf(t, disk) {
-    if (disk.State === 'Missing') return { label: t.tr('StorageStateMissing'), color: 'red' };
+    if (disk.State === 'Missing') return { label: t.tr('StorageStateMissing'), color: 'purple' };
     if (disk.State === 'Unresponsive') return { label: t.tr('StorageStateUnresponsive'), color: 'teal' };
     if (disk.State === 'Unformatted') return { label: t.tr('StorageStateUnformatted'), color: 'blue' };
     if (disk.State === 'NotMounted') return { label: t.tr('StorageStateNotMounted'), color: 'gray' };
     if (disk.Health === 'Failing') return { label: t.tr('StorageHealthFailing'), color: 'yellow' };
-    if (disk.Level === 'Error') return { label: t.tr('StorageLevelFull'), color: 'pink' };
+    if (disk.Level === 'Error') return { label: t.tr('StorageLevelFull'), color: 'red' };
     if (disk.Level === 'Warning') return { label: t.tr('DashboardStateAttention'), color: 'orange' };
     if (!disk.InUse) return { label: t.tr('StorageStateUnused'), color: 'gray' };
     return { label: t.tr('LabelAvailable'), color: 'green' };
@@ -931,7 +931,7 @@ export default function (view) {
     }
 
     // refreshButton
-    // Builds Refresh, the icon at the end of the Disks header that checks every disk again. Its icon turns into a
+    // Builds Refresh, the icon at the end of the tab line that checks every disk again. Its icon turns into a
     // spinner while a check runs.
     function refreshButton() {
         return h('button', { is: 'emby-button', type: 'button', id: 'btnStorageCheck', class: 'stolon-row-btn', title: t.tr('Refresh'), 'aria-label': t.tr('Refresh') }, [
@@ -940,8 +940,8 @@ export default function (view) {
     }
 
     // bindPage
-    // Draws the Disks section once: Refresh at the end of its header, and its sub-tabs for the disks Jellyfin uses and
-    // every disk over the disk list.
+    // Draws the disk list once, under sub-tabs for the disks Jellyfin uses and every disk, with Refresh at the end of the
+    // tab line.
     function bindPage(bag, handle) {
         shared = bag;
         page = handle;
@@ -964,9 +964,9 @@ export default function (view) {
         tabs.getPanel('used').appendChild(list.element);
         var status = h('div', { id: 'storageCheckStatus', class: 'stolon-error stolon-hidden', role: 'status' });
         var refresh = refreshButton();
-        var content = h('div', { class: 'stolon-stack' }, [status, tabs.element]);
-        var disksSection = nectoModule.createCollapsibleSection({ title: t.tr('StorageHeaderDisks'), icon: 'storage', collapsible: false, content: content, aside: refresh });
-        $('storageDisks').appendChild(disksSection.element);
+        refresh.classList.add('necto-storage-refresh');
+        var bar = h('div', { class: 'necto-storage-tabs' }, [tabs.element, refresh]);
+        $('storageDisks').appendChild(h('div', { class: 'stolon-stack' }, [status, bar]));
         refresh.addEventListener('click', check);
         refresh.addEventListener('mouseenter', function () {
             this.title = checkedAt ? t.format('StorageLastChecked', shared.formatRelativeTime(checkedAt)) : t.tr('Refresh');

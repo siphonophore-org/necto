@@ -273,7 +273,7 @@ test('the Scripts, Storage, and Notifications cards show failures first', async 
         { Name: 'spare', State: 'Available', InUse: false, Level: 'None' }
     ]);
     assert.equal(storage.value, 2);
-    assert.deepEqual(storage.segments.map(function (s) { return s.color; }), ['green', 'red']);
+    assert.deepEqual(storage.segments.map(function (s) { return s.color; }), ['green', 'purple']);
     assert.deepEqual([storage.status, storage.statusColor], ['Warning', 'orange']);
     assert.equal(dashboard.storageCard(t, [{ Name: 'media', State: 'Available', InUse: true }]).status, 'Active');
     assert.equal(dashboard.storageCard(t, [{ Name: 'spare', State: 'Available', InUse: false }]).detail, 'No disks in use');

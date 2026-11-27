@@ -48,7 +48,7 @@ test('a disk state reads as its badge, most serious first, in the colors the sty
     installPage({});
     var storage = await loadScript('necto_storage.js');
 
-    assert.deepEqual(storage.stateOf(t, disk({ State: 'Missing' })), { label: 'Missing', color: 'red' });
+    assert.deepEqual(storage.stateOf(t, disk({ State: 'Missing' })), { label: 'Missing', color: 'purple' });
     assert.deepEqual(storage.stateOf(t, disk({ State: 'Unresponsive' })), { label: 'Unresponsive', color: 'teal' });
     assert.deepEqual(storage.stateOf(t, disk({ Health: 'Failing', Level: 'Warning' })), { label: 'Failing', color: 'yellow' });
     assert.deepEqual(storage.stateOf(t, disk({ Level: 'Warning' })), { label: 'Needs attention', color: 'orange' });
@@ -263,7 +263,7 @@ test('the tool checks every disk, lists the disks in use with their state, and l
     assert.match(rows[0].textContent, /media/);
     assert.match(rows[0].textContent, /Local/);
     assert.ok(rows[0].querySelector('.stolon-usage-meter-badge, [data-role="row-state"]'));
-    assert.ok(view.querySelector('#storageDisks .stolon-collapsible-header #btnStorageCheck'));
+    assert.ok(view.querySelector('#storageDisks .necto-storage-tabs #btnStorageCheck'));
 
     rows[0].click();
     await settle(50);

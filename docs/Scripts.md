@@ -146,7 +146,7 @@ curl -X POST "https://jellyfin.example.com/Scripts/Webhook/TOKEN" \
 
 The body may be up to 64 KB, and its first 16,384 characters arrive as `WEBHOOK_BODY`. Each query parameter and each JSON field also becomes its own variable, named `WEBHOOK_` and then the field in capitals, with nested fields joined by underscores: the request above sets `WEBHOOK_EVENTTYPE` and `WEBHOOK_SERIES_TITLE`. Use them as placeholders or in a step's own condition. The answer is `202` with `Queued` saying whether the script's conditions and cooldown let it run.
 
-The token is kept in Necto's configuration, readable by administrators, and left out of exports. A duplicated or imported script gets its own address.
+The token is kept in Necto's configuration, readable by administrators, and left out of exports. An imported script gets its own address.
 
 ### Run Now
 

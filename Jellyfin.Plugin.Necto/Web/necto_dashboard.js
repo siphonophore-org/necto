@@ -549,7 +549,7 @@ export function pagesCard(t, config) {
 
 // ATTENTION_COLORS
 // The disk state colors that ask for attention: missing, full, failing, unresponsive, or nearly full.
-var ATTENTION_COLORS = ['red', 'pink', 'yellow', 'teal', 'orange'];
+var ATTENTION_COLORS = ['red', 'purple', 'pink', 'yellow', 'teal', 'orange'];
 
 // storageCard
 // Sums up the disks Jellyfin uses, as the Storage tool counts them: how many there are, and a part per state.
@@ -565,7 +565,7 @@ export function storageCard(t, disks) {
     if (!Array.isArray(disks)) return failedCard(t, card);
     var used = disks.filter(function (d) { return d.InUse; });
     var states = used.map(function (d) { return diskState(t, d); });
-    var order = ['green', 'orange', 'teal', 'yellow', 'pink', 'red', 'blue', 'gray'];
+    var order = ['green', 'orange', 'teal', 'yellow', 'red', 'purple', 'blue', 'gray'];
     card.value = used.length;
     card.valueLabel = t.tr('DashboardInUse');
     withBar(card, t, tally(states).sort(function (a, b) { return order.indexOf(a.color) - order.indexOf(b.color); }), 'DashboardEmptyDisks');

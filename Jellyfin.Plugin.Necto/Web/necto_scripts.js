@@ -1349,7 +1349,7 @@ export default function (view) {
         });
     }
 
-    // ---- New, duplicate, export, import ----
+    // ---- New, rename, remove, import, export ----
 
     function blankScript(name) {
         return {
