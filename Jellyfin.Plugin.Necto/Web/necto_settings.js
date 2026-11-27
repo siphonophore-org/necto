@@ -35,6 +35,7 @@ export default function (view) {
             // A tool turned on or off joins or leaves the sidebar at once.
             return shared.getConfig().then(function (config) {
                 nectoModule.setToolsOff(config);
+                paintSwitchTiles(entries, config);
                 if (shared.onTabsChanged) shared.onTabsChanged();
                 return saved;
             }, function () { return saved; });
@@ -72,6 +73,7 @@ export default function (view) {
     function loadPage(shared) {
         shared.getConfig().then(function (config) {
             entries.forEach(function (entry) { if (entry.handle) entry.handle.load(config); });
+            paintSwitchTiles(entries, config);
             bars.forEach(function (b) { b.dirty = false; b.bar.setDirty(false); });
         }).catch(function () {
             shared.setStatus('settingsStatus', shared.t.tr('ErrorLoadSettings'), true);
@@ -79,4 +81,33 @@ export default function (view) {
     }
 
     nectoModule.createNectoPage(view, { page: 'necto_settings', bind: bindPage, load: loadPage });
+}
+
+// The tools with an on switch, by key, with the settings section that holds it.
+var SWITCHES = { issues: 'Issues', proxy: 'Proxy', wireguard: 'WireGuard' };
+
+// paintSwitchTiles
+// Colors the tile of each tool with an on switch: green while the tool is on, gray while it is off. The tile follows
+// the section's first checkbox, which is its switch, as it changes. Tools with no switch keep the accent.
+//
+// Inputs
+// entries [object[]]: The drawn sections, each with key and collapsible.
+// config [object]: The plugin configuration.
+export function paintSwitchTiles(entries, config) {
+    (entries || []).forEach(function (entry) {
+        var name = SWITCHES[entry.key];
+        var root = entry.collapsible && entry.collapsible.element;
+        var tile = name && root ? root.querySelector('.stolon-collapsible-tile') : null;
+        if (!tile) return;
+        var paint = function (on) {
+            tile.classList.toggle('stolon-green', on);
+            tile.classList.toggle('stolon-gray', !on);
+        };
+        paint(!!(config && config[name] && config[name].Enabled));
+        var box = root.querySelector('input[type="checkbox"]');
+        if (box && !box.dataset.tileBound) {
+            box.dataset.tileBound = '1';
+            box.addEventListener('change', function () { paint(box.checked); });
+        }
+    });
 }

@@ -155,3 +155,25 @@ test('pending password resets show their counts and the HTTPS warning', async fu
     assert.match(resets.querySelector('[data-role="reset-cards"]').textContent, /1\s*Active/);
     assert.match(resets.textContent, /Reset codes are sent over this connection\. Use HTTPS so they cannot be read in transit\./);
 });
+
+test('a tool with an on switch has a green tile while on, a gray one while off, and follows its switch', async function () {
+    var page = installPage({});
+    var dom = page.dom;
+    var mod = await loadScript('necto_settings.js');
+    function entry(key) {
+        var tile = dom.el('span', { class: 'stolon-collapsible-tile' });
+        var box = dom.el('input', { type: 'checkbox' });
+        return { key: key, tile: tile, box: box, collapsible: { element: dom.el('div', {}, [tile, box]) } };
+    }
+    var proxy = entry('proxy'), wireguard = entry('wireguard'), groups = entry('groups');
+
+    mod.paintSwitchTiles([proxy, wireguard, groups], { Proxy: { Enabled: true }, WireGuard: { Enabled: false } });
+
+    assert.ok(proxy.tile.classList.contains('stolon-green'));
+    assert.ok(wireguard.tile.classList.contains('stolon-gray'));
+    assert.ok(!groups.tile.classList.contains('stolon-green') && !groups.tile.classList.contains('stolon-gray'));
+
+    wireguard.box.checked = true;
+    wireguard.box.dispatchEvent(new globalThis.Event('change'));
+    assert.ok(wireguard.tile.classList.contains('stolon-green'));
+});
