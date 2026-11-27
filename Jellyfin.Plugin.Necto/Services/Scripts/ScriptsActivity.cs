@@ -20,7 +20,7 @@ public sealed class ScriptsActivity : IDisposable
     private readonly INotifier? _notifier;
     private readonly Func<string> _language;
     private readonly Func<DateTime> _now;
-    private readonly Dictionary<string, DateTime> _lastSent = new(StringComparer.Ordinal);
+    private readonly Dictionary<Guid, DateTime> _lastSent = new();
 
     /// <summary>
     /// Gets the outcome of script runs that ended with a failed step, by script name, with each first failure's message.
@@ -74,10 +74,11 @@ public sealed class ScriptsActivity : IDisposable
     /// <summary>Gets the summary entries are counted into.</summary>
     public ActivitySummary Summary { get; }
 
-    /// <summary>Counts one failed run toward the next summary.</summary>
+    /// <summary>Counts one failed run toward the next summary, and sends it to Notifications at most once a minute for each script.</summary>
+    /// <param name="scriptId">The script's id, which spaces its events apart from every other script's.</param>
     /// <param name="scriptName">The script's name.</param>
     /// <param name="message">The first failed step's message.</param>
-    public void RunFailedFor(string scriptName, string? message)
+    public void RunFailedFor(Guid scriptId, string scriptName, string? message)
     {
         var reason = ActivityText.Sentence(message);
         Summary.Add(RunFailed, scriptName, string.IsNullOrWhiteSpace(reason) ? null : reason);
@@ -89,12 +90,12 @@ public sealed class ScriptsActivity : IDisposable
         var now = _now();
         lock (_lastSent)
         {
-            if (_lastSent.TryGetValue(scriptName, out var last) && now - last < EventSpacing)
+            if (_lastSent.TryGetValue(scriptId, out var last) && now - last < EventSpacing)
             {
                 return;
             }
 
-            _lastSent[scriptName] = now;
+            _lastSent[scriptId] = now;
         }
 
         var language = _language();

@@ -168,7 +168,7 @@ While the panel shows, the **Triggers** heading carries a badge, green **All kin
 
 ## Groups
 
-Which users a script runs for is set on groups, in the **Scripts** section of each group in **Groups**. **Run every script** runs every script for the group's members, and **Scripts that run** lists the ones it runs otherwise. Administrators run every script.
+Which users a script runs for is set on groups, in the **Scripts** section of each group in **Groups**. **Run every script** runs every script for the group's members, and **Scripts that run** lists the ones it runs otherwise. Administrators run every script, since groups hold no administrators. To leave them out, add an **Is administrator** condition, as the editor's **Groups** section says.
 
 The **Groups** section of the editor names the groups that run the open script, and **Open groups** opens **Groups**. On playback, the script runs when the groups of any of the session's users run it. A failed sign in for a name with no account takes **Everyone**, so the script runs for it when **Everyone** runs the script.
 
@@ -275,7 +275,7 @@ Use **Check path** to confirm the server can see the file and that it is executa
 
 ## Secrets
 
-Keep tokens and passwords in the script's **Secrets** rather than in its steps. Use one as `{{SECRET_NAME}}` in a step, or `$JF_SECRET_NAME` in a command. Values are encrypted into their own file beside Necto's configuration, never sent back to the browser in any form, and left out of exports. Wherever a secret of three or more characters shows up in a step's message or a command's output, the history and the activity log show `[SECRET_NAME]` instead. Each secret is a row with a **Name** and a **Value**. **Add secret** adds a row, and the cross at the end of a row removes the secret when you save. A name is capital letters, digits, and underscores, and typing fixes it as you go. Renaming a secret keeps its value. A stored value shows as dots and stays until you type a new one. The **Clear Value** button beside a stored value empties it when you save.
+Keep tokens and passwords in the script's **Secrets** rather than in its steps. Use one as `{{SECRET_NAME}}` in a step, or `$JF_SECRET_NAME` in a command. Values are encrypted into their own file beside Necto's configuration, never sent back to the browser in any form, and left out of exports. Wherever a secret of three or more characters shows up in a step's message or a command's output, the history and the activity log show `[SECRET_NAME]` instead. Each secret is a row with a **Name** and a **Value**. **Add secret** adds a row, and the cross at the end of a row removes the secret when you save. A name is capital letters, digits, and underscores, and typing fixes it as you go. Renaming a secret keeps its value. A stored value shows as dots and stays until you type a new one. The **Clear Value** button beside a stored value empties it when you save. A secrets file or key that cannot be read while saving is written to the server log.
 
 
 ## Variables

@@ -2074,6 +2074,7 @@
   "ScriptsHeaderStepCondition": "Only run this step if",
   "ScriptsHeaderSteps": "Steps",
   "ScriptsHeaderVariables": "Variables",
+  "ScriptsHelpAdministrators": "Administrators run every script. To leave them out, add an Is administrator condition.",
   "ScriptsHelpAllConditions": "Run only when every condition matches.",
   "ScriptsHelpAnyCondition": "Run when at least one condition matches.",
   "ScriptsHelpAppendFile": "A full path whose folder exists. The file is created if missing.",

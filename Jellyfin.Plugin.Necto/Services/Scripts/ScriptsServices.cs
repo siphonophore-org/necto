@@ -45,6 +45,7 @@ public static class ScriptsServices
         services.AddHostedService(provider => provider.GetRequiredService<ScriptRunner>());
         services.AddSingleton<ScriptDispatcher>();
         services.AddHostedService<ScriptGroups>();
+        services.AddHostedService<ScriptSavingLog>();
 
         services.AddHostedService<EventSubscriber>();
         services.AddHostedService<ScriptScheduledTasks>();

@@ -126,6 +126,7 @@ Everything the Scripts plugin does, with its history in **Troubleshooting** and 
 
 * A script runs for a user only when one of the user's groups runs it, by **Run every script** or **Scripts that run**. Everyone runs no script on a fresh install, where the Scripts plugin's empty users list ran a script for everyone. **Review**
 * A failed sign in for a name with no account takes **Everyone**. **Review**
+* Administrators run every script, since groups hold no administrators. The script editor says so, and an **Is administrator** condition leaves them out, where the Scripts plugin's users list could leave out an administrator. **Review**
 * `scripts.failed` goes to Notifications at most once a minute for each script, so a burst of failures sends one alert. **Review**
 * An export is marked `necto-scripts`, and import reads a Scripts plugin export too. A script's users are not carried over, since groups decide them.
 ### Custom Pages

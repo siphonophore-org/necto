@@ -217,7 +217,7 @@ public class ScriptRunner : BackgroundService
         if (!run.Succeeded && !isTest && depth == 0)
         {
             var failure = run.Operations.First(o => o.Status == OperationStatus.Failed);
-            _activity.RunFailedFor(script.Name, failure.Message);
+            _activity.RunFailedFor(script.Id, script.Name, failure.Message);
         }
 
         return run;
