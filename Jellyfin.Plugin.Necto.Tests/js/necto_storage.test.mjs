@@ -54,6 +54,10 @@ test('a disk state reads as its badge, most serious first, in the colors the sty
     assert.deepEqual(storage.stateOf(t, disk({ Level: 'Warning' })), { label: 'Needs attention', color: 'orange' });
     assert.deepEqual(storage.stateOf(t, disk({ InUse: false })), { label: 'Unused', color: 'gray' });
     assert.equal(storage.stateOf(t, disk()).color, 'green');
+    var cards = storage.stateCards(t, [disk(), disk({ Level: 'Error' }), disk({ State: 'Unresponsive' })]);
+    assert.deepEqual(cards.map(function (c) { return [c.label, c.count, c.color]; }), [
+        ['Available', 1, 'green'], ['Needs attention', 0, 'gray'], ['Full', 1, 'red'], ['Missing', 0, 'gray'], ['Unresponsive', 1, 'teal']
+    ]);
 });
 
 test('a disk row tags its type and what is wrong, and an unmounted disk shows its device and size', async function () {
@@ -217,7 +221,7 @@ test('the Storage section of Troubleshooting asks before it resets the settings,
 test('the notice lists each problem no row shows on its own line, and hides while there is none', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
-    var ids = ['storageAttention', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
+    var ids = ['storageAttention', 'storageStateCards', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
     var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
@@ -242,7 +246,7 @@ test('the notice lists each problem no row shows on its own line, and hides whil
 test('the tool checks every disk, lists the disks in use with their state, and leaves the notice to what rows do not show', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
-    var ids = ['storageAttention', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
+    var ids = ['storageAttention', 'storageStateCards', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
     var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
@@ -294,7 +298,7 @@ async function openStorage(disks, opts) {
     globalThis.ApiClient.getVirtualFolders = function () { return Promise.resolve([{ Name: 'Movies' }, { Name: 'Collections', CollectionType: 'boxsets' }]); };
     var saved = [];
     globalThis.ApiClient.updatePluginConfiguration = function (id, next) { saved.push(JSON.parse(JSON.stringify(next))); return Promise.resolve(); };
-    var ids = ['storageAttention', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
+    var ids = ['storageAttention', 'storageStateCards', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
     var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApi(page, Object.assign({ 'GET Storage/Disks': disks }, opts.answers || {}));

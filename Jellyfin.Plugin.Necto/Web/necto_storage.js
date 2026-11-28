@@ -55,6 +55,29 @@ export function stateOf(t, disk) {
     return { label: t.tr('LabelAvailable'), color: 'green' };
 }
 
+// stateCards
+// Counts the disks Jellyfin uses in each state for the cards at the top of the page, in the words and colors of the
+// rows' badges. Available, Needs attention, Full, and Missing always show, gray at none, and any other state only
+// while a disk is in it.
+//
+// Inputs
+// t [object]: The strings.
+// used [object[]]: The disks Jellyfin uses.
+//
+// Output
+// [object[]]: The cards.
+export function stateCards(t, used) {
+    var always = [{}, { Level: 'Warning' }, { Level: 'Error' }, { State: 'Missing' }];
+    var rest = [{ Health: 'Failing' }, { State: 'Unresponsive' }, { State: 'Unformatted' }, { State: 'NotMounted' }];
+    var tags = (used || []).map(function (d) { return stateOf(t, d).label; });
+    var card = function (sample) {
+        var tag = stateOf(t, Object.assign({ InUse: true }, sample));
+        var count = tags.filter(function (label) { return label === tag.label; }).length;
+        return { count: count, label: tag.label, color: count ? tag.color : 'gray' };
+    };
+    return always.map(card).concat(rest.map(card).filter(function (c) { return c.count > 0; }));
+}
+
 // nameOf
 // Gives the name shown for a disk. The system disk's mount point says little, so it reads System.
 //
@@ -855,15 +878,16 @@ export default function (view) {
     }
 
     // renderSpace
-    // Draws how many disks Jellyfin uses, and the used and free space of those that could be read, added up.
+    // Draws how many disks Jellyfin uses in each state, then in a row of their own the used and free space of those
+    // that could be read, added up, so sizes as wide as their cards leave the counts their full size.
     function renderSpace(used) {
+        shared.renderCards('storageStateCards', stateCards(t, used));
         var cards = $('storageSpaceCards');
         var space = spaceOf(used);
         cards.classList.toggle('stolon-hidden', !space);
         cards.textContent = '';
         if (!space) return;
         shared.renderCards(cards, [
-            { label: t.tr('StorageHeaderDisks'), count: used.length, color: 'blue' },
             { label: t.tr('StorageLabelUsed'), count: shared.formatSize(space.total - space.free) },
             { label: t.tr('StorageLabelFree'), count: shared.formatSize(space.free), color: space.color }
         ]);
