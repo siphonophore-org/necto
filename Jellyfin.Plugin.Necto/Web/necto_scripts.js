@@ -284,9 +284,7 @@ export default function (view) {
             lines: function (script) { return [scriptLine(script)]; },
             status: function (script) { var b = STATE_BADGES[scriptState(script)]; return { label: t.tr(b.key), color: b.color }; },
             add: [
-                { id: 'btnNewScript', icon: 'add', text: t.tr('ScriptsButtonAddScript'), onClick: newScript },
-                { id: 'btnImportScripts', icon: 'upload', text: t.tr('ScriptsButtonImport'), variant: 'secondary', onClick: importScripts },
-                { id: 'btnExportScripts', icon: 'download', text: t.tr('ScriptsButtonExport'), variant: 'secondary', onClick: function () { exportScripts(scripts); } }
+                { id: 'btnNewScript', icon: 'add', text: t.tr('ScriptsButtonAddScript'), onClick: pickStart }
             ],
             bulk: [
                 { verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' },
@@ -1515,6 +1513,48 @@ export default function (view) {
 
     // newScript
     // Asks for a name and a description in a sidecar, and adds a blank script with them.
+    // pickStart
+    // Asks how a new script starts, blank or from a file Necto exported, as Add route offers its templates.
+    function pickStart() {
+        var group = document.createElement('div');
+        group.className = 'stolon-choice-group';
+        group.setAttribute('role', 'radiogroup');
+        group.setAttribute('aria-label', t.tr('ScriptsButtonAddScript'));
+        [['blank', 'ScriptsChoiceBlank', 'ScriptsChoiceBlankHelp'], ['import', 'ScriptsChoiceImport', 'ScriptsChoiceImportHelp']].forEach(function (c, i) {
+            var label = document.createElement('label');
+            label.className = 'stolon-choice';
+            var input = document.createElement('input');
+            input.type = 'radio';
+            input.name = 'necto-script-start';
+            input.value = c[0];
+            input.checked = i === 0;
+            var name = document.createElement('span');
+            name.className = 'stolon-choice-name';
+            name.textContent = t.tr(c[1]);
+            var text = document.createElement('span');
+            text.className = 'stolon-choice-text';
+            text.textContent = t.tr(c[2]);
+            label.appendChild(input);
+            label.appendChild(name);
+            label.appendChild(text);
+            group.appendChild(label);
+        });
+        var choices = createChoiceGroup(group);
+        openSidecar({
+            title: t.tr('ScriptsButtonAddScript'),
+            body: group,
+            buttons: [{
+                text: t.tr('Next'), className: 'raised stolon-button stolon-primary', action: function (close) {
+                    var start = choices.get() || 'blank';
+                    close();
+                    if (start === 'import') importScripts();
+                    else newScript();
+                }
+            }],
+            onClose: function () { choices.destroy(); }
+        });
+    }
+
     function newScript() {
         promptSidecar([
             { name: 'name', label: t.tr('LabelName'), value: '', placeholder: t.tr('ScriptsPlaceholderNewName') },

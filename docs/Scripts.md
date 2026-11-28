@@ -18,13 +18,13 @@
 ## The Scripts Tool
 
 
-The counts at the top show how many scripts there are, and how many are enabled and disabled. Select a script from the list above **New**, **Rename**, **Remove**, **Import**, and **Export** to edit it.
+The cards at the top count the scripts **Succeeded**, **Failed**, **Not run**, and **Disabled**, in the words of the rows' badges. Under them, the **Scripts** tab lists every script in a table with search, a state filter, and **Add script**. Select a row to edit the script in a sidecar, or pick rows to **Enable**, **Disable**, **Export**, or **Remove** them.
 
 | Scripts | Scripts on a phone |
 | :---: | :---: |
 | ![Scripts](screenshots/Scripts.png) | ![Scripts on a phone](screenshots/Scripts%20Phone.png) |
 
-Each script has a **Name** and an optional **Description** saying what it is for. **New** asks for both and starts a blank script. The [importable examples](#importable-examples) give ready scripts to start from. **Rename** asks for the open script's new name, which is kept until you **Save**. **Remove** asks first, then removes the open script and saves that at once. Unsaved edits to other scripts stay unsaved.
+Each script has a **Name** and an optional **Description** saying what it is for. **Add script** offers **Blank script**, which asks for both, or **Import a file**. The [importable examples](#importable-examples) give ready scripts to start from. **Rename** asks for the open script's new name, which is kept until you **Save**. **Remove** asks first, then removes the open script and saves that at once. Unsaved edits to other scripts stay unsaved.
 
 The editor's sections open and close from their headings, each led by an icon, and all start closed. **General** holds the **Description** and **Enabled**. Each heading says what its section holds, such as *1 trigger*, *2 steps*, *2 groups*, or *2 conditions, all must match*, **General** shows the script's description and whether it is **Enabled** or **Disabled**, and **Testing** names the trigger to test with. A section with a warning names it in an orange badge. **Groups** shows what ignores its groups, such as **Schedule ignored**. **Conditions** counts the conditions a selected trigger never matches, such as **1 never matches**. **Behavior** shows **No item kinds** when it runs for each library item with none chosen, or **For each ignored** when every trigger already has its own item or user.
 
@@ -320,9 +320,9 @@ In a step's text fields, write a variable as `{{ITEM_NAME}}`. Use `{{ITEM_NAME:j
 
 ## Export and Import
 
-**Export** saves every script, including unsaved edits, to a JSON file. Secret values and webhook addresses are left out. **Import** reads one back, adding its scripts or replacing ones with the same ID. Imported scripts start **disabled** and unsaved, so review each one's steps and fill in its secrets before enabling it and saving, since a command runs on your server.
+Pick rows and select **Export** to save those scripts, including unsaved edits, to a JSON file. **Select all** exports every script. Secret values and webhook addresses are left out. **Add script > Import a file** reads one back, adding its scripts or replacing ones with the same ID. Imported scripts start **disabled** and unsaved, so review each one's steps and fill in its secrets before enabling it and saving, since a command runs on your server.
 
-A script's groups are not part of its file. Pick the groups that run an imported script in **Groups**.
+A script's groups are not part of its file. Pick the groups that run an imported script in its editor.
 
 ## Testing
 
@@ -650,7 +650,7 @@ Each **HTTP request** below posts to a common service. Replace the address, and 
 
 ### Importable Examples
 
-Save a block as a `.json` file and select **Import** in the Scripts tool. Import takes one script, a list of scripts, or an exported file. Each example imports **disabled**, so fill in its secrets and addresses, review its steps, then turn it on and **Save**.
+Save a block as a `.json` file and select **Add script > Import a file** in the Scripts tool. Import takes one script, a list of scripts, or an exported file. Each example imports **disabled**, so fill in its secrets and addresses, review its steps, then turn it on and **Save**.
 
 #### Stop Playback Paused for 30 Minutes
 

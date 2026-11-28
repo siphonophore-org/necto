@@ -98,7 +98,7 @@ test('the Scripts tool draws a saved script from its own markup', async function
     assert.equal(rows.length, 1);
     assert.match(rowHtml(rows[0]), /Notify[\s\S]*Item added · Restrictive \(1 group\)[\s\S]*Not run/);
     assert.deepEqual(Array.prototype.map.call(opened.view.querySelectorAll('#scriptsTable .stolon-table-controls button.stolon-button'), function (b) { return b.id; }),
-        ['btnNewScript', 'btnImportScripts', 'btnExportScripts']);
+        ['btnNewScript']);
     assert.deepEqual(texts(opened.view.querySelector('#scriptsTable .stolon-table-bulk-actions'), '[data-bulk]'), ['Enable', 'Disable', 'Export', 'Remove']);
     assert.equal(opened.view.querySelector('#selectScript'), null);
     assert.equal(opened.view.querySelector('#scriptSidecar').classList.contains('stolon-hidden'), true);
