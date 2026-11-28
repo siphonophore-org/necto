@@ -509,8 +509,9 @@ export function createProxyDetails(shared) {
     var status = h('div', { class: 'stolon-status-text', role: 'status' });
     var recoveryPath = h('pre', { class: 'stolon-code stolon-code-block', 'data-role': 'recovery-path' });
     var table = nectoModule.createRowsTable(shared, {
-        search: { enabled: false },
-        emptyState: { message: t.tr('ProxyErrorLoad') },
+        search: { enabled: true, placeholder: t.tr('ProxySearchChecks') },
+        text: function (row) { return row.label + ' ' + row.value; },
+        emptyState: { message: t.tr('ProxyErrorLoad'), filteredMessage: t.tr('ProxyEmptyChecksMatch') },
         columns: [{
             key: 'label', type: 'custom', label: t.tr('LabelName'),
             render: function (row) {

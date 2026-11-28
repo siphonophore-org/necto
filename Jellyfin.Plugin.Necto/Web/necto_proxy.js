@@ -1174,7 +1174,7 @@ export default function (view) {
     }
 
     // createVisitors
-    // Builds the Visitors tab in its panel: the bans and what each address did, each a table. The countries show on the
+    // Builds the Visitors tab in its panel: what each address did, then the bans under their heading, each a table. The countries show on the
     // Dashboard's Locations, and how the location database stands on the Checks tab.
     function createVisitors(panel) {
         var t = shared.t;
@@ -1186,9 +1186,8 @@ export default function (view) {
         var attribution = h('div', { class: 'fieldDescription' });
         // The tables come first, so the first toolbar sits where every other tab's does, and the help and any error
         // follow them.
-        [off,
+        [off, activityHost,
             h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderBanned') }), bannedHost,
-            h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderActivity') }), activityHost,
             h('div', { class: 'fieldDescription', text: t.tr('ProxyVisitorsHelp') }), status,
             attribution].forEach(function (n) { content.appendChild(n); });
         panel.appendChild(content);
