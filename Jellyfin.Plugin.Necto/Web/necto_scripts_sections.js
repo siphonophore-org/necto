@@ -1,12 +1,12 @@
 // necto_scripts_sections.js
 // The Scripts sections of Settings and Troubleshooting, which this module adds to the registry when it loads.
 // Settings holds how many runs go at once, the default command timeout, and how many runs the history keeps.
-// Troubleshooting holds Clear history. The run history, with a chart of each day's runs and the runs in a table, is
-// built here for the Scripts page.
+// Troubleshooting holds Clear history. The run history, the runs in a table, is built here for the Scripts page. The
+// chart of each day's runs is on the Dashboard's Scripts card.
 
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import {
-    createBarChart, createSliderField, createDurationField, confirmDialog, openSidecar,
+    createSliderField, createDurationField, confirmDialog, openSidecar,
     renderRunSummary, renderRunSteps, renderRunVariables, formatDuration, useStrings, t
 } from './configurationpage?name=necto_scripts_common.js';
 
@@ -71,8 +71,8 @@ export function buildSettings(content, ctx) {
 }
 
 // createRunHistory
-// Builds the History tab of the Scripts page: a chart of each recent day's runs, and the runs in a table, each
-// opening its result, steps, and variables in a sidecar.
+// Builds the History tab of the Scripts page: the runs in a table, each opening its result, steps, and variables in a
+// sidecar. The chart of each recent day's runs is on the Dashboard's Scripts card.
 //
 // Inputs
 // Shared [object]: The Necto helper bag.
@@ -84,13 +84,11 @@ export function createRunHistory(Shared, page) {
     var cleanups = [];
     useStrings(Shared);
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'history-status' });
-    var chartHost = h('div', { 'data-role': 'history-chart' });
     var tableHost = h('div', { id: 'scriptsHistoryTable', 'data-role': 'history-table' });
-    var element = h('div', { class: 'stolon-stack', 'data-role': 'run-history' }, [status, chartHost, tableHost]);
+    // The table comes first, so its toolbar sits where every other tab's does, then any error.
+    var element = h('div', { class: 'stolon-stack', 'data-role': 'run-history' }, [tableHost, status]);
 
     var table = null;
-    var chart = null;
-    var chartData = null;
     var triggerLabels = {};
 
     function triggerLabel(key) { return triggerLabels[key] || key; }
@@ -100,66 +98,6 @@ export function createRunHistory(Shared, page) {
     function when(value) {
         var date = new Date(value);
         return isNaN(date) ? '' : date.toLocaleString(t.language, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' });
-    }
-
-    // dayLabel
-    // Writes a day as a short label, such as "Nov 16", or "Sun" on a phone. The day is the server's own, so it is
-    // read without a time zone.
-    //
-    // Inputs
-    // day [string]: The day as yyyy-MM-dd.
-    // phone [boolean]: Whether to write only the weekday.
-    //
-    // Output
-    // [string]: The label, or the input for a day that cannot be read.
-    function dayLabel(day, phone) {
-        var parts = String(day || '').split('-').map(Number);
-        if (parts.length !== 3 || parts.some(isNaN)) return String(day || '');
-        var format = phone ? { weekday: 'short' } : { month: 'short', day: 'numeric' };
-        return new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString(t.language, format);
-    }
-
-    // drawChart
-    // Draws the days as succeeded and failed bars. A phone shows the last 7 days by weekday, without the numbers over the
-    // bars.
-    function drawChart() {
-        if (!chartData) return;
-        var phone = window.matchMedia('(max-width: 600px)').matches;
-        var keep = phone ? 7 : 14;
-        var days = (chartData.Days || []).slice(-keep);
-        var succeeded = (chartData.Succeeded || []).slice(-keep);
-        var failed = (chartData.Failed || []).slice(-keep);
-        var empty = succeeded.concat(failed).every(function (n) { return !n; });
-        if (chart) chart.destroy();
-        chart = null;
-        // With no run in these days the chart stays hidden, and the table under it says there are no runs.
-        Shared.setVisible(chartHost, !empty);
-        if (empty) return;
-        chart = createBarChart({
-            labels: days.map(function (day) { return dayLabel(day, phone); }),
-            series: [
-                { name: t.tr('ScriptsStatusSucceeded'), color: 'green', values: succeeded },
-                { name: t.tr('LabelFailed'), color: 'red', values: failed }
-            ],
-            height: 180,
-            valueLabels: !phone,
-            max: Math.max.apply(null, succeeded.concat(failed, [0])) <= 4 ? 4 : undefined,
-            label: t.tr('ScriptsChartRunsLabel'),
-            emptyText: t.tr('ScriptsChartRunsEmpty')
-        });
-        chartHost.innerHTML = '';
-        chartHost.appendChild(chart.element);
-    }
-
-    // loadChart
-    // Reads each recent day's runs from the server and draws them.
-    function loadChart() {
-        return Shared.request('Scripts/History/Days', 'GET').then(function (data) {
-            chartData = data || {};
-            drawChart();
-        }).catch(function () {
-            Shared.setStatus(status, t.tr('ScriptsErrorLoadChart'), true, { timeout: 0 });
-        });
     }
 
     // Opens one run's result, steps, and variables in a dialog.
@@ -229,17 +167,9 @@ export function createRunHistory(Shared, page) {
         table.load().catch(function () { Shared.setStatus(status, t.tr('ScriptsErrorLoadHistory'), true, { timeout: 0 }); });
     }
 
-    // A phone shows fewer days, so the chart draws again when the width crosses over.
-    var phone = window.matchMedia('(max-width: 600px)');
-    if (phone.addEventListener) {
-        phone.addEventListener('change', drawChart);
-        cleanups.push(function () { phone.removeEventListener('change', drawChart); });
-    }
-
     return {
         element: element,
         load: function () {
-            loadChart();
             return Promise.all([Shared.getConfig(), Shared.request('Scripts/Catalog', 'GET')]).then(function (results) {
                 (results[1].Triggers || []).forEach(function (x) { triggerLabels[x.Key] = x.Label; });
                 // The catalog lists only triggers a script can pick, so a Run now run takes its label here.
@@ -252,7 +182,6 @@ export function createRunHistory(Shared, page) {
         destroy: function () {
             cleanups.splice(0).forEach(function (fn) { fn(); });
             if (table) { table.destroy(); table = null; }
-            if (chart) { chart.destroy(); chart = null; }
         }
     };
 }

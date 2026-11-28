@@ -90,7 +90,7 @@ test('the Scripts section of Settings saves its three settings into the Scripts 
     assert.equal(scripts.Scripts.length, 1);
 });
 
-test('the Scripts section of Troubleshooting holds only Clear history, and the Scripts page reads the run history and its chart', async function () {
+test('the Scripts section of Troubleshooting holds only Clear history, and the History tab reads the runs with its table first', async function () {
     var opened = await openTool('troubleshooting', {
         'GET Scripts/History/Days': { Days: ['2026-11-19', '2026-11-20'], Succeeded: [1, 2], Failed: [0, 1] },
         'GET Scripts/Catalog': { Triggers: [{ Key: 'ItemAdded', Label: 'Item added' }] }
@@ -109,8 +109,9 @@ test('the Scripts section of Troubleshooting holds only Clear history, and the S
     opened.dom.document.documentElement.appendChild(history.element);
     await history.load();
     await settle(50);
-    assert.ok(opened.page.requests.some(function (r) { return r.url === 'Scripts/History/Days'; }));
+    assert.equal(opened.page.requests.some(function (r) { return r.url === 'Scripts/History/Days'; }), false);
     assert.ok(opened.page.requests.some(function (r) { return String(r.url).indexOf('Scripts/History?') >= 0; }));
+    assert.equal(history.element.children[0].getAttribute('data-role'), 'history-table');
     assert.equal(history.element.getAttribute('data-role'), 'run-history');
     history.destroy();
 });
