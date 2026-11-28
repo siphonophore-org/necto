@@ -2903,6 +2903,7 @@
   "StorageErrorAlertOrderGigabytes": "Set Storage full to less free space than Storage low.",
   "StorageErrorAlertOrderPercent": "Set Storage full higher than Storage low.",
   "StorageErrorCheckDisks": "Could not check the disks.",
+  "StorageErrorDismissNotice": "Could not dismiss the notice.",
   "StorageErrorFolderDisk": "This disk is not mounted anymore.",
   "StorageErrorFolderFailed": "Could not make the folder: {0}",
   "StorageErrorFolderName": "Use up to 100 characters, with no slash or : * ? \" < > |.",

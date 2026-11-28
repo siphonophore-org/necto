@@ -79,7 +79,7 @@ Run Jellyfin as a service under LocalSystem, as the installer does, or as an adm
 
 ## Disks
 
-Each disk's row shows its own state, so a disk that is missing, unresponsive, failing, full, low, too hot, worn out, or missing folders reads from its badge, its tags, and its bar. The top of **Storage** names only what no row shows, one line each: red when Jellyfin cannot write to one of its own folders, and orange when it cannot write to some library folders. It is hidden while there is nothing of the kind.
+Each disk's row shows its own state, so a disk that is missing, unresponsive, failing, full, low, too hot, worn out, or missing folders reads from its badge, its tags, and its bar. A disk with a folder Jellyfin cannot write to reads **Needs attention**, and its sidecar opens with a notice for it: red when it is one of Jellyfin's own folders, and orange for library folders. **Dismiss** on a notice clears it, and the disk reads as it otherwise would. A dismissed notice comes back when the folders it names change.
 
 | Storage | Storage on a phone |
 | :---: | :---: |
@@ -276,6 +276,7 @@ Every route is for administrators.
 | Route | What it does |
 | :--- | :--- |
 | `GET /Storage/Disks` | Checks every disk and gives one entry per disk, the disks in use first |
+| `POST /Storage/Notices/Dismiss` | Dismisses one of a disk's notices, by its mount point and the notice's key |
 | `GET /Storage/Format` | Gives the file systems this server can make, the folder a new disk is mounted in, and whether spaces become dashes |
 | `POST /Storage/Format` | Formats a disk with nothing mounted, mounts it, and adds it to a library when one is named |
 | `POST /Storage/Folders` | Makes a folder at the top of a mounted disk and adds it to a library when one is named |

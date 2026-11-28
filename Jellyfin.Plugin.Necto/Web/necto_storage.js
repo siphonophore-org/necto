@@ -51,8 +51,43 @@ export function stateOf(t, disk) {
     if (disk.Health === 'Failing') return { label: t.tr('StorageHealthFailing'), color: 'yellow' };
     if (disk.Level === 'Error') return { label: t.tr('StorageLevelFull'), color: 'red' };
     if (disk.Level === 'Warning') return { label: t.tr('DashboardStateAttention'), color: 'orange' };
+    if (disk.InUse && openNotices(disk).length) return { label: t.tr('DashboardStateAttention'), color: 'orange' };
     if (!disk.InUse) return { label: t.tr('StorageStateUnused'), color: 'gray' };
     return { label: t.tr('LabelAvailable'), color: 'green' };
+}
+
+// noticeKeys
+// Names each notice a disk's row does not show, a folder Jellyfin cannot write to, by a key that changes when the
+// folders it is about change, so a dismissed notice comes back when what it says is new.
+//
+// Inputs
+// disk [object]: One disk from GET Storage/Disks.
+//
+// Output
+// [object[]]: { key, folder } for each of Jellyfin's own folders it cannot write to, then { key } for the library
+// folders it cannot write to, when there are any.
+export function noticeKeys(disk) {
+    if (disk.State !== 'Available') return [];
+    var readOnly = disk.ReadOnlyFolders || [];
+    var own = (disk.Folders || []).filter(function (f) { return f.Server && readOnly.indexOf(f.Path) >= 0; });
+    var ownPaths = own.map(function (f) { return f.Path; });
+    var rest = readOnly.filter(function (p) { return ownPaths.indexOf(p) < 0; }).slice().sort();
+    var keys = own.map(function (f) { return { key: 'server:' + f.Path, folder: f }; });
+    if (rest.length) keys.push({ key: 'readonly:' + rest.join(',') });
+    return keys;
+}
+
+// openNotices
+// Lists the keys of a disk's notices no administrator dismissed.
+//
+// Inputs
+// disk [object]: One disk from GET Storage/Disks.
+//
+// Output
+// [string[]]: The keys.
+export function openNotices(disk) {
+    var dismissed = disk.DismissedNotices || [];
+    return noticeKeys(disk).map(function (n) { return n.key; }).filter(function (key) { return dismissed.indexOf(key) < 0; });
 }
 
 // stateCards
@@ -179,7 +214,8 @@ export function secondaryOf(t, shared, disk) {
 
 // issuesOf
 // Lists what needs a look on a disk the libraries use, each as one sentence. A problem its row already shows, in its
-// badge, its tags, or its bar, is marked inRow, so the notice above the list leaves it out.
+// badge, its tags, or its bar, is marked inRow. Any other is a notice for the disk's sidecar, with the key it is
+// dismissed by.
 //
 // Inputs
 // t [object]: The strings.
@@ -187,7 +223,7 @@ export function secondaryOf(t, shared, disk) {
 // disk [object]: A disk in use.
 //
 // Output
-// [object[]]: { text, serious, inRow } for each problem, serious being true for what needs a look now.
+// [object[]]: { text, serious, inRow, key } for each problem, serious being true for what needs a look now.
 export function issuesOf(t, shared, disk) {
     var name = nameOf(t, disk);
     var issues = [];
@@ -206,10 +242,11 @@ export function issuesOf(t, shared, disk) {
     if (disk.Worn) issues.push({ text: t.format('StorageIssueWorn', name, disk.WearPercent), serious: false, inRow: true });
     if ((disk.MissingFolders || []).length) issues.push({ text: t.format('StorageIssueFolders', name), serious: false, inRow: true });
     // Jellyfin's own folders it cannot write to stop it working, so they come first and red.
-    var readOnly = disk.ReadOnlyFolders || [];
-    var own = (disk.Folders || []).filter(function (f) { return f.Server && readOnly.indexOf(f.Path) >= 0; });
-    own.forEach(function (f) { issues.push({ text: t.format('StorageIssueServerReadOnly', t.tr(f.Library), f.Path), serious: true }); });
-    if (readOnly.length > own.length) issues.push({ text: t.format('StorageIssueReadOnly', name), serious: false });
+    noticeKeys(disk).forEach(function (n) {
+        issues.push(n.folder
+            ? { text: t.format('StorageIssueServerReadOnly', t.tr(n.folder.Library), n.folder.Path), serious: true, key: n.key }
+            : { text: t.format('StorageIssueReadOnly', name), serious: false, key: n.key });
+    });
     return issues;
 }
 
@@ -229,18 +266,21 @@ export function allIssues(t, shared, used) {
     return issues.sort(function (a, b) { return (b.serious ? 1 : 0) - (a.serious ? 1 : 0); });
 }
 
-// pageIssues
-// Lists what needs a look that no disk row shows, such as a folder Jellyfin cannot write to, the serious ones first.
+// sidecarNotices
+// Lists a disk's notices its sidecar shows, those its row does not show and no administrator dismissed, the serious
+// ones first.
 //
 // Inputs
 // t [object]: The strings.
 // shared [object]: The Necto helper bag.
-// used [object[]]: The disks in use.
+// disk [object]: One disk from GET Storage/Disks.
 //
 // Output
-// [object[]]: { text, serious } for each problem.
-export function pageIssues(t, shared, used) {
-    return allIssues(t, shared, used).filter(function (issue) { return !issue.inRow; });
+// [object[]]: { text, serious, key } for each notice.
+export function sidecarNotices(t, shared, disk) {
+    var open = openNotices(disk);
+    return issuesOf(t, shared, disk).filter(function (issue) { return !issue.inRow && open.indexOf(issue.key) >= 0; })
+        .sort(function (a, b) { return (b.serious ? 1 : 0) - (a.serious ? 1 : 0); });
 }
 
 // spaceOf
@@ -785,6 +825,14 @@ export default function (view) {
         if (disk.Device) facts.push({ label: t.tr('LabelDevice'), value: disk.Device, mono: true });
         if (disk.Model) facts.push({ label: t.tr('StorageLabelModel'), value: disk.Model });
         health.forEach(function (fact) { facts.push(fact); });
+        // What needs a look that the row does not show leads the sidecar, each with its own Dismiss.
+        sidecarNotices(t, shared, disk).forEach(function (notice) {
+            body.appendChild(nectoModule.createBanner({
+                kind: notice.serious ? 'error' : 'warn',
+                text: notice.text,
+                onDismiss: function () { dismissNotice(disk, notice.key); }
+            }).element);
+        });
         body.appendChild(nectoModule.createDefinitionList({ items: facts }).element);
 
         if (isRead(disk)) {
@@ -863,18 +911,18 @@ export default function (view) {
         });
     }
 
-    // renderAttention
-    // Draws the notice above the list for what needs a look that no disk row shows: one line per problem, red when any
-    // needs a look now, else orange. With nothing of the kind it shows nothing.
-    function renderAttention(used) {
-        var banner = $('storageAttention');
-        banner.textContent = '';
-        var issues = pageIssues(t, shared, used);
-        shared.setVisible(banner, issues.length > 0);
-        if (!issues.length) return;
-        var kind = issues.some(function (i) { return i.serious; }) ? 'error' : 'warn';
-        var items = issues.length > 1 ? issues.map(function (issue) { return issue.text; }) : null;
-        banner.appendChild(nectoModule.createBanner({ kind: kind, text: issues.length === 1 ? issues[0].text : '', items: items, dismissible: false }).element);
+    // dismissNotice
+    // Dismisses one of a disk's notices on the server, then draws the cards and the table again, so the disk stops
+    // needing attention once nothing else is open.
+    function dismissNotice(disk, key) {
+        shared.request('Storage/Notices/Dismiss', 'POST', { MountPoint: disk.MountPoint, Key: key }).then(function () {
+            disks.concat([disk]).forEach(function (d) {
+                if (d.MountPoint === disk.MountPoint && (d.DismissedNotices || []).indexOf(key) < 0) d.DismissedNotices = (d.DismissedNotices || []).concat([key]);
+            });
+            render();
+        }).catch(function (err) {
+            return shared.errorText(err, t.tr('StorageErrorDismissNotice')).then(function (text) { shared.setStatus('storageCheckStatus', text, true); });
+        });
     }
 
     // renderSpace
@@ -894,10 +942,9 @@ export default function (view) {
     }
 
     // render
-    // Draws the notice and the space cards for the disks in use, and the table again.
+    // Draws the cards for the disks in use, and the table again.
     function render() {
         var used = disks.filter(function (d) { return d.InUse; });
-        renderAttention(used);
         renderSpace(used);
         if (table) table.refresh();
     }

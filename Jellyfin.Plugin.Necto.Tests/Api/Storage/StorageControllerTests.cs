@@ -42,6 +42,6 @@ public class StorageControllerTests
             .OrderBy(r => r, StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal(new[] { "GET Disks", "GET Format", "POST Folders", "POST Format" }, routes);
+        Assert.Equal(new[] { "GET Disks", "GET Format", "POST Folders", "POST Format", "POST Notices/Dismiss" }, routes);
     }
 }

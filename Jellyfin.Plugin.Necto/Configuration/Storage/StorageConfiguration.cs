@@ -38,4 +38,9 @@ public class StorageConfiguration
 
     /// <summary>Gets or sets a value indicating whether real-time monitoring ignores a missing disk's folders until it is back.</summary>
     public bool MuteMonitoring { get; set; } = true;
+
+    /// <summary>Gets or sets the disk notices an administrator dismissed, each as its disk's mount point, a bar, and the notice's key.</summary>
+    [SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "List<T> required for XML serialization")]
+    [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "Set by XML serialization")]
+    public List<string> DismissedNotices { get; set; } = new();
 }

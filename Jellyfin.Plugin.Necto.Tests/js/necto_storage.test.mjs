@@ -91,13 +91,22 @@ test('the problems put what needs a look now first, and a healthy disk has none'
     assert.equal(issues[1].text, 'a is low on space, 90% used with 100 GB free.');
     assert.deepEqual(storage.issuesOf(t, shared, disk()), []);
 
-    // The notice above the list keeps only what no row shows, such as a folder Jellyfin cannot write to.
-    var page = storage.pageIssues(t, shared, [
-        disk({ Name: 'a', Level: 'Error', FreeBytes: 10 * GB }),
-        disk({ Name: 'b', ReadOnlyFolders: ['/mnt/media/Movies'] })
-    ]);
-    assert.equal(page.length, 1);
-    assert.match(page[0].text, /cannot write to some library folders on b/);
+    // A disk's sidecar shows what no row shows, such as a folder Jellyfin cannot write to, and the disk needs
+    // attention until it is dismissed.
+    var readOnly = disk({ Name: 'b', ReadOnlyFolders: ['/mnt/media/Movies'] });
+    var notices = storage.sidecarNotices(t, shared, readOnly);
+    assert.equal(notices.length, 1);
+    assert.match(notices[0].text, /cannot write to some library folders on b/);
+    assert.equal(notices[0].key, 'readonly:/mnt/media/Movies');
+    assert.deepEqual(storage.stateOf(t, readOnly), { label: 'Needs attention', color: 'orange' });
+    assert.deepEqual(storage.sidecarNotices(t, shared, disk({ Level: 'Error', FreeBytes: 10 * GB })), []);
+
+    var dismissed = disk({ Name: 'b', ReadOnlyFolders: ['/mnt/media/Movies'], DismissedNotices: ['readonly:/mnt/media/Movies'] });
+    assert.deepEqual(storage.sidecarNotices(t, shared, dismissed), []);
+    assert.equal(storage.stateOf(t, dismissed).color, 'green');
+    // A new folder Jellyfin cannot write to changes the key, so the notice comes back.
+    var changed = disk({ Name: 'b', ReadOnlyFolders: ['/mnt/media/Movies', '/mnt/media/TV'], DismissedNotices: ['readonly:/mnt/media/Movies'] });
+    assert.equal(storage.sidecarNotices(t, shared, changed).length, 1);
 });
 
 test('the space adds up every disk that was read and takes the color of the fullest', async function () {
@@ -218,35 +227,43 @@ test('the Storage section of Troubleshooting asks before it resets the settings,
     assert.deepEqual(config.Storage.DiskOverrides, []);
 });
 
-test('the notice lists each problem no row shows on its own line, and hides while there is none', async function () {
+test('a folder Jellyfin cannot write to shows in its disk sidecar, which marks the disk until Dismiss', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
-    var ids = ['storageAttention', 'storageStateCards', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
+    var ids = ['storageStateCards', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
     var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
+    globalThis.getComputedStyle = function () { return { getPropertyValue: function () { return '#888888'; } }; };
+    var dismissed = [];
     routeApi(page, {
-        'GET Storage/Disks': [
-            disk({ Name: 'media', ReadOnlyFolders: ['/mnt/media/Movies'] }),
-            disk({ MountPoint: '/mnt/backup', Name: 'backup', ReadOnlyFolders: ['/mnt/backup/Shows'], Level: 'Error', FreeBytes: 10 * GB })
-        ]
+        'GET Storage/Disks': [disk({ Name: 'media', ReadOnlyFolders: ['/mnt/media/Movies'] })],
+        'POST Storage/Notices/Dismiss': function (r) { dismissed.push(JSON.parse(r.data)); return {}; }
     });
+    globalThis.ApiClient.getVirtualFolders = function () { return Promise.resolve([]); };
     var mod = await loadScript('necto_storage.js');
     mod.default(view);
     view.dispatchEvent(new globalThis.CustomEvent('viewshow'));
     await settle();
 
-    var banner = view.querySelector('#storageAttention .stolon-banner');
-    var lines = banner.querySelectorAll('.stolon-banner-list li');
-    assert.equal(lines.length, 2);
-    assert.match(lines[0].textContent, /cannot write/);
-    assert.match(lines[1].textContent, /cannot write/);
-    assert.equal(view.querySelector('#storageAttention').textContent.indexOf('is full'), -1);
+    assert.equal(view.querySelector('.stolon-banner'), null);
+    var row = view.querySelector('#storageDisks .stolon-table-row');
+    assert.match(rowHtml(row), /Needs attention/);
+    row.click();
+    await settle(50);
+    var banner = dom.document.querySelector('.stolon-sidecar .stolon-banner');
+    assert.match(banner.textContent, /cannot write/);
+    banner.querySelector('.stolon-banner-close, button').click();
+    await settle(50);
+
+    assert.deepEqual(dismissed, [{ MountPoint: '/mnt/media', Key: 'readonly:/mnt/media/Movies' }]);
+    await settle();
+    assert.match(view.querySelector('#storageStateCards').textContent, /1Available0Needs attention/);
 });
 
-test('the tool checks every disk, lists the disks in use with their state, and leaves the notice to what rows do not show', async function () {
+test('the tool checks every disk and lists the disks in use with their state', async function () {
     var page = installPage({ config: {} });
     var dom = page.dom;
-    var ids = ['storageAttention', 'storageStateCards', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
+    var ids = ['storageStateCards', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
     var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApi(page, {
@@ -261,9 +278,6 @@ test('the tool checks every disk, lists the disks in use with their state, and l
     await settle();
 
     assert.ok(page.requests.some(function (r) { return r.url === 'Storage/Disks'; }));
-    var attention = view.querySelector('#storageAttention');
-    assert.equal(attention.querySelector('.stolon-banner'), null);
-    assert.ok(attention.classList.contains('stolon-hidden'));
     var rows = view.querySelectorAll('#storageDisks .stolon-table-row');
     assert.equal(rows.length, 1);
     assert.match(rowHtml(rows[0]), /data-role="row-icon"[\s\S]*media[\s\S]*Local[\s\S]*data-role="row-state"/);
@@ -298,7 +312,7 @@ async function openStorage(disks, opts) {
     globalThis.ApiClient.getVirtualFolders = function () { return Promise.resolve([{ Name: 'Movies' }, { Name: 'Collections', CollectionType: 'boxsets' }]); };
     var saved = [];
     globalThis.ApiClient.updatePluginConfiguration = function (id, next) { saved.push(JSON.parse(JSON.stringify(next))); return Promise.resolve(); };
-    var ids = ['storageAttention', 'storageStateCards', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
+    var ids = ['storageStateCards', 'storageSpaceCards', 'storageCheckStatus', 'storageDisks'];
     var view = pageView(dom, ids.map(function (id) { return dom.el('div', { id: id }); }));
     dom.document.documentElement.appendChild(view);
     routeApi(page, Object.assign({ 'GET Storage/Disks': disks }, opts.answers || {}));

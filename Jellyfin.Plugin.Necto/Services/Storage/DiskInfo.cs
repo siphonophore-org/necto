@@ -112,4 +112,9 @@ public sealed class DiskInfo
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "Serialized to the dashboard")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Serialized to the dashboard")]
     public List<string> ReadOnlyFolders { get; set; } = new();
+
+    /// <summary>Gets or sets the keys of the disk's notices an administrator dismissed.</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "Serialized to the dashboard")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Serialized to the dashboard")]
+    public List<string> DismissedNotices { get; set; } = new();
 }

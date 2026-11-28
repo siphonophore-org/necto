@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Jellyfin.Plugin.Necto.Configuration.Storage;
@@ -63,7 +64,45 @@ public class StorageController : ControllerBase
     [HttpGet("Disks")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<DiskInfo>>> GetDisks(CancellationToken cancellationToken)
-        => Ok(await _storage.CheckAsync(cancellationToken).ConfigureAwait(false));
+    {
+        var disks = await _storage.CheckAsync(cancellationToken).ConfigureAwait(false);
+        var dismissed = Plugin.Instance?.ReadConfiguration(c => c.Storage.DismissedNotices.ToList()) ?? new List<string>();
+        foreach (var disk in disks)
+        {
+            disk.DismissedNotices = DismissedNotices.For(dismissed, disk.MountPoint);
+        }
+
+        return Ok(disks);
+    }
+
+    /// <summary>
+    /// Dismisses one of a disk's notices, so it stops asking for attention until what it says changes.
+    /// </summary>
+    /// <param name="request">The disk's mount point and the notice's key.</param>
+    /// <returns>No content, or a bad request without a mount point or a key.</returns>
+    [HttpPost("Notices/Dismiss")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult DismissNotice([FromBody] NoticeDismissal request)
+    {
+        if (request is null || string.IsNullOrWhiteSpace(request.MountPoint) || string.IsNullOrWhiteSpace(request.Key))
+        {
+            return BadRequest();
+        }
+
+        var entry = DismissedNotices.Entry(request.MountPoint, request.Key);
+        Plugin.Instance?.MutateConfiguration(c =>
+        {
+            if (c.Storage.DismissedNotices.Contains(entry, StringComparer.Ordinal))
+            {
+                return false;
+            }
+
+            c.Storage.DismissedNotices.Add(entry);
+            return true;
+        });
+        return NoContent();
+    }
 
     /// <summary>
     /// Makes a folder directly on a mounted disk, and adds it to a library when one is named.
