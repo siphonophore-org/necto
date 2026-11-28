@@ -162,7 +162,7 @@ test('a DDNS name locks the host, and a wildcard takes a subdomain in front of i
     assert.equal(proxy.hostFor('*.example.com', ''), '');
 });
 
-test('notices say how the proxy stands, leaving the DNS record to the route'''s line', async function () {
+test('notices say how the proxy stands, leaving the DNS record to the route line', async function () {
     var bag = await strings();
     var proxy = await loadScript('necto_proxy.js');
     var status = { Enabled: true, Running: false, Error: 'Port 443 is in use.', TakeoverPhase: 'Managed', Routes: [{ Id: 'a', Active: true }], Name: { Hostname: 'media.example.com', Resolves: false, Error: 'It points elsewhere.' }, EveryoneLooksLocal: true };
