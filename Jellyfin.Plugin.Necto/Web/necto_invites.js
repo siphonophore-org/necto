@@ -496,6 +496,7 @@ export default function (view) {
         ];
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('InvitesMemberNew') : (invite.Label || t.tr('InvitesUntitled')),
+            badge: isNew ? null : stateBadge(invite),
             body: editor.element,
             page: page,
             isNew: isNew,

@@ -822,7 +822,7 @@ export default function (view) {
                 add: [{ id: 'btnAddPage', icon: 'add', text: t.tr('PagesButtonAddPage'), onClick: function () { openPage(-1); } }],
                 bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
                 onBulk: function (verb, picked) { bulkRecords('Pages', verb, picked); },
-                onRowClick: function (item) { openPage(item.index); },
+                onRowClick: function (item) { openPage(item.index, item.state); },
                 onReload: function () { loadPage(); }
             };
         });
@@ -902,7 +902,7 @@ export default function (view) {
                 add: [{ id: 'btnAddImages', icon: 'upload', text: t.tr('PagesButtonAddImages'), onClick: pickImages }],
                 bulk: [{ verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
                 onBulk: function (verb, picked) { removeAssets(picked); },
-                onRowClick: function (a) { openAsset(a); },
+                onRowClick: function (a) { openAsset(a, tierBadge(a.Visibility, t)); },
                 onReload: function () { loadPage(); }
             };
         });
@@ -926,8 +926,9 @@ export default function (view) {
     }
 
     // openAsset
-    // Opens an image in a sidecar with its picture, its path to copy, and its tier, with Remove and Save.
-    function openAsset(a) {
+    // Opens an image in a sidecar with its picture, its path to copy, and its tier, with Remove and Save, and its row's
+    // badge beside the title.
+    function openAsset(a, badge) {
         var t = shared.t;
         var picture = h('img', { class: 'stolon-asset-thumb', alt: a.Name });
         // Set as a property, never as markup, so a stored value cannot leave the attribute.
@@ -943,6 +944,7 @@ export default function (view) {
         ]);
         nectoModule.openEditorSidecar({
             title: a.Name,
+            badge: badge || null,
             body: body,
             page: page,
             size: 'medium',
@@ -976,7 +978,7 @@ export default function (view) {
                 add: [{ id: 'btnAddStore', icon: 'add', text: t.tr('PagesButtonAddStore'), onClick: function () { openStore(-1); } }],
                 bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
                 onBulk: function (verb, picked) { bulkRecords('Stores', verb, picked); },
-                onRowClick: function (item) { openStore(item.index); },
+                onRowClick: function (item) { openStore(item.index, item.state); },
                 onReload: function () { loadPage(); }
             };
         });
@@ -995,13 +997,15 @@ export default function (view) {
     //
     // Inputs
     // index [number]: The page's place, or -1 for a new one.
-    function openPage(index) {
+    // badge [object]: Its row's badge, shown beside the title, or null.
+    function openPage(index, badge) {
         var t = shared.t;
         var isNew = index < 0;
         var original = isNew ? newPage() : settings.Pages[index];
         var editor = createPageEditor(original, shared);
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('PagesTitleNewPage') : ((original.Title || '').trim() || '/pages/' + (original.Slug || '')),
+            badge: badge || null,
             body: editor.element,
             page: page,
             isNew: isNew,
@@ -1142,13 +1146,15 @@ export default function (view) {
     //
     // Inputs
     // index [number]: The store's place, or -1 for a new one.
-    function openStore(index) {
+    // badge [object]: Its row's badge, shown beside the title, or null.
+    function openStore(index, badge) {
         var t = shared.t;
         var isNew = index < 0;
         var original = isNew ? newStore(settings) : settings.Stores[index];
         var editor = createStoreEditor(original, isNew ? undefined : counts[(original.Name || '').toLowerCase()], shared);
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('PagesTitleNewStore') : original.Name,
+            badge: badge || null,
             body: editor.element,
             page: page,
             isNew: isNew,

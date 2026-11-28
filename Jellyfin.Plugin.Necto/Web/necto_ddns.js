@@ -255,9 +255,10 @@ export function createRecordEditor(record, ctx) {
     var backupMx = nectoModule.createCheckboxField({ label: t.tr('DdnsLabelBackupMx'), field: 'BackupMx', checked: !!draft.BackupMx });
 
     // section
-    // Adds one of the editor's sections, led by its icon tile, with its fields a wide gap apart.
-    function section(titleKey, icon, fields, open) {
-        var made = nectoModule.createCollapsibleSection({ title: t.tr(titleKey), icon: icon, collapsed: !open });
+    // Adds one of the editor's sections, framed and always open like every short editor's, led by its icon tile, with
+    // its fields a wide gap apart.
+    function section(titleKey, icon, fields) {
+        var made = nectoModule.createCollapsibleSection({ title: t.tr(titleKey), icon: icon, collapsible: false });
         fields.forEach(function (f) { made.content.appendChild(f.element || f); });
         made.content.classList.add('stolon-flow');
         made.element.setAttribute('data-section', icon);
@@ -266,7 +267,7 @@ export function createRecordEditor(record, ctx) {
         return made;
     }
 
-    section('DdnsHeaderRecord', 'dns', [provider, follow, hostname, login, password, zone, enabled], true);
+    section('DdnsHeaderRecord', 'dns', [provider, follow, hostname, login, password, zone, enabled]);
     section('DdnsHeaderUpdates', 'update', [ipv4, ipv6, every]);
     section('DdnsHeaderAdvanced', 'tune', [server, ttl, proxied, wildcard, isStatic, mx, backupMx]);
 
@@ -431,7 +432,7 @@ export default function (view) {
             ],
             bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
             onBulk: bulk,
-            onRowClick: function (entry) { openRecord(entry.Record, entry.Followed); },
+            onRowClick: function (entry) { openRecord(entry.Record, entry.Followed, recordBadge(entry, shared.t)); },
             onReload: function () { loadRecords(); }
         });
         page.addCleanup(function () { if (table) { table.destroy(); table = null; } });
@@ -505,13 +506,14 @@ export default function (view) {
     }
 
     // openRecord
-    // Opens a record, or a new one, in the editor sidecar.
-    function openRecord(record, followed) {
+    // Opens a record, or a new one, in the editor sidecar, with its row's badge beside the title.
+    function openRecord(record, followed, badge) {
         var t = shared.t;
         var isNew = !record;
         var editor = createRecordEditor(record || newRecord(), { shared: shared, providers: providers, followed: followed || [], proxyOn: proxyOn });
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('DdnsTitleNewRecord') : recordName(record, providers),
+            badge: badge || null,
             body: editor.element,
             page: page,
             isNew: isNew,

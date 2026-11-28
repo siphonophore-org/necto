@@ -742,3 +742,12 @@ test('a route to Jellyfin takes a local address, a wildcard certificate names it
     assert.equal(hidden(note), false);
     assert.equal(hidden(app.element.querySelector('[data-field="Certificate.Mode"]')), true);
 });
+
+test('a route opens with its row badge beside the title', async function () {
+    var opened = await openProxyPage();
+    await openTrust(opened);
+    var badge = opened.dom.document.querySelector('.stolon-sidecar .stolon-sidecar-badge');
+
+    assert.ok(badge);
+    assert.equal(badge.textContent, 'HTTPS');
+});

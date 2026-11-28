@@ -984,7 +984,7 @@ export default function (view) {
             add: [{ id: 'btnAddGroup', icon: 'add', text: t.tr('ButtonAddGroup'), onClick: function () { openGroup(null); } }],
             bulk: [{ verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
             onBulk: bulk,
-            onRowClick: function (item) { openGroup(item.group); },
+            onRowClick: function (item) { openGroup(item.group, item.state); },
             onReload: function () { loadGroups(); }
         });
         page.addCleanup(function () { if (table) { table.destroy(); table = null; } });
@@ -1085,12 +1085,14 @@ export default function (view) {
     //
     // Inputs
     // group [object]: The group, or null for a new one.
-    function openGroup(group) {
+    // badge [object]: Its row's badge, shown beside the title, or null.
+    function openGroup(group, badge) {
         var t = shared.t;
         var isNew = !group;
         var editor = createGroupEditor(group || newGroup(), { shared: shared, users: users, groups: groups, devices: devices, sessions: sessions, events: events, profiles: profiles, config: config });
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('TitleNewGroup') : groupName(group, t),
+            badge: badge || null,
             body: editor.element,
             page: page,
             isNew: isNew || isEveryone(group),

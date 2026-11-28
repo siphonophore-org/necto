@@ -902,7 +902,7 @@ export default function (view) {
             add: [{ id: 'btnAddRoute', icon: 'add', text: t.tr('ButtonAddRoute'), onClick: pickTemplate }],
             bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
             onBulk: bulk,
-            onRowClick: function (row) { openRoute(row.Route, row.Status); },
+            onRowClick: function (row) { openRoute(row.Route, row.Status, routeBadge(row, t)); },
             onReload: function () { loadAll(); }
         });
         page.addCleanup(function () { if (table) { table.destroy(); table = null; } });
@@ -1100,8 +1100,8 @@ export default function (view) {
     }
 
     // openRoute
-    // Opens a route, or a new one from a template, in the editor sidecar.
-    function openRoute(route, status) {
+    // Opens a route, or a new one from a template, in the editor sidecar, with its row's badge beside the title.
+    function openRoute(route, status, badge) {
         var t = shared.t;
         var isNew = !route || !route.Id;
         var editor = createRouteEditor(route || newRoute(), { shared: shared, status: status, records: records, hostnames: hostnames, requestable: requestable(), onAction: onEditorAction });
@@ -1116,6 +1116,7 @@ export default function (view) {
         }
         nectoModule.openEditorSidecar({
             title: isNew ? t.tr('ProxyTitleNewRoute') : (route.Host || t.tr('ProxyNoHost')),
+            badge: badge || null,
             body: editor.element,
             page: page,
             isNew: isNew,

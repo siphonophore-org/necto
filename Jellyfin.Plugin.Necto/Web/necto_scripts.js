@@ -300,11 +300,21 @@ export default function (view) {
     }
 
     // renderTable
-    // Draws the table again and keeps the open sidecar's title in step with the script's name.
+    // Draws the table again and keeps the open sidecar's title and its badge in step with the script's name and state.
     function renderTable() {
         if (table) table.refresh();
         var script = current();
-        el('scriptSidecarTitle').textContent = script ? (script.Name || t.tr('ScriptsScriptUntitled')) : '';
+        var title = el('scriptSidecarTitle');
+        title.textContent = script ? (script.Name || t.tr('ScriptsScriptUntitled')) : '';
+        var row = title.parentNode;
+        var old = row.querySelector('.stolon-sidecar-badge');
+        if (old) old.remove();
+        if (!script) return;
+        var b = STATE_BADGES[scriptState(script)];
+        var holder = document.createElement('span');
+        holder.innerHTML = Shared.badge(b.color, t.tr(b.key));
+        var badge = holder.firstElementChild;
+        if (badge) { badge.classList.add('stolon-sidecar-badge'); row.appendChild(badge); }
     }
 
     // bulk
