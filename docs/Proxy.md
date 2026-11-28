@@ -4,7 +4,7 @@
 
 ## The Proxy Tool
 
-The page opens with notices that need a look, such as a port another program holds, a name that points elsewhere, or visitors that all look local. The cards under them show whether the proxy runs, how many routes it answers for, whether Jellyfin trusts it, and whether the first internet route's name points at this server.
+The page opens with notices that need a look, such as a port another program holds or visitors that all look local. The cards under them count the routes in each state, **Untrusted**, **HTTP**, **Incomplete**, **HTTPS**, and **Off**. The first internet route's line says **DNS not found** while its name has no DNS record, or **DNS points elsewhere** while it points away from this server, and the **Checks** tab gives the details.
 
 | Proxy | Proxy on a phone |
 | :---: | :---: |

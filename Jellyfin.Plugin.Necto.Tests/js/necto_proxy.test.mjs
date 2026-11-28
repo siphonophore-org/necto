@@ -40,6 +40,11 @@ test('a route row ends with its one state badge, and its line says where it forw
     assert.deepEqual(proxy.routeBadge(rows[1], bag.t), { label: 'Off', color: 'gray' });
     assert.deepEqual(proxy.routeLine(rows[0], bag.t).filter(Boolean), ['Jellyfin', 'Expires soon']);
     assert.deepEqual(proxy.routeLine(rows[1], bag.t).filter(Boolean), ['http://192.168.1.20:8096', 'Local only']);
+    var host = rows[0].Route.Host;
+    assert.deepEqual(proxy.routeLine(rows[0], bag.t, { Hostname: host.toUpperCase(), Error: 'x', Addresses: [] }).filter(Boolean), ['Jellyfin', 'Expires soon', 'DNS not found']);
+    assert.equal(proxy.dnsText(rows[0].Route, { Hostname: host, Error: 'x', Addresses: ['198.51.100.9'] }, bag.t), 'DNS points elsewhere');
+    assert.equal(proxy.dnsText(rows[0].Route, { Hostname: host, Error: '', Addresses: [] }, bag.t), '');
+    assert.equal(proxy.dnsText(rows[0].Route, { Hostname: 'other.example.com', Error: 'x', Addresses: [] }, bag.t), '');
     assert.deepEqual(proxy.routeFilters(bag.t).map(function (f) { return f.label; }), ['Untrusted', 'HTTP', 'Incomplete', 'HTTPS', 'Off']);
     var cards = proxy.routeCards(rows.concat([{ Route: ROUTES[0], State: 'Untrusted' }]), bag.t);
     assert.deepEqual(cards.map(function (c) { return [c.label, c.count, c.color]; }), [['Untrusted', 1, 'orange'], ['HTTP', 0, 'gray'], ['Incomplete', 0, 'gray'], ['HTTPS', 1, 'green'], ['Off', 1, 'gray']]);
@@ -157,13 +162,13 @@ test('a DDNS name locks the host, and a wildcard takes a subdomain in front of i
     assert.equal(proxy.hostFor('*.example.com', ''), '');
 });
 
-test('notices say how the proxy stands', async function () {
+test('notices say how the proxy stands, leaving the DNS record to the route'''s line', async function () {
     var bag = await strings();
     var proxy = await loadScript('necto_proxy.js');
     var status = { Enabled: true, Running: false, Error: 'Port 443 is in use.', TakeoverPhase: 'Managed', Routes: [{ Id: 'a', Active: true }], Name: { Hostname: 'media.example.com', Resolves: false, Error: 'It points elsewhere.' }, EveryoneLooksLocal: true };
     var list = proxy.notices(status, bag.t).map(function (n) { return n.text; });
     assert.ok(list.indexOf('Port 443 is in use.') >= 0);
-    assert.ok(list.indexOf('It points elsewhere.') >= 0);
+    assert.equal(list.indexOf('It points elsewhere.'), -1);
     assert.deepEqual(proxy.notices({ Enabled: false, CountryRule: 'Only visitors from United States can connect.' }, bag.t), []);
 });
 

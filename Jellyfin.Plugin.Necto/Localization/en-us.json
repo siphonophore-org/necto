@@ -1612,6 +1612,8 @@
   "ProxyTagCertificateReady": "HTTPS ready",
   "ProxyTagCertificateWaiting": "No certificate yet",
   "ProxyTagExpiresSoon": "Expires soon",
+  "ProxyTagDnsElsewhere": "DNS points elsewhere",
+  "ProxyTagDnsMissing": "DNS not found",
   "ProxyTagLocalOnly": "Local only",
   "ProxyTagNoCertificate": "HTTP only",
   "ProxyTagRequesting": "Requesting",

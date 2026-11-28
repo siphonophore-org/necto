@@ -116,17 +116,35 @@ export function routeBadge(row, t) {
 }
 
 // routeLine
-// Writes the line under a route's host: where it forwards, Local only for a route only your network may reach, and
-// what is not finished or soon due, such as Expires soon.
+// Writes the line under a route's host: where it forwards, Local only for a route only your network may reach, what
+// is not finished or soon due, such as Expires soon, and for the public name the proxy checks, when its DNS record
+// is missing or points elsewhere.
 //
 // Inputs
 // row [object]: One row from Proxy/Routes/All.
 // t [object]: The strings.
+// name [object]: The Name the proxy's status gives, or null.
 //
 // Output
 // [string[]]: The line's parts.
-export function routeLine(row, t) {
-    return [upstreamText(row.Route, t), row.Route.LocalOnly ? t.tr('ProxyTagLocalOnly') : '', ROUTE_DETAILS[row.Detail] ? t.tr(ROUTE_DETAILS[row.Detail]) : ''];
+export function routeLine(row, t, name) {
+    return [upstreamText(row.Route, t), row.Route.LocalOnly ? t.tr('ProxyTagLocalOnly') : '', ROUTE_DETAILS[row.Detail] ? t.tr(ROUTE_DETAILS[row.Detail]) : '', dnsText(row.Route, name, t)];
+}
+
+// dnsText
+// Says a route's public name has no DNS record yet, or one that points away from this server, when it is the name the
+// proxy checks.
+//
+// Inputs
+// route [object]: The route.
+// name [object]: The Name the proxy's status gives, or null.
+// t [object]: The strings.
+//
+// Output
+// [string]: The words, or empty.
+export function dnsText(route, name, t) {
+    if (!name || !name.Error || !name.Hostname || String(route.Host || '').toLowerCase() !== String(name.Hostname).toLowerCase()) return '';
+    return t.tr((name.Addresses || []).length ? 'ProxyTagDnsElsewhere' : 'ProxyTagDnsMissing');
 }
 
 // routeCards
@@ -711,7 +729,6 @@ export function notices(status, t) {
     if (status.EveryoneLooksLocal) out.push({ cls: 'stolon-warn', text: t.tr('ProxyEveryoneLocalNotice') });
     if (status.JellyfinExposedAt) out.push({ cls: 'stolon-warn', text: t.format('ProxyExposedNotice', status.JellyfinExposedAt) });
     if (status.TakeoverError) out.push({ cls: 'stolon-error', text: status.TakeoverError });
-    if (status.Name && status.Name.Hostname && status.Name.Error) out.push({ cls: 'stolon-warn', text: status.Name.Error });
     return out;
 }
 
@@ -880,7 +897,7 @@ export default function (view) {
             empty: { message: t.tr('ProxyEmptyRoutes'), filteredMessage: t.tr('ProxyEmptyRoutesMatch') },
             title: function (row) { return row.Route.Host || t.tr('ProxyNoHost'); },
             icon: function () { return 'public'; },
-            lines: function (row) { return routeLine(row, t); },
+            lines: function (row) { return routeLine(row, t, proxyStatus.Name); },
             status: function (row) { return routeBadge(row, t); },
             add: [{ id: 'btnAddRoute', icon: 'add', text: t.tr('ButtonAddRoute'), onClick: pickTemplate }],
             bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
@@ -921,8 +938,9 @@ export default function (view) {
         var loading = loadSeq;
         return Promise.all([shared.request('Proxy/Routes'), shared.request('Proxy/Status')]).then(function (answers) {
             if (mine !== refreshSeq || loading !== loadSeq) return;
-            showRoutes(answers[0]);
+            // The status comes first, so each route's line can say when its DNS record is missing.
             showStatus(answers[1] || {});
+            showRoutes(answers[0]);
             if (openEditor) openEditor.editor.setRequestable(requestable());
         }).catch(function () { /* the next tick tries again */ });
     }
@@ -945,8 +963,9 @@ export default function (view) {
             (Array.isArray(answers[3]) ? answers[3] : []).forEach(function (p) { if (p.Txt) txt[p.Value] = true; });
             records = ((answers[2] && answers[2].Records) || []).map(function (e) { return e.Record; }).filter(function (r) { return txt[r.Provider]; });
             hostnames = Array.isArray(answers[4]) ? answers[4] : [];
-            showRoutes(answers[0]);
+            // The status comes first, so each route's line can say when its DNS record is missing.
             showStatus(answers[1] || {});
+            showRoutes(answers[0]);
             if (openEditor) openEditor.editor.setRequestable(requestable());
             if (visitors) visitors.load();
             if (details) details.load();
