@@ -84,7 +84,7 @@ When the host cannot start, the reason shows at the top. The cards under it coun
 
 Below the cards are two tabs, **Tunnels** and **Usage**. **Usage** lists each user's peers against what their groups give, such as "2 of 3 peers", with **Allowed**, **Not allowed**, or **Over peer count**. **Tunnels** holds the table below.
 
-One table lists this server, the peers, and the connections, each with its type's icon and its state. Search it by name, owner, or address, and filter it by state, or to **Peers** or **Connections**. **Add tunnel** in its toolbar asks for a **Peer** or a **Connection** while both the host and connecting are on, and opens the one that is on otherwise. With nothing to list it reads "No peers or connections yet."
+One table lists this server, the peers, and the connections, each with its type's icon and its state. Search it by name, owner, or address, and filter it by state. **Add tunnel** in its toolbar asks for a **Peer** or a **Connection** while both the host and connecting are on, and opens the one that is on otherwise. With nothing to list it reads "No peers or connections yet."
 
 ### Peers
 

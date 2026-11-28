@@ -246,8 +246,8 @@ export default function (view) {
     }
 
     // createTable
-    // Builds the one table of this server, the peers, and the connections, with its search, its state and type
-    // filters, Add tunnel, and Enable, Disable, and Remove for the rows picked. The rows come from what the page
+    // Builds the one table of this server, the peers, and the connections, with its search, its state filter, Add
+    // tunnel, and Enable, Disable, and Remove for the rows picked. The rows come from what the page
     // loaded.
     function createTable() {
         table = nectoModule.createToolTable(view, shared, {
@@ -259,11 +259,6 @@ export default function (view) {
                 label: t.tr('HeaderStatus'),
                 options: STATE_ORDER.map(function (state) { return { value: state, label: stateTag(t, state).label }; }),
                 test: function (row, value) { return row.StateKey === value; }
-            }, {
-                name: 'type',
-                label: t.tr('LabelType'),
-                options: [{ value: 'Peer', label: t.tr('HeaderPeers') }, { value: 'Connection', label: t.tr('HeaderConnections') }],
-                test: function (row, value) { return row.Kind === value; }
             }],
             empty: { message: t.tr('WireGuardEmptyNone'), filteredMessage: t.tr('WireGuardEmptyMatch') },
             title: function (row) { return row.Name; },
