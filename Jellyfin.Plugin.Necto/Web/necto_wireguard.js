@@ -222,7 +222,7 @@ export default function (view) {
             return;
         }
         var group = h('div', { class: 'stolon-choice-group', role: 'radiogroup', 'aria-label': t.tr('WireGuardButtonAddTunnel') });
-        [['peer', 'WireGuardChoicePeer', 'WireGuardChoicePeerHelp'], ['connection', 'WireGuardChoiceConnection', 'WireGuardChoiceConnectionHelp']].forEach(function (c, i) {
+        [['peer', 'WireGuardHeaderPeer', 'WireGuardChoicePeerHelp'], ['connection', 'WireGuardHeaderConnection', 'WireGuardChoiceConnectionHelp']].forEach(function (c, i) {
             group.appendChild(h('label', { class: 'stolon-choice' }, [
                 h('input', { type: 'radio', name: 'necto-tunnel-kind', value: c[0], checked: i === 0 }),
                 h('span', { class: 'stolon-choice-name', text: t.tr(c[1]) }),
