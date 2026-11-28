@@ -93,7 +93,7 @@ export function normalizeScope(value) {
 // [string]: The tier's name.
 export function tierLabel(value, t) {
     var v = normalizeVisibility(value);
-    if (v === 'Admin') return t.tr('LabelAdministrators');
+    if (v === 'Admin') return t.tr('LabelAdmins');
     if (v === 'User') return t.tr('LabelSignedIn');
     return t.tr('PagesTierAnyone');
 }
@@ -796,18 +796,17 @@ export default function (view) {
     }
 
     // drawPages
-    // Draws the page counts and the pages' table.
+    // Draws the page counts above the tabs, in the words and colors of the rows' badges, and the pages' table.
     function drawPages() {
-        var panel = panels.pages;
-        if (!panel) return;
         var t = shared.t;
         var c = pageCounts(settings.Pages);
-        shared.renderCards(panel.querySelector('[data-role="page-counts"]'), [
-            { count: c.anyone, label: t.tr('PagesTierAnyone'), color: 'green' },
-            { count: c.user, label: t.tr('LabelSignedIn'), color: 'blue' },
-            { count: c.admin, label: t.tr('LabelAdministrators'), color: 'purple' },
+        var card = function (tier, count) { var badge = tierBadge(tier, t); return { count: count, label: badge.label, color: count ? badge.color : 'gray' }; };
+        shared.renderCards('pageCounts', [
+            card('Anonymous', c.anyone), card('User', c.user), card('Admin', c.admin),
             { count: c.unpublished, label: t.tr('PagesStatusUnpublished'), color: 'gray' }
         ]);
+        var panel = panels.pages;
+        if (!panel) return;
         drawTable('pages', panel, function () {
             return {
                 containerId: 'pagesTable',
@@ -881,16 +880,12 @@ export default function (view) {
     }
 
     // drawAssets
-    // Draws the image counts and the images' table, each with its thumbnail, path, and tier.
+    // Draws the images' table, each with its thumbnail, path, and tier.
     function drawAssets() {
         var panel = panels.assets;
         if (!panel) return;
         var t = shared.t;
         var assets = settings.Assets || [];
-        shared.renderCards(panel.querySelector('[data-role="asset-counts"]'), ['Anonymous', 'User', 'Admin'].map(function (tier) {
-            var badge = tierBadge(tier, t);
-            return { count: assets.filter(function (a) { return normalizeVisibility(a.Visibility) === tier; }).length, label: badge.label, color: badge.color };
-        }));
         drawTable('assets', panel, function () {
             return {
                 containerId: 'assetsTable',
@@ -961,16 +956,11 @@ export default function (view) {
     }
 
     // drawStores
-    // Draws the store counts and the stores' table.
+    // Draws the stores' table.
     function drawStores() {
         var panel = panels.stores;
         if (!panel) return;
         var t = shared.t;
-        var on = (settings.Stores || []).filter(function (x) { return x.Enabled !== false; }).length;
-        shared.renderCards(panel.querySelector('[data-role="store-counts"]'), [
-            { count: on, label: t.tr('StateOn'), color: on ? 'green' : 'gray' },
-            { count: (settings.Stores || []).length - on, label: t.tr('Off'), color: 'gray' }
-        ]);
         drawTable('stores', panel, function () {
             return {
                 containerId: 'storesTable',
@@ -1210,23 +1200,22 @@ export default function (view) {
     }
 
     // renderTab
-    // Builds a tab's panel the first time it opens: its one help line, its count cards, and its table.
+    // Builds a tab's panel the first time it opens: the pages' table, or an images' or stores' help line and table.
     function renderTab(tab, panel) {
         var t = shared.t;
         panels[tab.id] = panel;
         panel.classList.add('stolon-stack');
         var intro = h('div', { class: 'fieldDescription' });
         if (tab.id === 'pages') {
-            fillWithCode(intro, t.tr('PagesPagesIntro'), ['/pages/{slug}']);
-            [intro, h('div', { class: 'stolon-cards stolon-even', 'data-role': 'page-counts' }), h('div', { id: 'pagesTable' })].forEach(function (n) { panel.appendChild(n); });
+            panel.appendChild(h('div', { id: 'pagesTable' }));
             drawPages();
         } else if (tab.id === 'assets') {
             fillWithCode(intro, t.tr('PagesAssetsIntro'), ['asset/logo.png']);
-            [intro, h('div', { class: 'stolon-cards stolon-even', 'data-role': 'asset-counts' }), h('div', { id: 'assetsTable' })].forEach(function (n) { panel.appendChild(n); });
+            [intro, h('div', { id: 'assetsTable' })].forEach(function (n) { panel.appendChild(n); });
             drawAssets();
         } else if (tab.id === 'stores') {
             intro.textContent = t.tr('PagesStoresIntro');
-            [intro, h('div', { class: 'stolon-cards stolon-even', 'data-role': 'store-counts' }), h('div', { id: 'storesTable' })].forEach(function (n) { panel.appendChild(n); });
+            [intro, h('div', { id: 'storesTable' })].forEach(function (n) { panel.appendChild(n); });
             drawStores();
         }
     }
@@ -1235,6 +1224,7 @@ export default function (view) {
     // Builds the tabs once the strings are in.
     function bindPage() {
         var t = shared.t;
+        fillWithCode(view.querySelector('#pagesIntro'), t.tr('PagesPagesIntro'), ['/pages/{slug}']);
         tabs = nectoModule.createSubTabs({
             label: t.tr('TabPages'),
             tabs: [

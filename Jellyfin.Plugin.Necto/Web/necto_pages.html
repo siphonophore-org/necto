@@ -1,5 +1,5 @@
 <!-- necto_pages.html -->
-<!-- The Pages tool. It holds the pages, their images, and the stores they write to, each tab with one help line and each record opening in a sidecar. -->
+<!-- The Pages tool. It counts the pages above three tabs, the pages, their images, and the stores they write to, each record opening in a sidecar. -->
 
 <div id="NectoCustomPagesPage" data-role="page" class="page type-interior pluginConfigurationPage"
      data-require="emby-input,emby-button,emby-select,emby-checkbox"
@@ -7,6 +7,12 @@
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding stolon-stack">
+                <div id="pagesIntro" class="fieldDescription">Serves each page at /pages/{slug}.</div>
+
+                <!-- Counts -->
+                <!-- How many pages each tier may open, and how many are unpublished, above the tabs so every tab keeps them. -->
+                <div id="pageCounts" class="stolon-cards stolon-even"></div>
+
                 <div id="pagesStatus" class="stolon-status-text" role="status"></div>
 
                 <!-- Tabs -->

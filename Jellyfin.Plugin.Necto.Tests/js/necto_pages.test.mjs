@@ -49,7 +49,7 @@ test('a tier reads as a name or a number, and an unknown one falls back', async 
     assert.equal(pages.normalizeVisibility(9, 'Admin'), 'Admin');
     assert.equal(pages.normalizeScope(1), 'Own');
     assert.equal(pages.tierLabel('User', t), 'Signed in');
-    assert.equal(pages.tierLabel('Admin', t), 'Administrators');
+    assert.equal(pages.tierLabel('Admin', t), 'Admins');
     assert.equal(pages.tierLabel('Anonymous', t), 'Anyone');
 });
 
@@ -298,7 +298,7 @@ test('the Pages tool holds no settings, and a page saves only after the server c
     routeApi(page, {
         'POST Pages/Configuration/Check': function (r) { checked.push(r); return { ok: false, message: 'Two pages use the slug rules.' }; }
     });
-    var view = pageView(dom, [dom.el('div', { id: 'pagesStatus' }), dom.el('div', { id: 'pagesTabs' })]);
+    var view = pageView(dom, [dom.el('div', { id: 'pagesIntro' }), dom.el('div', { id: 'pageCounts' }), dom.el('div', { id: 'pagesStatus' }), dom.el('div', { id: 'pagesTabs' })]);
     dom.document.documentElement.appendChild(view);
     var mod = await loadScript('necto_pages.js');
     mod.default(view);
@@ -306,12 +306,13 @@ test('the Pages tool holds no settings, and a page saves only after the server c
     await settle();
 
     assert.equal(view.querySelector('[data-tool]'), null);
+    assert.match(view.querySelector('#pageCounts').textContent, /0Anyone1Signed in0Admins0Unpublished/);
     var rows = view.querySelectorAll('#pagesTable .stolon-table-row');
     assert.equal(rows.length, 1);
     assert.match(rowHtml(rows[0]), /\/pages\/rules/);
     var controls = view.querySelector('#pagesTable .stolon-table-controls');
     assert.equal(controls.querySelector('input').getAttribute('placeholder'), 'Search pages');
-    assert.deepEqual(texts(controls, 'select option'), ['All', 'Anyone', 'Signed in', 'Administrators', 'Unpublished']);
+    assert.deepEqual(texts(controls, 'select option'), ['All', 'Anyone', 'Signed in', 'Admins', 'Unpublished']);
     assert.ok(controls.querySelector('#btnAddPage'));
     assert.deepEqual(texts(view.querySelector('#pagesTable .stolon-table-bulk-actions'), '[data-bulk]'), ['Enable', 'Disable', 'Remove']);
 
@@ -356,7 +357,7 @@ test('each image is a table row with its thumbnail, path, and tier, and opens a 
     var page = installPage({ config: { CustomPages: { Pages: [], Assets: [{ Name: 'logo.png', ContentType: 'image/png', DataBase64: 'AAAA', Visibility: 'Anonymous' }], Stores: [] } } });
     var dom = page.dom;
     routeApi(page, {});
-    var view = pageView(dom, [dom.el('div', { id: 'pagesStatus' }), dom.el('div', { id: 'pagesTabs' })]);
+    var view = pageView(dom, [dom.el('div', { id: 'pagesIntro' }), dom.el('div', { id: 'pageCounts' }), dom.el('div', { id: 'pagesStatus' }), dom.el('div', { id: 'pagesTabs' })]);
     dom.document.documentElement.appendChild(view);
     var mod = await loadScript('necto_pages.js');
     mod.default(view);

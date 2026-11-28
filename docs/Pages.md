@@ -5,7 +5,7 @@
 ## What It Does
 
 * Serves each page at `/pages/{slug}`, written as separate HTML, CSS, and JavaScript or as one complete document.
-* Opens a page for **Anyone**, for **Signed in** users whose groups give it, or for **Administrators**.
+* Opens a page for **Anyone**, for **Signed in** users whose groups give it, or for **Admins**.
 * Hosts images for the pages, public or embedded only into pages at their tier.
 * Lets a page call fixed server side routes with stored credentials, and keep records in stores on the server.
 
@@ -14,7 +14,7 @@
 
 ## The Pages Tool
 
-**Pages** has three tabs: **Pages**, **Images**, and **Stores**, each with one line under it on what it holds. Each list opens a record in a sidecar, whose shelf holds **Remove**, **Cancel**, and **Save**, or **Delete** for a store, since its records go with it. A save asks the server first whether it would take the change, so a refused save shows its reason, such as "Two pages use the slug rules.". The tool holds no settings, which are in **Settings > Pages**.
+**Pages** opens with one line on where pages are served, then cards that count the pages each tier may open, **Anyone**, **Signed in**, and **Admins**, and the **Unpublished** ones. Under them are three tabs, **Pages**, **Images**, and **Stores**, each holding a table, with one line on what **Images** and **Stores** hold. Each table opens a record in a sidecar, whose shelf holds **Remove** and **Save**, or **Delete** for a store, since its records go with it. A save asks the server first whether it would take the change, so a refused save shows its reason, such as "Two pages use the slug rules.". The tool holds no settings, which are in **Settings > Pages**.
 
 | Pages | Pages on a phone |
 | :---: | :---: |
@@ -54,7 +54,7 @@ A page that needs a signed in viewer opens on the web client's loading screen. I
 | :--- | :--- |
 | **Anyone** | Everyone, signed in or not |
 | **Signed in** | Administrators, and members of a group that gives the page |
-| **Administrators** | Administrators only |
+| **Admins** | Administrators only |
 
 A group gives pages in **Groups > Pages**. **Permissive** opens every **Signed in** page, pages added later too, and **Restrictive** opens only the pages picked under it. The list the **Signed in** pages, since the other tiers ignore groups, and keeps a page the group already gives after it moves to another tier. A user in no group takes **Everyone**, which gives no page until you choose one. The check runs before the page is built, so a refused viewer never receives its HTML, CSS, or JavaScript. An API key carries no user, so it cannot open a **Signed in** page.
 
@@ -63,7 +63,7 @@ A group gives pages in **Groups > Pages**. **Permissive** opens every **Signed i
 
 ## Images
 
-**Images** hosts images for the pages. The list of images comes first, and the drop zone under it takes new ones. Drop or select images to upload them, up to 5 MB each. An upload with the name of an image already there replaces it and keeps its tier. The cards count **Images**, **Other** files, and their total **Size**. **Remove** on a row asks first, and pages that use the image show a broken image.
+**Images** hosts images for the pages, one table row each with its thumbnail, its path, and its tier. **Add images** in the toolbar uploads them, up to 5 MB each. An upload with the name of an image already there replaces it and keeps its tier. **Remove** asks first, and pages that use the image show a broken image.
 
 ![Pages images](screenshots/Pages%20Images.png)
 
@@ -76,7 +76,7 @@ Use an image by the path on its row, `asset/{name}`, from the page's HTML or CSS
 Each image has a tier of its own:
 
 * **Anyone** images are public at `/pages/asset/{name}`, served with `nosniff` and a sandbox policy. Any file that is not an image is served as a download.
-* **Signed in** and **Administrators** images are never served by address, since an image fetch carries no token. A page at the image's tier or higher has each `asset/{name}` reference replaced with the image's data as it is served. A page below the image's tier shows a broken image.
+* **Signed in** and **Admins** images are never served by address, since an image fetch carries no token. A page at the image's tier or higher has each `asset/{name}` reference replaced with the image's data as it is served. A page below the image's tier shows a broken image.
 
 !!! warning "Public images are cached"
     Browsers and caches may keep an **Anyone** image for five minutes. To take one down at once, delete it rather than raising its tier.
@@ -126,14 +126,14 @@ pageStore.remove('queue', id);
 * **Name** sets the store's address, `/pages/store/{name}`.
 * **Accept calls** answers pages that call the store. A store that does not answers as not found.
 * **Read** sets the lowest tier that may read the store. A viewer below it reads nothing.
-* **Scope** sets how much a reader sees. **All records** shows every record and **User records** only the reader's own. Administrators always see every record. **Scope** hides while **Read** is **Administrators**.
+* **Scope** sets how much a reader sees. **All records** shows every record and **User records** only the reader's own. Administrators always see every record. **Scope** hides while **Read** is **Admins**.
 * **Write** sets the lowest tier that may add a record. Changing a record needs the read tier too.
 * **Writers edit own records** lets a writer change and delete the records they created while **Scope** is **User records**.
 * **Record limit** refuses writes past this count. A record holds at most 64 KB and a store at most 64 MB.
 * **Retention** removes records once they reach an age, counted from when each was created.
 * **Notify administrators** writes the activity log and sends Notifications when records are added or removed. A burst of writes becomes one entry.
 
-The sidecar shows how full the store is, and a notice when **Write** is **Anyone** or when **Scope** is **All records** with **Read** and **Write** below **Administrators**.
+The sidecar shows how full the store is, and a notice when **Write** is **Anyone** or when **Scope** is **All records** with **Read** and **Write** below **Admins**.
 
 !!! warning "Scope All records lets every writer change every record"
     With **All records**, anyone who clears both tiers may change or delete any record, and **Writers edit own records** has no effect.
@@ -229,7 +229,7 @@ The pages' own addresses:
 | :--- | :--- | :--- |
 | `GET /pages/{slug}` | Anyone | Serves an **Anyone** page, the loading screen of any other, or the not found screen |
 | `GET /pages/{slug}/user` | Signed in | Serves a **Signed in** page to administrators and the groups that give it |
-| `GET /pages/{slug}/admin` | Administrators | Serves an **Administrators** page |
+| `GET /pages/{slug}/admin` | Administrators | Serves an **Admins** page |
 | `GET`, `POST /pages/{slug}/api/{name}` | The page's audience | Forwards a server route |
 | `GET /pages/asset/{name}` | Anyone | Serves an **Anyone** image |
 | `GET /pages/favicon.ico` | Anyone | Serves the server's favicon |

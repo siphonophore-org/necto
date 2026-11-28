@@ -303,7 +303,7 @@ export function groupsCard(t, config, users) {
     withBar(card, t, [
         { label: t.tr('HeaderMembers'), value: grouped, color: 'green' },
         { label: t.tr('ScriptsSummaryNoGroups'), value: people.length - grouped, color: 'gray' },
-        { label: t.tr('DashboardAdmins'), value: admins, color: 'blue' }
+        { label: t.tr('LabelAdmins'), value: admins, color: 'blue' }
     ], 'DashboardEmptyUsers');
     return setState(card, t, grouped > 0 ? 'active' : 'idle');
 }
