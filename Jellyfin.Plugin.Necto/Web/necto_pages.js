@@ -1206,23 +1206,18 @@ export default function (view) {
     }
 
     // renderTab
-    // Builds a tab's panel the first time it opens: its table, then for images and stores one help line under it, so
-    // every tab's toolbar sits in the same place.
+    // Builds a tab's panel the first time it opens: its table alone, so every tab's toolbar sits in the same place.
     function renderTab(tab, panel) {
-        var t = shared.t;
         panels[tab.id] = panel;
         panel.classList.add('stolon-stack');
-        var intro = h('div', { class: 'fieldDescription' });
         if (tab.id === 'pages') {
             panel.appendChild(h('div', { id: 'pagesTable' }));
             drawPages();
         } else if (tab.id === 'assets') {
-            fillWithCode(intro, t.tr('PagesAssetsIntro'), ['asset/logo.png']);
-            [h('div', { id: 'assetsTable' }), intro].forEach(function (n) { panel.appendChild(n); });
+            panel.appendChild(h('div', { id: 'assetsTable' }));
             drawAssets();
         } else if (tab.id === 'stores') {
-            intro.textContent = t.tr('PagesStoresIntro');
-            [h('div', { id: 'storesTable' }), intro].forEach(function (n) { panel.appendChild(n); });
+            panel.appendChild(h('div', { id: 'storesTable' }));
             drawStores();
         }
     }

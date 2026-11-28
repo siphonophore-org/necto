@@ -14,7 +14,7 @@
 
 ## The Pages Tool
 
-**Pages** opens with one line on where pages are served, then cards that count the pages each tier may open, **Anyone**, **Signed in**, and **Admins**, and the **Unpublished** ones. Under them are three tabs, **Pages**, **Images**, and **Stores**, each holding a table, with one line on what **Images** and **Stores** hold. Each table opens a record in a sidecar, whose shelf holds **Remove** and **Save**, or **Delete** for a store, since its records go with it. A save asks the server first whether it would take the change, so a refused save shows its reason, such as "Two pages use the slug rules.". The tool holds no settings, which are in **Settings > Pages**.
+**Pages** opens with one line on where pages are served, then cards that count the pages each tier may open, **Anyone**, **Signed in**, and **Admins**, and the **Unpublished** ones. Under them are three tabs, **Pages**, **Images**, and **Stores**, each holding a table. Each table opens a record in a sidecar, whose shelf holds **Remove** and **Save**, or **Delete** for a store, since its records go with it. A save asks the server first whether it would take the change, so a refused save shows its reason, such as "Two pages use the slug rules.". The tool holds no settings, which are in **Settings > Pages**.
 
 | Pages | Pages on a phone |
 | :---: | :---: |

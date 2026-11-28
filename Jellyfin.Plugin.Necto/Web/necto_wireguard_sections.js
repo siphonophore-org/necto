@@ -281,7 +281,7 @@ export function createPeersByUser(shared) {
             { key: 'State', type: 'custom', label: t.tr('LabelStatus'), className: 'stolon-table-cell-status', render: function (row) { var s = peerState(row, t); return shared.badge(s.color, s.label); } }
         ]
     });
-    var element = h('div', { class: 'stolon-stack', 'data-role': 'peers-by-user' }, [table.element, h('div', { class: 'fieldDescription', text: t.tr('WireGuardPeersByUserHelp') }), status]);
+    var element = h('div', { class: 'stolon-stack', 'data-role': 'peers-by-user' }, [table.element, status]);
 
     return {
         element: element,

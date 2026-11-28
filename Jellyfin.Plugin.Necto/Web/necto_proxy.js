@@ -1184,11 +1184,10 @@ export default function (view) {
         var bannedHost = h('div', { id: 'proxyBanned' });
         var activityHost = h('div', { id: 'proxyActivity' });
         var attribution = h('div', { class: 'fieldDescription' });
-        // The tables come first, so the first toolbar sits where every other tab's does, and the help and any error
-        // follow them.
+        // The tables come first, so the first toolbar sits where every other tab's does, and any error follows them.
         [off, activityHost,
             h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderBanned') }), bannedHost,
-            h('div', { class: 'fieldDescription', text: t.tr('ProxyVisitorsHelp') }), status,
+            status,
             attribution].forEach(function (n) { content.appendChild(n); });
         panel.appendChild(content);
 
