@@ -259,18 +259,20 @@ export function when(iso) {
 }
 
 // subline
-// Writes the line under a request's title, its type, its year, and for a show what it asks for.
+// Writes the line under a request's title, its type, its year, and for a show what it asks for unless the seasons
+// show elsewhere.
 //
 // Inputs
 // r [object]: The request.
 // t [object]: The strings.
+// noSeasons [boolean]: True to leave out what a show asks for, as the sidecar lists it in its details.
 //
 // Output
 // [string]: The line.
-export function subline(r, t) {
+export function subline(r, t, noSeasons) {
     var parts = [r.Type === 'Series' ? t.tr('LabelShow') : t.tr('Movie')];
     if (r.Year) parts.push(r.Year);
-    if (r.Type === 'Series') parts.push(describeWanted(r, t));
+    if (r.Type === 'Series' && !noSeasons) parts.push(describeWanted(r, t));
     return parts.join(' · ');
 }
 
@@ -724,7 +726,7 @@ export default function (view) {
             shape: 'portrait',
             image: r.PosterUrl ? artwork(r.PosterUrl) : null,
             title: r.Title,
-            subtitle: subline(r, t),
+            subtitle: subline(r, t, true),
             detail: [
                 r.Status === 'PartiallyAvailable' && r.AvailableSeasons ? t.format('RequestsHasSeasons', describeSeasons(r.AvailableSeasons, t)) : '',
                 progressLine(r, t),
