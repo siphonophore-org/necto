@@ -826,12 +826,15 @@ export default function (view) {
         if (disk.Model) facts.push({ label: t.tr('StorageLabelModel'), value: disk.Model });
         health.forEach(function (fact) { facts.push(fact); });
         // What needs a look that the row does not show leads the sidecar, each with its own Dismiss.
+        // Each sits in its own box in its warning color.
         sidecarNotices(t, shared, disk).forEach(function (notice) {
-            body.appendChild(nectoModule.createBanner({
+            var banner = nectoModule.createBanner({
                 kind: notice.serious ? 'error' : 'warn',
                 text: notice.text,
                 onDismiss: function () { dismissNotice(disk, notice.key); }
-            }).element);
+            }).element;
+            banner.classList.add(notice.serious ? 'stolon-callout-error' : 'stolon-callout-warn');
+            body.appendChild(banner);
         });
         body.appendChild(nectoModule.createDefinitionList({ items: facts }).element);
 

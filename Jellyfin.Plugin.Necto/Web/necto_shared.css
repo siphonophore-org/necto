@@ -75,3 +75,8 @@
 /* Example: <div class="necto-row-aside"><span class="stolon-badge stolon-green">Active</span><button class="stolon-row-btn"></button></div> */
 .necto-row-aside { display: flex; align-items: center; gap: var(--stolon-gap-narrow); }
 
+
+/* A notice in its own box takes the box's warning color for its icon */
+/* Example: <div class="stolon-banner stolon-warn stolon-callout-warn"><span class="material-icons">warning</span></div> */
+.stolon-banner.stolon-callout-warn > .material-icons { color: var(--stolon-orange); }
+.stolon-banner.stolon-callout-error > .material-icons { color: var(--stolon-red); }
