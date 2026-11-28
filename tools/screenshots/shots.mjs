@@ -117,12 +117,7 @@ for (const [name, [key, height, find]] of Object.entries(sidecars)) {
 }
 shots['Script Steps'] = {
   path: tool('scripts'), vp: { width: 800, height: 1600 }, act: async (p) => {
-    await p.evaluate(() => {
-      const select = [...document.querySelectorAll('select')].find((s) => s.offsetParent && [...s.options].some((o) => o.text === 'Too many streams'));
-      select.value = [...select.options].find((o) => o.text === 'Too many streams').value;
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    await p.waitForTimeout(1200);
+    await row(p, 'Too many streams');
     await section(p, 'Triggers');
     await element(p, await section(p, 'Steps'), 'Script Steps.png');
   }
