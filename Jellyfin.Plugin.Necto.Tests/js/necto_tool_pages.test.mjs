@@ -164,8 +164,8 @@ test('the WireGuard tool draws from its own markup', async function () {
 
     assert.deepEqual(opened.errors, []);
     assert.equal(opened.view.querySelector('#wireguardNoSidecar').classList.contains('stolon-hidden'), false);
-    assert.equal(opened.view.querySelector('#btnAddPeer').classList.contains('stolon-hidden'), false);
-    // Tunnels and Usage are sub-tabs, with the cards and the table under Tunnels.
+    assert.equal(opened.view.querySelector('#btnAddTunnel').classList.contains('stolon-hidden'), false);
+    // Tunnels and Usage are sub-tabs under the cards, with the table under Tunnels.
     var tabs = opened.view.querySelector('[data-role="tool-tabs"]');
     assert.deepEqual(Array.prototype.map.call(tabs.querySelectorAll('.stolon-subtab'), function (b) { return b.textContent; }), ['Tunnels', 'Usage']);
     assert.ok(tabs.querySelector('.stolon-subtab-panel #wireguardTable'));

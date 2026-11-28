@@ -44,17 +44,19 @@ test('the helpers read ids, config files, forwards, periods, and file names', as
     assert.equal(c.speedText(null, 0, 10, 0), '- / 10 Mbps');
 });
 
-test('the counts take peers, connections, connected ends, and the ones left out', async function () {
-    installPage({});
+test('the cards count the rows in each state, in the words and colors of their badges', async function () {
+    var page = installPage({});
+    var shared = await loadScript('necto_shared.js');
+    var bag = shared.createNectoShared(pageView(page.dom, []), null);
+    await bag.translations;
+    var t = bag.t;
     var mod = await loadScript('necto_wireguard.js');
-    var counts = mod.countCards(settings(), [
-        { Kind: 'Host', Connected: true, State: 'Running' },
-        { Kind: 'Peer', Connected: true, State: 'Connected' },
-        { Kind: 'Peer', Connected: false, State: 'NotAllowed' },
-        { Kind: 'Connection', Connected: true, State: 'Connected' }
-    ]);
+    var cards = mod.stateCards([{ StateKey: 'Connected' }, { StateKey: 'Connected' }, { StateKey: 'NotAllowed' }, { StateKey: 'Offline' }], t);
 
-    assert.deepEqual(counts, { peers: 2, connections: 0, peersConnected: 1, connectionsConnected: 1, over: 0, refused: 1 });
+    assert.deepEqual(cards.map(function (c) { return [c.label, c.count, c.color]; }), [
+        ['Connected', 2, 'green'], ['Offline', 1, 'gray'], ['Failed', 0, 'gray'], ['Disabled', 0, 'gray'],
+        ['Over limit', 0, 'gray'], ['Not allowed', 1, 'orange'], ['Over peer count', 0, 'gray']
+    ]);
     assert.deepEqual(mod.peerLimit({ PeerDataLimit: 5, PeerDataPeriod: 2 }, {}), { bytes: 5, period: 'Week' });
 });
 
@@ -87,13 +89,13 @@ async function openPage(answers, wireguard, onView) {
     return { page: page, view: view, dom: dom };
 }
 
-test('the tool lists this server and each peer in one table, with Add peer in its toolbar', async function () {
+test('the tool lists this server and each peer in one table, with Add tunnel in its toolbar', async function () {
     var opened = await openPage();
     var rows = opened.view.querySelectorAll('#wireguardTable .stolon-table-row');
 
     assert.equal(rows.length, 3);
     assert.equal(rows[0].querySelectorAll('.stolon-table-cell').length >= 3, true);
-    assert.ok(opened.view.querySelector('.stolon-table-controls #btnAddPeer'));
+    assert.ok(opened.view.querySelector('.stolon-table-controls #btnAddTunnel'));
     assert.equal(opened.view.querySelector('#wireguardBody').classList.contains('stolon-hidden'), false);
 });
 
@@ -147,19 +149,6 @@ test('the table rows name this server, each peer, and each connection with their
     assert.deepEqual(mod.tunnelRows(t, Object.assign({}, cfg, { HostEnabled: false }), [], names).map(function (r) { return r.Kind; }), ['Peer', 'Connection']);
 });
 
-test('the Connections card counts connected connections, red while one failed and gray while connecting is off', async function () {
-    installPage({});
-    var mod = await loadScript('necto_wireguard.js');
-    var t = { tr: function (k) { return k; } };
-    var on = { ConnectEnabled: true, Connections: [{}, {}] };
-    var counts = { connections: 2, connectionsConnected: 1 };
-
-    assert.equal(mod.connectionsCard({ ConnectEnabled: false, Connections: [] }, [], { connections: 0, connectionsConnected: 0 }, t), null);
-    assert.deepEqual(mod.connectionsCard(on, [{ Key: 'host', State: 'Failed' }], counts, t), { count: '1 / 2', label: 'HeaderConnections', color: 'green' });
-    assert.equal(mod.connectionsCard(on, [{ Key: 'abc', State: 'Failed' }], counts, t).color, 'red');
-    assert.equal(mod.connectionsCard({ ConnectEnabled: false }, [{ Key: 'abc', State: 'Failed' }], counts, t).color, 'gray');
-});
-
 test('a peer opens in a sidecar of tiled sections, and a peer with no config leaves out its file', async function () {
     var opened = await openPage({ ['GET WireGuard/Peers/' + PHONE + '/Config']: function () { return Promise.reject(new Error('none')); } });
     opened.view.querySelectorAll('#wireguardTable .stolon-table-row')[1].click();
@@ -182,7 +171,7 @@ test('with WireGuard off, the heading names VPN, since the tool leaves the sideb
 
 test('Add peer opens an editor sidecar that posts the peer to its route', async function () {
     var opened = await openPage({ 'POST WireGuard/Peers': function (o) { return JSON.parse(o.data); } });
-    opened.view.querySelector('#btnAddPeer').click();
+    opened.view.querySelector('#btnAddTunnel').click();
     await settle(50);
     var sidecar = opened.dom.document.querySelector('.stolon-sidecar');
 

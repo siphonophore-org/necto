@@ -80,11 +80,11 @@ While VPN is off, the tool reads "VPN is off. Turn it on in Settings to add peer
 | :---: | :---: |
 | ![VPN](screenshots/WireGuard.png) | ![VPN on a phone](screenshots/WireGuard%20Phone.png) |
 
-When the host cannot start, the reason shows at the top. The cards under it show the host's state, how many **Peers** and **Connections** are connected out of all of them, and how many are over their data limit. **Connections** turns red while any connection failed and gray while **Connect to hosts** is off. **Left out** counts the peers their owners' groups leave out, while there are any.
+When the host cannot start, the reason shows at the top. The cards under it count this server, the peers, and the connections in each state, **Connected**, **Offline**, **Failed**, **Disabled**, **Over limit**, **Not allowed**, and **Over peer count**, in the words and colors of the rows' badges.
 
 Below the cards are two tabs, **Tunnels** and **Usage**. **Usage** lists each user's peers against what their groups give, such as "2 of 3 peers", with **Allowed**, **Not allowed**, or **Over peer count**. **Tunnels** holds the table below.
 
-One table lists this server, the peers, and the connections, each with a **Type** badge, **Host**, **Peer**, or **Connection**, and its state. Search it by name, owner, or address, and filter it to **Peers** or **Connections**. **Add peer** in its toolbar shows while the host is on, and **Add connection** while connecting is on. With nothing to list it reads "No peers or connections yet."
+One table lists this server, the peers, and the connections, each with its type's icon and its state. Search it by name, owner, or address, and filter it by state, or to **Peers** or **Connections**. **Add tunnel** in its toolbar asks for a **Peer** or a **Connection** while both the host and connecting are on, and opens the one that is on otherwise. With nothing to list it reads "No peers or connections yet."
 
 ### Peers
 

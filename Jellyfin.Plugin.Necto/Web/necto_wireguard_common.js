@@ -257,18 +257,3 @@ export function stateTag(t, state) {
         : { label: t.tr('StateOffline'), icon: 'link_off', color: 'gray' };
 }
 
-// tunnelStateLabel
-// Names a tunnel state in the viewer's language.
-//
-// Inputs
-// t [object]: The strings.
-// state [string]: Starting, Running, Failed, or Stopped.
-//
-// Output
-// [string]: The state's name.
-export function tunnelStateLabel(t, state) {
-    if (state === 'Running') return t.tr('StateRunning');
-    if (state === 'Starting') return t.tr('WireGuardStatusStarting');
-    if (state === 'Failed') return t.tr('LabelFailed');
-    return t.tr('StateStopped');
-}

@@ -6,7 +6,7 @@
 import * as nectoModule from './configurationpage?name=necto_shared.js';
 import {
     compact, readLimit, createDataLimitField, normalizePeriod, dataText, limitText, speedText,
-    parseWgConfig, parseForwards, safeFileName, stateTag, tunnelStateLabel
+    parseWgConfig, parseForwards, safeFileName, stateTag
 } from './configurationpage?name=necto_wireguard_common.js';
 import { createPeersByUser } from './configurationpage?name=necto_wireguard_sections.js';
 
@@ -28,7 +28,7 @@ var TYPE_ICONS = { Host: 'dns', Peer: 'devices', Connection: 'link' };
 //   server's name.
 //
 // Output
-// [object[]]: Rows of { Id, Kind, Name, Line, Detail, State }, State being the state tag.
+// [object[]]: Rows of { Id, Kind, Name, Line, Detail, StateKey, State }, StateKey being the state and State its tag.
 export function tunnelRows(t, cfg, ends, names) {
     var endOf = function (id) { return (ends || []).filter(function (e) { return compact(e.Id) === compact(id); })[0] || {}; };
     var rows = [];
@@ -37,7 +37,7 @@ export function tunnelRows(t, cfg, ends, names) {
         var hostState = host ? host.State : 'Stopped';
         rows.push({
             Id: 'self', Kind: 'Host', Name: names.server || t.tr('LabelServerHost'), Line: cfg.PublicEndpoint || '', Detail: '',
-            State: stateTag(t, hostState === 'Running' ? 'Connected' : hostState === 'Failed' ? 'Failed' : 'Offline')
+            StateKey: hostState === 'Running' ? 'Connected' : hostState === 'Failed' ? 'Failed' : 'Offline'
         });
     }
     (cfg.Peers || []).forEach(function (p) {
@@ -47,7 +47,7 @@ export function tunnelRows(t, cfg, ends, names) {
         if ((p.RoutedSubnets || []).length) detail.push(t.tr('WireGuardTagRouter'));
         rows.push({
             Id: p.Id, Kind: 'Peer', Name: p.Name || p.Address, Line: [names.user(p.UserId), p.Address].filter(Boolean).join(' · '),
-            Detail: detail.join(' · '), State: stateTag(t, end.State || (p.Enabled ? 'Offline' : 'Disabled'))
+            Detail: detail.join(' · '), StateKey: end.State || (p.Enabled ? 'Offline' : 'Disabled')
         });
     });
     (cfg.Connections || []).forEach(function (c) {
@@ -56,9 +56,10 @@ export function tunnelRows(t, cfg, ends, names) {
         (c.Forwards || []).forEach(function (f) { detail.push('127.0.0.1:' + f.LocalPort); });
         rows.push({
             Id: c.Id, Kind: 'Connection', Name: c.Name || c.Endpoint, Line: c.Endpoint || '',
-            Detail: detail.join(' · '), State: stateTag(t, end.State || (c.Enabled ? 'Offline' : 'Disabled'))
+            Detail: detail.join(' · '), StateKey: end.State || (c.Enabled ? 'Offline' : 'Disabled')
         });
     });
+    rows.forEach(function (row) { row.State = stateTag(t, row.StateKey); });
     return rows;
 }
 
@@ -92,46 +93,26 @@ export function connectionLimit(cfg, c) {
         : { bytes: cfg.ConnectionDataLimit || 0, period: normalizePeriod(cfg.ConnectionDataPeriod) };
 }
 
-// countCards
-// Counts what the cards at the top show: the peers and connections, how many of each are connected, and how many
-// are over their data limit or left out.
-//
-// Inputs
-// cfg [object]: The WireGuard settings.
-// ends [object[]]: The tunnel ends from WireGuard/Peers.
-//
-// Output
-// [object]: { peers, connections, peersConnected, connectionsConnected, over, refused }.
-export function countCards(cfg, ends) {
-    var list = ends || [];
-    var connected = function (kind) { return list.filter(function (e) { return e.Kind === kind && e.Connected; }).length; };
-    return {
-        peers: (cfg.Peers || []).length,
-        connections: (cfg.Connections || []).length,
-        peersConnected: connected('Peer'),
-        connectionsConnected: connected('Connection'),
-        over: list.filter(function (e) { return e.State === 'OverLimit'; }).length,
-        refused: list.filter(function (e) { return e.State === 'NotAllowed' || e.State === 'OverPeerCount'; }).length
-    };
-}
+// STATE_ORDER
+// The row states in the order their cards and filter choices show.
+export var STATE_ORDER = ['Connected', 'Offline', 'Failed', 'Disabled', 'OverLimit', 'NotAllowed', 'OverPeerCount'];
 
-// connectionsCard
-// The Connections card: how many connections are connected out of all of them. It is red while any connection's
-// tunnel failed, gray while Connect to hosts is off, and green while one is connected.
+// stateCards
+// Counts the rows in each state for the cards at the top of the page, in the words and colors of the rows' badges.
+// A state with none is gray.
 //
 // Inputs
-// cfg [object]: The WireGuard settings.
-// tunnels [object[]]: The running tunnels from WireGuard/Status.
-// counts [object]: What countCards gave.
+// rows [object[]]: What tunnelRows gave.
 // t [object]: The strings.
 //
 // Output
-// [object]: The card, or null while Connect to hosts is off and there are no connections.
-export function connectionsCard(cfg, tunnels, counts, t) {
-    if (!cfg.ConnectEnabled && !counts.connections) return null;
-    var failed = (tunnels || []).some(function (x) { return x.Key !== 'host' && x.State === 'Failed'; });
-    var color = !cfg.ConnectEnabled ? 'gray' : failed ? 'red' : counts.connectionsConnected ? 'green' : 'blue';
-    return { count: counts.connectionsConnected + ' / ' + counts.connections, label: t.tr('HeaderConnections'), color: color };
+// [object[]]: The cards.
+export function stateCards(rows, t) {
+    return STATE_ORDER.map(function (state) {
+        var tag = stateTag(t, state);
+        var count = (rows || []).filter(function (r) { return r.StateKey === state; }).length;
+        return { count: count, label: tag.label, color: count ? tag.color : 'gray' };
+    });
 }
 
 export default function (view) {
@@ -206,22 +187,14 @@ export default function (view) {
         shared.setVisible('wireguardNoSidecar', on && sidecar && !sidecar.Installed);
         shared.setVisible('wireguardBody', on || (w.Peers || []).length > 0 || (w.Connections || []).length > 0);
 
-        var counts = countCards(w, ends);
-        var host = ends.filter(function (e) { return e.Kind === 'Host'; })[0];
-        var cards = [];
-        if (w.HostEnabled) cards.push({ count: tunnelStateLabel(t, host ? host.State : 'Stopped'), label: t.tr('LabelServerHost'), color: host && host.State === 'Running' ? 'green' : host && host.State === 'Failed' ? 'red' : 'gray' });
-        if (w.HostEnabled || counts.peers) cards.push({ count: counts.peersConnected + ' / ' + counts.peers, label: t.tr('HeaderPeers'), color: counts.peersConnected ? 'green' : 'blue' });
-        var connections = connectionsCard(w, tunnels, counts, t);
-        if (connections) cards.push(connections);
-        cards.push({ count: counts.over, label: t.tr('WireGuardTagOverLimit'), color: counts.over ? 'red' : 'gray' });
-        if (counts.refused) cards.push({ count: counts.refused, label: t.tr('WireGuardCardLeftOut'), color: 'orange' });
-        shared.renderCards('wireguardCards', cards);
+        rows = tunnelRows(t, w, ends, { user: userName, used: usedText, server: serverName });
+        shared.renderCards('wireguardCards', stateCards(rows, t));
         // The counts mean nothing while WireGuard or both of its halves are off, so they hide then.
         shared.setVisible('wireguardCards', on && (!!w.HostEnabled || !!w.ConnectEnabled));
 
         var hostTunnel = tunnels.filter(function (x) { return x.Key === 'host'; })[0];
         var error = hostTunnel && hostTunnel.State !== 'Running' ? hostTunnel.Error : (on && w.HostEnabled && !hostTunnel && sidecar && sidecar.Installed ? t.tr('WireGuardErrorNoTunnel') : '');
-        // The reason the host cannot run shows as an error banner under the cards.
+        // The reason the host cannot run shows as an error banner above the cards.
         var hostError = $('hostError');
         hostError.textContent = '';
         if (error) hostError.appendChild(nectoModule.createBanner({ kind: 'error', text: error, dismissible: false }).element);
@@ -231,17 +204,50 @@ export default function (view) {
         $('wireguardBothOff').innerHTML = bothOff ? shared.emptySection(t.tr('WireGuardEmptyBothOff')) : '';
         shared.setVisible('wireguardBothOff', bothOff);
 
-        rows = tunnelRows(t, w, ends, { user: userName, used: usedText, server: serverName });
         if (!table) createTable();
         shared.setVisible('wireguardTable', !bothOff);
-        shared.setVisible(table.addButton('btnAddPeer'), on && !!w.HostEnabled);
-        shared.setVisible(table.addButton('btnAddConnection'), on && !!w.ConnectEnabled);
+        shared.setVisible(table.addButton('btnAddTunnel'), on && (!!w.HostEnabled || !!w.ConnectEnabled));
         table.refresh();
     }
 
+    // pickTunnel
+    // Opens the editor for a new peer or connection. While both halves are on it first asks which, as Add route
+    // offers its templates.
+    function pickTunnel() {
+        var host = !!(cfg && cfg.HostEnabled);
+        var connect = !!(cfg && cfg.ConnectEnabled);
+        if (!host || !connect) {
+            if (host) editPeer(null);
+            else if (connect) editConnection(null);
+            return;
+        }
+        var group = h('div', { class: 'stolon-choice-group', role: 'radiogroup', 'aria-label': t.tr('WireGuardButtonAddTunnel') });
+        [['peer', 'WireGuardChoicePeer', 'WireGuardChoicePeerHelp'], ['connection', 'WireGuardChoiceConnection', 'WireGuardChoiceConnectionHelp']].forEach(function (c, i) {
+            group.appendChild(h('label', { class: 'stolon-choice' }, [
+                h('input', { type: 'radio', name: 'necto-tunnel-kind', value: c[0], checked: i === 0 }),
+                h('span', { class: 'stolon-choice-name', text: t.tr(c[1]) }),
+                h('span', { class: 'stolon-choice-text', text: t.tr(c[2]) })
+            ]));
+        });
+        var choices = nectoModule.createChoiceGroup(group);
+        nectoModule.openSidecar({
+            title: t.tr('WireGuardButtonAddTunnel'),
+            body: group,
+            buttons: [{
+                text: t.tr('Next'), className: 'raised stolon-button stolon-primary', action: function (close) {
+                    var kind = choices.get() || 'peer';
+                    close();
+                    if (kind === 'connection') editConnection(null);
+                    else editPeer(null);
+                }
+            }],
+            onClose: function () { choices.destroy(); }
+        });
+    }
+
     // createTable
-    // Builds the one table of this server, the peers, and the connections, with its search, its type filter, Add
-    // peer and Add connection, and Enable, Disable, and Remove for the rows picked. The rows come from what the page
+    // Builds the one table of this server, the peers, and the connections, with its search, its state and type
+    // filters, Add tunnel, and Enable, Disable, and Remove for the rows picked. The rows come from what the page
     // loaded.
     function createTable() {
         table = nectoModule.createToolTable(view, shared, {
@@ -249,6 +255,11 @@ export default function (view) {
             rows: function () { return rows; },
             search: t.tr('WireGuardSearch'),
             filters: [{
+                name: 'state',
+                label: t.tr('HeaderStatus'),
+                options: STATE_ORDER.map(function (state) { return { value: state, label: stateTag(t, state).label }; }),
+                test: function (row, value) { return row.StateKey === value; }
+            }, {
                 name: 'type',
                 label: t.tr('LabelType'),
                 options: [{ value: 'Peer', label: t.tr('HeaderPeers') }, { value: 'Connection', label: t.tr('HeaderConnections') }],
@@ -260,8 +271,7 @@ export default function (view) {
             lines: function (row) { return [row.Line, row.Detail]; },
             status: function (row) { return { label: row.State.label, color: row.State.color || 'gray' }; },
             add: [
-                { id: 'btnAddPeer', icon: 'add', text: t.tr('WireGuardButtonAddPeer'), onClick: function () { editPeer(null); } },
-                { id: 'btnAddConnection', icon: 'add_link', text: t.tr('WireGuardButtonAddConnection'), variant: 'secondary', onClick: function () { editConnection(null); } }
+                { id: 'btnAddTunnel', icon: 'add', text: t.tr('WireGuardButtonAddTunnel'), onClick: pickTunnel }
             ],
             bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
             onBulk: function (verb, picked) { bulk(verb, picked); },
