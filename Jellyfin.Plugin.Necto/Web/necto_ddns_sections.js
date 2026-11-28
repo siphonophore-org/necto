@@ -5,9 +5,6 @@ import * as nectoModule from './configurationpage?name=necto_shared.js';
 
 var h = nectoModule.h;
 
-// The key of the scheduled task that updates the records.
-export var DDNS_UPDATE_TASK = 'NectoDdnsUpdate';
-
 // The choices for how often an unchanged record is sent again, and for the backoff, in hours. 0 is off.
 var FORCE_HOURS = [0, 1, 3, 6, 12, 18, 24, 48, 72, 168];
 var BACKOFF_FAILURES = [0, 3, 5, 10];
@@ -128,9 +125,32 @@ function buildSettings(content, ctx) {
     };
 }
 
+// outcomeMessage
+// Sums an update run for the status line: how many were updated, skipped, or failed, and any warning.
+//
+// Inputs
+// outcome [object]: The run's outcome from Ddns/Update.
+// shared [object]: The Necto helper bag.
+//
+// Output
+// [object]: text is the message and error whether anything failed.
+export function outcomeMessage(outcome, shared) {
+    var t = shared.t;
+    var records = (outcome && outcome.Records) || [];
+    var failed = records.filter(function (r) { return !r.Success && !r.Skipped; }).length;
+    var updated = records.filter(function (r) { return r.Success && !r.Skipped; }).length;
+    var warnings = (outcome && outcome.Warnings) || [];
+    if (records.length === 0) return { text: warnings.length ? warnings.join(' ') : t.tr('DdnsNoRecordsToUpdate'), error: warnings.length > 0 };
+    var parts = [];
+    if (updated) parts.push(shared.t.plural(updated, 'DdnsRunUpdatedOne', 'DdnsRunUpdatedMany'));
+    if (failed) parts.push(shared.t.plural(failed, 'DdnsRunFailedOne', 'DdnsRunFailedMany'));
+    if (!parts.length) parts.push(t.tr('DdnsRunNothingChanged'));
+    return { text: parts.concat(warnings).join(' '), error: failed > 0 };
+}
+
 // buildTroubleshooting
-// Fills the DDNS section of Troubleshooting: running the update task now and a Reset row for each record. Update now and why
-// the last run could not find the public IP show on the DDNS page.
+// Fills the DDNS section of Troubleshooting: updating every record now, whatever its interval, and a Reset row for
+// each record. Why the last run could not find the public IP shows on the DDNS page.
 //
 // Inputs
 // content [HTMLElement]: The section's content.
@@ -141,9 +161,8 @@ function buildSettings(content, ctx) {
 function buildTroubleshooting(content, ctx) {
     var shared = ctx.shared;
     var t = shared.t;
-    var pollers = [];
     var status = h('div', { class: 'stolon-status-text', role: 'status', 'data-role': 'status' });
-    var run = nectoModule.createResetRow({ icon: 'schedule', label: t.tr('DdnsTaskUpdate'), help: t.tr('DdnsTaskUpdateHelp'), button: t.tr('ButtonRunTask'), action: 'run-update' });
+    var run = nectoModule.createResetRow({ icon: 'published_with_changes', label: t.tr('DdnsTaskUpdate'), help: t.tr('DdnsTaskUpdateHelp'), button: t.tr('DdnsButtonUpdateNow'), action: 'run-update' });
     var resets = h('div', { class: 'stolon-reset-group', 'data-role': 'record-resets' });
     var repairs = h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderRepairs') });
     [
@@ -199,17 +218,17 @@ function buildTroubleshooting(content, ctx) {
     }
 
     run.button.addEventListener('click', function () {
-        shared.runScheduledTask(run.button, DDNS_UPDATE_TASK, t.tr('ButtonRunTask')).then(function (p) { pollers.push(p); }).catch(function (err) {
-            return shared.errorText(err, t.tr('DdnsErrorRunTask')).then(function (text) { report(text, true); });
-        });
+        run.button.disabled = true;
+        report(t.tr('DdnsUpdating'), false);
+        shared.request('Ddns/Update', 'POST').then(function (outcome) {
+            var message = outcomeMessage(outcome, shared);
+            report(message.text, message.error);
+        }).catch(function (err) {
+            return shared.errorText(err, t.tr('DdnsErrorUpdate')).then(function (text) { report(text, true); });
+        }).then(function () { run.button.disabled = false; });
     });
 
-    return {
-        load: load,
-        destroy: function () {
-            pollers.splice(0).forEach(function (p) { if (p && p.cancel) p.cancel(); });
-        }
-    };
+    return { load: load, destroy: function () {} };
 }
 
 nectoModule.registerSection('settings', 'ddns', { build: buildSettings });

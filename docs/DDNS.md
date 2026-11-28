@@ -4,7 +4,7 @@
 
 ## The DDNS Tool
 
-The cards at the top count the **Records**, how many are **Up to date**, and under **Needs attention** how many last failed, paused, or found no address. Under them a card shows the **Public IPv4** and **Public IPv6** the last run found. Then each record has one row with its name, its provider, and at its end its state, its last result, such as **Updated**, **Up to date**, **Paused**, or **Failed**, or **Off** while it does not update. Select a row to open the record in a sidecar, or select **Add record**. **Update now** checks every enabled record at once, whatever its interval, and says how many were updated and how many failed.
+The cards at the top count the records **Up to date**, those that **Need attention** because they last failed, paused, or found no address, those **Not checked**, and those **Off**. A second row of cards shows the **Public IPv4** and **Public IPv6** the last run found. Then each record has one row with its name, its provider, and at its end its state, its last result, such as **Updated**, **Up to date**, **Paused**, or **Failed**, or **Off** while it does not update. Select a row to open the record in a sidecar, or select **Add record**.
 
 | DDNS | DDNS on a phone |
 | :---: | :---: |
@@ -53,7 +53,7 @@ Cloudflare, DigitalOcean, Duck DNS, and Porkbun can also publish the TXT record 
 
 | Setting | Default | What it does |
 | :--- | :--- | :--- |
-| **Enable DDNS** | Off | Keeps each record pointed at the server's public IP. Off updates no record, on schedule or by **Update now**, and keeps every record. |
+| **Enable DDNS** | Off | Keeps each record pointed at the server's public IP. Off updates no record, on schedule or by **Update every record**, and keeps every record. |
 | **IPv4 detection URLs** | ipify, icanhazip, Amazon, ident.me | Services that reply with the IPv4 address, one per line. Two must agree before an address is used, and plain http is refused. |
 | **IPv6 detection URLs** | ipify, icanhazip, ident.me | The same for IPv6. |
 | **Skip internal addresses** | On | Never publishes a private, loopback, or CGNAT address. |
@@ -64,7 +64,7 @@ Cloudflare, DigitalOcean, Duck DNS, and Porkbun can also publish the TXT record 
 
 ## Troubleshooting
 
-**Troubleshooting > DDNS** holds the update task and a reset row for each record. **Update now** and why the last run could not find the public IP show on the DDNS page.
+**Troubleshooting > DDNS** holds **Update every record**, which updates each enabled record now, whatever its interval, and says how many were updated and how many failed, and a reset row for each record. Why the last run could not find the public IP shows on the DDNS page.
 
 ![DDNS troubleshooting](screenshots/troubleshooting/DDNS.png)
 

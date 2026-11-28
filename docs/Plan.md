@@ -120,7 +120,7 @@ The proxy forwards to any service, not only Jellyfin. A route is a host name, an
 
 Several records, each with its own provider, credentials, name, and how often it updates. The public IP lookup is shared. A record may follow the proxy's host names.
 
-* The update task runs every 5 minutes and checks only the records whose **Update every (minutes)** has passed, 15 by default and 5 at the shortest. **Update now** checks every record. **Review**
+* The update task runs every 5 minutes and checks only the records whose **Update every (minutes)** has passed, 15 by default and 5 at the shortest. **Update every record** in Troubleshooting checks every record. **Review**
 * A record that follows the proxy pushes each enabled internet route's exact name under its zone, or every one when it names no zone. Wildcards and local only routes are left out, since neither can point at the public address. **Review**
 * Only a provider whose host name field holds a name can follow the proxy. ClouDNS, Directnic, and INWX have no host name field, and DNS Made Easy and Sitelutions take a record ID, so the sidecar hides the toggle for them and `/Ddns` refuses it. **Review**
 * The provider setup guides live on the docs site under `providers/`, and the record sidecar links each from **Provider**. **Review**

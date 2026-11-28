@@ -13,7 +13,7 @@ This page sets up remote access with **DDNS** and **Proxy**, through the three r
 1. Open **DDNS** and select **Add record**.
 2. Pick your **Provider**, enter the account details it asks for, and set **Zone** to `example.com`.
 3. Turn on **Follow the proxy's host names**, so every internet route you add later is kept pointed at this server.
-4. Select **Save**, then **Update now**. The row shows **Updated** once the provider took the address.
+4. Select **Save**. To send it at once, select **Update every record** in **Troubleshooting > DDNS**. The row shows **Updated** once the provider took the address.
 
 ## 2. Turn the Proxy On
 

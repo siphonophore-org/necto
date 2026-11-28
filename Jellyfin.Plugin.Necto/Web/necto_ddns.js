@@ -145,8 +145,7 @@ export function recordBadge(entry, t) {
 
 // countCards
 // Gives the cards at the top of the tool: how many records are in each state, in the words and colors of the rows'
-// badges, then the public addresses the last run found, which every record shares. A state with none, and an address
-// not found, is gray.
+// badges. A state with none is gray.
 //
 // Inputs
 // data [object]: The answer from Ddns/Records.
@@ -156,11 +155,25 @@ export function recordBadge(entry, t) {
 // [object[]]: The cards, each { count, label, color }.
 export function countCards(data, t) {
     var entries = (data && data.Records) || [];
-    var address = function (value, key) { return { count: value || t.tr('TextNotFound'), label: t.tr(key), color: value ? 'blue' : 'gray' }; };
     return Object.keys(STATES).map(function (state) {
         var count = entries.filter(function (e) { return e.State === state; }).length;
         return { count: count, label: t.tr(STATES[state].key), color: count ? STATES[state].color : 'gray' };
-    }).concat([address(data && data.DetectedIPv4, 'DdnsLabelPublicIpv4'), address(data && data.DetectedIPv6, 'DdnsLabelPublicIpv6')]);
+    });
+}
+
+// addressCards
+// Gives the cards under the counts: the public addresses the last run found, which every record shares, in a row of
+// their own so an address as wide as its card leaves the counts their full size. An address not found is gray.
+//
+// Inputs
+// data [object]: The answer from Ddns/Records.
+// t [object]: The strings.
+//
+// Output
+// [object[]]: The cards, each { count, label, color }.
+export function addressCards(data, t) {
+    var address = function (value, key) { return { count: value || t.tr('TextNotFound'), label: t.tr(key), color: value ? 'blue' : 'gray' }; };
+    return [address(data && data.DetectedIPv4, 'DdnsLabelPublicIpv4'), address(data && data.DetectedIPv6, 'DdnsLabelPublicIpv6')];
 }
 
 // newRecord
@@ -350,29 +363,6 @@ export function createRecordEditor(record, ctx) {
     };
 }
 
-// outcomeMessage
-// Sums an update run for the status line: how many were updated, skipped, or failed, and any warning.
-//
-// Inputs
-// outcome [object]: The run's outcome from Ddns/Update.
-// shared [object]: The Necto helper bag.
-//
-// Output
-// [object]: text is the message and error whether anything failed.
-export function outcomeMessage(outcome, shared) {
-    var t = shared.t;
-    var records = (outcome && outcome.Records) || [];
-    var failed = records.filter(function (r) { return !r.Success && !r.Skipped; }).length;
-    var updated = records.filter(function (r) { return r.Success && !r.Skipped; }).length;
-    var warnings = (outcome && outcome.Warnings) || [];
-    if (records.length === 0) return { text: warnings.length ? warnings.join(' ') : t.tr('DdnsNoRecordsToUpdate'), error: warnings.length > 0 };
-    var parts = [];
-    if (updated) parts.push(shared.t.plural(updated, 'DdnsRunUpdatedOne', 'DdnsRunUpdatedMany'));
-    if (failed) parts.push(shared.t.plural(failed, 'DdnsRunFailedOne', 'DdnsRunFailedMany'));
-    if (!parts.length) parts.push(t.tr('DdnsRunNothingChanged'));
-    return { text: parts.concat(warnings).join(' '), error: failed > 0 };
-}
-
 export default function (view) {
     'use strict';
 
@@ -398,6 +388,7 @@ export default function (view) {
         if (data.SecretsPlaintext) notices.appendChild(nectoModule.createBanner({ kind: 'warn', text: t.tr('DdnsKeyStoreUnavailable'), dismissible: false }).element);
         if (data.DetectionMessage) notices.appendChild(nectoModule.createBanner({ kind: 'warn', text: data.DetectionMessage, dismissible: false }).element);
         shared.renderCards('ddnsCards', countCards(data, t));
+        shared.renderCards('ddnsAddresses', addressCards(data, t));
     }
 
     // loadRecords
@@ -421,7 +412,7 @@ export default function (view) {
     }
 
     // createTable
-    // Builds the records' table with its search, its state filter, Add record and Update now, and its bulk actions.
+    // Builds the records' table with its search, its state filter, Add record, and its bulk actions.
     function createTable() {
         var t = shared.t;
         table = nectoModule.createToolTable(view, shared, {
@@ -436,8 +427,7 @@ export default function (view) {
             lines: function (entry) { return [recordLine(entry, providers, t)]; },
             status: function (entry) { return recordBadge(entry, t); },
             add: [
-                { id: 'btnAddRecord', icon: 'add', text: t.tr('DdnsButtonAddRecord'), onClick: function () { openRecord(null); } },
-                { id: 'btnUpdateNow', icon: 'refresh', text: t.tr('DdnsButtonUpdateNow'), variant: 'secondary', onClick: updateNow }
+                { id: 'btnAddRecord', icon: 'add', text: t.tr('DdnsButtonAddRecord'), onClick: function () { openRecord(null); } }
             ],
             bulk: [{ verb: 'enable', text: t.tr('EnablePlugin'), variant: 'primary' }, { verb: 'disable', text: t.tr('DisablePlugin') }, { verb: 'remove', text: t.tr('ButtonRemove'), variant: 'destructive' }],
             onBulk: bulk,
@@ -532,21 +522,6 @@ export default function (view) {
             onDelete: function (close) { removeRecord(record, close); },
             onClose: function () { editor.destroy(); }
         });
-    }
-
-    // updateNow
-    // Checks every enabled record now and sums the run on the status line.
-    function updateNow() {
-        var btn = table.addButton('btnUpdateNow');
-        btn.disabled = true;
-        report(shared.t.tr('DdnsUpdating'), false);
-        return shared.request('Ddns/Update', 'POST').then(function (outcome) {
-            var message = outcomeMessage(outcome, shared);
-            report(message.text, message.error);
-            loadRecords();
-        }).catch(function (err) {
-            return shared.errorText(err, shared.t.tr('DdnsErrorUpdate')).then(function (text) { report(text, true); });
-        }).then(function () { btn.disabled = false; });
     }
 
     var made = nectoModule.createNectoPage(view, {

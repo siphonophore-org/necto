@@ -154,9 +154,19 @@ test('countCards counts the records, those up to date and those that need attent
     }, bag.t);
 
     assert.deepEqual(cards.map(function (c) { return [c.label, c.count]; }), [
-        ['Up to date', 1], ['Needs attention', 2], ['Not checked', 0], ['Off', 1], ['Public IPv4', '203.0.113.10'], ['Public IPv6', 'Not found']
+        ['Up to date', 1], ['Needs attention', 2], ['Not checked', 0], ['Off', 1]
     ]);
-    assert.deepEqual(cards.map(function (c) { return c.color; }), ['green', 'orange', 'gray', 'gray', 'blue', 'gray']);
+    assert.deepEqual(cards.map(function (c) { return c.color; }), ['green', 'orange', 'gray', 'gray']);
+});
+
+test('addressCards gives the public addresses in a row of their own, gray when not found', async function () {
+    var bag = await strings();
+    var ddns = await loadScript('necto_ddns.js');
+    var cards = ddns.addressCards({ DetectedIPv4: '203.0.113.10', DetectedIPv6: '' }, bag.t);
+
+    assert.deepEqual(cards.map(function (c) { return [c.label, c.count, c.color]; }), [
+        ['Public IPv4', '203.0.113.10', 'blue'], ['Public IPv6', 'Not found', 'gray']
+    ]);
 });
 
 test('the provider field links its setup guide on the docs site', async function () {
@@ -171,26 +181,17 @@ test('the provider field links its setup guide on the docs site', async function
     assert.equal(ddns.guideUrl('DynDns2'), 'https://necto.siphonophore.org/providers/DynDns2/');
 });
 
-test('outcomeMessage counts the records updated and failed', async function () {
-    var bag = await strings();
-    var ddns = await loadScript('necto_ddns.js');
-    assert.deepEqual(ddns.outcomeMessage({ Records: [{ Success: true }, { Success: false }, { Success: true, Skipped: true }], Warnings: [] }, bag), { text: '1 record updated. 1 record failed.', error: true });
-    assert.deepEqual(ddns.outcomeMessage({ Records: [{ Success: true, Skipped: true }], Warnings: [] }, bag), { text: 'Every record is up to date.', error: false });
-    assert.equal(ddns.outcomeMessage({ Records: [], Warnings: [] }, bag).text, 'No records to update.');
-});
-
 // openDdns
 // Shows the DDNS tool over its markup with these records.
 async function openDdns(entries) {
     var page = installPage({});
     var dom = page.dom;
-    var view = pageView(dom, [dom.el('div', { id: 'ddnsNotices' }), dom.el('div', { id: 'ddnsCards' }), dom.el('div', { id: 'ddnsStatus' }), dom.el('div', { id: 'ddnsRecords' })]);
+    var view = pageView(dom, [dom.el('div', { id: 'ddnsNotices' }), dom.el('div', { id: 'ddnsCards' }), dom.el('div', { id: 'ddnsAddresses' }), dom.el('div', { id: 'ddnsStatus' }), dom.el('div', { id: 'ddnsRecords' })]);
     dom.document.documentElement.appendChild(view);
     routeApiByPath(page, {
         'GET Ddns/Providers': PROVIDERS,
         'GET Ddns/Records': { Records: entries, DetectedIPv4: '203.0.113.10', DetectedIPv6: '', SecretsPlaintext: true },
-        'GET Ddns/Records/All': { Items: entries, TotalCount: entries.length },
-        'POST Ddns/Update': { Records: [] }
+        'GET Ddns/Records/All': { Items: entries, TotalCount: entries.length }
     });
     var mod = await loadScript('necto_ddns.js');
     mod.default(view);
@@ -208,7 +209,7 @@ test('the page draws the cards with the public address and a table row per recor
     var opened = await openDdns(RECORDS);
     var view = opened.view;
 
-    assert.ok(view.querySelector('#ddnsCards').textContent.indexOf('203.0.113.10') >= 0);
+    assert.ok(view.querySelector('#ddnsAddresses').textContent.indexOf('203.0.113.10') >= 0);
     var rows = view.querySelectorAll('#ddnsRecords .stolon-table-row');
     assert.equal(rows.length, 2);
     assert.match(rowHtml(rows[0]), /home\.example\.com[\s\S]*Cloudflare[\s\S]*Up to date/);
@@ -217,13 +218,13 @@ test('the page draws the cards with the public address and a table row per recor
     assert.ok(opened.page.requests.some(function (r) { return /^Ddns\/Records\/All\?/.test(r.url); }));
 });
 
-test('the toolbar has search, the state filter, Add record, and Update now, and the bulk bar Enable, Disable, and Remove', async function () {
+test('the toolbar has search, the state filter, and Add record, and the bulk bar Enable, Disable, and Remove', async function () {
     var opened = await openDdns(RECORDS);
     var controls = opened.view.querySelector('#ddnsRecords .stolon-table-controls');
 
     assert.equal(controls.querySelector('input').getAttribute('placeholder'), 'Search records');
     assert.deepEqual(texts(controls, 'select option'), ['All', 'Up to date', 'Needs attention', 'Not checked', 'Off']);
-    assert.deepEqual(texts(controls, 'button.stolon-button'), ['addAdd record', 'refreshUpdate now']);
+    assert.deepEqual(texts(controls, 'button.stolon-button'), ['addAdd record']);
     assert.deepEqual(texts(opened.view.querySelector('.stolon-table-bulk-actions'), '[data-bulk]'), ['Enable', 'Disable', 'Remove']);
 });
 
@@ -286,4 +287,12 @@ test('the DDNS Settings section fills from its route and saves through it', asyn
     var post = page.requests.find(function (r) { return r.type === 'POST' && r.url === 'Ddns/Settings'; });
     assert.ok(post);
     assert.equal(JSON.parse(post.data).RequestTimeoutSeconds, 30);
+});
+
+test('outcomeMessage counts the records updated and failed', async function () {
+    var bag = await strings();
+    var sections = await loadScript('necto_ddns_sections.js');
+    assert.deepEqual(sections.outcomeMessage({ Records: [{ Success: true }, { Success: false }, { Success: true, Skipped: true }], Warnings: [] }, bag), { text: '1 record updated. 1 record failed.', error: true });
+    assert.deepEqual(sections.outcomeMessage({ Records: [{ Success: true, Skipped: true }], Warnings: [] }, bag), { text: 'Every record is up to date.', error: false });
+    assert.equal(sections.outcomeMessage({ Records: [], Warnings: [] }, bag).text, 'No records to update.');
 });
