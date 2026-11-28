@@ -1178,15 +1178,18 @@ export default function (view) {
     // Dashboard's Locations, and how the location database stands on the Checks tab.
     function createVisitors(panel) {
         var t = shared.t;
-        var content = h('div', {}, [h('div', { class: 'fieldDescription', text: t.tr('ProxyVisitorsHelp') })]);
+        var content = h('div', {});
         var off = h('div', { class: 'stolon-info stolon-hidden', text: t.tr('ProxyVisitorsOff') });
         var status = h('div', { class: 'stolon-status-text', role: 'status' });
         var bannedHost = h('div', { id: 'proxyBanned' });
         var activityHost = h('div', { id: 'proxyActivity' });
         var attribution = h('div', { class: 'fieldDescription' });
-        [off, status,
+        // The tables come first, so the first toolbar sits where every other tab's does, and the help and any error
+        // follow them.
+        [off,
             h('h3', { class: 'stolon-subsection-title', text: t.tr('ProxyHeaderBanned') }), bannedHost,
             h('h3', { class: 'stolon-subsection-title', text: t.tr('HeaderActivity') }), activityHost,
+            h('div', { class: 'fieldDescription', text: t.tr('ProxyVisitorsHelp') }), status,
             attribution].forEach(function (n) { content.appendChild(n); });
         panel.appendChild(content);
 

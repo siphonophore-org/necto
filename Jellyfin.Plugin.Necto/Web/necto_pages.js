@@ -1206,7 +1206,8 @@ export default function (view) {
     }
 
     // renderTab
-    // Builds a tab's panel the first time it opens: the pages' table, or an images' or stores' help line and table.
+    // Builds a tab's panel the first time it opens: its table, then for images and stores one help line under it, so
+    // every tab's toolbar sits in the same place.
     function renderTab(tab, panel) {
         var t = shared.t;
         panels[tab.id] = panel;
@@ -1217,11 +1218,11 @@ export default function (view) {
             drawPages();
         } else if (tab.id === 'assets') {
             fillWithCode(intro, t.tr('PagesAssetsIntro'), ['asset/logo.png']);
-            [intro, h('div', { id: 'assetsTable' })].forEach(function (n) { panel.appendChild(n); });
+            [h('div', { id: 'assetsTable' }), intro].forEach(function (n) { panel.appendChild(n); });
             drawAssets();
         } else if (tab.id === 'stores') {
             intro.textContent = t.tr('PagesStoresIntro');
-            [intro, h('div', { id: 'storesTable' })].forEach(function (n) { panel.appendChild(n); });
+            [h('div', { id: 'storesTable' }), intro].forEach(function (n) { panel.appendChild(n); });
             drawStores();
         }
     }

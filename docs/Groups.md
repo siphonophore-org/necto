@@ -79,7 +79,7 @@ A refused change shows the reason on the password form, and writes "Password cha
 
 ### Password Resets
 
-* **Show reset codes** lists members' pending password resets on the **Password resets** tab of the Groups page. Use HTTPS so they cannot be read in transit.
+* **Show reset codes** lists members' pending password resets on the **Resets** tab of the Groups page. Use HTTPS so they cannot be read in transit.
 * An administrator is in no group, so an administrator's reset code never shows.
 
 ## Jellyfin Settings
@@ -131,7 +131,7 @@ A new group starts with **Pages** and **Invite groups** on **Permissive**. Which
 
 ## Password Resets
 
-The Groups page shows its counts above two tabs, **Groups** with the list, and **Password resets**. While no group has **Show reset codes** on, the **Password resets** table says how to turn it on. Otherwise it warns to use HTTPS when the dashboard is open over plain HTTP, and lists each member's pending reset with its user, when it expires, and **Active**, **Expiring** within 5 minutes, or **Expired**, expired ones last. Select a reset to see its code and copy it.
+The Groups page shows its counts above two tabs, **Groups** with the list, and **Resets**. While no group has **Show reset codes** on, the **Resets** table says how to turn it on. Otherwise it lists each member's pending reset with its user, when it expires, and **Active**, **Expiring** within 5 minutes, or **Expired**, expired ones last, and under the table warns to use HTTPS when the dashboard is open over plain HTTP. Select a reset to see its code and copy it.
 
 ## Troubleshooting
 

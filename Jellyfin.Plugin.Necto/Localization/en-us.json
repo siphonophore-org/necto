@@ -3046,6 +3046,7 @@
   "TabPages": "Pages",
   "TabProxy": "Proxy",
   "TabRequests": "Requests",
+  "TabResets": "Resets",
   "TabScripts": "Scripts",
   "TabStorage": "Storage",
   "TabWireGuard": "VPN",

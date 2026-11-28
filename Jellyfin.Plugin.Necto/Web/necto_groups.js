@@ -1118,7 +1118,7 @@ export default function (view) {
                     label: bag.t.tr('TabGroups'),
                     tabs: [
                         { id: 'groups', label: bag.t.tr('TabGroups') },
-                        { id: 'resets', label: bag.t.tr('HeaderPasswordResets'), element: resets.element, open: resets.load }
+                        { id: 'resets', label: bag.t.tr('TabResets'), element: resets.element, open: resets.load }
                     ]
                 });
             }

@@ -133,9 +133,9 @@ export function resetItems(codes, shared, now) {
 }
 
 // createPendingResets
-// Builds the Password resets tab of the Groups page: each member's pending reset in a table, opening its code in a
+// Builds the Resets tab of the Groups page: each member's pending reset in a table, opening its code in a
 // sidecar to copy. While no group shows reset codes, the empty table says how to turn them on. Over plain HTTP a
-// warning above the table says the codes can be read in transit.
+// warning under the table says the codes can be read in transit.
 //
 // Inputs
 // shared [object]: The Necto helper bag.
@@ -169,7 +169,8 @@ export function createPendingResets(shared, page) {
         }
     });
     var warning = h('div', { class: 'stolon-warn stolon-hidden', text: t.tr('ResetsHttpsWarning') });
-    var element = h('div', { class: 'stolon-stack', 'data-role': 'password-resets' }, [warning, status, table.element]);
+    // The table comes first, so its toolbar sits where every other tab's does, and the warning and any error follow it.
+    var element = h('div', { class: 'stolon-stack', 'data-role': 'password-resets' }, [table.element, warning, status]);
 
     return {
         element: element,

@@ -520,8 +520,8 @@ export function createProxyDetails(shared) {
         }]
     });
     var element = h('div', { class: 'stolon-stack', 'data-role': 'proxy-details' }, [
-        status,
         table.element,
+        status,
         h('div', { class: 'fieldDescription', text: t.tr('ProxyRecoveryHelp') }),
         recoveryPath
     ]);
