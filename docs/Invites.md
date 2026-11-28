@@ -28,7 +28,7 @@ Invites are links anyone may use to make their own account on the server, in the
 
 Each state has its own color on the cards, the badges, and the Dashboard's bar.
 
-The sidecar of an invite sets it out in three steps, **Link**, **Invite**, and **Links for new users**, each led by its icon. **Link** shows the link with **Copy** and a QR button, which opens the QR code with **Copy image** and **Download**. Its shelf holds **Remove**, **Disable** or **Enable**, **Duplicate**, **Cancel**, and **Save**.
+The sidecar of an invite sets it out in three steps, **Link**, **Invite**, and **Links for new users**, each led by its icon. **Link** shows the link with **Copy** and a QR button, which opens the QR code with **Copy image** and **Download**. Its shelf holds **Remove**, **Disable** or **Enable**, **Duplicate**, and **Save**.
 
 * **Name** names the invite in the Invites tool. The sign-up page never shows it.
 * **Welcome message** shows under the sign-up page's heading.
